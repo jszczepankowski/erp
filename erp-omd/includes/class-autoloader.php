@@ -1,0 +1,38 @@
+<?php
+
+class ERP_OMD_Autoloader
+{
+    /**
+     * @var array<string,string>
+     */
+    private static $class_map = [
+        'ERP_OMD_Plugin' => 'includes/class-plugin.php',
+        'ERP_OMD_Installer' => 'includes/class-installer.php',
+        'ERP_OMD_Capabilities' => 'includes/class-capabilities.php',
+        'ERP_OMD_Admin' => 'includes/class-admin.php',
+        'ERP_OMD_REST_API' => 'includes/class-rest-api.php',
+        'ERP_OMD_Role_Repository' => 'includes/repositories/class-role-repository.php',
+        'ERP_OMD_Employee_Repository' => 'includes/repositories/class-employee-repository.php',
+        'ERP_OMD_Salary_History_Repository' => 'includes/repositories/class-salary-history-repository.php',
+        'ERP_OMD_Monthly_Hours_Service' => 'includes/services/class-monthly-hours-service.php',
+        'ERP_OMD_Employee_Service' => 'includes/services/class-employee-service.php',
+    ];
+
+    public static function register()
+    {
+        spl_autoload_register([__CLASS__, 'autoload']);
+    }
+
+    public static function autoload($class)
+    {
+        if (! isset(self::$class_map[$class])) {
+            return;
+        }
+
+        $file = ERP_OMD_PATH . self::$class_map[$class];
+
+        if (file_exists($file)) {
+            require_once $file;
+        }
+    }
+}
