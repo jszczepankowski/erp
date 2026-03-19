@@ -16,6 +16,8 @@ class ERP_OMD_Capabilities
             'erp_omd_manage_employees',
             'erp_omd_manage_salary',
             'erp_omd_manage_account_types',
+            'erp_omd_manage_clients',
+            'erp_omd_manage_projects',
         ];
     }
 
@@ -26,7 +28,7 @@ class ERP_OMD_Capabilities
 
     public static function deactivate()
     {
-        // Preserve roles and capabilities to avoid data regressions.
+        // Preserve roles and capabilities to avoid regressions between sprint packages.
     }
 
     public static function register_roles()
@@ -38,6 +40,8 @@ class ERP_OMD_Capabilities
             'erp_omd_manage_roles' => true,
             'erp_omd_manage_employees' => true,
             'erp_omd_manage_salary' => true,
+            'erp_omd_manage_clients' => true,
+            'erp_omd_manage_projects' => true,
         ];
         $worker_caps = [
             'read' => true,

@@ -14,8 +14,13 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Role_Repository' => 'includes/repositories/class-role-repository.php',
         'ERP_OMD_Employee_Repository' => 'includes/repositories/class-employee-repository.php',
         'ERP_OMD_Salary_History_Repository' => 'includes/repositories/class-salary-history-repository.php',
+        'ERP_OMD_Client_Repository' => 'includes/repositories/class-client-repository.php',
+        'ERP_OMD_Client_Rate_Repository' => 'includes/repositories/class-client-rate-repository.php',
+        'ERP_OMD_Project_Repository' => 'includes/repositories/class-project-repository.php',
+        'ERP_OMD_Project_Note_Repository' => 'includes/repositories/class-project-note-repository.php',
         'ERP_OMD_Monthly_Hours_Service' => 'includes/services/class-monthly-hours-service.php',
         'ERP_OMD_Employee_Service' => 'includes/services/class-employee-service.php',
+        'ERP_OMD_Client_Project_Service' => 'includes/services/class-client-project-service.php',
     ];
 
     public static function register()

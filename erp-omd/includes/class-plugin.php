@@ -2,25 +2,17 @@
 
 class ERP_OMD_Plugin
 {
-    /** @var ERP_OMD_Role_Repository */
     private $role_repository;
-
-    /** @var ERP_OMD_Employee_Repository */
     private $employee_repository;
-
-    /** @var ERP_OMD_Salary_History_Repository */
     private $salary_repository;
-
-    /** @var ERP_OMD_Monthly_Hours_Service */
+    private $client_repository;
+    private $client_rate_repository;
+    private $project_repository;
+    private $project_note_repository;
     private $monthly_hours_service;
-
-    /** @var ERP_OMD_Employee_Service */
     private $employee_service;
-
-    /** @var ERP_OMD_Admin */
+    private $client_project_service;
     private $admin;
-
-    /** @var ERP_OMD_REST_API */
     private $rest_api;
 
     public function __construct()
@@ -28,25 +20,44 @@ class ERP_OMD_Plugin
         $this->role_repository = new ERP_OMD_Role_Repository();
         $this->employee_repository = new ERP_OMD_Employee_Repository();
         $this->salary_repository = new ERP_OMD_Salary_History_Repository();
+        $this->client_repository = new ERP_OMD_Client_Repository();
+        $this->client_rate_repository = new ERP_OMD_Client_Rate_Repository();
+        $this->project_repository = new ERP_OMD_Project_Repository();
+        $this->project_note_repository = new ERP_OMD_Project_Note_Repository();
         $this->monthly_hours_service = new ERP_OMD_Monthly_Hours_Service();
         $this->employee_service = new ERP_OMD_Employee_Service(
             $this->employee_repository,
             $this->salary_repository,
             $this->monthly_hours_service
         );
+        $this->client_project_service = new ERP_OMD_Client_Project_Service(
+            $this->client_repository,
+            $this->employee_repository,
+            $this->role_repository
+        );
         $this->admin = new ERP_OMD_Admin(
             $this->role_repository,
             $this->employee_repository,
             $this->salary_repository,
             $this->employee_service,
-            $this->monthly_hours_service
+            $this->monthly_hours_service,
+            $this->client_repository,
+            $this->client_rate_repository,
+            $this->project_repository,
+            $this->project_note_repository,
+            $this->client_project_service
         );
         $this->rest_api = new ERP_OMD_REST_API(
             $this->role_repository,
             $this->employee_repository,
             $this->salary_repository,
             $this->employee_service,
-            $this->monthly_hours_service
+            $this->monthly_hours_service,
+            $this->client_repository,
+            $this->client_rate_repository,
+            $this->project_repository,
+            $this->project_note_repository,
+            $this->client_project_service
         );
     }
 
