@@ -47,7 +47,13 @@ class ERP_OMD_Project_Financial_Repository
                 ['%d']
             );
 
-            return (int) $existing['id'];
+            if (isset($existing['id'])) {
+                return (int) $existing['id'];
+            }
+
+            $refetched = $this->find_by_project($project_id);
+
+            return (int) ($refetched['id'] ?? 0);
         }
 
         $payload['created_at'] = current_time('mysql');

@@ -141,6 +141,12 @@ class ERP_OMD_Admin
             }
         }
         $employees = $this->employees->all();
+        foreach ($employees as &$employee_row) {
+            $current_salary_row = $this->resolve_current_salary_row((int) $employee_row['id']);
+            $employee_row['current_monthly_salary'] = (float) ($current_salary_row['monthly_salary'] ?? 0);
+            $employee_row['current_hourly_cost'] = (float) ($current_salary_row['hourly_cost'] ?? 0);
+        }
+        unset($employee_row);
         $roles = $this->roles->all();
         $users = get_users(['number' => 200, 'orderby' => 'login', 'order' => 'ASC']);
         $suggested_hours = $this->monthly_hours_service->suggested_hours(gmdate('Y-m'));
@@ -517,6 +523,23 @@ class ERP_OMD_Admin
     private function require_capability($capability)
     {
         if (! current_user_can($capability)) { wp_die(esc_html__('Brak uprawnień.', 'erp-omd')); }
+    }
+
+    private function resolve_current_salary_row($employee_id)
+    {
+        $today = current_time('Y-m-d');
+        $salary_rows = $this->salary_history->for_employee($employee_id);
+
+        foreach ($salary_rows as $salary_row) {
+            $valid_from = $salary_row['valid_from'] ?? '';
+            $valid_to = $salary_row['valid_to'] ?: '9999-12-31';
+
+            if ($valid_from !== '' && $today >= $valid_from && $today <= $valid_to) {
+                return $salary_row;
+            }
+        }
+
+        return null;
     }
 
     private function redirect_with_notice($page, $type, $message, array $extra = [])
