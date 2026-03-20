@@ -578,18 +578,20 @@ class ERP_OMD_Admin
             wp_die(esc_html__('Nie udało się przygotować pliku eksportu.', 'erp-omd'));
         }
 
-        fputcsv($output, [__('Nazwa kosztorysu', 'erp-omd'), $estimate_name]);
-        fputcsv($output, [__('Klient', 'erp-omd'), (string) ($client['name'] ?? ($estimate['client_name'] ?? '—'))]);
-        fputcsv($output, [__('Firma', 'erp-omd'), (string) ($client['company'] ?? '—')]);
-        fputcsv($output, [__('NIP', 'erp-omd'), (string) ($client['nip'] ?? '—')]);
-        fputcsv($output, [__('Email', 'erp-omd'), (string) ($client['email'] ?? '—')]);
-        fputcsv($output, [__('Telefon', 'erp-omd'), (string) ($client['phone'] ?? '—')]);
-        fputcsv($output, [__('Osoba kontaktowa', 'erp-omd'), (string) ($client['contact_person_name'] ?? '—')]);
-        fputcsv($output, [__('Email kontaktowy', 'erp-omd'), (string) ($client['contact_person_email'] ?? '—')]);
-        fputcsv($output, [__('Telefon kontaktowy', 'erp-omd'), (string) ($client['contact_person_phone'] ?? '—')]);
-        fputcsv($output, [__('Miasto', 'erp-omd'), (string) ($client['city'] ?? '—')]);
-        fputcsv($output, [__('Status', 'erp-omd'), (string) ($estimate['status'] ?? '—')]);
-        fputcsv($output, []);
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        fputcsv($output, [__('Nazwa kosztorysu', 'erp-omd'), $estimate_name], ';');
+        fputcsv($output, [__('Klient', 'erp-omd'), (string) ($client['name'] ?? ($estimate['client_name'] ?? '—'))], ';');
+        fputcsv($output, [__('Firma', 'erp-omd'), (string) ($client['company'] ?? '—')], ';');
+        fputcsv($output, [__('NIP', 'erp-omd'), (string) ($client['nip'] ?? '—')], ';');
+        fputcsv($output, [__('Email', 'erp-omd'), (string) ($client['email'] ?? '—')], ';');
+        fputcsv($output, [__('Telefon', 'erp-omd'), (string) ($client['phone'] ?? '—')], ';');
+        fputcsv($output, [__('Osoba kontaktowa', 'erp-omd'), (string) ($client['contact_person_name'] ?? '—')], ';');
+        fputcsv($output, [__('Email kontaktowy', 'erp-omd'), (string) ($client['contact_person_email'] ?? '—')], ';');
+        fputcsv($output, [__('Telefon kontaktowy', 'erp-omd'), (string) ($client['contact_person_phone'] ?? '—')], ';');
+        fputcsv($output, [__('Miasto', 'erp-omd'), (string) ($client['city'] ?? '—')], ';');
+        fputcsv($output, [__('Status', 'erp-omd'), (string) ($estimate['status'] ?? '—')], ';');
+        fputcsv($output, [], ';');
 
         $header = [
             __('Pozycja', 'erp-omd'),
@@ -602,7 +604,7 @@ class ERP_OMD_Admin
             $header[] = __('Koszt wewnętrzny jednostkowy', 'erp-omd');
             $header[] = __('Koszt wewnętrzny łącznie', 'erp-omd');
         }
-        fputcsv($output, $header);
+        fputcsv($output, $header, ';');
 
         foreach ($items as $item) {
             $qty = (float) ($item['qty'] ?? 0);
@@ -620,15 +622,15 @@ class ERP_OMD_Admin
                 $row[] = number_format($cost_internal, 2, '.', '');
                 $row[] = number_format($qty * $cost_internal, 2, '.', '');
             }
-            fputcsv($output, $row);
+            fputcsv($output, $row, ';');
         }
 
-        fputcsv($output, []);
-        fputcsv($output, [__('Suma netto', 'erp-omd'), number_format((float) $totals['net'], 2, '.', '')]);
-        fputcsv($output, [__('VAT 23%', 'erp-omd'), number_format((float) $totals['tax'], 2, '.', '')]);
-        fputcsv($output, [__('Suma brutto', 'erp-omd'), number_format((float) $totals['gross'], 2, '.', '')]);
+        fputcsv($output, [], ';');
+        fputcsv($output, [__('Suma netto', 'erp-omd'), number_format((float) $totals['net'], 2, '.', '')], ';');
+        fputcsv($output, [__('VAT 23%', 'erp-omd'), number_format((float) $totals['tax'], 2, '.', '')], ';');
+        fputcsv($output, [__('Suma brutto', 'erp-omd'), number_format((float) $totals['gross'], 2, '.', '')], ';');
         if ($audience === 'agency') {
-            fputcsv($output, [__('Koszt wewnętrzny', 'erp-omd'), number_format((float) $totals['internal_cost'], 2, '.', '')]);
+            fputcsv($output, [__('Koszt wewnętrzny', 'erp-omd'), number_format((float) $totals['internal_cost'], 2, '.', '')], ';');
         }
 
         fclose($output);
