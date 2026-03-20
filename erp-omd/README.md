@@ -22,7 +22,6 @@ Sprint 8 release candidate package for ERP_OMD V2.
 - Test domenowy finansów projektu: `php tests/project-financial-service-test.php`
 - Checklista odbiorowa Sprintu 4: `docs/SPRINT_4_CHECKLIST.md`
 
-
 ## Testy Sprintu 5
 - Automatyczne sanity checki: `./scripts/test-sprint-5.sh`
 - Test domenowy kosztorysów: `php tests/estimate-service-test.php`

@@ -4,7 +4,7 @@
  * Plugin URI: https://example.com/erp-omd
  * Description: ERP_OMD V2 Sprint 8 release candidate: hardening produkcyjny, finalne endpointy API, UX/admin polish i paczka RC.
  * Version: 0.8.0-rc1
- * Author: OpenAI
+ * Author: OMD
  * Text Domain: erp-omd
  */
 

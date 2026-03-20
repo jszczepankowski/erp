@@ -116,7 +116,7 @@ class ERP_OMD_Plugin
             $this->reporting_service,
             $this->alert_service
         );
-        $this->rest_api = new ERP_OMD_REST_API(
+       $this->rest_api = new ERP_OMD_REST_API(
             $this->role_repository,
             $this->employee_repository,
             $this->salary_repository,
@@ -160,3 +160,4 @@ class ERP_OMD_Plugin
         update_user_meta($user->ID, 'erp_omd_last_login_at', current_time('mysql'));
     }
 }
+

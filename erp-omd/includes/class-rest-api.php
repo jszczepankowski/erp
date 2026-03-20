@@ -25,6 +25,7 @@ class ERP_OMD_REST_API
     private $reporting_service;
     private $alert_service;
 
+
     public function __construct(
         ERP_OMD_Role_Repository $roles,
         ERP_OMD_Employee_Repository $employees,
@@ -48,6 +49,7 @@ class ERP_OMD_REST_API
         ERP_OMD_Project_Financial_Service $project_financial_service,
         ERP_OMD_Reporting_Service $reporting_service,
         ERP_OMD_Alert_Service $alert_service
+
     ) {
         $this->roles = $roles;
         $this->employees = $employees;
@@ -263,6 +265,7 @@ class ERP_OMD_REST_API
         ]);
     }
 
+
     public function can_manage_roles() { return current_user_can('erp_omd_manage_roles'); }
     public function can_manage_employees() { return current_user_can('erp_omd_manage_employees'); }
     public function can_manage_salary() { return current_user_can('erp_omd_manage_salary'); }
@@ -272,6 +275,7 @@ class ERP_OMD_REST_API
     public function can_approve_time() { return current_user_can('erp_omd_approve_time') || current_user_can('administrator'); }
     public function can_access_reports() { return current_user_can('erp_omd_access') || current_user_can('administrator'); }
     public function can_manage_settings() { return current_user_can('erp_omd_manage_settings') || current_user_can('administrator'); }
+
 
     // existing modules omitted no, implemented below.
     public function list_roles() { return rest_ensure_response($this->roles->all()); }
@@ -712,6 +716,7 @@ class ERP_OMD_REST_API
             ],
         ]);
     }
+
 
     private function find_or_error($record, $code, $message) { return $record ? rest_ensure_response($record) : new WP_Error($code, $message, ['status' => 404]); }
     private function sanitize_role_payload(WP_REST_Request $request) { return ['name' => sanitize_text_field((string) $request->get_param('name')), 'slug' => sanitize_title((string) $request->get_param('slug')), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active']; }
