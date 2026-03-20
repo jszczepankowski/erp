@@ -90,6 +90,7 @@ class ERP_OMD_Admin
             return;
         }
         wp_enqueue_style('erp-omd-admin', ERP_OMD_URL . 'assets/css/admin.css', [], ERP_OMD_VERSION);
+        wp_enqueue_script('erp-omd-admin', ERP_OMD_URL . 'assets/js/admin.js', [], ERP_OMD_VERSION, true);
     }
 
     public function handle_forms()

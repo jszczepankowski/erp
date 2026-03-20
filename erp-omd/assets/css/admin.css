@@ -24,3 +24,41 @@
 .erp-omd-admin .erp-omd-multiselect {
     min-width: 220px;
 }
+
+.erp-omd-admin .erp-omd-table-tools {
+    display: flex;
+    justify-content: flex-end;
+    margin: 16px 0 12px;
+}
+
+.erp-omd-admin .erp-omd-table-tools .regular-text[type="search"] {
+    max-width: 320px;
+    width: 100%;
+}
+
+.erp-omd-admin table.widefat thead th[data-sort-index] {
+    cursor: pointer;
+    position: relative;
+    padding-right: 24px;
+}
+
+.erp-omd-admin table.widefat thead th[data-sort-index]::after {
+    color: #787c82;
+    content: "↕";
+    font-size: 12px;
+    line-height: 1;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.erp-omd-admin table.widefat thead th[data-sort-direction="asc"]::after {
+    color: #2271b1;
+    content: "↑";
+}
+
+.erp-omd-admin table.widefat thead th[data-sort-direction="desc"]::after {
+    color: #2271b1;
+    content: "↓";
+}
