@@ -21,8 +21,29 @@
     margin-left: 8px;
 }
 
+.erp-omd-admin .erp-omd-action-group {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 .erp-omd-admin .erp-omd-multiselect {
     min-width: 220px;
+}
+
+.erp-omd-admin .erp-omd-section-header {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.erp-omd-admin .erp-omd-section-header h2,
+.erp-omd-admin .erp-omd-section-header h3,
+.erp-omd-admin .erp-omd-section-header p {
+    margin: 0;
 }
 
 .erp-omd-admin .erp-omd-table-tools {

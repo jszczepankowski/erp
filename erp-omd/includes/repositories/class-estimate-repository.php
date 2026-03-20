@@ -55,13 +55,14 @@ class ERP_OMD_Estimate_Repository
             $this->table_name(),
             [
                 'client_id' => $data['client_id'],
+                'name' => $data['name'],
                 'status' => $data['status'],
                 'accepted_by_user_id' => $data['accepted_by_user_id'] ?: null,
                 'accepted_at' => $data['accepted_at'] ?: null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%d', '%s', '%d', '%s', '%s', '%s']
+            ['%d', '%s', '%s', '%d', '%s', '%s', '%s']
         );
 
         return (int) $wpdb->insert_id;
@@ -75,13 +76,14 @@ class ERP_OMD_Estimate_Repository
             $this->table_name(),
             [
                 'client_id' => $data['client_id'],
+                'name' => $data['name'],
                 'status' => $data['status'],
                 'accepted_by_user_id' => $data['accepted_by_user_id'] ?: null,
                 'accepted_at' => $data['accepted_at'] ?: null,
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => $id],
-            ['%d', '%s', '%d', '%s', '%s'],
+            ['%d', '%s', '%s', '%d', '%s', '%s'],
             ['%d']
         );
     }

@@ -3,7 +3,7 @@
  * Plugin Name: ERP OMD
  * Plugin URI: https://example.com/erp-omd
  * Description: ERP_OMD V2 Sprint 5 foundation: Sprint 4 modules plus estimates, estimate items, acceptance flow, project creation, admin UI, and REST API.
- * Version: 0.5.0
+ * Version: 0.5.1
  * Author: OpenAI
  * Text Domain: erp-omd
  */
@@ -12,7 +12,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('ERP_OMD_VERSION', '0.5.0');
+define('ERP_OMD_VERSION', '0.5.1');
 define('ERP_OMD_DB_VERSION', '5.0.0');
 define('ERP_OMD_FILE', __FILE__);
 define('ERP_OMD_PATH', plugin_dir_path(__FILE__));

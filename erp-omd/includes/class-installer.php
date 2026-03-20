@@ -146,6 +146,7 @@ class ERP_OMD_Installer
             "CREATE TABLE {$estimates_table} (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 client_id BIGINT UNSIGNED NOT NULL,
+                name VARCHAR(191) NOT NULL DEFAULT '',
                 status VARCHAR(32) NOT NULL DEFAULT 'wstepny',
                 accepted_by_user_id BIGINT UNSIGNED NULL,
                 accepted_at DATETIME NULL,
@@ -153,6 +154,7 @@ class ERP_OMD_Installer
                 updated_at DATETIME NOT NULL,
                 PRIMARY KEY  (id),
                 KEY client_id (client_id),
+                KEY name (name),
                 KEY status (status),
                 KEY accepted_by_user_id (accepted_by_user_id)
             ) ENGINE=InnoDB {$charset_collate};"

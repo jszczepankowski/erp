@@ -138,8 +138,8 @@ final class EstimateServiceTestRunner
     {
         $service = new ERP_OMD_Estimate_Service(
             new ERP_OMD_Estimate_Repository([
-                1 => ['id' => 1, 'client_id' => 10, 'status' => 'do_akceptacji'],
-                2 => ['id' => 2, 'client_id' => 10, 'status' => 'zaakceptowany'],
+                1 => ['id' => 1, 'client_id' => 10, 'name' => 'Sprint launch', 'status' => 'do_akceptacji'],
+                2 => ['id' => 2, 'client_id' => 10, 'name' => 'Archiwalny', 'status' => 'zaakceptowany'],
             ]),
             new ERP_OMD_Estimate_Item_Repository([
                 1 => [
@@ -167,6 +167,13 @@ final class EstimateServiceTestRunner
         $this->assertSame('fixed_price', $acceptResult['project']['billing_type'], 'Accepted estimate should create fixed-price project.');
         $this->assertSame(400.0, $acceptResult['project']['budget'], 'Accepted estimate project should use net total as project budget.');
         $this->assertSame(1, $acceptResult['project']['estimate_id'], 'Accepted estimate should bind created project to estimate.');
+        $this->assertSame('Sprint launch', $acceptResult['project']['name'], 'Accepted estimate should use estimate name as project name.');
+
+        $estimateValidationErrors = $service->validate_estimate(
+            ['client_id' => 0, 'name' => '', 'status' => 'bledny'],
+            null
+        );
+        $this->assertSame(3, count($estimateValidationErrors), 'Estimate validation should require name, valid client and valid status.');
 
         $validationErrors = $service->validate_item(
             ['name' => '', 'qty' => 0, 'price' => -1, 'cost_internal' => -1, 'comment' => ''],

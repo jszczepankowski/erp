@@ -23,6 +23,10 @@ class ERP_OMD_Estimate_Service
     {
         $errors = [];
 
+        if (trim((string) ($data['name'] ?? '')) === '') {
+            $errors[] = __('Nazwa kosztorysu jest wymagana.', 'erp-omd');
+        }
+
         if (! $this->clients->find((int) $data['client_id'])) {
             $errors[] = __('Kosztorys musi być przypisany do istniejącego klienta.', 'erp-omd');
         }
@@ -131,7 +135,10 @@ class ERP_OMD_Estimate_Service
             return ['estimate' => $this->estimates->find((int) $estimate_id), 'project' => $existing_project];
         }
 
-        $project_name = sprintf(__('Kosztorys #%d — %s', 'erp-omd'), (int) $estimate_id, $client['name']);
+        $project_name = trim((string) ($estimate['name'] ?? ''));
+        if ($project_name === '') {
+            $project_name = sprintf(__('Kosztorys #%d — %s', 'erp-omd'), (int) $estimate_id, $client['name']);
+        }
         $brief_lines = array_map(
             static function ($item) {
                 return sprintf('%s x %s', (string) ($item['name'] ?? ''), (string) ($item['qty'] ?? 0));
