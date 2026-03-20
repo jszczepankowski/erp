@@ -27,9 +27,13 @@ $tables = [
     $wpdb->prefix . 'erp_omd_roles',
 ];
 
+$wpdb->query('SET FOREIGN_KEY_CHECKS = 0');
+
 foreach ($tables as $table) {
     $wpdb->query("DROP TABLE IF EXISTS `{$table}`");
 }
+
+$wpdb->query('SET FOREIGN_KEY_CHECKS = 1');
 
 delete_option('erp_omd_db_version');
 delete_option('erp_omd_delete_data_on_uninstall');
