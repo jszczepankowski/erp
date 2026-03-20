@@ -102,6 +102,7 @@ final class ProjectFinancialServiceTestRunner
                 10 => ['id' => 10, 'billing_type' => 'time_material', 'budget' => 1000, 'retainer_monthly_fee' => 0, 'status' => 'w_realizacji', 'start_date' => '2026-01-01', 'end_date' => '2026-03-31'],
                 11 => ['id' => 11, 'billing_type' => 'fixed_price', 'budget' => 5000, 'retainer_monthly_fee' => 0, 'status' => 'do_faktury', 'start_date' => '2026-01-01', 'end_date' => '2026-01-31'],
                 12 => ['id' => 12, 'billing_type' => 'retainer', 'budget' => 0, 'retainer_monthly_fee' => 1500, 'status' => 'w_realizacji', 'start_date' => '2026-01-15', 'end_date' => '2026-03-20'],
+                13 => ['id' => 13, 'billing_type' => 'fixed_price', 'budget' => 3200, 'retainer_monthly_fee' => 0, 'status' => 'w_realizacji', 'start_date' => '2026-02-01', 'end_date' => '2026-04-30'],
             ]),
             new ERP_OMD_Project_Cost_Repository([
                 10 => [
@@ -123,6 +124,9 @@ final class ProjectFinancialServiceTestRunner
                     ['hours' => 10, 'rate_snapshot' => 999, 'cost_snapshot' => 50, 'status' => 'approved'],
                 ],
                 12 => [],
+                13 => [
+                    ['hours' => 4, 'rate_snapshot' => 120, 'cost_snapshot' => 40, 'status' => 'approved'],
+                ],
             ])
         );
 
@@ -133,8 +137,11 @@ final class ProjectFinancialServiceTestRunner
         $this->assertSame(25.0, $tmFinancials['budget_usage'], 'Budget usage should be cost divided by budget.');
 
         $fixedFinancials = $service->rebuild_for_project(11);
-        $this->assertSame(5000.0, $fixedFinancials['revenue'], 'Fixed price revenue should recognize the full budget after billing status.');
+        $this->assertSame(5000.0, $fixedFinancials['revenue'], 'Fixed price revenue should always recognize the project budget.');
         $this->assertSame(900.0, $fixedFinancials['cost'], 'Fixed price cost should include time and direct costs.');
+
+        $fixedInProgressFinancials = $service->rebuild_for_project(13);
+        $this->assertSame(3200.0, $fixedInProgressFinancials['revenue'], 'Fixed price revenue should also use the project budget after changing billing type on an in-progress project.');
 
         $retainerFinancials = $service->rebuild_for_project(12);
         $this->assertSame(4500.0, $retainerFinancials['revenue'], 'Retainer revenue should count inclusive active months.');

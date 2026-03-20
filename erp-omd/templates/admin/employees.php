@@ -24,9 +24,9 @@
                     <th><label for="erp-account-type"><?php esc_html_e('Typ konta', 'erp-omd'); ?></label></th>
                     <td>
                         <select id="erp-account-type" name="account_type">
-                            <option value="admin" <?php selected($employee['account_type'] ?? 'worker', 'admin'); ?>>admin</option>
-                            <option value="manager" <?php selected($employee['account_type'] ?? 'worker', 'manager'); ?>>manager</option>
-                            <option value="worker" <?php selected($employee['account_type'] ?? 'worker', 'worker'); ?>>pracownik</option>
+                            <option value="admin" <?php selected($employee['account_type'] ?? 'worker', 'admin'); ?>><?php esc_html_e('Administrator', 'erp-omd'); ?></option>
+                            <option value="manager" <?php selected($employee['account_type'] ?? 'worker', 'manager'); ?>><?php esc_html_e('Manager', 'erp-omd'); ?></option>
+                            <option value="worker" <?php selected($employee['account_type'] ?? 'worker', 'worker'); ?>><?php esc_html_e('Pracownik', 'erp-omd'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -34,8 +34,8 @@
                     <th><label for="erp-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
                     <td>
                         <select id="erp-status" name="status">
-                            <option value="active" <?php selected($employee['status'] ?? 'active', 'active'); ?>>active</option>
-                            <option value="inactive" <?php selected($employee['status'] ?? '', 'inactive'); ?>>inactive</option>
+                            <option value="active" <?php selected($employee['status'] ?? 'active', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
+                            <option value="inactive" <?php selected($employee['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -71,7 +71,7 @@
 
         <?php if ($employee) : ?>
             <hr />
-            <h2><?php esc_html_e('Salary history', 'erp-omd'); ?></h2>
+            <h2><?php esc_html_e('Historia wynagrodzeń', 'erp-omd'); ?></h2>
             <p><?php printf(esc_html__('Podpowiedź godzin dla bieżącego miesiąca: %s h', 'erp-omd'), esc_html($suggested_hours)); ?></p>
             <form method="post">
                 <?php wp_nonce_field('erp_omd_save_salary'); ?>
@@ -87,15 +87,15 @@
                         <td><input id="erp-monthly-hours" type="number" step="0.01" min="1" name="monthly_hours" value="<?php echo esc_attr($suggested_hours); ?>" required /></td>
                     </tr>
                     <tr>
-                        <th><label for="erp-valid-from"><?php esc_html_e('Valid from', 'erp-omd'); ?></label></th>
+                        <th><label for="erp-valid-from"><?php esc_html_e('Obowiązuje od', 'erp-omd'); ?></label></th>
                         <td><input id="erp-valid-from" type="date" name="valid_from" required /></td>
                     </tr>
                     <tr>
-                        <th><label for="erp-valid-to"><?php esc_html_e('Valid to', 'erp-omd'); ?></label></th>
+                        <th><label for="erp-valid-to"><?php esc_html_e('Obowiązuje do', 'erp-omd'); ?></label></th>
                         <td><input id="erp-valid-to" type="date" name="valid_to" /></td>
                     </tr>
                 </table>
-                <?php submit_button(__('Dodaj wpis salary history', 'erp-omd'), 'secondary'); ?>
+                <?php submit_button(__('Dodaj wpis do historii wynagrodzeń', 'erp-omd'), 'secondary'); ?>
             </form>
         <?php endif; ?>
     </div>
@@ -129,12 +129,12 @@
                                 <td><?php echo esc_html($item['id']); ?></td>
                                 <td><?php echo esc_html($item['user_login']); ?></td>
                                 <td><?php echo esc_html($item['user_email']); ?></td>
-                                <td><?php echo esc_html($item['account_type']); ?></td>
-                                <td><?php echo esc_html($item['status']); ?></td>
+                                <td><?php echo esc_html($this->account_type_label($item['account_type'])); ?></td>
+                                <td><?php echo esc_html($this->active_status_label($item['status'])); ?></td>
                                 <td><?php echo ! empty($item['current_monthly_salary']) ? esc_html(number_format_i18n((float) $item['current_monthly_salary'], 2)) : '—'; ?></td>
                                 <td><?php echo ! empty($item['current_hourly_cost']) ? esc_html(number_format_i18n((float) $item['current_hourly_cost'], 2)) : '—'; ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) ($item['reported_hours'] ?? 0), 2)); ?></td>
-                                <td><?php echo ! empty($item['target_monthly_hours']) ? esc_html(number_format_i18n((float) $item['target_monthly_hours'], 2)) : '—'; ?></td>
+                                <td><?php echo null !== ($item['target_monthly_hours'] ?? null) ? esc_html(number_format_i18n((float) $item['target_monthly_hours'], 2)) : '—'; ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) ($item['produced_profit'] ?? 0), 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) ($item['employee_profit'] ?? 0), 2)); ?></td>
                                 <td>
@@ -143,7 +143,7 @@
                                         <?php wp_nonce_field('erp_omd_deactivate_employee'); ?>
                                         <input type="hidden" name="erp_omd_action" value="deactivate_employee" />
                                         <input type="hidden" name="id" value="<?php echo esc_attr($item['id']); ?>" />
-                                        <button class="button button-small" type="submit"><?php esc_html_e('Deactivate', 'erp-omd'); ?></button>
+                                        <button class="button button-small" type="submit"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></button>
                                     </form>
                                 </td>
                             </tr>
@@ -158,8 +158,8 @@
             <table class="widefat striped">
                 <thead>
                     <tr>
-                        <th><?php esc_html_e('Valid from', 'erp-omd'); ?></th>
-                        <th><?php esc_html_e('Valid to', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Obowiązuje od', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Obowiązuje do', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Pensja', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Godziny', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Koszt godzinowy', 'erp-omd'); ?></th>
@@ -168,7 +168,7 @@
                 </thead>
                 <tbody>
                     <?php if (empty($salary_rows)) : ?>
-                        <tr><td colspan="6"><?php esc_html_e('Brak wpisów salary history.', 'erp-omd'); ?></td></tr>
+                        <tr><td colspan="6"><?php esc_html_e('Brak wpisów w historii wynagrodzeń.', 'erp-omd'); ?></td></tr>
                     <?php else : ?>
                         <?php foreach ($salary_rows as $salary_item) : ?>
                             <tr>
@@ -178,7 +178,7 @@
                                 <td><?php echo esc_html(number_format_i18n((float) $salary_item['monthly_hours'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $salary_item['hourly_cost'], 2)); ?></td>
                                 <td>
-                                    <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć wpis salary history?', 'erp-omd')); ?>');">
+                                    <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć wpis z historii wynagrodzeń?', 'erp-omd')); ?>');">
                                         <?php wp_nonce_field('erp_omd_delete_salary'); ?>
                                         <input type="hidden" name="erp_omd_action" value="delete_salary" />
                                         <input type="hidden" name="salary_id" value="<?php echo esc_attr($salary_item['id']); ?>" />

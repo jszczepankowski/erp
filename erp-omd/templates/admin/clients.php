@@ -20,19 +20,19 @@
                     <th><label for="client-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
                     <td>
                         <select id="client-status" name="status">
-                            <option value="active" <?php selected($client['status'] ?? 'active', 'active'); ?>>active</option>
-                            <option value="inactive" <?php selected($client['status'] ?? '', 'inactive'); ?>>inactive</option>
+                            <option value="active" <?php selected($client['status'] ?? 'active', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
+                            <option value="inactive" <?php selected($client['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
                         </select>
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="client-account-manager"><?php esc_html_e('Account manager', 'erp-omd'); ?></label></th>
+                    <th><label for="client-account-manager"><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></label></th>
                     <td>
                         <select id="client-account-manager" name="account_manager_id">
                             <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
                             <?php foreach ($employees_for_select as $employee_item) : ?>
                                 <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($client['account_manager_id'] ?? 0), (int) $employee_item['id']); ?>>
-                                    <?php echo esc_html($employee_item['user_login'] . ' (' . $employee_item['account_type'] . ')'); ?>
+                                    <?php echo esc_html($employee_item['user_login'] . ' (' . $this->account_type_label($employee_item['account_type']) . ')'); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -44,7 +44,7 @@
 
         <?php if ($client) : ?>
             <hr />
-            <h2><?php esc_html_e('Stawki klienta', 'erp-omd'); ?></h2>
+            <h2><?php echo $editing_client_rate ? esc_html__('Edytuj stawkę klienta', 'erp-omd') : esc_html__('Stawki klienta', 'erp-omd'); ?></h2>
             <form method="post">
                 <?php wp_nonce_field('erp_omd_save_client_rate'); ?>
                 <input type="hidden" name="erp_omd_action" value="save_client_rate" />
@@ -53,29 +53,47 @@
                     <tr>
                         <th><label for="client-rate-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label></th>
                         <td>
-                            <select id="client-rate-role" name="role_id" required>
-                                <option value=""><?php esc_html_e('Wybierz rolę', 'erp-omd'); ?></option>
-                                <?php foreach ($roles as $role_item) : ?>
-                                    <option value="<?php echo esc_attr($role_item['id']); ?>"><?php echo esc_html($role_item['name']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <?php if ($editing_client_rate) : ?>
+                                <input type="hidden" name="role_id" value="<?php echo esc_attr($editing_client_rate['role_id']); ?>" />
+                                <p class="description">
+                                    <?php
+                                    $editing_role_name = '—';
+                                    foreach ($roles as $role_item) {
+                                        if ((int) $role_item['id'] === (int) $editing_client_rate['role_id']) {
+                                            $editing_role_name = $role_item['name'];
+                                            break;
+                                        }
+                                    }
+                                    echo esc_html(sprintf(__('Edytowana rola: %s', 'erp-omd'), $editing_role_name));
+                                    ?>
+                                </p>
+                            <?php else : ?>
+                                <select id="client-rate-role" name="role_id" required>
+                                    <option value=""><?php esc_html_e('Wybierz rolę', 'erp-omd'); ?></option>
+                                    <?php foreach ($roles as $role_item) : ?>
+                                        <option value="<?php echo esc_attr($role_item['id']); ?>"><?php echo esc_html($role_item['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <tr>
                         <th><label for="client-rate-value"><?php esc_html_e('Stawka', 'erp-omd'); ?></label></th>
-                        <td><input id="client-rate-value" type="number" step="0.01" min="0" name="rate" required /></td>
+                        <td><input id="client-rate-value" type="number" step="0.01" min="0" name="rate" value="<?php echo esc_attr($editing_client_rate['rate'] ?? ''); ?>" required /></td>
                     </tr>
                 </table>
-                <?php submit_button(__('Zapisz stawkę klienta', 'erp-omd'), 'secondary'); ?>
+                <?php submit_button($editing_client_rate ? __('Zapisz zmiany stawki', 'erp-omd') : __('Zapisz stawkę klienta', 'erp-omd'), 'secondary'); ?>
+                <?php if ($editing_client_rate) : ?>
+                    <a class="button" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => $client['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Anuluj edycję', 'erp-omd'); ?></a>
+                <?php endif; ?>
             </form>
         <?php endif; ?>
     </div>
 
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Lista klientów', 'erp-omd'); ?></h2>
-        <p class="description"><?php printf(esc_html__('Zysk na liście dotyczy bieżącego miesiąca: %s.', 'erp-omd'), esc_html($reporting_month_label)); ?></p>
         <table class="widefat striped">
-                <thead><tr><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Firma', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Account manager', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                <thead><tr><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Firma', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                 <tbody>
                 <?php if (empty($clients)) : ?>
                     <tr><td colspan="7"><?php esc_html_e('Brak klientów.', 'erp-omd'); ?></td></tr>
@@ -85,16 +103,16 @@
                             <td><?php echo esc_html($client_row['id']); ?></td>
                             <td><?php echo esc_html($client_row['name']); ?></td>
                             <td><?php echo esc_html($client_row['company']); ?></td>
-                            <td><?php echo esc_html($client_row['status']); ?></td>
+                            <td><?php echo esc_html($this->active_status_label($client_row['status'])); ?></td>
                             <td><?php echo esc_html($client_row['account_manager_login'] ?: '—'); ?></td>
-                            <td><?php echo esc_html(number_format_i18n((float) ($client_row['monthly_profit'] ?? 0), 2)); ?></td>
+                            <td><?php echo esc_html(number_format_i18n((float) ($client_row['total_profit'] ?? 0), 2)); ?></td>
                             <td>
                                 <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => $client_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                 <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Dezaktywować klienta?', 'erp-omd')); ?>');">
                                     <?php wp_nonce_field('erp_omd_deactivate_client'); ?>
                                     <input type="hidden" name="erp_omd_action" value="deactivate_client" />
                                     <input type="hidden" name="id" value="<?php echo esc_attr($client_row['id']); ?>" />
-                                    <button class="button button-small" type="submit"><?php esc_html_e('Deactivate', 'erp-omd'); ?></button>
+                                    <button class="button button-small" type="submit"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></button>
                                 </form>
                             </td>
                         </tr>
@@ -123,6 +141,7 @@
                             <td><?php echo esc_html(number_format_i18n($rate_value, 2)); ?></td>
                             <td>
                                 <?php if ($rate_id > 0) : ?>
+                                    <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => $client['id'], 'rate_id' => $rate_id], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                     <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć stawkę klienta?', 'erp-omd')); ?>');">
                                         <?php wp_nonce_field('erp_omd_delete_client_rate'); ?>
                                         <input type="hidden" name="erp_omd_action" value="delete_client_rate" />

@@ -99,9 +99,7 @@ class ERP_OMD_Project_Financial_Service
     {
         switch ($project['billing_type']) {
             case 'fixed_price':
-                return in_array($project['status'], ['do_faktury', 'zakonczony'], true)
-                    ? (float) ($project['budget'] ?? 0)
-                    : 0.0;
+                return (float) ($project['budget'] ?? 0);
 
             case 'retainer':
                 return $this->retainer_revenue($project);

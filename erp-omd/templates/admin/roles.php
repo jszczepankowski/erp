@@ -20,8 +20,8 @@
                         <th><label for="erp-role-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
                         <td>
                             <select id="erp-role-status" name="status">
-                                <option value="active" <?php selected($role['status'] ?? 'active', 'active'); ?>>active</option>
-                                <option value="inactive" <?php selected($role['status'] ?? '', 'inactive'); ?>>inactive</option>
+                                <option value="active" <?php selected($role['status'] ?? 'active', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
+                                <option value="inactive" <?php selected($role['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
                             </select>
                         </td>
                     </tr>
@@ -54,7 +54,7 @@
                                 <td><?php echo esc_html($item['id']); ?></td>
                                 <td><?php echo esc_html($item['name']); ?></td>
                                 <td><?php echo esc_html($item['slug']); ?></td>
-                                <td><?php echo esc_html($item['status']); ?></td>
+                                <td><?php echo esc_html($this->active_status_label($item['status'])); ?></td>
                                 <td>
                                     <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-roles', 'id' => $item['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                     <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć rolę?', 'erp-omd')); ?>');">

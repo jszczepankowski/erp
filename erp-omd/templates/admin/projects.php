@@ -13,9 +13,9 @@
                     <th><label for="project-billing-type"><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></label></th>
                     <td>
                         <select id="project-billing-type" name="billing_type">
-                            <option value="time_material" <?php selected($project['billing_type'] ?? 'time_material', 'time_material'); ?>>time_material</option>
-                            <option value="fixed_price" <?php selected($project['billing_type'] ?? '', 'fixed_price'); ?>>fixed_price</option>
-                            <option value="retainer" <?php selected($project['billing_type'] ?? '', 'retainer'); ?>>retainer</option>
+                            <option value="time_material" <?php selected($project['billing_type'] ?? 'time_material', 'time_material'); ?>><?php esc_html_e('Time & Material', 'erp-omd'); ?></option>
+                            <option value="fixed_price" <?php selected($project['billing_type'] ?? '', 'fixed_price'); ?>><?php esc_html_e('Ryczałt', 'erp-omd'); ?></option>
+                            <option value="retainer" <?php selected($project['billing_type'] ?? '', 'retainer'); ?>><?php esc_html_e('Retainer', 'erp-omd'); ?></option>
                         </select>
                     </td>
                 </tr>
@@ -26,13 +26,13 @@
                     <td>
                         <select id="project-status" name="status">
                             <?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'] as $project_status) : ?>
-                                <option value="<?php echo esc_attr($project_status); ?>" <?php selected($project['status'] ?? 'do_rozpoczecia', $project_status); ?>><?php echo esc_html($project_status); ?></option>
+                                <option value="<?php echo esc_attr($project_status); ?>" <?php selected($project['status'] ?? 'do_rozpoczecia', $project_status); ?>><?php echo esc_html($this->project_status_label($project_status)); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </td>
                 </tr>
-                <tr><th><label for="project-start-date"><?php esc_html_e('Start date', 'erp-omd'); ?></label></th><td><input id="project-start-date" type="date" name="start_date" value="<?php echo esc_attr($project['start_date'] ?? ''); ?>" /></td></tr>
-                <tr><th><label for="project-end-date"><?php esc_html_e('End date', 'erp-omd'); ?></label></th><td><input id="project-end-date" type="date" name="end_date" value="<?php echo esc_attr($project['end_date'] ?? ''); ?>" /></td></tr>
+                <tr><th><label for="project-start-date"><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></label></th><td><input id="project-start-date" type="date" name="start_date" value="<?php echo esc_attr($project['start_date'] ?? ''); ?>" /></td></tr>
+                <tr><th><label for="project-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label></th><td><input id="project-end-date" type="date" name="end_date" value="<?php echo esc_attr($project['end_date'] ?? ''); ?>" /></td></tr>
                 <tr>
                     <th><label for="project-manager"><?php esc_html_e('Manager projektu', 'erp-omd'); ?></label></th>
                     <td>
@@ -46,8 +46,8 @@
                         </select>
                     </td>
                 </tr>
-                <tr><th><label for="project-estimate-id"><?php esc_html_e('Estimate ID', 'erp-omd'); ?></label></th><td><input id="project-estimate-id" type="number" min="0" name="estimate_id" value="<?php echo esc_attr($project['estimate_id'] ?? ''); ?>" /></td></tr>
-                <tr><th><label for="project-brief"><?php esc_html_e('Brief', 'erp-omd'); ?></label></th><td><textarea id="project-brief" class="large-text" rows="5" name="brief"><?php echo esc_textarea($project['brief'] ?? ''); ?></textarea></td></tr>
+                <tr><th><label for="project-estimate-id"><?php esc_html_e('ID estymacji', 'erp-omd'); ?></label></th><td><input id="project-estimate-id" type="number" min="0" name="estimate_id" value="<?php echo esc_attr($project['estimate_id'] ?? ''); ?>" /></td></tr>
+                <tr><th><label for="project-brief"><?php esc_html_e('Opis projektu', 'erp-omd'); ?></label></th><td><textarea id="project-brief" class="large-text" rows="5" name="brief"><?php echo esc_textarea($project['brief'] ?? ''); ?></textarea></td></tr>
             </table>
             <?php submit_button($project ? __('Zapisz projekt', 'erp-omd') : __('Dodaj projekt', 'erp-omd')); ?>
         </form>
@@ -57,14 +57,14 @@
             <h2><?php esc_html_e('Finanse projektu', 'erp-omd'); ?></h2>
             <table class="widefat striped">
                 <tbody>
-                    <tr><th><?php esc_html_e('Revenue', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['revenue'] ?? 0), 2)); ?></td></tr>
-                    <tr><th><?php esc_html_e('Cost', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['cost'] ?? 0), 2)); ?></td></tr>
-                    <tr><th><?php esc_html_e('Profit', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['profit'] ?? 0), 2)); ?></td></tr>
-                    <tr><th><?php esc_html_e('Margin %', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['margin'] ?? 0), 2)); ?></td></tr>
-                    <tr><th><?php esc_html_e('Budget usage %', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['budget_usage'] ?? 0), 2)); ?></td></tr>
-                    <tr><th><?php esc_html_e('Time revenue', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['time_revenue'] ?? 0), 2)); ?></td></tr>
-                    <tr><th><?php esc_html_e('Time cost', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['time_cost'] ?? 0), 2)); ?></td></tr>
-                    <tr><th><?php esc_html_e('Direct cost', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['direct_cost'] ?? 0), 2)); ?></td></tr>
+                    <tr><th><?php esc_html_e('Przychód', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['revenue'] ?? 0), 2)); ?></td></tr>
+                    <tr><th><?php esc_html_e('Koszt', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['cost'] ?? 0), 2)); ?></td></tr>
+                    <tr><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['profit'] ?? 0), 2)); ?></td></tr>
+                    <tr><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['margin'] ?? 0), 2)); ?></td></tr>
+                    <tr><th><?php esc_html_e('Wykorzystanie budżetu %', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['budget_usage'] ?? 0), 2)); ?></td></tr>
+                    <tr><th><?php esc_html_e('Przychód z czasu pracy', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['time_revenue'] ?? 0), 2)); ?></td></tr>
+                    <tr><th><?php esc_html_e('Koszt czasu pracy', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['time_cost'] ?? 0), 2)); ?></td></tr>
+                    <tr><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['direct_cost'] ?? 0), 2)); ?></td></tr>
                 </tbody>
             </table>
             <hr />
@@ -107,7 +107,7 @@
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Lista projektów', 'erp-omd'); ?></h2>
         <table class="widefat striped">
-            <thead><tr><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Typ', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Manager', 'erp-omd'); ?></th><th><?php esc_html_e('Revenue', 'erp-omd'); ?></th><th><?php esc_html_e('Cost', 'erp-omd'); ?></th><th><?php esc_html_e('Profit', 'erp-omd'); ?></th><th><?php esc_html_e('Margin %', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Typ', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Manager', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
             <tbody>
                 <?php if (empty($projects)) : ?>
                     <tr><td colspan="11"><?php esc_html_e('Brak projektów.', 'erp-omd'); ?></td></tr>
@@ -118,8 +118,8 @@
                             <td><?php echo esc_html($project_row['id']); ?></td>
                             <td><?php echo esc_html($project_row['name']); ?></td>
                             <td><?php echo esc_html($project_row['client_name']); ?></td>
-                            <td><?php echo esc_html($project_row['billing_type']); ?></td>
-                            <td><?php echo esc_html($project_row['status']); ?></td>
+                            <td><?php echo esc_html($this->billing_type_label($project_row['billing_type'])); ?></td>
+                            <td><?php echo esc_html($this->project_status_label($project_row['status'])); ?></td>
                             <td><?php echo esc_html($project_row['manager_login'] ?: '—'); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['revenue'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['cost'] ?? 0), 2)); ?></td>
@@ -131,7 +131,7 @@
                                     <?php wp_nonce_field('erp_omd_deactivate_project'); ?>
                                     <input type="hidden" name="erp_omd_action" value="deactivate_project" />
                                     <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
-                                    <button class="button button-small" type="submit"><?php esc_html_e('Deactivate', 'erp-omd'); ?></button>
+                                    <button class="button button-small" type="submit"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></button>
                                 </form>
                             </td>
                         </tr>
