@@ -22,7 +22,8 @@
    - lint wszystkich plików PHP pluginu,
    - testy domenowe dla `ERP_OMD_Time_Entry_Service`,
    - budowanie ZIP paczki Sprintu 3.
-3. Dopiero po przejściu powyższych checków przejdź do ręcznej checklisty odbiorowej poniżej.
+3. Otwórz `docs/SPRINT_3_ACCEPTANCE_PLAN.md` i wykonaj pełny plan odbioru ręcznego.
+4. Dopiero po przejściu powyższych checków przejdź do formalnego zamknięcia sprintu.
 
 ## Kroki odbioru
 1. Uruchom `./scripts/build-sprint-3-zip.sh`.

@@ -10,3 +10,4 @@ Sprint 3 plugin package for ERP_OMD V2.
 ## Testy Sprintu 3
 - Automatyczne sanity checki: `./scripts/test-sprint-3.sh`
 - Test domenowy time trackingu: `php tests/time-entry-service-test.php`
+- Plan odbioru ręcznego i bramka do Sprintu 4: `docs/SPRINT_3_ACCEPTANCE_PLAN.md`
