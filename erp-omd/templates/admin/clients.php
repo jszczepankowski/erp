@@ -111,17 +111,26 @@
                         <tr><td colspan="3"><?php esc_html_e('Brak stawek klienta.', 'erp-omd'); ?></td></tr>
                     <?php else : ?>
                         <?php foreach ($client_rates as $rate_item) : ?>
+                            <?php
+                            $rate_id = isset($rate_item['id']) ? (int) $rate_item['id'] : 0;
+                            $role_name = $rate_item['role_name'] ?? '—';
+                            $rate_value = isset($rate_item['rate']) ? (float) $rate_item['rate'] : 0.0;
+                            ?>
                             <tr>
-                                <td><?php echo esc_html($rate_item['role_name']); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $rate_item['rate'], 2)); ?></td>
+                                <td><?php echo esc_html($role_name); ?></td>
+                                <td><?php echo esc_html(number_format_i18n($rate_value, 2)); ?></td>
                                 <td>
-                                    <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć stawkę klienta?', 'erp-omd')); ?>');">
-                                        <?php wp_nonce_field('erp_omd_delete_client_rate'); ?>
-                                        <input type="hidden" name="erp_omd_action" value="delete_client_rate" />
-                                        <input type="hidden" name="id" value="<?php echo esc_attr($rate_item['id']); ?>" />
-                                        <input type="hidden" name="client_id" value="<?php echo esc_attr($client['id']); ?>" />
-                                        <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
-                                    </form>
+                                    <?php if ($rate_id > 0) : ?>
+                                        <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć stawkę klienta?', 'erp-omd')); ?>');">
+                                            <?php wp_nonce_field('erp_omd_delete_client_rate'); ?>
+                                            <input type="hidden" name="erp_omd_action" value="delete_client_rate" />
+                                            <input type="hidden" name="id" value="<?php echo esc_attr($rate_id); ?>" />
+                                            <input type="hidden" name="client_id" value="<?php echo esc_attr($client['id'] ?? 0); ?>" />
+                                            <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                        </form>
+                                    <?php else : ?>
+                                        <span>—</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
