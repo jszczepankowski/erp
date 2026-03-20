@@ -17,6 +17,8 @@
                     <tr><th><label for="contact-person-email"><?php esc_html_e('Osoba kontaktowa — email', 'erp-omd'); ?></label></th><td><input id="contact-person-email" class="regular-text" type="email" name="contact_person_email" value="<?php echo esc_attr($client['contact_person_email'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="contact-person-phone"><?php esc_html_e('Osoba kontaktowa — telefon', 'erp-omd'); ?></label></th><td><input id="contact-person-phone" class="regular-text" type="text" name="contact_person_phone" value="<?php echo esc_attr($client['contact_person_phone'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="client-city"><?php esc_html_e('Miasto', 'erp-omd'); ?></label></th><td><input id="client-city" class="regular-text" type="text" name="city" value="<?php echo esc_attr($client['city'] ?? ''); ?>" /></td></tr>
+                    <tr><th><label for="client-street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label></th><td><input id="client-street" class="regular-text" type="text" name="street" value="<?php echo esc_attr($client['street'] ?? ''); ?>" /></td></tr>
+                    <tr><th><label for="client-apartment-number"><?php esc_html_e('Numer lokalu', 'erp-omd'); ?></label></th><td><input id="client-apartment-number" class="regular-text" type="text" name="apartment_number" value="<?php echo esc_attr($client['apartment_number'] ?? ''); ?>" /></td></tr>
                     <tr>
                         <th><label for="client-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
                         <td>
