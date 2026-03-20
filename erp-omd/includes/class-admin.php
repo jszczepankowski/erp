@@ -170,6 +170,7 @@ class ERP_OMD_Admin
         $project_rates = [];
         $project_cost_rows = [];
         $project_financial = null;
+        $project_financials_by_project = [];
         if (! empty($_GET['id'])) {
             $project = $this->projects->find((int) $_GET['id']);
             if ($project) {
@@ -183,6 +184,9 @@ class ERP_OMD_Admin
         $clients = $this->clients->all();
         $employees_for_select = $this->employees->all();
         $roles = $this->roles->all();
+        foreach ($projects as $project_row) {
+            $project_financials_by_project[(int) $project_row['id']] = $this->project_financial_service->rebuild_for_project((int) $project_row['id']);
+        }
         include ERP_OMD_PATH . 'templates/admin/projects.php';
     }
 
