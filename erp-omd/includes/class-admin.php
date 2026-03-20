@@ -459,7 +459,7 @@ class ERP_OMD_Admin
         if ($errors) { $this->redirect_with_notice('erp-omd-time', 'error', implode(' ', $errors), $id ? ['id' => $id] : []); }
         if ($id) { $this->time_entries->update($id, $payload); $message = __('Wpis czasu został zaktualizowany.', 'erp-omd'); } else { $id = $this->time_entries->create($payload); $message = __('Wpis czasu został dodany.', 'erp-omd'); }
         $this->project_financial_service->rebuild_for_project((int) $payload['project_id']);
-        $this->redirect_with_notice('erp-omd-time', 'success', $message, ['id' => $id]);
+        $this->redirect_with_notice('erp-omd-time', 'success', $message, $id && ! empty($_POST['id']) ? ['id' => $id] : []);
     }
 
     private function handle_time_status_change()
