@@ -1,0 +1,85 @@
+.erp-omd-admin .erp-omd-grid {
+    display: grid;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.erp-omd-admin .erp-omd-grid.two-columns {
+    grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.2fr);
+}
+
+.erp-omd-admin .erp-omd-card {
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.erp-omd-admin .erp-omd-inline-form {
+    display: inline-block;
+    margin-left: 8px;
+}
+
+.erp-omd-admin .erp-omd-action-group {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.erp-omd-admin .erp-omd-multiselect {
+    min-width: 220px;
+}
+
+.erp-omd-admin .erp-omd-section-header {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.erp-omd-admin .erp-omd-section-header h2,
+.erp-omd-admin .erp-omd-section-header h3,
+.erp-omd-admin .erp-omd-section-header p {
+    margin: 0;
+}
+
+.erp-omd-admin .erp-omd-table-tools {
+    display: flex;
+    justify-content: flex-end;
+    margin: 16px 0 12px;
+}
+
+.erp-omd-admin .erp-omd-table-tools .regular-text[type="search"] {
+    max-width: 320px;
+    width: 100%;
+}
+
+.erp-omd-admin table.widefat thead th[data-sort-index] {
+    cursor: pointer;
+    position: relative;
+    padding-right: 24px;
+}
+
+.erp-omd-admin table.widefat thead th[data-sort-index]::after {
+    color: #787c82;
+    content: "↕";
+    font-size: 12px;
+    line-height: 1;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.erp-omd-admin table.widefat thead th[data-sort-direction="asc"]::after {
+    color: #2271b1;
+    content: "↑";
+}
+
+.erp-omd-admin table.widefat thead th[data-sort-direction="desc"]::after {
+    color: #2271b1;
+    content: "↓";
+}
