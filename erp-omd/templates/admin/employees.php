@@ -102,6 +102,7 @@
 
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Lista pracowników', 'erp-omd'); ?></h2>
+        <p class="description"><?php printf(esc_html__('Metryki na liście dotyczą bieżącego miesiąca: %s.', 'erp-omd'), esc_html($reporting_month_label)); ?></p>
         <table class="widefat striped">
                 <thead>
                     <tr>
@@ -110,15 +111,18 @@
                         <th><?php esc_html_e('Email', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Typ konta', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
-                        <th><?php esc_html_e('Domyślna rola', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Aktualna pensja', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Aktualna stawka godzinowa', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Zaraportowane godziny', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Godziny do wypracowania', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Wypracowany zysk', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Zysk z pracownika', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($employees)) : ?>
-                        <tr><td colspan="9"><?php esc_html_e('Brak pracowników.', 'erp-omd'); ?></td></tr>
+                        <tr><td colspan="12"><?php esc_html_e('Brak pracowników.', 'erp-omd'); ?></td></tr>
                     <?php else : ?>
                         <?php foreach ($employees as $item) : ?>
                             <tr>
@@ -127,9 +131,12 @@
                                 <td><?php echo esc_html($item['user_email']); ?></td>
                                 <td><?php echo esc_html($item['account_type']); ?></td>
                                 <td><?php echo esc_html($item['status']); ?></td>
-                                <td><?php echo esc_html($item['default_role_name'] ?: '—'); ?></td>
                                 <td><?php echo ! empty($item['current_monthly_salary']) ? esc_html(number_format_i18n((float) $item['current_monthly_salary'], 2)) : '—'; ?></td>
                                 <td><?php echo ! empty($item['current_hourly_cost']) ? esc_html(number_format_i18n((float) $item['current_hourly_cost'], 2)) : '—'; ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) ($item['reported_hours'] ?? 0), 2)); ?></td>
+                                <td><?php echo ! empty($item['target_monthly_hours']) ? esc_html(number_format_i18n((float) $item['target_monthly_hours'], 2)) : '—'; ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) ($item['produced_profit'] ?? 0), 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) ($item['employee_profit'] ?? 0), 2)); ?></td>
                                 <td>
                                     <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-employees', 'id' => $item['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                     <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Dezaktywować pracownika?', 'erp-omd')); ?>');">

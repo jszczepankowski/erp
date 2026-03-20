@@ -56,10 +56,10 @@
             <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
         </form>
         <table class="widefat striped">
-            <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Snapshot', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
             <tbody>
                 <?php if (empty($time_entries)) : ?>
-                    <tr><td colspan="9"><?php esc_html_e('Brak wpisów czasu.', 'erp-omd'); ?></td></tr>
+                    <tr><td colspan="8"><?php esc_html_e('Brak wpisów czasu.', 'erp-omd'); ?></td></tr>
                 <?php else : ?>
                     <?php foreach ($time_entries as $time_row) : ?>
                         <tr>
@@ -70,7 +70,6 @@
                             <td><?php echo esc_html(number_format_i18n((float) $time_row['hours'], 2)); ?></td>
                             <td><?php echo esc_html($time_row['description'] ?: '—'); ?></td>
                             <td><?php echo esc_html($time_row['status']); ?></td>
-                            <td><?php echo esc_html(number_format_i18n((float) $time_row['rate_snapshot'], 2) . ' / ' . number_format_i18n((float) $time_row['cost_snapshot'], 2)); ?></td>
                             <td>
                                 <?php if ($can_edit_any_entry) : ?>
                                     <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-time', 'id' => $time_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>

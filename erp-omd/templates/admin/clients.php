@@ -73,11 +73,12 @@
 
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Lista klientów', 'erp-omd'); ?></h2>
+        <p class="description"><?php printf(esc_html__('Zysk na liście dotyczy bieżącego miesiąca: %s.', 'erp-omd'), esc_html($reporting_month_label)); ?></p>
         <table class="widefat striped">
-                <thead><tr><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Firma', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Account manager', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                <thead><tr><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Firma', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Account manager', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                 <tbody>
                 <?php if (empty($clients)) : ?>
-                    <tr><td colspan="6"><?php esc_html_e('Brak klientów.', 'erp-omd'); ?></td></tr>
+                    <tr><td colspan="7"><?php esc_html_e('Brak klientów.', 'erp-omd'); ?></td></tr>
                 <?php else : ?>
                     <?php foreach ($clients as $client_row) : ?>
                         <tr>
@@ -86,6 +87,7 @@
                             <td><?php echo esc_html($client_row['company']); ?></td>
                             <td><?php echo esc_html($client_row['status']); ?></td>
                             <td><?php echo esc_html($client_row['account_manager_login'] ?: '—'); ?></td>
+                            <td><?php echo esc_html(number_format_i18n((float) ($client_row['monthly_profit'] ?? 0), 2)); ?></td>
                             <td>
                                 <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => $client_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                 <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Dezaktywować klienta?', 'erp-omd')); ?>');">

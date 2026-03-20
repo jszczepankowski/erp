@@ -134,17 +134,25 @@ class ERP_OMD_Admin
     {
         $employee = null;
         $salary_rows = [];
+        $reporting_month = current_time('Y-m');
+        $reporting_month_label = current_time('m.Y');
         if (! empty($_GET['id'])) {
             $employee = $this->employees->find((int) $_GET['id']);
             if ($employee) {
                 $salary_rows = $this->salary_history->for_employee((int) $employee['id']);
             }
         }
+        $monthly_metrics = $this->build_monthly_performance_metrics($reporting_month);
         $employees = $this->employees->all();
         foreach ($employees as &$employee_row) {
             $current_salary_row = $this->resolve_current_salary_row((int) $employee_row['id']);
             $employee_row['current_monthly_salary'] = (float) ($current_salary_row['monthly_salary'] ?? 0);
             $employee_row['current_hourly_cost'] = (float) ($current_salary_row['hourly_cost'] ?? 0);
+            $employee_row['target_monthly_hours'] = isset($current_salary_row['monthly_hours']) ? (float) $current_salary_row['monthly_hours'] : 0.0;
+            $employee_monthly_metrics = $monthly_metrics['employees'][(int) $employee_row['id']] ?? [];
+            $employee_row['reported_hours'] = (float) ($employee_monthly_metrics['reported_hours'] ?? 0);
+            $employee_row['produced_profit'] = (float) ($employee_monthly_metrics['produced_profit'] ?? 0);
+            $employee_row['employee_profit'] = (float) ($employee_monthly_metrics['employee_profit'] ?? 0);
         }
         unset($employee_row);
         $roles = $this->roles->all();
@@ -157,13 +165,20 @@ class ERP_OMD_Admin
     {
         $client = null;
         $client_rates = [];
+        $reporting_month = current_time('Y-m');
+        $reporting_month_label = current_time('m.Y');
         if (! empty($_GET['id'])) {
             $client = $this->clients->find((int) $_GET['id']);
             if ($client) {
                 $client_rates = $this->client_rates->for_client((int) $client['id']);
             }
         }
+        $monthly_metrics = $this->build_monthly_performance_metrics($reporting_month);
         $clients = $this->clients->all();
+        foreach ($clients as &$client_row) {
+            $client_row['monthly_profit'] = (float) ($monthly_metrics['clients'][(int) $client_row['id']]['profit'] ?? 0);
+        }
+        unset($client_row);
         $roles = $this->roles->all();
         $employees_for_select = $this->employees->all();
         include ERP_OMD_PATH . 'templates/admin/clients.php';
@@ -540,6 +555,133 @@ class ERP_OMD_Admin
         }
 
         return null;
+    }
+
+    private function build_monthly_performance_metrics($reporting_month)
+    {
+        $projects = $this->projects->all();
+        $project_index = [];
+        $project_metrics = [];
+        $employee_metrics = [];
+        $employee_project_hours = [];
+        $client_metrics = [];
+
+        foreach ($projects as $project_row) {
+            $project_id = (int) $project_row['id'];
+            $project_index[$project_id] = $project_row;
+            $project_metrics[$project_id] = [
+                'hours' => 0.0,
+                'revenue' => 0.0,
+                'cost' => 0.0,
+                'direct_cost' => 0.0,
+                'profit' => 0.0,
+            ];
+
+            $client_id = (int) ($project_row['client_id'] ?? 0);
+            if ($client_id > 0 && ! isset($client_metrics[$client_id])) {
+                $client_metrics[$client_id] = [
+                    'profit' => 0.0,
+                ];
+            }
+        }
+
+        $time_entries = $this->time_entries->all();
+        foreach ($time_entries as $time_entry) {
+            $entry_date = (string) ($time_entry['entry_date'] ?? '');
+            $status = (string) ($time_entry['status'] ?? '');
+            if (strpos($entry_date, $reporting_month) !== 0 || $status === 'rejected') {
+                continue;
+            }
+
+            $project_id = (int) ($time_entry['project_id'] ?? 0);
+            $employee_id = (int) ($time_entry['employee_id'] ?? 0);
+            $hours = (float) ($time_entry['hours'] ?? 0);
+            $revenue = $hours * (float) ($time_entry['rate_snapshot'] ?? 0);
+            $cost = $hours * (float) ($time_entry['cost_snapshot'] ?? 0);
+
+            if (! isset($project_metrics[$project_id])) {
+                $project_metrics[$project_id] = [
+                    'hours' => 0.0,
+                    'revenue' => 0.0,
+                    'cost' => 0.0,
+                    'direct_cost' => 0.0,
+                    'profit' => 0.0,
+                ];
+            }
+
+            if (! isset($employee_metrics[$employee_id])) {
+                $employee_metrics[$employee_id] = [
+                    'reported_hours' => 0.0,
+                    'produced_profit' => 0.0,
+                    'employee_profit' => 0.0,
+                ];
+            }
+
+            $project_metrics[$project_id]['hours'] += $hours;
+            $project_metrics[$project_id]['revenue'] += $revenue;
+            $project_metrics[$project_id]['cost'] += $cost;
+
+            $employee_metrics[$employee_id]['reported_hours'] += $hours;
+            $employee_metrics[$employee_id]['employee_profit'] += $revenue - $cost;
+
+            if (! isset($employee_project_hours[$employee_id])) {
+                $employee_project_hours[$employee_id] = [];
+            }
+            if (! isset($employee_project_hours[$employee_id][$project_id])) {
+                $employee_project_hours[$employee_id][$project_id] = 0.0;
+            }
+            $employee_project_hours[$employee_id][$project_id] += $hours;
+        }
+
+        foreach ($project_metrics as $project_id => &$project_metric_row) {
+            $project_cost_rows = $this->project_costs->for_project($project_id);
+            foreach ($project_cost_rows as $project_cost_row) {
+                $cost_date = (string) ($project_cost_row['cost_date'] ?? '');
+                if (strpos($cost_date, $reporting_month) !== 0) {
+                    continue;
+                }
+
+                $project_metric_row['direct_cost'] += (float) ($project_cost_row['amount'] ?? 0);
+            }
+
+            $project_metric_row['profit'] = $project_metric_row['revenue'] - $project_metric_row['cost'] - $project_metric_row['direct_cost'];
+            $client_id = (int) ($project_index[$project_id]['client_id'] ?? 0);
+            if ($client_id > 0) {
+                if (! isset($client_metrics[$client_id])) {
+                    $client_metrics[$client_id] = ['profit' => 0.0];
+                }
+                $client_metrics[$client_id]['profit'] += $project_metric_row['profit'];
+            }
+        }
+        unset($project_metric_row);
+
+        foreach ($employee_project_hours as $employee_id => $project_hours) {
+            foreach ($project_hours as $project_id => $employee_hours) {
+                $project_total_hours = (float) ($project_metrics[$project_id]['hours'] ?? 0);
+                if ($project_total_hours <= 0) {
+                    continue;
+                }
+
+                $employee_metrics[$employee_id]['produced_profit'] += ((float) $employee_hours / $project_total_hours) * (float) ($project_metrics[$project_id]['profit'] ?? 0);
+            }
+        }
+
+        foreach ($employee_metrics as &$employee_metric_row) {
+            $employee_metric_row['reported_hours'] = round($employee_metric_row['reported_hours'], 2);
+            $employee_metric_row['produced_profit'] = round($employee_metric_row['produced_profit'], 2);
+            $employee_metric_row['employee_profit'] = round($employee_metric_row['employee_profit'], 2);
+        }
+        unset($employee_metric_row);
+
+        foreach ($client_metrics as &$client_metric_row) {
+            $client_metric_row['profit'] = round($client_metric_row['profit'], 2);
+        }
+        unset($client_metric_row);
+
+        return [
+            'employees' => $employee_metrics,
+            'clients' => $client_metrics,
+        ];
     }
 
     private function redirect_with_notice($page, $type, $message, array $extra = [])
