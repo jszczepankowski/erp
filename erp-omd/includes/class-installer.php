@@ -118,6 +118,8 @@ class ERP_OMD_Installer
                 contact_person_email VARCHAR(191) NOT NULL DEFAULT '',
                 contact_person_phone VARCHAR(64) NOT NULL DEFAULT '',
                 city VARCHAR(191) NOT NULL DEFAULT '',
+                street VARCHAR(191) NOT NULL DEFAULT '',
+                apartment_number VARCHAR(64) NOT NULL DEFAULT '',
                 status VARCHAR(20) NOT NULL DEFAULT 'active',
                 account_manager_id BIGINT UNSIGNED NULL,
                 created_at DATETIME NOT NULL,
