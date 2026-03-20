@@ -46,6 +46,35 @@
     margin: 0;
 }
 
+.erp-omd-admin .erp-omd-filter-form {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.erp-omd-admin .erp-omd-filter-form select,
+.erp-omd-admin .erp-omd-filter-form input[type="date"],
+.erp-omd-admin .erp-omd-filter-form input[type="month"] {
+    min-width: 150px;
+}
+
+.erp-omd-admin .erp-omd-nav-tabs {
+    margin-bottom: 16px;
+}
+
+.erp-omd-admin .erp-omd-calendar-table .erp-omd-calendar-cell {
+    min-height: 120px;
+    vertical-align: top;
+    width: 14.28%;
+}
+
+.erp-omd-admin .erp-omd-calendar-day {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
 .erp-omd-admin .erp-omd-table-tools {
     display: flex;
     justify-content: flex-end;

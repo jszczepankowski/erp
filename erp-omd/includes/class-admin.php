@@ -21,6 +21,7 @@ class ERP_OMD_Admin
     private $time_entries;
     private $time_entry_service;
     private $project_financial_service;
+    private $reporting_service;
 
     public function __construct(
         ERP_OMD_Role_Repository $roles,
@@ -41,7 +42,8 @@ class ERP_OMD_Admin
         ERP_OMD_Project_Financial_Repository $project_financials,
         ERP_OMD_Time_Entry_Repository $time_entries,
         ERP_OMD_Time_Entry_Service $time_entry_service,
-        ERP_OMD_Project_Financial_Service $project_financial_service
+        ERP_OMD_Project_Financial_Service $project_financial_service,
+        ERP_OMD_Reporting_Service $reporting_service
     ) {
         $this->roles = $roles;
         $this->employees = $employees;
@@ -62,6 +64,7 @@ class ERP_OMD_Admin
         $this->time_entries = $time_entries;
         $this->time_entry_service = $time_entry_service;
         $this->project_financial_service = $project_financial_service;
+        $this->reporting_service = $reporting_service;
     }
 
     public function register_hooks()
@@ -81,6 +84,7 @@ class ERP_OMD_Admin
         add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
         add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
         add_submenu_page('erp-omd', __('Czas pracy', 'erp-omd'), __('Czas pracy', 'erp-omd'), 'erp_omd_manage_time', 'erp-omd-time', [$this, 'render_time_entries']);
+        add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
         add_submenu_page('erp-omd', __('Ustawienia', 'erp-omd'), __('Ustawienia', 'erp-omd'), 'erp_omd_manage_settings', 'erp-omd-settings', [$this, 'render_settings']);
     }
 
@@ -117,6 +121,7 @@ class ERP_OMD_Admin
             case 'delete_estimate_item': $this->handle_estimate_item_delete(); break;
             case 'accept_estimate': $this->handle_estimate_accept(); break;
             case 'export_estimate': $this->handle_estimate_export(); break;
+            case 'export_report': $this->handle_report_export(); break;
             case 'save_project': $this->handle_project_save(); break;
             case 'deactivate_project': $this->handle_project_deactivate(); break;
             case 'add_project_note': $this->handle_project_note_add(); break;
@@ -318,6 +323,36 @@ class ERP_OMD_Admin
     {
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
         include ERP_OMD_PATH . 'templates/admin/settings.php';
+    }
+
+    public function render_reports()
+    {
+        $report_filters = $this->reporting_service->sanitize_filters($_GET);
+        $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
+        $calendar_data = $this->reporting_service->build_calendar($report_filters);
+        $clients = $this->clients->all();
+        $projects = $this->projects->all();
+        $employees = $this->employees->all();
+        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive', 'submitted', 'approved', 'rejected'];
+        $status_labels = [
+            'do_rozpoczecia' => $this->project_status_label('do_rozpoczecia'),
+            'w_realizacji' => $this->project_status_label('w_realizacji'),
+            'w_akceptacji' => $this->project_status_label('w_akceptacji'),
+            'do_faktury' => $this->project_status_label('do_faktury'),
+            'zakonczony' => $this->project_status_label('zakonczony'),
+            'inactive' => $this->active_status_label('inactive'),
+            'submitted' => $this->time_status_label('submitted'),
+            'approved' => $this->time_status_label('approved'),
+            'rejected' => $this->time_status_label('rejected'),
+        ];
+        $report_titles = [
+            'projects' => __('Raport projektów', 'erp-omd'),
+            'clients' => __('Raport klientów', 'erp-omd'),
+            'invoice' => __('Raport do faktury', 'erp-omd'),
+            'monthly' => __('Raport miesięczny', 'erp-omd'),
+        ];
+        $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');
+        include ERP_OMD_PATH . 'templates/admin/reports.php';
     }
 
     private function handle_role_save() { /* retained */
@@ -631,6 +666,34 @@ class ERP_OMD_Admin
         fputcsv($output, [__('Suma brutto', 'erp-omd'), number_format((float) $totals['gross'], 2, '.', '')], ';');
         if ($audience === 'agency') {
             fputcsv($output, [__('Koszt wewnętrzny', 'erp-omd'), number_format((float) $totals['internal_cost'], 2, '.', '')], ';');
+        }
+
+        fclose($output);
+        exit;
+    }
+
+    private function handle_report_export()
+    {
+        check_admin_referer('erp_omd_export_report');
+        $this->require_capability('erp_omd_access');
+
+        $filters = $this->reporting_service->sanitize_filters($_POST);
+        $report_type = sanitize_key((string) ($_POST['report_type'] ?? 'projects'));
+        $export = $this->reporting_service->export_definition($report_type, $filters);
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . sanitize_file_name($export['filename']) . '"');
+
+        $output = fopen('php://output', 'w');
+        if (! $output) {
+            wp_die(esc_html__('Nie udało się przygotować pliku raportu.', 'erp-omd'));
+        }
+
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, $export['headers'], ';');
+        foreach ($export['rows'] as $row) {
+            fputcsv($output, $row, ';');
         }
 
         fclose($output);

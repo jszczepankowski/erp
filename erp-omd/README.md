@@ -1,6 +1,6 @@
 # ERP OMD
 
-Sprint 5 plugin package for ERP_OMD V2.
+Sprint 6 plugin package for ERP_OMD V2.
 
 ## Build ZIP
 - Sprint 1 (historyczny): `./scripts/build-sprint-1-zip.sh`
@@ -24,3 +24,8 @@ Sprint 5 plugin package for ERP_OMD V2.
 - Automatyczne sanity checki: `./scripts/test-sprint-5.sh`
 - Test domenowy kosztorysów: `php tests/estimate-service-test.php`
 - Checklista odbiorowa Sprintu 5: `docs/SPRINT_5_CHECKLIST.md`
+
+## Testy Sprintu 6
+- Automatyczne sanity checki: `./scripts/test-sprint-6.sh`
+- Test domenowy raportów: `php tests/reporting-service-test.php`
+- Checklista odbiorowa Sprintu 6: `docs/SPRINT_6_CHECKLIST.md`

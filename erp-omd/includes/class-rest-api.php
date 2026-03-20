@@ -21,6 +21,7 @@ class ERP_OMD_REST_API
     private $time_entries;
     private $time_entry_service;
     private $project_financial_service;
+    private $reporting_service;
 
     public function __construct(
         ERP_OMD_Role_Repository $roles,
@@ -41,7 +42,8 @@ class ERP_OMD_REST_API
         ERP_OMD_Project_Financial_Repository $project_financials,
         ERP_OMD_Time_Entry_Repository $time_entries,
         ERP_OMD_Time_Entry_Service $time_entry_service,
-        ERP_OMD_Project_Financial_Service $project_financial_service
+        ERP_OMD_Project_Financial_Service $project_financial_service,
+        ERP_OMD_Reporting_Service $reporting_service
     ) {
         $this->roles = $roles;
         $this->employees = $employees;
@@ -62,6 +64,7 @@ class ERP_OMD_REST_API
         $this->time_entries = $time_entries;
         $this->time_entry_service = $time_entry_service;
         $this->project_financial_service = $project_financial_service;
+        $this->reporting_service = $reporting_service;
     }
 
     public function register_hooks()
@@ -77,6 +80,7 @@ class ERP_OMD_REST_API
         $this->register_estimate_routes();
         $this->register_project_routes();
         $this->register_time_routes();
+        $this->register_report_routes();
     }
 
     private function register_role_routes()
@@ -218,6 +222,19 @@ class ERP_OMD_REST_API
         ]);
     }
 
+    private function register_report_routes()
+    {
+        register_rest_route('erp-omd/v1', '/reports', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_reports'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/reports/export', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'export_report_definition'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/calendar', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_calendar'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+    }
+
     public function can_manage_roles() { return current_user_can('erp_omd_manage_roles'); }
     public function can_manage_employees() { return current_user_can('erp_omd_manage_employees'); }
     public function can_manage_salary() { return current_user_can('erp_omd_manage_salary'); }
@@ -225,6 +242,7 @@ class ERP_OMD_REST_API
     public function can_manage_projects() { return current_user_can('erp_omd_manage_projects'); }
     public function can_manage_time() { return current_user_can('erp_omd_manage_time'); }
     public function can_approve_time() { return current_user_can('erp_omd_approve_time') || current_user_can('administrator'); }
+    public function can_access_reports() { return current_user_can('erp_omd_access') || current_user_can('administrator'); }
 
     // existing modules omitted no, implemented below.
     public function list_roles() { return rest_ensure_response($this->roles->all()); }
@@ -508,6 +526,34 @@ class ERP_OMD_REST_API
         $this->time_entries->update($id, $payload);
         $this->project_financial_service->rebuild_for_project((int) $existing['project_id']);
         return rest_ensure_response($this->time_entries->find($id));
+    }
+
+    public function list_reports(WP_REST_Request $request)
+    {
+        $filters = $this->reporting_service->sanitize_filters($request->get_params());
+        $report_type = sanitize_key((string) ($request->get_param('report_type') ?: $filters['report_type']));
+
+        return rest_ensure_response([
+            'filters' => $filters,
+            'report_type' => $report_type,
+            'rows' => $this->reporting_service->build_report($report_type, $filters),
+        ]);
+    }
+
+    public function export_report_definition(WP_REST_Request $request)
+    {
+        $filters = $this->reporting_service->sanitize_filters($request->get_params());
+        $report_type = sanitize_key((string) ($request->get_param('report_type') ?: $filters['report_type']));
+
+        return rest_ensure_response($this->reporting_service->export_definition($report_type, $filters));
+    }
+
+    public function get_calendar(WP_REST_Request $request)
+    {
+        $filters = $this->reporting_service->sanitize_filters($request->get_params());
+        $filters['tab'] = 'calendar';
+
+        return rest_ensure_response($this->reporting_service->build_calendar($filters));
     }
 
     private function find_or_error($record, $code, $message) { return $record ? rest_ensure_response($record) : new WP_Error($code, $message, ['status' => 404]); }

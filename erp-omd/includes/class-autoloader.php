@@ -30,6 +30,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Estimate_Service' => 'includes/services/class-estimate-service.php',
         'ERP_OMD_Time_Entry_Service' => 'includes/services/class-time-entry-service.php',
         'ERP_OMD_Project_Financial_Service' => 'includes/services/class-project-financial-service.php',
+        'ERP_OMD_Reporting_Service' => 'includes/services/class-reporting-service.php',
     ];
 
     public static function register()
