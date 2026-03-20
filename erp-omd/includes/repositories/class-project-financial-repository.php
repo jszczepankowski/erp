@@ -19,6 +19,30 @@ class ERP_OMD_Project_Financial_Repository
         );
     }
 
+    public function find_by_projects(array $project_ids)
+    {
+        global $wpdb;
+
+        $project_ids = array_values(array_filter(array_map('intval', $project_ids)));
+        if ($project_ids === []) {
+            return [];
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($project_ids), '%d'));
+        $query = $wpdb->prepare(
+            "SELECT * FROM {$this->table_name()} WHERE project_id IN ({$placeholders})",
+            ...$project_ids
+        );
+        $rows = $wpdb->get_results($query, ARRAY_A);
+        $indexed_rows = [];
+
+        foreach ($rows as $row) {
+            $indexed_rows[(int) ($row['project_id'] ?? 0)] = $row;
+        }
+
+        return $indexed_rows;
+    }
+
     public function upsert($project_id, array $data)
     {
         global $wpdb;

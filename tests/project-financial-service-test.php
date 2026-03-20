@@ -55,6 +55,13 @@ if (! class_exists('ERP_OMD_Project_Financial_Repository')) {
     {
         public $records = [];
 
+        public function __construct(array $records = [])
+        {
+            foreach ($records as $project_id => $record) {
+                $this->records[(int) $project_id] = array_merge(['project_id' => (int) $project_id], $record);
+            }
+        }
+
         public function upsert($project_id, array $data)
         {
             $this->records[(int) $project_id] = array_merge(['project_id' => (int) $project_id], $data);
@@ -66,6 +73,19 @@ if (! class_exists('ERP_OMD_Project_Financial_Repository')) {
         {
             return $this->records[(int) $project_id] ?? null;
         }
+
+        public function find_by_projects(array $project_ids)
+        {
+            $rows = [];
+
+            foreach ($project_ids as $project_id) {
+                if (isset($this->records[(int) $project_id])) {
+                    $rows[(int) $project_id] = $this->records[(int) $project_id];
+                }
+            }
+
+            return $rows;
+        }
     }
 }
 
@@ -73,6 +93,7 @@ if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
     class ERP_OMD_Time_Entry_Repository
     {
         private $entries;
+        public $allCalls = 0;
 
         public function __construct(array $entries)
         {
@@ -81,6 +102,7 @@ if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
 
         public function all(array $filters = [])
         {
+            $this->allCalls++;
             $project_id = (int) ($filters['project_id'] ?? 0);
 
             return $this->entries[$project_id] ?? [];
@@ -97,6 +119,20 @@ final class ProjectFinancialServiceTestRunner
     public function run(): void
     {
         $financialsRepository = new ERP_OMD_Project_Financial_Repository();
+        $timeEntriesRepository = new ERP_OMD_Time_Entry_Repository([
+            10 => [
+                ['hours' => 2, 'rate_snapshot' => 100, 'cost_snapshot' => 40, 'status' => 'approved'],
+                ['hours' => 1, 'rate_snapshot' => 80, 'cost_snapshot' => 20, 'status' => 'submitted'],
+                ['hours' => 3, 'rate_snapshot' => 90, 'cost_snapshot' => 30, 'status' => 'rejected'],
+            ],
+            11 => [
+                ['hours' => 10, 'rate_snapshot' => 999, 'cost_snapshot' => 50, 'status' => 'approved'],
+            ],
+            12 => [],
+            13 => [
+                ['hours' => 4, 'rate_snapshot' => 120, 'cost_snapshot' => 40, 'status' => 'approved'],
+            ],
+        ]);
         $service = new ERP_OMD_Project_Financial_Service(
             new ERP_OMD_Project_Repository([
                 10 => ['id' => 10, 'billing_type' => 'time_material', 'budget' => 1000, 'retainer_monthly_fee' => 0, 'status' => 'w_realizacji', 'start_date' => '2026-01-01', 'end_date' => '2026-03-31'],
@@ -114,20 +150,7 @@ final class ProjectFinancialServiceTestRunner
                 ],
             ]),
             $financialsRepository,
-            new ERP_OMD_Time_Entry_Repository([
-                10 => [
-                    ['hours' => 2, 'rate_snapshot' => 100, 'cost_snapshot' => 40, 'status' => 'approved'],
-                    ['hours' => 1, 'rate_snapshot' => 80, 'cost_snapshot' => 20, 'status' => 'submitted'],
-                    ['hours' => 3, 'rate_snapshot' => 90, 'cost_snapshot' => 30, 'status' => 'rejected'],
-                ],
-                11 => [
-                    ['hours' => 10, 'rate_snapshot' => 999, 'cost_snapshot' => 50, 'status' => 'approved'],
-                ],
-                12 => [],
-                13 => [
-                    ['hours' => 4, 'rate_snapshot' => 120, 'cost_snapshot' => 40, 'status' => 'approved'],
-                ],
-            ])
+            $timeEntriesRepository
         );
 
         $tmFinancials = $service->rebuild_for_project(10);
@@ -145,6 +168,45 @@ final class ProjectFinancialServiceTestRunner
 
         $retainerFinancials = $service->rebuild_for_project(12);
         $this->assertSame(4500.0, $retainerFinancials['revenue'], 'Retainer revenue should count inclusive active months.');
+
+        $cachedRepository = new ERP_OMD_Project_Financial_Repository([
+            10 => [
+                'revenue' => 321.0,
+                'cost' => 123.0,
+                'profit' => 198.0,
+                'margin' => 61.68,
+                'budget_usage' => 12.3,
+                'time_revenue' => 321.0,
+                'time_cost' => 100.0,
+                'direct_cost' => 23.0,
+                'last_recalculated_at' => '2026-03-20 12:00:00',
+            ],
+        ]);
+        $cachedTimeEntriesRepository = new ERP_OMD_Time_Entry_Repository([
+            10 => [
+                ['hours' => 99, 'rate_snapshot' => 99, 'cost_snapshot' => 99, 'status' => 'approved'],
+            ],
+        ]);
+        $cachedService = new ERP_OMD_Project_Financial_Service(
+            new ERP_OMD_Project_Repository([
+                10 => ['id' => 10, 'billing_type' => 'time_material', 'budget' => 1000, 'retainer_monthly_fee' => 0, 'status' => 'w_realizacji', 'start_date' => '2026-01-01', 'end_date' => '2026-03-31'],
+            ]),
+            new ERP_OMD_Project_Cost_Repository([
+                10 => [
+                    ['amount' => 500.0],
+                ],
+            ]),
+            $cachedRepository,
+            $cachedTimeEntriesRepository
+        );
+
+        $cachedFinancials = $cachedService->get_project_financial(10);
+        $this->assertSame(321.0, $cachedFinancials['revenue'], 'Cached financial snapshot should be returned when available.');
+        $this->assertSame(0, $cachedTimeEntriesRepository->allCalls, 'Using cached financial snapshot should not force a full rebuild.');
+
+        $financialIndex = $cachedService->get_project_financials([10]);
+        $this->assertSame(321.0, $financialIndex[10]['revenue'], 'Bulk financial lookup should reuse cached project financials.');
+        $this->assertSame(0, $cachedTimeEntriesRepository->allCalls, 'Bulk cached lookup should not rebuild cached projects.');
 
         $errors = $service->validate_project_cost([
             'project_id' => 10,

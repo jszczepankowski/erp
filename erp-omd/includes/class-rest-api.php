@@ -62,7 +62,15 @@ class ERP_OMD_REST_API
 
     public function register_routes()
     {
-        // Roles.
+        $this->register_role_routes();
+        $this->register_employee_routes();
+        $this->register_client_routes();
+        $this->register_project_routes();
+        $this->register_time_routes();
+    }
+
+    private function register_role_routes()
+    {
         register_rest_route('erp-omd/v1', '/roles', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_roles'], 'permission_callback' => [$this, 'can_manage_roles']],
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_role'], 'permission_callback' => [$this, 'can_manage_roles']],
@@ -72,8 +80,10 @@ class ERP_OMD_REST_API
             ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_role'], 'permission_callback' => [$this, 'can_manage_roles']],
             ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_role'], 'permission_callback' => [$this, 'can_manage_roles']],
         ]);
+    }
 
-        // Employees + salary.
+    private function register_employee_routes()
+    {
         register_rest_route('erp-omd/v1', '/employees', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_employees'], 'permission_callback' => [$this, 'can_manage_employees']],
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
@@ -95,8 +105,10 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/monthly-hours/(?P<year_month>\d{4}-\d{2})', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_monthly_hours_suggestion'], 'permission_callback' => [$this, 'can_manage_salary']],
         ]);
+    }
 
-        // Clients + rates.
+    private function register_client_routes()
+    {
         register_rest_route('erp-omd/v1', '/clients', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_clients'], 'permission_callback' => [$this, 'can_manage_clients']],
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_client'], 'permission_callback' => [$this, 'can_manage_clients']],
@@ -115,8 +127,10 @@ class ERP_OMD_REST_API
             ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_client_rate'], 'permission_callback' => [$this, 'can_manage_clients']],
             ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_client_rate'], 'permission_callback' => [$this, 'can_manage_clients']],
         ]);
+    }
 
-        // Projects + notes + rates.
+    private function register_project_routes()
+    {
         register_rest_route('erp-omd/v1', '/projects', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_projects'], 'permission_callback' => [$this, 'can_manage_projects']],
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_project'], 'permission_callback' => [$this, 'can_manage_projects']],
@@ -151,8 +165,10 @@ class ERP_OMD_REST_API
             ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_project_cost'], 'permission_callback' => [$this, 'can_manage_projects']],
             ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_project_cost'], 'permission_callback' => [$this, 'can_manage_projects']],
         ]);
+    }
 
-        // Time.
+    private function register_time_routes()
+    {
         register_rest_route('erp-omd/v1', '/time', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_time_entries'], 'permission_callback' => [$this, 'can_manage_time']],
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_time_entry'], 'permission_callback' => [$this, 'can_manage_time']],

@@ -39,6 +39,50 @@ class ERP_OMD_Project_Financial_Service
         return $errors;
     }
 
+    public function get_project_financial($project_id, $force_rebuild = false)
+    {
+        $project_id = (int) $project_id;
+        if ($project_id <= 0) {
+            return null;
+        }
+
+        if (! $force_rebuild) {
+            $cached_financial = $this->project_financials->find_by_project($project_id);
+            if ($cached_financial) {
+                return $cached_financial;
+            }
+        }
+
+        return $this->rebuild_for_project($project_id);
+    }
+
+    public function get_project_financials(array $project_ids, $force_rebuild_missing = true)
+    {
+        $project_ids = array_values(array_unique(array_filter(array_map('intval', $project_ids))));
+        if ($project_ids === []) {
+            return [];
+        }
+
+        $financials = $this->project_financials->find_by_projects($project_ids);
+
+        if (! $force_rebuild_missing) {
+            return $financials;
+        }
+
+        foreach ($project_ids as $project_id) {
+            if (isset($financials[$project_id])) {
+                continue;
+            }
+
+            $rebuilt_financial = $this->rebuild_for_project($project_id);
+            if ($rebuilt_financial) {
+                $financials[$project_id] = $rebuilt_financial;
+            }
+        }
+
+        return $financials;
+    }
+
     public function rebuild_for_project($project_id)
     {
         $project = $this->projects->find((int) $project_id);

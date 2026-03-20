@@ -207,15 +207,17 @@ class ERP_OMD_Admin
                 $project_rates = $this->project_rates->for_project((int) $project['id']);
                 $project_cost_rows = $this->project_costs->for_project((int) $project['id']);
                 $project_financial = $this->project_financial_service->rebuild_for_project((int) $project['id']);
+                $project_financials_by_project[(int) $project['id']] = $project_financial;
             }
         }
         $projects = $this->projects->all();
         $clients = $this->clients->all();
         $employees_for_select = $this->employees->all();
         $roles = $this->roles->all();
-        foreach ($projects as $project_row) {
-            $project_financials_by_project[(int) $project_row['id']] = $this->project_financial_service->rebuild_for_project((int) $project_row['id']);
-        }
+        $project_financials_by_project = array_replace(
+            $this->project_financial_service->get_project_financials(wp_list_pluck($projects, 'id')),
+            $project_financials_by_project
+        );
         include ERP_OMD_PATH . 'templates/admin/projects.php';
     }
 
@@ -760,9 +762,10 @@ class ERP_OMD_Admin
     {
         $profit_totals = [];
         $projects = $this->projects->all();
+        $project_financials = $this->project_financial_service->get_project_financials(wp_list_pluck($projects, 'id'));
 
         foreach ($projects as $project_row) {
-            $project_financial = $this->project_financial_service->rebuild_for_project((int) $project_row['id']);
+            $project_financial = $project_financials[(int) $project_row['id']] ?? null;
             $client_id = (int) ($project_row['client_id'] ?? 0);
             if ($client_id <= 0) {
                 continue;
