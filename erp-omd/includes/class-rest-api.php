@@ -19,9 +19,12 @@ class ERP_OMD_REST_API
     private $project_costs;
     private $project_financials;
     private $time_entries;
+    private $attachments;
     private $time_entry_service;
     private $project_financial_service;
     private $reporting_service;
+    private $alert_service;
+
 
     public function __construct(
         ERP_OMD_Role_Repository $roles,
@@ -41,9 +44,12 @@ class ERP_OMD_REST_API
         ERP_OMD_Project_Cost_Repository $project_costs,
         ERP_OMD_Project_Financial_Repository $project_financials,
         ERP_OMD_Time_Entry_Repository $time_entries,
+        ERP_OMD_Attachment_Repository $attachments,
         ERP_OMD_Time_Entry_Service $time_entry_service,
         ERP_OMD_Project_Financial_Service $project_financial_service,
-        ERP_OMD_Reporting_Service $reporting_service
+        ERP_OMD_Reporting_Service $reporting_service,
+        ERP_OMD_Alert_Service $alert_service
+
     ) {
         $this->roles = $roles;
         $this->employees = $employees;
@@ -62,9 +68,11 @@ class ERP_OMD_REST_API
         $this->project_costs = $project_costs;
         $this->project_financials = $project_financials;
         $this->time_entries = $time_entries;
+        $this->attachments = $attachments;
         $this->time_entry_service = $time_entry_service;
         $this->project_financial_service = $project_financial_service;
         $this->reporting_service = $reporting_service;
+        $this->alert_service = $alert_service;
     }
 
     public function register_hooks()
@@ -81,6 +89,7 @@ class ERP_OMD_REST_API
         $this->register_project_routes();
         $this->register_time_routes();
         $this->register_report_routes();
+        $this->register_hardening_routes();
     }
 
     private function register_role_routes()
@@ -235,6 +244,28 @@ class ERP_OMD_REST_API
         ]);
     }
 
+    private function register_hardening_routes()
+    {
+        register_rest_route('erp-omd/v1', '/alerts', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_alerts'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/attachments', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_attachments'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_attachment'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/attachments/(?P<id>\d+)', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_attachment'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_attachment'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/meta', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_meta'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/system', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_system_status'], 'permission_callback' => [$this, 'can_manage_settings']],
+        ]);
+    }
+
+
     public function can_manage_roles() { return current_user_can('erp_omd_manage_roles'); }
     public function can_manage_employees() { return current_user_can('erp_omd_manage_employees'); }
     public function can_manage_salary() { return current_user_can('erp_omd_manage_salary'); }
@@ -243,6 +274,8 @@ class ERP_OMD_REST_API
     public function can_manage_time() { return current_user_can('erp_omd_manage_time'); }
     public function can_approve_time() { return current_user_can('erp_omd_approve_time') || current_user_can('administrator'); }
     public function can_access_reports() { return current_user_can('erp_omd_access') || current_user_can('administrator'); }
+    public function can_manage_settings() { return current_user_can('erp_omd_manage_settings') || current_user_can('administrator'); }
+
 
     // existing modules omitted no, implemented below.
     public function list_roles() { return rest_ensure_response($this->roles->all()); }
@@ -556,6 +589,135 @@ class ERP_OMD_REST_API
         return rest_ensure_response($this->reporting_service->build_calendar($filters));
     }
 
+    public function list_alerts(WP_REST_Request $request)
+    {
+        $entity_type = sanitize_key((string) $request->get_param('entity_type'));
+        $entity_id = (int) $request->get_param('entity_id');
+        $alerts = $this->alert_service->all_alerts();
+
+        if ($entity_type !== '') {
+            $alerts = array_values(array_filter($alerts, static function ($alert) use ($entity_type, $entity_id) {
+                if (($alert['entity_type'] ?? '') !== $entity_type) {
+                    return false;
+                }
+
+                if ($entity_id > 0 && (int) ($alert['entity_id'] ?? 0) !== $entity_id) {
+                    return false;
+                }
+
+                return true;
+            }));
+        }
+
+        return rest_ensure_response($alerts);
+    }
+
+    public function list_attachments(WP_REST_Request $request)
+    {
+        $entity_type = sanitize_key((string) $request->get_param('entity_type'));
+        $entity_id = (int) $request->get_param('entity_id');
+
+        if (! in_array($entity_type, ['project', 'estimate'], true) || $entity_id <= 0) {
+            return new WP_Error('erp_omd_attachment_invalid_entity', __('Attachment entity_type and entity_id are required.', 'erp-omd'), ['status' => 422]);
+        }
+
+        if (! $this->entity_exists($entity_type, $entity_id)) {
+            return new WP_Error('erp_omd_attachment_entity_not_found', __('Attachment entity not found.', 'erp-omd'), ['status' => 404]);
+        }
+
+        return rest_ensure_response($this->attachments->for_entity($entity_type, $entity_id));
+    }
+
+    public function get_attachment(WP_REST_Request $request)
+    {
+        return $this->find_or_error($this->attachments->find((int) $request['id']), 'erp_omd_attachment_not_found', __('Attachment relation not found.', 'erp-omd'));
+    }
+
+    public function create_attachment(WP_REST_Request $request)
+    {
+        $entity_type = sanitize_key((string) $request->get_param('entity_type'));
+        $entity_id = (int) $request->get_param('entity_id');
+        $attachment_id = (int) $request->get_param('attachment_id');
+        $label = sanitize_text_field((string) $request->get_param('label'));
+
+        if (! in_array($entity_type, ['project', 'estimate'], true) || $entity_id <= 0 || $attachment_id <= 0) {
+            return new WP_Error('erp_omd_attachment_invalid_payload', __('Attachment payload is invalid.', 'erp-omd'), ['status' => 422]);
+        }
+        if (! $this->entity_exists($entity_type, $entity_id)) {
+            return new WP_Error('erp_omd_attachment_entity_not_found', __('Attachment entity not found.', 'erp-omd'), ['status' => 404]);
+        }
+        if (! wp_attachment_is_image($attachment_id) && ! get_post($attachment_id)) {
+            return new WP_Error('erp_omd_attachment_media_not_found', __('WordPress media attachment not found.', 'erp-omd'), ['status' => 404]);
+        }
+
+        $id = $this->attachments->create([
+            'entity_type' => $entity_type,
+            'entity_id' => $entity_id,
+            'attachment_id' => $attachment_id,
+            'label' => $label,
+            'created_by_user_id' => get_current_user_id(),
+        ]);
+
+        return new WP_REST_Response($this->attachments->find($id), 201);
+    }
+
+    public function delete_attachment(WP_REST_Request $request)
+    {
+        $existing = $this->attachments->find((int) $request['id']);
+        if (! $existing) {
+            return new WP_REST_Response(null, 204);
+        }
+
+        $this->attachments->delete((int) $request['id']);
+
+        return new WP_REST_Response(null, 204);
+    }
+
+    public function get_meta()
+    {
+        return rest_ensure_response([
+            'plugin_version' => ERP_OMD_VERSION,
+            'db_version' => ERP_OMD_DB_VERSION,
+            'billing_types' => [
+                ['value' => 'time_material', 'label' => __('Time & Material', 'erp-omd')],
+                ['value' => 'fixed_price', 'label' => __('Ryczałt', 'erp-omd')],
+                ['value' => 'retainer', 'label' => __('Abonament', 'erp-omd')],
+            ],
+            'project_statuses' => ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'],
+            'estimate_statuses' => ['wstepny', 'do_akceptacji', 'zaakceptowany'],
+            'time_statuses' => ['submitted', 'approved', 'rejected'],
+            'report_types' => ['projects', 'clients', 'invoice', 'monthly'],
+            'attachment_entity_types' => ['project', 'estimate'],
+            'export_variants' => ['client', 'agency'],
+        ]);
+    }
+
+    public function get_system_status()
+    {
+        return rest_ensure_response([
+            'plugin_version' => ERP_OMD_VERSION,
+            'db_version' => ERP_OMD_DB_VERSION,
+            'delete_data_on_uninstall' => (bool) get_option('erp_omd_delete_data_on_uninstall', false),
+            'alert_margin_threshold' => (float) get_option('erp_omd_alert_margin_threshold', 10),
+            'counts' => [
+                'roles' => count($this->roles->all()),
+                'employees' => count($this->employees->all()),
+                'clients' => count($this->clients->all()),
+                'projects' => count($this->projects->all()),
+                'estimates' => count($this->estimates->all()),
+                'alerts' => count($this->alert_service->all_alerts()),
+            ],
+            'current_user' => [
+                'id' => (int) get_current_user_id(),
+                'can_manage_settings' => $this->can_manage_settings(),
+                'can_manage_projects' => $this->can_manage_projects(),
+                'can_manage_time' => $this->can_manage_time(),
+                'can_access_reports' => $this->can_access_reports(),
+            ],
+        ]);
+    }
+
+
     private function find_or_error($record, $code, $message) { return $record ? rest_ensure_response($record) : new WP_Error($code, $message, ['status' => 404]); }
     private function sanitize_role_payload(WP_REST_Request $request) { return ['name' => sanitize_text_field((string) $request->get_param('name')), 'slug' => sanitize_title((string) $request->get_param('slug')), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active']; }
     private function sanitize_employee_payload(WP_REST_Request $request) { $role_ids = $request->get_param('role_ids'); return ['user_id' => (int) $request->get_param('user_id'), 'default_role_id' => (int) $request->get_param('default_role_id'), 'account_type' => sanitize_text_field((string) $request->get_param('account_type')) ?: 'worker', 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active', 'role_ids' => is_array($role_ids) ? array_map('intval', $role_ids) : []]; }
@@ -583,6 +745,25 @@ class ERP_OMD_REST_API
     {
         $user = get_user_by('id', $user_id);
         if (! $user instanceof WP_User) { return; }
-        if ($account_type === 'manager') { $user->set_role('erp_omd_manager'); } elseif ($account_type === 'worker') { $user->set_role('erp_omd_worker'); }
+        if ($account_type === 'admin') {
+            $user->set_role('administrator');
+        } elseif ($account_type === 'manager') {
+            $user->set_role('erp_omd_manager');
+        } elseif ($account_type === 'worker') {
+            $user->set_role('erp_omd_worker');
+        }
+    }
+
+    private function entity_exists($entity_type, $entity_id)
+    {
+        if ($entity_type === 'project') {
+            return (bool) $this->projects->find($entity_id);
+        }
+
+        if ($entity_type === 'estimate') {
+            return (bool) $this->estimates->find($entity_id);
+        }
+
+        return false;
     }
 }

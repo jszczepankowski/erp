@@ -1,6 +1,6 @@
 # ERP OMD
 
-Sprint 7 plugin package for ERP_OMD V2.
+Sprint 8 release candidate package for ERP_OMD V2.
 
 ## Build ZIP
 - Sprint 1 (historyczny): `./scripts/build-sprint-1-zip.sh`
@@ -9,7 +9,8 @@ Sprint 7 plugin package for ERP_OMD V2.
 - Sprint 4 (historyczny): `./scripts/build-sprint-4-zip.sh`
 - Sprint 5 (historyczny): `./scripts/build-sprint-5-zip.sh`
 - Sprint 6 (historyczny): `./scripts/build-sprint-6-zip.sh`
-- Sprint 7 (aktualny): `./scripts/build-sprint-7-zip.sh`
+- Sprint 7 (historyczny): `./scripts/build-sprint-7-zip.sh`
+- Sprint 8 RC (aktualny): `./scripts/build-sprint-8-rc.sh`
 
 ## Testy Sprintu 3
 - Automatyczne sanity checki: `./scripts/test-sprint-3.sh`
@@ -20,7 +21,6 @@ Sprint 7 plugin package for ERP_OMD V2.
 - Automatyczne sanity checki: `./scripts/test-sprint-4.sh`
 - Test domenowy finansów projektu: `php tests/project-financial-service-test.php`
 - Checklista odbiorowa Sprintu 4: `docs/SPRINT_4_CHECKLIST.md`
-
 
 ## Testy Sprintu 5
 - Automatyczne sanity checki: `./scripts/test-sprint-5.sh`
@@ -36,3 +36,8 @@ Sprint 7 plugin package for ERP_OMD V2.
 - Automatyczne sanity checki: `./scripts/test-sprint-7.sh`
 - Test domenowy alertów: `php tests/alert-service-test.php`
 - Checklista odbiorowa Sprintu 7: `docs/SPRINT_7_CHECKLIST.md`
+
+## Testy Sprintu 8 RC
+- Automatyczne sanity checki: `./scripts/test-sprint-8.sh`
+- Test REST API / hardening: `php tests/rest-api-test.php`
+- Checklista odbiorowa Sprintu 8: `docs/SPRINT_8_CHECKLIST.md`
