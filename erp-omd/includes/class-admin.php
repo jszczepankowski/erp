@@ -561,9 +561,9 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie znaleziono kosztorysu do eksportu.', 'erp-omd'));
         }
 
+        $client = $this->clients->find((int) ($estimate['client_id'] ?? 0));
         $items = $this->estimate_items->for_estimate($estimate_id);
         $totals = $this->estimate_service->calculate_totals($items);
-        $variant_label = $audience === 'agency' ? __('Agencja', 'erp-omd') : __('Klient', 'erp-omd');
         $estimate_name = trim((string) ($estimate['name'] ?? '')) !== ''
             ? (string) $estimate['name']
             : sprintf(__('Kosztorys #%d', 'erp-omd'), $estimate_id);
@@ -579,9 +579,16 @@ class ERP_OMD_Admin
         }
 
         fputcsv($output, [__('Nazwa kosztorysu', 'erp-omd'), $estimate_name]);
-        fputcsv($output, [__('Klient', 'erp-omd'), (string) ($estimate['client_name'] ?? '—')]);
+        fputcsv($output, [__('Klient', 'erp-omd'), (string) ($client['name'] ?? ($estimate['client_name'] ?? '—'))]);
+        fputcsv($output, [__('Firma', 'erp-omd'), (string) ($client['company'] ?? '—')]);
+        fputcsv($output, [__('NIP', 'erp-omd'), (string) ($client['nip'] ?? '—')]);
+        fputcsv($output, [__('Email', 'erp-omd'), (string) ($client['email'] ?? '—')]);
+        fputcsv($output, [__('Telefon', 'erp-omd'), (string) ($client['phone'] ?? '—')]);
+        fputcsv($output, [__('Osoba kontaktowa', 'erp-omd'), (string) ($client['contact_person_name'] ?? '—')]);
+        fputcsv($output, [__('Email kontaktowy', 'erp-omd'), (string) ($client['contact_person_email'] ?? '—')]);
+        fputcsv($output, [__('Telefon kontaktowy', 'erp-omd'), (string) ($client['contact_person_phone'] ?? '—')]);
+        fputcsv($output, [__('Miasto', 'erp-omd'), (string) ($client['city'] ?? '—')]);
         fputcsv($output, [__('Status', 'erp-omd'), (string) ($estimate['status'] ?? '—')]);
-        fputcsv($output, [__('Wariant eksportu', 'erp-omd'), $variant_label]);
         fputcsv($output, []);
 
         $header = [

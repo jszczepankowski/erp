@@ -1,8 +1,7 @@
 <div class="wrap erp-omd-admin">
     <h1><?php esc_html_e('Kosztorysy', 'erp-omd'); ?></h1>
 
-    <div class="erp-omd-grid two-columns">
-        <section class="erp-omd-card">
+    <section class="erp-omd-card">
             <h2><?php echo $estimate ? esc_html__('Edytuj kosztorys', 'erp-omd') : esc_html__('Nowy kosztorys', 'erp-omd'); ?></h2>
             <form method="post">
                 <?php wp_nonce_field('erp_omd_save_estimate'); ?>
@@ -92,9 +91,9 @@
                     <p><?php esc_html_e('Zaakceptowany kosztorys jest tylko do odczytu — pozycje można jedynie przeglądać i eksportować.', 'erp-omd'); ?></p>
                 <?php endif; ?>
             <?php endif; ?>
-        </section>
+    </section>
 
-        <section class="erp-omd-card">
+    <section class="erp-omd-card">
             <h2><?php esc_html_e('Lista kosztorysów', 'erp-omd'); ?></h2>
             <table class="widefat striped">
                 <thead>
@@ -228,6 +227,5 @@
                     <li><strong><?php esc_html_e('Koszt wewnętrzny:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) $estimate_totals['internal_cost'], 2)); ?></li>
                 </ul>
             <?php endif; ?>
-        </section>
-    </div>
+    </section>
 </div>

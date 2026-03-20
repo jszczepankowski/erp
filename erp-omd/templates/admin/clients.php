@@ -1,8 +1,7 @@
 <div class="wrap erp-omd-admin">
     <h1><?php esc_html_e('ERP OMD — Klienci', 'erp-omd'); ?></h1>
 
-    <div class="erp-omd-grid two-columns">
-        <section class="erp-omd-card">
+    <section class="erp-omd-card">
             <h2><?php echo $client ? esc_html__('Edytuj klienta', 'erp-omd') : esc_html__('Nowy klient', 'erp-omd'); ?></h2>
             <form method="post">
                 <?php wp_nonce_field('erp_omd_save_client'); ?>
@@ -99,9 +98,9 @@
                     <?php endif; ?>
                 </form>
             <?php endif; ?>
-        </section>
+    </section>
 
-        <section class="erp-omd-card">
+    <section class="erp-omd-card">
             <h2><?php esc_html_e('Lista klientów', 'erp-omd'); ?></h2>
             <table class="widefat striped">
                 <thead><tr><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Firma', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
@@ -171,6 +170,5 @@
                     </tbody>
                 </table>
             <?php endif; ?>
-        </section>
-    </div>
+    </section>
 </div>
