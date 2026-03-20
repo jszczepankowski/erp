@@ -103,10 +103,6 @@
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Lista pracowników', 'erp-omd'); ?></h2>
         <p class="description"><?php printf(esc_html__('Metryki na liście dotyczą bieżącego miesiąca: %s.', 'erp-omd'), esc_html($reporting_month_label)); ?></p>
-        <div class="notice notice-info inline">
-            <p><strong><?php esc_html_e('Wypracowany zysk', 'erp-omd'); ?></strong>: <?php esc_html_e('udział pracownika w końcowym zysku projektów z bieżącego miesiąca. Liczymy go proporcjonalnie do udziału jego zaakceptowanych godzin w całkowitej liczbie zaakceptowanych godzin projektu, po odjęciu kosztu czasu i kosztów bezpośrednich projektu.', 'erp-omd'); ?></p>
-            <p><strong><?php esc_html_e('Zysk z pracownika', 'erp-omd'); ?></strong>: <?php esc_html_e('suma marży na jego własnych zaakceptowanych wpisach czasu z bieżącego miesiąca, czyli przychód z czasu pracy minus koszt czasu pracy dla tego pracownika.', 'erp-omd'); ?></p>
-        </div>
         <table class="widefat striped">
                 <thead>
                     <tr>
@@ -119,7 +115,7 @@
                         <th><?php esc_html_e('Aktualna stawka godzinowa', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Zaraportowane godziny', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Godziny do wypracowania', 'erp-omd'); ?></th>
-                        <th><?php esc_html_e('Wypracowany zysk', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Koszt godzinowy', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Zysk z pracownika', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                     </tr>
@@ -139,7 +135,7 @@
                                 <td><?php echo ! empty($item['current_hourly_cost']) ? esc_html(number_format_i18n((float) $item['current_hourly_cost'], 2)) : '—'; ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) ($item['reported_hours'] ?? 0), 2)); ?></td>
                                 <td><?php echo null !== ($item['target_monthly_hours'] ?? null) ? esc_html(number_format_i18n((float) $item['target_monthly_hours'], 2)) : '—'; ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) ($item['produced_profit'] ?? 0), 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) ($item['hourly_cost_total'] ?? 0), 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) ($item['employee_profit'] ?? 0), 2)); ?></td>
                                 <td>
                                     <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-employees', 'id' => $item['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
