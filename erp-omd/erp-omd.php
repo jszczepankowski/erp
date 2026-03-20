@@ -2,8 +2,8 @@
 /**
  * Plugin Name: ERP OMD
  * Plugin URI: https://example.com/erp-omd
- * Description: ERP_OMD V2 Sprint 3 foundation: employees, roles, salary history, clients, client rates, projects, project rates, time tracking, admin UI, and REST API.
- * Version: 0.3.0
+ * Description: ERP_OMD V2 Sprint 4 foundation: employees, roles, salary history, clients, client/project rates, projects, project costs, cached financials, time tracking, admin UI, and REST API.
+ * Version: 0.4.0
  * Author: OpenAI
  * Text Domain: erp-omd
  */
@@ -12,8 +12,8 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('ERP_OMD_VERSION', '0.3.0');
-define('ERP_OMD_DB_VERSION', '3.0.0');
+define('ERP_OMD_VERSION', '0.4.0');
+define('ERP_OMD_DB_VERSION', '4.0.0');
 define('ERP_OMD_FILE', __FILE__);
 define('ERP_OMD_PATH', plugin_dir_path(__FILE__));
 define('ERP_OMD_URL', plugin_dir_url(__FILE__));

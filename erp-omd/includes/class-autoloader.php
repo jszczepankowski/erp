@@ -19,11 +19,14 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Project_Repository' => 'includes/repositories/class-project-repository.php',
         'ERP_OMD_Project_Note_Repository' => 'includes/repositories/class-project-note-repository.php',
         'ERP_OMD_Project_Rate_Repository' => 'includes/repositories/class-project-rate-repository.php',
+        'ERP_OMD_Project_Cost_Repository' => 'includes/repositories/class-project-cost-repository.php',
+        'ERP_OMD_Project_Financial_Repository' => 'includes/repositories/class-project-financial-repository.php',
         'ERP_OMD_Time_Entry_Repository' => 'includes/repositories/class-time-entry-repository.php',
         'ERP_OMD_Monthly_Hours_Service' => 'includes/services/class-monthly-hours-service.php',
         'ERP_OMD_Employee_Service' => 'includes/services/class-employee-service.php',
         'ERP_OMD_Client_Project_Service' => 'includes/services/class-client-project-service.php',
         'ERP_OMD_Time_Entry_Service' => 'includes/services/class-time-entry-service.php',
+        'ERP_OMD_Project_Financial_Service' => 'includes/services/class-project-financial-service.php',
     ];
 
     public static function register()

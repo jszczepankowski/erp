@@ -55,6 +55,20 @@
 
             <?php if ($project) : ?>
                 <hr />
+                <h2><?php esc_html_e('Finanse projektu', 'erp-omd'); ?></h2>
+                <table class="widefat striped">
+                    <tbody>
+                        <tr><th><?php esc_html_e('Revenue', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['revenue'] ?? 0), 2)); ?></td></tr>
+                        <tr><th><?php esc_html_e('Cost', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['cost'] ?? 0), 2)); ?></td></tr>
+                        <tr><th><?php esc_html_e('Profit', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['profit'] ?? 0), 2)); ?></td></tr>
+                        <tr><th><?php esc_html_e('Margin %', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['margin'] ?? 0), 2)); ?></td></tr>
+                        <tr><th><?php esc_html_e('Budget usage %', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['budget_usage'] ?? 0), 2)); ?></td></tr>
+                        <tr><th><?php esc_html_e('Time revenue', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['time_revenue'] ?? 0), 2)); ?></td></tr>
+                        <tr><th><?php esc_html_e('Time cost', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['time_cost'] ?? 0), 2)); ?></td></tr>
+                        <tr><th><?php esc_html_e('Direct cost', 'erp-omd'); ?></th><td><?php echo esc_html(number_format_i18n((float) ($project_financial['direct_cost'] ?? 0), 2)); ?></td></tr>
+                    </tbody>
+                </table>
+                <hr />
                 <h2><?php esc_html_e('Stawki projektowe', 'erp-omd'); ?></h2>
                 <form method="post">
                     <?php wp_nonce_field('erp_omd_save_project_rate'); ?>
@@ -65,6 +79,19 @@
                         <tr><th><label for="project-rate-value"><?php esc_html_e('Stawka', 'erp-omd'); ?></label></th><td><input id="project-rate-value" type="number" step="0.01" min="0" name="rate" required /></td></tr>
                     </table>
                     <?php submit_button(__('Zapisz stawkę projektową', 'erp-omd'), 'secondary'); ?>
+                </form>
+                <hr />
+                <h2><?php esc_html_e('Koszty projektu', 'erp-omd'); ?></h2>
+                <form method="post">
+                    <?php wp_nonce_field('erp_omd_save_project_cost'); ?>
+                    <input type="hidden" name="erp_omd_action" value="save_project_cost" />
+                    <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                    <table class="form-table">
+                        <tr><th><label for="project-cost-amount"><?php esc_html_e('Kwota', 'erp-omd'); ?></label></th><td><input id="project-cost-amount" type="number" step="0.01" min="0" name="amount" required /></td></tr>
+                        <tr><th><label for="project-cost-date"><?php esc_html_e('Data kosztu', 'erp-omd'); ?></label></th><td><input id="project-cost-date" type="date" name="cost_date" value="<?php echo esc_attr(gmdate('Y-m-d')); ?>" required /></td></tr>
+                        <tr><th><label for="project-cost-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label></th><td><textarea id="project-cost-description" class="large-text" rows="3" name="description"></textarea></td></tr>
+                    </table>
+                    <?php submit_button(__('Dodaj koszt projektu', 'erp-omd'), 'secondary'); ?>
                 </form>
                 <hr />
                 <h2><?php esc_html_e('Historia uwag klienta', 'erp-omd'); ?></h2>
@@ -126,6 +153,33 @@
                                             <?php wp_nonce_field('erp_omd_delete_project_rate'); ?>
                                             <input type="hidden" name="erp_omd_action" value="delete_project_rate" />
                                             <input type="hidden" name="id" value="<?php echo esc_attr($project_rate['id'] ?? 0); ?>" />
+                                            <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                            <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+                <hr />
+                <h2><?php esc_html_e('Koszty projektu — lista', 'erp-omd'); ?></h2>
+                <table class="widefat striped">
+                    <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                    <tbody>
+                        <?php if (empty($project_cost_rows)) : ?>
+                            <tr><td colspan="4"><?php esc_html_e('Brak kosztów projektu.', 'erp-omd'); ?></td></tr>
+                        <?php else : ?>
+                            <?php foreach ($project_cost_rows as $project_cost_row) : ?>
+                                <tr>
+                                    <td><?php echo esc_html($project_cost_row['cost_date']); ?></td>
+                                    <td><?php echo esc_html(number_format_i18n((float) ($project_cost_row['amount'] ?? 0), 2)); ?></td>
+                                    <td><?php echo esc_html($project_cost_row['description'] ?: '—'); ?></td>
+                                    <td>
+                                        <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć koszt projektu?', 'erp-omd')); ?>');">
+                                            <?php wp_nonce_field('erp_omd_delete_project_cost'); ?>
+                                            <input type="hidden" name="erp_omd_action" value="delete_project_cost" />
+                                            <input type="hidden" name="project_cost_id" value="<?php echo esc_attr($project_cost_row['id']); ?>" />
                                             <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
                                             <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
                                         </form>

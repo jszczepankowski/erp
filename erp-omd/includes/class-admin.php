@@ -13,8 +13,11 @@ class ERP_OMD_Admin
     private $project_notes;
     private $client_project_service;
     private $project_rates;
+    private $project_costs;
+    private $project_financials;
     private $time_entries;
     private $time_entry_service;
+    private $project_financial_service;
 
     public function __construct(
         ERP_OMD_Role_Repository $roles,
@@ -28,8 +31,11 @@ class ERP_OMD_Admin
         ERP_OMD_Project_Note_Repository $project_notes,
         ERP_OMD_Client_Project_Service $client_project_service,
         ERP_OMD_Project_Rate_Repository $project_rates,
+        ERP_OMD_Project_Cost_Repository $project_costs,
+        ERP_OMD_Project_Financial_Repository $project_financials,
         ERP_OMD_Time_Entry_Repository $time_entries,
-        ERP_OMD_Time_Entry_Service $time_entry_service
+        ERP_OMD_Time_Entry_Service $time_entry_service,
+        ERP_OMD_Project_Financial_Service $project_financial_service
     ) {
         $this->roles = $roles;
         $this->employees = $employees;
@@ -42,8 +48,11 @@ class ERP_OMD_Admin
         $this->project_notes = $project_notes;
         $this->client_project_service = $client_project_service;
         $this->project_rates = $project_rates;
+        $this->project_costs = $project_costs;
+        $this->project_financials = $project_financials;
         $this->time_entries = $time_entries;
         $this->time_entry_service = $time_entry_service;
+        $this->project_financial_service = $project_financial_service;
     }
 
     public function register_hooks()
@@ -96,6 +105,8 @@ class ERP_OMD_Admin
             case 'add_project_note': $this->handle_project_note_add(); break;
             case 'save_project_rate': $this->handle_project_rate_save(); break;
             case 'delete_project_rate': $this->handle_project_rate_delete(); break;
+            case 'save_project_cost': $this->handle_project_cost_save(); break;
+            case 'delete_project_cost': $this->handle_project_cost_delete(); break;
             case 'save_time_entry': $this->handle_time_entry_save(); break;
             case 'change_time_status': $this->handle_time_status_change(); break;
             case 'delete_time_entry': $this->handle_time_entry_delete(); break;
@@ -157,11 +168,15 @@ class ERP_OMD_Admin
         $project = null;
         $project_notes = [];
         $project_rates = [];
+        $project_cost_rows = [];
+        $project_financial = null;
         if (! empty($_GET['id'])) {
             $project = $this->projects->find((int) $_GET['id']);
             if ($project) {
                 $project_notes = $this->project_notes->for_project((int) $project['id']);
                 $project_rates = $this->project_rates->for_project((int) $project['id']);
+                $project_cost_rows = $this->project_costs->for_project((int) $project['id']);
+                $project_financial = $this->project_financial_service->rebuild_for_project((int) $project['id']);
             }
         }
         $projects = $this->projects->all();
@@ -328,6 +343,7 @@ class ERP_OMD_Admin
         $errors = $this->client_project_service->validate_project($payload);
         if ($errors) { $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), $id ? ['id' => $id] : []); }
         if ($id) { $this->projects->update($id, $payload); $message = __('Projekt został zaktualizowany.', 'erp-omd'); } else { $id = $this->projects->create($payload); $message = __('Projekt został utworzony.', 'erp-omd'); }
+        $this->project_financial_service->rebuild_for_project($id);
         $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $id]);
     }
 
@@ -375,6 +391,47 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-projects', 'success', __('Stawka projektowa została usunięta.', 'erp-omd'), ['id' => $project_id]);
     }
 
+    private function handle_project_cost_save()
+    {
+        check_admin_referer('erp_omd_save_project_cost');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = empty($_POST['project_cost_id']) ? 0 : (int) $_POST['project_cost_id'];
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($_POST['amount'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'cost_date' => sanitize_text_field(wp_unslash($_POST['cost_date'] ?? '')),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+        $errors = $this->project_financial_service->validate_project_cost($payload);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+        }
+        if ($id) {
+            $this->project_costs->update($id, $payload);
+            $message = __('Koszt projektu został zaktualizowany.', 'erp-omd');
+        } else {
+            $this->project_costs->create($payload);
+            $message = __('Koszt projektu został dodany.', 'erp-omd');
+        }
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $project_id]);
+    }
+
+    private function handle_project_cost_delete()
+    {
+        check_admin_referer('erp_omd_delete_project_cost');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = (int) ($_POST['project_cost_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        if ($id) {
+            $this->project_costs->delete($id);
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Koszt projektu został usunięty.', 'erp-omd'), ['id' => $project_id]);
+    }
+
     private function handle_time_entry_save()
     {
         check_admin_referer('erp_omd_save_time_entry');
@@ -401,6 +458,7 @@ class ERP_OMD_Admin
         $errors = $this->time_entry_service->validate($payload, $id ?: null);
         if ($errors) { $this->redirect_with_notice('erp-omd-time', 'error', implode(' ', $errors), $id ? ['id' => $id] : []); }
         if ($id) { $this->time_entries->update($id, $payload); $message = __('Wpis czasu został zaktualizowany.', 'erp-omd'); } else { $id = $this->time_entries->create($payload); $message = __('Wpis czasu został dodany.', 'erp-omd'); }
+        $this->project_financial_service->rebuild_for_project((int) $payload['project_id']);
         $this->redirect_with_notice('erp-omd-time', 'success', $message, ['id' => $id]);
     }
 
@@ -422,6 +480,7 @@ class ERP_OMD_Admin
         }
         $payload = array_merge($entry, ['status' => $status, 'approved_by_user_id' => (int) $current_user->ID, 'approved_at' => current_time('mysql')]);
         $this->time_entries->update($id, $payload);
+        $this->project_financial_service->rebuild_for_project((int) $entry['project_id']);
         $this->redirect_with_notice('erp-omd-time', 'success', __('Status wpisu czasu został zmieniony.', 'erp-omd'), ['id' => $id]);
     }
 
@@ -433,7 +492,13 @@ class ERP_OMD_Admin
             wp_die(esc_html__('Usuwanie wpisów czasu jest dostępne tylko dla administratora.', 'erp-omd'));
         }
         $id = (int) ($_POST['id'] ?? 0);
-        if ($id) { $this->time_entries->delete($id); }
+        if ($id) {
+            $entry = $this->time_entries->find($id);
+            $this->time_entries->delete($id);
+            if ($entry) {
+                $this->project_financial_service->rebuild_for_project((int) $entry['project_id']);
+            }
+        }
         $this->redirect_with_notice('erp-omd-time', 'success', __('Wpis czasu został usunięty.', 'erp-omd'));
     }
 

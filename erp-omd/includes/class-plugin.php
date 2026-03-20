@@ -10,11 +10,14 @@ class ERP_OMD_Plugin
     private $project_repository;
     private $project_note_repository;
     private $project_rate_repository;
+    private $project_cost_repository;
+    private $project_financial_repository;
     private $time_entry_repository;
     private $monthly_hours_service;
     private $employee_service;
     private $client_project_service;
     private $time_entry_service;
+    private $project_financial_service;
     private $admin;
     private $rest_api;
 
@@ -28,6 +31,8 @@ class ERP_OMD_Plugin
         $this->project_repository = new ERP_OMD_Project_Repository();
         $this->project_note_repository = new ERP_OMD_Project_Note_Repository();
         $this->project_rate_repository = new ERP_OMD_Project_Rate_Repository();
+        $this->project_cost_repository = new ERP_OMD_Project_Cost_Repository();
+        $this->project_financial_repository = new ERP_OMD_Project_Financial_Repository();
         $this->time_entry_repository = new ERP_OMD_Time_Entry_Repository();
         $this->monthly_hours_service = new ERP_OMD_Monthly_Hours_Service();
         $this->employee_service = new ERP_OMD_Employee_Service(
@@ -49,6 +54,12 @@ class ERP_OMD_Plugin
             $this->project_rate_repository,
             $this->salary_repository
         );
+        $this->project_financial_service = new ERP_OMD_Project_Financial_Service(
+            $this->project_repository,
+            $this->project_cost_repository,
+            $this->project_financial_repository,
+            $this->time_entry_repository
+        );
         $this->admin = new ERP_OMD_Admin(
             $this->role_repository,
             $this->employee_repository,
@@ -61,8 +72,11 @@ class ERP_OMD_Plugin
             $this->project_note_repository,
             $this->client_project_service,
             $this->project_rate_repository,
+            $this->project_cost_repository,
+            $this->project_financial_repository,
             $this->time_entry_repository,
-            $this->time_entry_service
+            $this->time_entry_service,
+            $this->project_financial_service
         );
         $this->rest_api = new ERP_OMD_REST_API(
             $this->role_repository,
@@ -76,8 +90,11 @@ class ERP_OMD_Plugin
             $this->project_note_repository,
             $this->client_project_service,
             $this->project_rate_repository,
+            $this->project_cost_repository,
+            $this->project_financial_repository,
             $this->time_entry_repository,
-            $this->time_entry_service
+            $this->time_entry_service,
+            $this->project_financial_service
         );
     }
 

@@ -13,6 +13,8 @@ if (! $delete_data) {
 global $wpdb;
 
 $tables = [
+    $wpdb->prefix . 'erp_omd_project_financials',
+    $wpdb->prefix . 'erp_omd_project_costs',
     $wpdb->prefix . 'erp_omd_time_entries',
     $wpdb->prefix . 'erp_omd_project_rates',
     $wpdb->prefix . 'erp_omd_project_notes',
