@@ -11,23 +11,14 @@
                     <tr><th><label for="client-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label></th><td><input id="client-name" class="regular-text" type="text" name="name" value="<?php echo esc_attr($client['name'] ?? ''); ?>" required /></td></tr>
                     <tr><th><label for="client-company"><?php esc_html_e('Firma', 'erp-omd'); ?></label></th><td><input id="client-company" class="regular-text" type="text" name="company" value="<?php echo esc_attr($client['company'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="client-nip"><?php esc_html_e('NIP', 'erp-omd'); ?></label></th><td><input id="client-nip" class="regular-text" type="text" name="nip" value="<?php echo esc_attr($client['nip'] ?? ''); ?>" /></td></tr>
+                    <tr><th><label for="client-street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label></th><td><input id="client-street" class="regular-text" type="text" name="street" value="<?php echo esc_attr($client['street'] ?? ''); ?>" /></td></tr>
+                    <tr><th><label for="client-apartment-number"><?php esc_html_e('Numer lokalu', 'erp-omd'); ?></label></th><td><input id="client-apartment-number" class="regular-text" type="text" name="apartment_number" value="<?php echo esc_attr($client['apartment_number'] ?? ''); ?>" /></td></tr>
+                    <tr><th><label for="client-city"><?php esc_html_e('Miasto', 'erp-omd'); ?></label></th><td><input id="client-city" class="regular-text" type="text" name="city" value="<?php echo esc_attr($client['city'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="client-email"><?php esc_html_e('Email', 'erp-omd'); ?></label></th><td><input id="client-email" class="regular-text" type="email" name="email" value="<?php echo esc_attr($client['email'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="client-phone"><?php esc_html_e('Telefon', 'erp-omd'); ?></label></th><td><input id="client-phone" class="regular-text" type="text" name="phone" value="<?php echo esc_attr($client['phone'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="contact-person-name"><?php esc_html_e('Osoba kontaktowa — imię i nazwisko', 'erp-omd'); ?></label></th><td><input id="contact-person-name" class="regular-text" type="text" name="contact_person_name" value="<?php echo esc_attr($client['contact_person_name'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="contact-person-email"><?php esc_html_e('Osoba kontaktowa — email', 'erp-omd'); ?></label></th><td><input id="contact-person-email" class="regular-text" type="email" name="contact_person_email" value="<?php echo esc_attr($client['contact_person_email'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="contact-person-phone"><?php esc_html_e('Osoba kontaktowa — telefon', 'erp-omd'); ?></label></th><td><input id="contact-person-phone" class="regular-text" type="text" name="contact_person_phone" value="<?php echo esc_attr($client['contact_person_phone'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="client-city"><?php esc_html_e('Miasto', 'erp-omd'); ?></label></th><td><input id="client-city" class="regular-text" type="text" name="city" value="<?php echo esc_attr($client['city'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="client-street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label></th><td><input id="client-street" class="regular-text" type="text" name="street" value="<?php echo esc_attr($client['street'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="client-apartment-number"><?php esc_html_e('Numer lokalu', 'erp-omd'); ?></label></th><td><input id="client-apartment-number" class="regular-text" type="text" name="apartment_number" value="<?php echo esc_attr($client['apartment_number'] ?? ''); ?>" /></td></tr>
-                    <tr>
-                        <th><label for="client-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
-                        <td>
-                            <select id="client-status" name="status">
-                                <option value="active" <?php selected($client['status'] ?? 'active', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
-                                <option value="inactive" <?php selected($client['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
-                            </select>
-                        </td>
-                    </tr>
                     <tr>
                         <th><label for="client-account-manager"><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></label></th>
                         <td>
@@ -38,6 +29,15 @@
                                         <?php echo esc_html($employee_item['user_login'] . ' (' . $this->account_type_label($employee_item['account_type']) . ')'); ?>
                                     </option>
                                 <?php endforeach; ?>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="client-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
+                        <td>
+                            <select id="client-status" name="status">
+                                <option value="active" <?php selected($client['status'] ?? 'active', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
+                                <option value="inactive" <?php selected($client['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
                             </select>
                         </td>
                     </tr>
