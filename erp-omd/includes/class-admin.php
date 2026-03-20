@@ -348,12 +348,24 @@ class ERP_OMD_Admin
     {
         check_admin_referer('erp_omd_save_client_rate');
         $this->require_capability('erp_omd_manage_clients');
+        $rate_id = (int) ($_POST['rate_id'] ?? 0);
         $client_id = (int) ($_POST['client_id'] ?? 0);
         $role_id = (int) ($_POST['role_id'] ?? 0);
         $rate = (float) ($_POST['rate'] ?? 0);
         $errors = $this->client_project_service->validate_client_rate($client_id, $role_id, $rate);
         if ($errors) { $this->redirect_with_notice('erp-omd-clients', 'error', implode(' ', $errors), ['id' => $client_id]); }
-        $this->client_rates->upsert($client_id, $role_id, $rate);
+
+        if ($rate_id > 0) {
+            $existing_rate = $this->client_rates->find($rate_id);
+            if (! $existing_rate || (int) ($existing_rate['client_id'] ?? 0) !== $client_id) {
+                $this->redirect_with_notice('erp-omd-clients', 'error', __('Nie znaleziono stawki klienta do edycji.', 'erp-omd'), ['id' => $client_id]);
+            }
+
+            $this->client_rates->update($rate_id, $role_id, $rate);
+        } else {
+            $this->client_rates->upsert($client_id, $role_id, $rate);
+        }
+
         $this->redirect_with_notice('erp-omd-clients', 'success', __('Stawka klienta została zapisana.', 'erp-omd'), ['id' => $client_id]);
     }
 

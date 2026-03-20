@@ -75,6 +75,23 @@ class ERP_OMD_Client_Rate_Repository
         return (int) $wpdb->insert_id;
     }
 
+    public function update($id, $role_id, $rate)
+    {
+        global $wpdb;
+
+        return $wpdb->update(
+            $this->table_name(),
+            [
+                'role_id' => $role_id,
+                'rate' => $rate,
+                'updated_at' => current_time('mysql'),
+            ],
+            ['id' => $id],
+            ['%d', '%f', '%s'],
+            ['%d']
+        );
+    }
+
     public function delete($id)
     {
         global $wpdb;

@@ -48,6 +48,7 @@
             <form method="post">
                 <?php wp_nonce_field('erp_omd_save_client_rate'); ?>
                 <input type="hidden" name="erp_omd_action" value="save_client_rate" />
+                <input type="hidden" name="rate_id" value="<?php echo esc_attr($editing_client_rate['id'] ?? 0); ?>" />
                 <input type="hidden" name="client_id" value="<?php echo esc_attr($client['id']); ?>" />
                 <table class="form-table">
                     <tr>
