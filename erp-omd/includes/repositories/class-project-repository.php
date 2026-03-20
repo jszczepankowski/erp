@@ -35,6 +35,24 @@ class ERP_OMD_Project_Repository
         return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table_name()} WHERE id = %d", $id), ARRAY_A);
     }
 
+    public function ids_managed_by_employee($employee_id)
+    {
+        global $wpdb;
+
+        return array_map(
+            'intval',
+            $wpdb->get_col(
+                $wpdb->prepare(
+                    "SELECT id
+                    FROM {$this->table_name()}
+                    WHERE manager_id = %d
+                    ORDER BY id ASC",
+                    $employee_id
+                )
+            )
+        );
+    }
+
     public function create(array $data)
     {
         global $wpdb;

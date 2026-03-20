@@ -1,13 +1,13 @@
 <div class="wrap erp-omd-admin">
-    <h1><?php esc_html_e('ERP OMD — Sprint 2', 'erp-omd'); ?></h1>
+    <h1><?php esc_html_e('ERP OMD — Sprint 3', 'erp-omd'); ?></h1>
     <div class="erp-omd-grid two-columns">
         <div class="erp-omd-card">
-            <h2><?php esc_html_e('Status wdrożenia Sprintu 2', 'erp-omd'); ?></h2>
+            <h2><?php esc_html_e('Status wdrożenia Sprintu 3', 'erp-omd'); ?></h2>
             <ul>
                 <li><?php esc_html_e('Sprint 1: pracownicy, role, salary history, uninstall i REST API.', 'erp-omd'); ?></li>
                 <li><?php esc_html_e('Sprint 2: klienci, stawki klienta, projekty i historia uwag klienta.', 'erp-omd'); ?></li>
-                <li><?php esc_html_e('Admin UI: dashboard, role, pracownicy, klienci, projekty, settings.', 'erp-omd'); ?></li>
-                <li><?php esc_html_e('REST API: roles, employees, salary, clients, client rates, projects i project notes.', 'erp-omd'); ?></li>
+                <li><?php esc_html_e('Sprint 3: stawki projektowe, time tracking, snapshoty i approval flow.', 'erp-omd'); ?></li>
+                <li><?php esc_html_e('Admin UI: dashboard, role, pracownicy, klienci, projekty, czas pracy, settings.', 'erp-omd'); ?></li>
             </ul>
         </div>
         <div class="erp-omd-card">

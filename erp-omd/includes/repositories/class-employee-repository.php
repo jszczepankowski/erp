@@ -46,6 +46,19 @@ class ERP_OMD_Employee_Repository
         return $employee;
     }
 
+    public function find_by_user_id($user_id)
+    {
+        global $wpdb;
+
+        $employee = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table_name()} WHERE user_id = %d", $user_id), ARRAY_A);
+        if (! $employee) {
+            return null;
+        }
+
+        $employee['role_ids'] = $this->role_ids((int) $employee['id']);
+        return $employee;
+    }
+
     public function create(array $data)
     {
         global $wpdb;

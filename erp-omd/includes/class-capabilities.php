@@ -18,6 +18,8 @@ class ERP_OMD_Capabilities
             'erp_omd_manage_account_types',
             'erp_omd_manage_clients',
             'erp_omd_manage_projects',
+            'erp_omd_manage_time',
+            'erp_omd_approve_time',
         ];
     }
 
@@ -37,15 +39,19 @@ class ERP_OMD_Capabilities
         $manager_caps = [
             'read' => true,
             'erp_omd_access' => true,
+            'erp_omd_manage_time' => true,
             'erp_omd_manage_roles' => true,
             'erp_omd_manage_employees' => true,
             'erp_omd_manage_salary' => true,
             'erp_omd_manage_clients' => true,
             'erp_omd_manage_projects' => true,
+            'erp_omd_manage_time' => true,
+            'erp_omd_approve_time' => true,
         ];
         $worker_caps = [
             'read' => true,
             'erp_omd_access' => true,
+            'erp_omd_manage_time' => true,
         ];
 
         add_role('erp_omd_manager', __('ERP Manager', 'erp-omd'), $manager_caps);
