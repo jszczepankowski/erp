@@ -175,6 +175,18 @@ final class EstimateServiceTestRunner
         );
         $this->assertSame(3, count($estimateValidationErrors), 'Estimate validation should require name, valid client and valid status.');
 
+        $acceptedEstimateStatusOnlyErrors = $service->validate_estimate(
+            ['client_id' => 10, 'name' => 'Archiwalny', 'status' => 'do_akceptacji'],
+            ['id' => 2, 'client_id' => 10, 'name' => 'Archiwalny', 'status' => 'zaakceptowany']
+        );
+        $this->assertSame([], $acceptedEstimateStatusOnlyErrors, 'Accepted estimate should allow status-only changes.');
+
+        $acceptedEstimateChangedNameErrors = $service->validate_estimate(
+            ['client_id' => 10, 'name' => 'Archiwalny 2', 'status' => 'do_akceptacji'],
+            ['id' => 2, 'client_id' => 10, 'name' => 'Archiwalny', 'status' => 'zaakceptowany']
+        );
+        $this->assertSame(1, count($acceptedEstimateChangedNameErrors), 'Accepted estimate should reject changing locked fields like name.');
+
         $validationErrors = $service->validate_item(
             ['name' => '', 'qty' => 0, 'price' => -1, 'cost_internal' => -1, 'comment' => ''],
             ['id' => 2, 'status' => 'zaakceptowany']

@@ -130,11 +130,12 @@
                             <td>
                                 <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                 <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php')) . '#erp-omd-project-details'); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
-                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Dezaktywować projekt?', 'erp-omd')); ?>');">
-                                    <?php wp_nonce_field('erp_omd_deactivate_project'); ?>
-                                    <input type="hidden" name="erp_omd_action" value="deactivate_project" />
+                                <?php $project_is_inactive = ($project_row['status'] ?? '') === 'inactive'; ?>
+                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js($project_is_inactive ? __('Aktywować projekt?', 'erp-omd') : __('Dezaktywować projekt?', 'erp-omd')); ?>');">
+                                    <?php wp_nonce_field('erp_omd_toggle_project_active'); ?>
+                                    <input type="hidden" name="erp_omd_action" value="toggle_project_active" />
                                     <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
-                                    <button class="button button-small" type="submit"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></button>
+                                    <button class="button button-small" type="submit"><?php echo esc_html($project_is_inactive ? __('Aktywuj', 'erp-omd') : __('Dezaktywuj', 'erp-omd')); ?></button>
                                 </form>
                             </td>
                         </tr>

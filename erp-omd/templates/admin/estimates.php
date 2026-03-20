@@ -34,6 +34,9 @@
                                     <option value="<?php echo esc_attr($status_option); ?>" <?php selected((string) ($estimate['status'] ?? 'wstepny'), $status_option); ?>><?php echo esc_html($status_option); ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <?php if (($estimate['status'] ?? '') === 'zaakceptowany') : ?>
+                                <p class="description"><?php esc_html_e('Zaakceptowany kosztorys zachowuje zablokowane pozycje i dane klienta, ale administrator nadal może zmienić jego status.', 'erp-omd'); ?></p>
+                            <?php endif; ?>
                             <?php if (! empty($estimate['accepted_at'])) : ?>
                                 <p class="description"><?php echo esc_html(sprintf(__('Zaakceptowano: %s', 'erp-omd'), $estimate['accepted_at'])); ?></p>
                             <?php endif; ?>
@@ -88,7 +91,7 @@
                         <?php endif; ?>
                     </form>
                 <?php else : ?>
-                    <p><?php esc_html_e('Zaakceptowany kosztorys jest tylko do odczytu — pozycje można jedynie przeglądać i eksportować.', 'erp-omd'); ?></p>
+                    <p><?php esc_html_e('Po zaakceptowaniu pozycje kosztorysu są tylko do odczytu — można je przeglądać i eksportować, ale status kosztorysu administrator może nadal zmienić z poziomu formularza edycji.', 'erp-omd'); ?></p>
                 <?php endif; ?>
             <?php endif; ?>
     </section>

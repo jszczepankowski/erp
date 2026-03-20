@@ -24,7 +24,17 @@
                 </tr>
                 <tr><th><label for="time-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label></th><td><select id="time-project" name="project_id" required><?php foreach ($projects_for_time as $project_item) : ?><option value="<?php echo esc_attr($project_item['id']); ?>" <?php selected((int) ($entry['project_id'] ?? 0), (int) $project_item['id']); ?>><?php echo esc_html($project_item['name'] . ' [' . $this->project_status_label($project_item['status']) . ']'); ?></option><?php endforeach; ?></select></td></tr>
                 <tr><th><label for="time-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label></th><td><select id="time-role" name="role_id" required><?php foreach ($roles as $role_item) : ?><option value="<?php echo esc_attr($role_item['id']); ?>" <?php selected((int) ($entry['role_id'] ?? 0), (int) $role_item['id']); ?>><?php echo esc_html($role_item['name']); ?></option><?php endforeach; ?></select></td></tr>
-                <tr><th><label for="time-hours"><?php esc_html_e('Godziny', 'erp-omd'); ?></label></th><td><input id="time-hours" type="number" step="0.01" min="0.01" name="hours" value="<?php echo esc_attr($entry['hours'] ?? ''); ?>" required /></td></tr>
+                <tr>
+                    <th><label for="time-hours"><?php esc_html_e('Godziny', 'erp-omd'); ?></label></th>
+                    <td>
+                        <input id="time-hours" type="number" step="0.01" min="0.01" name="hours" value="<?php echo esc_attr($entry['hours'] ?? ''); ?>" required />
+                        <div class="erp-omd-quick-hours" aria-label="<?php esc_attr_e('Szybkie ustawianie godzin', 'erp-omd'); ?>">
+                            <button type="button" class="button button-secondary erp-omd-quick-hours-button" data-target="#time-hours" data-hours="0.25"><?php esc_html_e('15 min', 'erp-omd'); ?></button>
+                            <button type="button" class="button button-secondary erp-omd-quick-hours-button" data-target="#time-hours" data-hours="0.50"><?php esc_html_e('30 min', 'erp-omd'); ?></button>
+                            <button type="button" class="button button-secondary erp-omd-quick-hours-button" data-target="#time-hours" data-hours="0.75"><?php esc_html_e('45 min', 'erp-omd'); ?></button>
+                        </div>
+                    </td>
+                </tr>
                 <tr><th><label for="time-entry-date"><?php esc_html_e('Data', 'erp-omd'); ?></label></th><td><input id="time-entry-date" type="date" name="entry_date" value="<?php echo esc_attr($entry['entry_date'] ?? gmdate('Y-m-d')); ?>" required /></td></tr>
                 <tr><th><label for="time-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label></th><td><textarea id="time-description" class="large-text" rows="4" name="description"><?php echo esc_textarea($entry['description'] ?? ''); ?></textarea></td></tr>
                 <tr>

@@ -122,11 +122,16 @@ class ERP_OMD_Project_Repository
 
     public function deactivate($id)
     {
+        return $this->set_status($id, 'inactive');
+    }
+
+    public function set_status($id, $status)
+    {
         global $wpdb;
 
         return $wpdb->update(
             $this->table_name(),
-            ['status' => 'inactive', 'updated_at' => current_time('mysql')],
+            ['status' => $status, 'updated_at' => current_time('mysql')],
             ['id' => $id],
             ['%s', '%s'],
             ['%d']

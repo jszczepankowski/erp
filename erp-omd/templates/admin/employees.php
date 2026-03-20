@@ -103,6 +103,10 @@
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Lista pracowników', 'erp-omd'); ?></h2>
         <p class="description"><?php printf(esc_html__('Metryki na liście dotyczą bieżącego miesiąca: %s.', 'erp-omd'), esc_html($reporting_month_label)); ?></p>
+        <div class="notice notice-info inline">
+            <p><strong><?php esc_html_e('Wypracowany zysk', 'erp-omd'); ?></strong>: <?php esc_html_e('udział pracownika w końcowym zysku projektów z bieżącego miesiąca. Liczymy go proporcjonalnie do udziału jego zaakceptowanych godzin w całkowitej liczbie zaakceptowanych godzin projektu, po odjęciu kosztu czasu i kosztów bezpośrednich projektu.', 'erp-omd'); ?></p>
+            <p><strong><?php esc_html_e('Zysk z pracownika', 'erp-omd'); ?></strong>: <?php esc_html_e('suma marży na jego własnych zaakceptowanych wpisach czasu z bieżącego miesiąca, czyli przychód z czasu pracy minus koszt czasu pracy dla tego pracownika.', 'erp-omd'); ?></p>
+        </div>
         <table class="widefat striped">
                 <thead>
                     <tr>

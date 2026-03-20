@@ -72,4 +72,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     table.dataset.tableIndex = String(tableIndex);
   });
+
+  document.querySelectorAll('.erp-omd-quick-hours-button').forEach((button) => {
+    button.addEventListener('click', () => {
+      const selector = button.dataset.target;
+      const hours = button.dataset.hours;
+
+      if (!selector || !hours) {
+        return;
+      }
+
+      const input = document.querySelector(selector);
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+
+      input.value = hours;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      input.focus();
+    });
+  });
 });

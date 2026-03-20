@@ -63,6 +63,13 @@
     margin-bottom: 16px;
 }
 
+.erp-omd-admin .erp-omd-quick-hours {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
 .erp-omd-admin .erp-omd-calendar-table .erp-omd-calendar-cell {
     min-height: 120px;
     vertical-align: top;

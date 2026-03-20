@@ -36,7 +36,14 @@ class ERP_OMD_Estimate_Service
         }
 
         if ($existing && ($existing['status'] ?? '') === 'zaakceptowany') {
-            $errors[] = __('Zaakceptowany kosztorys jest tylko do odczytu.', 'erp-omd');
+            $existing_name = trim((string) ($existing['name'] ?? ''));
+            $incoming_name = trim((string) ($data['name'] ?? ''));
+            $existing_client_id = (int) ($existing['client_id'] ?? 0);
+            $incoming_client_id = (int) ($data['client_id'] ?? 0);
+
+            if ($existing_name !== $incoming_name || $existing_client_id !== $incoming_client_id) {
+                $errors[] = __('Zaakceptowany kosztorys pozwala zmienić tylko status.', 'erp-omd');
+            }
         }
 
         return $errors;

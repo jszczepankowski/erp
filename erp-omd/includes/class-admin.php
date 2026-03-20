@@ -123,7 +123,7 @@ class ERP_OMD_Admin
             case 'export_estimate': $this->handle_estimate_export(); break;
             case 'export_report': $this->handle_report_export(); break;
             case 'save_project': $this->handle_project_save(); break;
-            case 'deactivate_project': $this->handle_project_deactivate(); break;
+            case 'toggle_project_active': $this->handle_project_active_toggle(); break;
             case 'add_project_note': $this->handle_project_note_add(); break;
             case 'save_project_rate': $this->handle_project_rate_save(); break;
             case 'delete_project_rate': $this->handle_project_rate_delete(); break;
@@ -501,7 +501,7 @@ class ERP_OMD_Admin
             $id = $this->estimates->create($payload);
             $message = __('Kosztorys został utworzony.', 'erp-omd');
         }
-        $this->redirect_with_notice('erp-omd-estimates', 'success', $message, ['id' => $id, 'edit' => 1]);
+        $this->redirect_with_notice('erp-omd-estimates', 'success', $message, ['id' => $id]);
     }
 
     private function handle_estimate_delete()
@@ -713,12 +713,22 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $id]);
     }
 
-    private function handle_project_deactivate()
+    private function handle_project_active_toggle()
     {
-        check_admin_referer('erp_omd_deactivate_project');
+        check_admin_referer('erp_omd_toggle_project_active');
         $this->require_capability('erp_omd_manage_projects');
         $id = (int) ($_POST['id'] ?? 0);
-        if ($id && $this->projects->find($id)) { $this->projects->deactivate($id); $this->redirect_with_notice('erp-omd-projects', 'success', __('Projekt został dezaktywowany.', 'erp-omd')); }
+        $project = $id ? $this->projects->find($id) : null;
+
+        if ($project) {
+            $target_status = ($project['status'] ?? '') === 'inactive' ? 'do_rozpoczecia' : 'inactive';
+            $this->projects->set_status($id, $target_status);
+            $message = $target_status === 'inactive'
+                ? __('Projekt został dezaktywowany.', 'erp-omd')
+                : __('Projekt został aktywowany.', 'erp-omd');
+            $this->redirect_with_notice('erp-omd-projects', 'success', $message);
+        }
+
         $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono projektu.', 'erp-omd'));
     }
 
