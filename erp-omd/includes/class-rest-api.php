@@ -10,8 +10,11 @@ class ERP_OMD_REST_API
     private $clients;
     private $client_rates;
     private $projects;
+    private $estimates;
+    private $estimate_items;
     private $project_notes;
     private $client_project_service;
+    private $estimate_service;
     private $project_rates;
     private $project_costs;
     private $project_financials;
@@ -28,8 +31,11 @@ class ERP_OMD_REST_API
         ERP_OMD_Client_Repository $clients,
         ERP_OMD_Client_Rate_Repository $client_rates,
         ERP_OMD_Project_Repository $projects,
+        ERP_OMD_Estimate_Repository $estimates,
+        ERP_OMD_Estimate_Item_Repository $estimate_items,
         ERP_OMD_Project_Note_Repository $project_notes,
         ERP_OMD_Client_Project_Service $client_project_service,
+        ERP_OMD_Estimate_Service $estimate_service,
         ERP_OMD_Project_Rate_Repository $project_rates,
         ERP_OMD_Project_Cost_Repository $project_costs,
         ERP_OMD_Project_Financial_Repository $project_financials,
@@ -45,8 +51,11 @@ class ERP_OMD_REST_API
         $this->clients = $clients;
         $this->client_rates = $client_rates;
         $this->projects = $projects;
+        $this->estimates = $estimates;
+        $this->estimate_items = $estimate_items;
         $this->project_notes = $project_notes;
         $this->client_project_service = $client_project_service;
+        $this->estimate_service = $estimate_service;
         $this->project_rates = $project_rates;
         $this->project_costs = $project_costs;
         $this->project_financials = $project_financials;
@@ -65,6 +74,7 @@ class ERP_OMD_REST_API
         $this->register_role_routes();
         $this->register_employee_routes();
         $this->register_client_routes();
+        $this->register_estimate_routes();
         $this->register_project_routes();
         $this->register_time_routes();
     }
@@ -126,6 +136,31 @@ class ERP_OMD_REST_API
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_client_rate'], 'permission_callback' => [$this, 'can_manage_clients']],
             ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_client_rate'], 'permission_callback' => [$this, 'can_manage_clients']],
             ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_client_rate'], 'permission_callback' => [$this, 'can_manage_clients']],
+        ]);
+    }
+
+    private function register_estimate_routes()
+    {
+        register_rest_route('erp-omd/v1', '/estimates', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_estimates'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_estimate'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/estimates/(?P<id>\d+)', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_estimate'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_estimate'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_estimate'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/estimates/(?P<id>\d+)/items', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_estimate_items'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_estimate_item'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/estimate-items/(?P<id>\d+)', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_estimate_item'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_estimate_item'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_estimate_item'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/estimates/(?P<id>\d+)/accept', [
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'accept_estimate'], 'permission_callback' => [$this, 'can_manage_projects']],
         ]);
     }
 
@@ -220,6 +255,149 @@ class ERP_OMD_REST_API
     public function get_client_rate(WP_REST_Request $request) { return $this->find_or_error($this->client_rates->find((int) $request['id']), 'erp_omd_client_rate_not_found', __('Client rate not found.', 'erp-omd')); }
     public function update_client_rate(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->client_rates->find($id); if (! $existing) { return new WP_Error('erp_omd_client_rate_not_found', __('Client rate not found.', 'erp-omd'), ['status' => 404]); } $role_id = (int) ($request->get_param('role_id') ?: $existing['role_id']); $rate = (float) ($request->get_param('rate') ?: $existing['rate']); $errors = $this->client_project_service->validate_client_rate((int) $existing['client_id'], $role_id, $rate); if ($errors) { return new WP_Error('erp_omd_client_rate_invalid', implode(' ', $errors), ['status' => 422]); } $upserted_id = $this->client_rates->upsert((int) $existing['client_id'], $role_id, $rate); if ($upserted_id !== $id) { $this->client_rates->delete($id); } return rest_ensure_response($this->client_rates->find($upserted_id)); }
     public function delete_client_rate(WP_REST_Request $request) { $this->client_rates->delete((int) $request['id']); return new WP_REST_Response(null, 204); }
+
+    public function list_estimates()
+    {
+        $estimates = $this->estimates->all();
+        foreach ($estimates as &$estimate) {
+            $items = $this->estimate_items->for_estimate((int) $estimate['id']);
+            $estimate['totals'] = $this->estimate_service->calculate_totals($items);
+        }
+        unset($estimate);
+
+        return rest_ensure_response($estimates);
+    }
+
+    public function get_estimate(WP_REST_Request $request)
+    {
+        $estimate = $this->estimates->find((int) $request['id']);
+        if (! $estimate) {
+            return new WP_Error('erp_omd_estimate_not_found', __('Estimate not found.', 'erp-omd'), ['status' => 404]);
+        }
+        $estimate['items'] = $this->estimate_items->for_estimate((int) $estimate['id']);
+        $estimate['totals'] = $this->estimate_service->calculate_totals($estimate['items']);
+
+        return rest_ensure_response($estimate);
+    }
+
+    public function create_estimate(WP_REST_Request $request)
+    {
+        $payload = $this->sanitize_estimate_payload($request);
+        $errors = $this->estimate_service->validate_estimate($payload);
+        if ($errors) {
+            return new WP_Error('erp_omd_estimate_invalid', implode(' ', $errors), ['status' => 422]);
+        }
+        $id = $this->estimates->create($payload);
+
+        return new WP_REST_Response($this->estimates->find($id), 201);
+    }
+
+    public function update_estimate(WP_REST_Request $request)
+    {
+        $id = (int) $request['id'];
+        $existing = $this->estimates->find($id);
+        if (! $existing) {
+            return new WP_Error('erp_omd_estimate_not_found', __('Estimate not found.', 'erp-omd'), ['status' => 404]);
+        }
+        $payload = $this->sanitize_estimate_payload($request, $existing);
+        $errors = $this->estimate_service->validate_estimate($payload, $existing);
+        if ($errors) {
+            return new WP_Error('erp_omd_estimate_invalid', implode(' ', $errors), ['status' => 422]);
+        }
+        $this->estimates->update($id, $payload);
+
+        return rest_ensure_response($this->estimates->find($id));
+    }
+
+    public function delete_estimate(WP_REST_Request $request)
+    {
+        $existing = $this->estimates->find((int) $request['id']);
+        if (! $existing) {
+            return new WP_REST_Response(null, 204);
+        }
+        if (($existing['status'] ?? '') === 'zaakceptowany') {
+            return new WP_Error('erp_omd_estimate_locked', __('Accepted estimate cannot be deleted.', 'erp-omd'), ['status' => 422]);
+        }
+        $this->estimates->delete((int) $request['id']);
+
+        return new WP_REST_Response(null, 204);
+    }
+
+    public function list_estimate_items(WP_REST_Request $request)
+    {
+        $estimate = $this->estimates->find((int) $request['id']);
+        if (! $estimate) {
+            return new WP_Error('erp_omd_estimate_not_found', __('Estimate not found.', 'erp-omd'), ['status' => 404]);
+        }
+
+        return rest_ensure_response($this->estimate_items->for_estimate((int) $estimate['id']));
+    }
+
+    public function create_estimate_item(WP_REST_Request $request)
+    {
+        $estimate = $this->estimates->find((int) $request['id']);
+        $payload = $this->sanitize_estimate_item_payload($request, (int) $request['id']);
+        $errors = $this->estimate_service->validate_item($payload, $estimate);
+        if ($errors) {
+            return new WP_Error('erp_omd_estimate_item_invalid', implode(' ', $errors), ['status' => 422]);
+        }
+        $id = $this->estimate_items->create($payload);
+
+        return new WP_REST_Response($this->estimate_items->find($id), 201);
+    }
+
+    public function get_estimate_item(WP_REST_Request $request)
+    {
+        $item = $this->estimate_items->find((int) $request['id']);
+        if (! $item) {
+            return new WP_Error('erp_omd_estimate_item_not_found', __('Estimate item not found.', 'erp-omd'), ['status' => 404]);
+        }
+
+        return rest_ensure_response($item);
+    }
+
+    public function update_estimate_item(WP_REST_Request $request)
+    {
+        $id = (int) $request['id'];
+        $existing = $this->estimate_items->find($id);
+        if (! $existing) {
+            return new WP_Error('erp_omd_estimate_item_not_found', __('Estimate item not found.', 'erp-omd'), ['status' => 404]);
+        }
+        $estimate = $this->estimates->find((int) $existing['estimate_id']);
+        $payload = $this->sanitize_estimate_item_payload($request, (int) $existing['estimate_id'], $existing);
+        $errors = $this->estimate_service->validate_item($payload, $estimate, $existing);
+        if ($errors) {
+            return new WP_Error('erp_omd_estimate_item_invalid', implode(' ', $errors), ['status' => 422]);
+        }
+        $this->estimate_items->update($id, $payload);
+
+        return rest_ensure_response($this->estimate_items->find($id));
+    }
+
+    public function delete_estimate_item(WP_REST_Request $request)
+    {
+        $existing = $this->estimate_items->find((int) $request['id']);
+        if (! $existing) {
+            return new WP_REST_Response(null, 204);
+        }
+        $estimate = $this->estimates->find((int) $existing['estimate_id']);
+        if ($estimate && ($estimate['status'] ?? '') === 'zaakceptowany') {
+            return new WP_Error('erp_omd_estimate_item_locked', __('Accepted estimate items cannot be deleted.', 'erp-omd'), ['status' => 422]);
+        }
+        $this->estimate_items->delete((int) $request['id']);
+
+        return new WP_REST_Response(null, 204);
+    }
+
+    public function accept_estimate(WP_REST_Request $request)
+    {
+        $result = $this->estimate_service->accept((int) $request['id']);
+        if ($result instanceof WP_Error) {
+            return $result;
+        }
+
+        return rest_ensure_response($result);
+    }
 
     public function list_projects() { return rest_ensure_response($this->projects->all()); }
     public function get_project(WP_REST_Request $request) { return $this->find_or_error($this->projects->find((int) $request['id']), 'erp_omd_project_not_found', __('Project not found.', 'erp-omd')); }
@@ -337,6 +515,8 @@ class ERP_OMD_REST_API
     private function sanitize_employee_payload(WP_REST_Request $request) { $role_ids = $request->get_param('role_ids'); return ['user_id' => (int) $request->get_param('user_id'), 'default_role_id' => (int) $request->get_param('default_role_id'), 'account_type' => sanitize_text_field((string) $request->get_param('account_type')) ?: 'worker', 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active', 'role_ids' => is_array($role_ids) ? array_map('intval', $role_ids) : []]; }
     private function sanitize_salary_payload(WP_REST_Request $request, $employee_id) { return ['employee_id' => $employee_id, 'monthly_salary' => (float) $request->get_param('monthly_salary'), 'monthly_hours' => (float) $request->get_param('monthly_hours'), 'valid_from' => sanitize_text_field((string) $request->get_param('valid_from')), 'valid_to' => sanitize_text_field((string) $request->get_param('valid_to'))]; }
     private function sanitize_client_payload(WP_REST_Request $request) { return ['name' => sanitize_text_field((string) $request->get_param('name')), 'company' => sanitize_text_field((string) $request->get_param('company')), 'nip' => sanitize_text_field((string) $request->get_param('nip')), 'email' => sanitize_email((string) $request->get_param('email')), 'phone' => sanitize_text_field((string) $request->get_param('phone')), 'contact_person_name' => sanitize_text_field((string) $request->get_param('contact_person_name')), 'contact_person_email' => sanitize_email((string) $request->get_param('contact_person_email')), 'contact_person_phone' => sanitize_text_field((string) $request->get_param('contact_person_phone')), 'city' => sanitize_text_field((string) $request->get_param('city')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active', 'account_manager_id' => (int) $request->get_param('account_manager_id')]; }
+    private function sanitize_estimate_payload(WP_REST_Request $request, array $existing = null) { return ['client_id' => (int) ($request->get_param('client_id') ?: ($existing['client_id'] ?? 0)), 'status' => sanitize_text_field((string) ($request->get_param('status') ?: ($existing['status'] ?? 'wstepny'))) ?: 'wstepny', 'accepted_by_user_id' => (int) ($existing['accepted_by_user_id'] ?? 0), 'accepted_at' => $existing['accepted_at'] ?? null]; }
+    private function sanitize_estimate_item_payload(WP_REST_Request $request, $estimate_id, array $existing = null) { return ['estimate_id' => (int) $estimate_id, 'name' => sanitize_text_field((string) ($request->get_param('name') ?: ($existing['name'] ?? ''))), 'qty' => (float) ($request->get_param('qty') !== null ? $request->get_param('qty') : ($existing['qty'] ?? 0)), 'price' => (float) ($request->get_param('price') !== null ? $request->get_param('price') : ($existing['price'] ?? 0)), 'cost_internal' => (float) ($request->get_param('cost_internal') !== null ? $request->get_param('cost_internal') : ($existing['cost_internal'] ?? 0)), 'comment' => sanitize_textarea_field((string) ($request->get_param('comment') !== null ? $request->get_param('comment') : ($existing['comment'] ?? '')) )]; }
     private function sanitize_project_payload(WP_REST_Request $request) { return ['client_id' => (int) $request->get_param('client_id'), 'name' => sanitize_text_field((string) $request->get_param('name')), 'billing_type' => sanitize_text_field((string) $request->get_param('billing_type')) ?: 'time_material', 'budget' => (float) $request->get_param('budget'), 'retainer_monthly_fee' => (float) $request->get_param('retainer_monthly_fee'), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'do_rozpoczecia', 'start_date' => sanitize_text_field((string) $request->get_param('start_date')), 'end_date' => sanitize_text_field((string) $request->get_param('end_date')), 'manager_id' => (int) $request->get_param('manager_id'), 'estimate_id' => (int) $request->get_param('estimate_id'), 'brief' => sanitize_textarea_field((string) $request->get_param('brief'))]; }
     private function sanitize_project_cost_payload(WP_REST_Request $request, $project_id) { return ['project_id' => (int) $project_id, 'amount' => (float) $request->get_param('amount'), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'cost_date' => sanitize_text_field((string) $request->get_param('cost_date')), 'created_by_user_id' => get_current_user_id()]; }
     private function sanitize_time_entry_payload(WP_REST_Request $request) { return ['employee_id' => (int) $request->get_param('employee_id'), 'project_id' => (int) $request->get_param('project_id'), 'role_id' => (int) $request->get_param('role_id'), 'hours' => (float) $request->get_param('hours'), 'entry_date' => sanitize_text_field((string) $request->get_param('entry_date')), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'submitted']; }

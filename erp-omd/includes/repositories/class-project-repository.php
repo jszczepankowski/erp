@@ -53,6 +53,19 @@ class ERP_OMD_Project_Repository
         );
     }
 
+    public function find_by_estimate_id($estimate_id)
+    {
+        global $wpdb;
+
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM {$this->table_name()} WHERE estimate_id = %d LIMIT 1",
+                $estimate_id
+            ),
+            ARRAY_A
+        );
+    }
+
     public function create(array $data)
     {
         global $wpdb;

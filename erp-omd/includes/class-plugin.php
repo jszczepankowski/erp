@@ -8,6 +8,8 @@ class ERP_OMD_Plugin
     private $client_repository;
     private $client_rate_repository;
     private $project_repository;
+    private $estimate_repository;
+    private $estimate_item_repository;
     private $project_note_repository;
     private $project_rate_repository;
     private $project_cost_repository;
@@ -16,6 +18,7 @@ class ERP_OMD_Plugin
     private $monthly_hours_service;
     private $employee_service;
     private $client_project_service;
+    private $estimate_service;
     private $time_entry_service;
     private $project_financial_service;
     private $admin;
@@ -29,6 +32,8 @@ class ERP_OMD_Plugin
         $this->client_repository = new ERP_OMD_Client_Repository();
         $this->client_rate_repository = new ERP_OMD_Client_Rate_Repository();
         $this->project_repository = new ERP_OMD_Project_Repository();
+        $this->estimate_repository = new ERP_OMD_Estimate_Repository();
+        $this->estimate_item_repository = new ERP_OMD_Estimate_Item_Repository();
         $this->project_note_repository = new ERP_OMD_Project_Note_Repository();
         $this->project_rate_repository = new ERP_OMD_Project_Rate_Repository();
         $this->project_cost_repository = new ERP_OMD_Project_Cost_Repository();
@@ -44,6 +49,12 @@ class ERP_OMD_Plugin
             $this->client_repository,
             $this->employee_repository,
             $this->role_repository
+        );
+        $this->estimate_service = new ERP_OMD_Estimate_Service(
+            $this->estimate_repository,
+            $this->estimate_item_repository,
+            $this->client_repository,
+            $this->project_repository
         );
         $this->time_entry_service = new ERP_OMD_Time_Entry_Service(
             $this->time_entry_repository,
@@ -69,8 +80,11 @@ class ERP_OMD_Plugin
             $this->client_repository,
             $this->client_rate_repository,
             $this->project_repository,
+            $this->estimate_repository,
+            $this->estimate_item_repository,
             $this->project_note_repository,
             $this->client_project_service,
+            $this->estimate_service,
             $this->project_rate_repository,
             $this->project_cost_repository,
             $this->project_financial_repository,
@@ -87,8 +101,11 @@ class ERP_OMD_Plugin
             $this->client_repository,
             $this->client_rate_repository,
             $this->project_repository,
+            $this->estimate_repository,
+            $this->estimate_item_repository,
             $this->project_note_repository,
             $this->client_project_service,
+            $this->estimate_service,
             $this->project_rate_repository,
             $this->project_cost_repository,
             $this->project_financial_repository,

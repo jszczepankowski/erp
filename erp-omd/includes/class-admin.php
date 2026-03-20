@@ -10,8 +10,11 @@ class ERP_OMD_Admin
     private $clients;
     private $client_rates;
     private $projects;
+    private $estimates;
+    private $estimate_items;
     private $project_notes;
     private $client_project_service;
+    private $estimate_service;
     private $project_rates;
     private $project_costs;
     private $project_financials;
@@ -28,8 +31,11 @@ class ERP_OMD_Admin
         ERP_OMD_Client_Repository $clients,
         ERP_OMD_Client_Rate_Repository $client_rates,
         ERP_OMD_Project_Repository $projects,
+        ERP_OMD_Estimate_Repository $estimates,
+        ERP_OMD_Estimate_Item_Repository $estimate_items,
         ERP_OMD_Project_Note_Repository $project_notes,
         ERP_OMD_Client_Project_Service $client_project_service,
+        ERP_OMD_Estimate_Service $estimate_service,
         ERP_OMD_Project_Rate_Repository $project_rates,
         ERP_OMD_Project_Cost_Repository $project_costs,
         ERP_OMD_Project_Financial_Repository $project_financials,
@@ -45,8 +51,11 @@ class ERP_OMD_Admin
         $this->clients = $clients;
         $this->client_rates = $client_rates;
         $this->projects = $projects;
+        $this->estimates = $estimates;
+        $this->estimate_items = $estimate_items;
         $this->project_notes = $project_notes;
         $this->client_project_service = $client_project_service;
+        $this->estimate_service = $estimate_service;
         $this->project_rates = $project_rates;
         $this->project_costs = $project_costs;
         $this->project_financials = $project_financials;
@@ -69,6 +78,7 @@ class ERP_OMD_Admin
         add_submenu_page('erp-omd', __('Pracownicy', 'erp-omd'), __('Pracownicy', 'erp-omd'), 'erp_omd_manage_employees', 'erp-omd-employees', [$this, 'render_employees']);
         add_submenu_page('erp-omd', __('Role', 'erp-omd'), __('Role', 'erp-omd'), 'erp_omd_manage_roles', 'erp-omd-roles', [$this, 'render_roles']);
         add_submenu_page('erp-omd', __('Klienci', 'erp-omd'), __('Klienci', 'erp-omd'), 'erp_omd_manage_clients', 'erp-omd-clients', [$this, 'render_clients']);
+        add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
         add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
         add_submenu_page('erp-omd', __('Czas pracy', 'erp-omd'), __('Czas pracy', 'erp-omd'), 'erp_omd_manage_time', 'erp-omd-time', [$this, 'render_time_entries']);
         add_submenu_page('erp-omd', __('Ustawienia', 'erp-omd'), __('Ustawienia', 'erp-omd'), 'erp_omd_manage_settings', 'erp-omd-settings', [$this, 'render_settings']);
@@ -100,6 +110,11 @@ class ERP_OMD_Admin
             case 'deactivate_client': $this->handle_client_deactivate(); break;
             case 'save_client_rate': $this->handle_client_rate_save(); break;
             case 'delete_client_rate': $this->handle_client_rate_delete(); break;
+            case 'save_estimate': $this->handle_estimate_save(); break;
+            case 'delete_estimate': $this->handle_estimate_delete(); break;
+            case 'save_estimate_item': $this->handle_estimate_item_save(); break;
+            case 'delete_estimate_item': $this->handle_estimate_item_delete(); break;
+            case 'accept_estimate': $this->handle_estimate_accept(); break;
             case 'save_project': $this->handle_project_save(); break;
             case 'deactivate_project': $this->handle_project_deactivate(); break;
             case 'add_project_note': $this->handle_project_note_add(); break;
@@ -190,6 +205,40 @@ class ERP_OMD_Admin
         $roles = $this->roles->all();
         $employees_for_select = $this->employees->all();
         include ERP_OMD_PATH . 'templates/admin/clients.php';
+    }
+
+    public function render_estimates()
+    {
+        $estimate = null;
+        $estimate_items = [];
+        $estimate_totals = ['net' => 0.0, 'tax' => 0.0, 'gross' => 0.0, 'internal_cost' => 0.0];
+        $editing_estimate_item = null;
+        $linked_project = null;
+        if (! empty($_GET['id'])) {
+            $estimate = $this->estimates->find((int) $_GET['id']);
+            if ($estimate) {
+                $estimate_items = $this->estimate_items->for_estimate((int) $estimate['id']);
+                $estimate_totals = $this->estimate_service->calculate_totals($estimate_items);
+                $linked_project = $this->projects->find_by_estimate_id((int) $estimate['id']);
+                if (! empty($_GET['item_id'])) {
+                    $editing_estimate_item = $this->estimate_items->find((int) $_GET['item_id']);
+                    if (! $editing_estimate_item || (int) ($editing_estimate_item['estimate_id'] ?? 0) !== (int) $estimate['id']) {
+                        $editing_estimate_item = null;
+                    }
+                }
+            }
+        }
+        $estimates = $this->estimates->all();
+        foreach ($estimates as &$estimate_row) {
+            $estimate_row_items = $this->estimate_items->for_estimate((int) $estimate_row['id']);
+            $estimate_row_totals = $this->estimate_service->calculate_totals($estimate_row_items);
+            $estimate_row['total_net'] = $estimate_row_totals['net'];
+            $estimate_row['total_gross'] = $estimate_row_totals['gross'];
+            $estimate_row['total_internal_cost'] = $estimate_row_totals['internal_cost'];
+        }
+        unset($estimate_row);
+        $clients = $this->clients->all();
+        include ERP_OMD_PATH . 'templates/admin/estimates.php';
     }
 
     public function render_projects()
@@ -379,6 +428,108 @@ class ERP_OMD_Admin
         $client_id = (int) ($_POST['client_id'] ?? 0);
         if ($id) { $this->client_rates->delete($id); }
         $this->redirect_with_notice('erp-omd-clients', 'success', __('Stawka klienta została usunięta.', 'erp-omd'), ['id' => $client_id]);
+    }
+
+    private function handle_estimate_save()
+    {
+        check_admin_referer('erp_omd_save_estimate');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = empty($_POST['id']) ? 0 : (int) $_POST['id'];
+        $existing = $id ? $this->estimates->find($id) : null;
+        $payload = [
+            'client_id' => (int) ($_POST['client_id'] ?? 0),
+            'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? 'wstepny')),
+            'accepted_by_user_id' => (int) ($existing['accepted_by_user_id'] ?? 0),
+            'accepted_at' => $existing['accepted_at'] ?? null,
+        ];
+        $errors = $this->estimate_service->validate_estimate($payload, $existing);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', implode(' ', $errors), $id ? ['id' => $id] : []);
+        }
+        if ($id) {
+            $this->estimates->update($id, $payload);
+            $message = __('Kosztorys został zaktualizowany.', 'erp-omd');
+        } else {
+            $id = $this->estimates->create($payload);
+            $message = __('Kosztorys został utworzony.', 'erp-omd');
+        }
+        $this->redirect_with_notice('erp-omd-estimates', 'success', $message, ['id' => $id]);
+    }
+
+    private function handle_estimate_delete()
+    {
+        check_admin_referer('erp_omd_delete_estimate');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = (int) ($_POST['id'] ?? 0);
+        $estimate = $id ? $this->estimates->find($id) : null;
+        if (! $estimate) {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie znaleziono kosztorysu.', 'erp-omd'));
+        }
+        if (($estimate['status'] ?? '') === 'zaakceptowany') {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', __('Zaakceptowany kosztorys nie może zostać usunięty.', 'erp-omd'), ['id' => $id]);
+        }
+        $this->estimates->delete($id);
+        $this->redirect_with_notice('erp-omd-estimates', 'success', __('Kosztorys został usunięty.', 'erp-omd'));
+    }
+
+    private function handle_estimate_item_save()
+    {
+        check_admin_referer('erp_omd_save_estimate_item');
+        $this->require_capability('erp_omd_manage_projects');
+        $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+        $item_id = empty($_POST['item_id']) ? 0 : (int) $_POST['item_id'];
+        $estimate = $this->estimates->find($estimate_id);
+        $existing_item = $item_id ? $this->estimate_items->find($item_id) : null;
+        $payload = [
+            'estimate_id' => $estimate_id,
+            'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
+            'qty' => (float) ($_POST['qty'] ?? 0),
+            'price' => (float) ($_POST['price'] ?? 0),
+            'cost_internal' => (float) ($_POST['cost_internal'] ?? 0),
+            'comment' => sanitize_textarea_field(wp_unslash($_POST['comment'] ?? '')),
+        ];
+        $errors = $this->estimate_service->validate_item($payload, $estimate, $existing_item);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', implode(' ', $errors), ['id' => $estimate_id]);
+        }
+        if ($item_id) {
+            $this->estimate_items->update($item_id, $payload);
+            $message = __('Pozycja kosztorysu została zaktualizowana.', 'erp-omd');
+        } else {
+            $this->estimate_items->create($payload);
+            $message = __('Pozycja kosztorysu została dodana.', 'erp-omd');
+        }
+        $this->redirect_with_notice('erp-omd-estimates', 'success', $message, ['id' => $estimate_id]);
+    }
+
+    private function handle_estimate_item_delete()
+    {
+        check_admin_referer('erp_omd_delete_estimate_item');
+        $this->require_capability('erp_omd_manage_projects');
+        $item_id = (int) ($_POST['item_id'] ?? 0);
+        $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+        $item = $item_id ? $this->estimate_items->find($item_id) : null;
+        $estimate = $estimate_id ? $this->estimates->find($estimate_id) : null;
+        if (! $item || ! $estimate || (int) ($item['estimate_id'] ?? 0) !== $estimate_id) {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie znaleziono pozycji kosztorysu.', 'erp-omd'), ['id' => $estimate_id]);
+        }
+        if (($estimate['status'] ?? '') === 'zaakceptowany') {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie można usuwać pozycji z zaakceptowanego kosztorysu.', 'erp-omd'), ['id' => $estimate_id]);
+        }
+        $this->estimate_items->delete($item_id);
+        $this->redirect_with_notice('erp-omd-estimates', 'success', __('Pozycja kosztorysu została usunięta.', 'erp-omd'), ['id' => $estimate_id]);
+    }
+
+    private function handle_estimate_accept()
+    {
+        check_admin_referer('erp_omd_accept_estimate');
+        $this->require_capability('erp_omd_manage_projects');
+        $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+        $result = $this->estimate_service->accept($estimate_id);
+        if ($result instanceof WP_Error) {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', $result->get_error_message(), ['id' => $estimate_id]);
+        }
+        $this->redirect_with_notice('erp-omd-estimates', 'success', __('Kosztorys został zaakceptowany i powiązany z projektem.', 'erp-omd'), ['id' => $estimate_id]);
     }
 
     private function handle_project_save()

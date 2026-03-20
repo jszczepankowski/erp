@@ -36,6 +36,8 @@ class ERP_OMD_Installer
         $salary_table = $wpdb->prefix . 'erp_omd_salary_history';
         $clients_table = $wpdb->prefix . 'erp_omd_clients';
         $client_rates_table = $wpdb->prefix . 'erp_omd_client_rates';
+        $estimates_table = $wpdb->prefix . 'erp_omd_estimates';
+        $estimate_items_table = $wpdb->prefix . 'erp_omd_estimate_items';
         $projects_table = $wpdb->prefix . 'erp_omd_projects';
         $project_notes_table = $wpdb->prefix . 'erp_omd_project_notes';
         $project_rates_table = $wpdb->prefix . 'erp_omd_project_rates';
@@ -141,6 +143,38 @@ class ERP_OMD_Installer
         );
 
         dbDelta(
+            "CREATE TABLE {$estimates_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                client_id BIGINT UNSIGNED NOT NULL,
+                status VARCHAR(32) NOT NULL DEFAULT 'wstepny',
+                accepted_by_user_id BIGINT UNSIGNED NULL,
+                accepted_at DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY client_id (client_id),
+                KEY status (status),
+                KEY accepted_by_user_id (accepted_by_user_id)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+        dbDelta(
+            "CREATE TABLE {$estimate_items_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                estimate_id BIGINT UNSIGNED NOT NULL,
+                name VARCHAR(191) NOT NULL,
+                qty DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                cost_internal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                comment TEXT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY estimate_id (estimate_id)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+        dbDelta(
             "CREATE TABLE {$projects_table} (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 client_id BIGINT UNSIGNED NOT NULL,
@@ -158,6 +192,7 @@ class ERP_OMD_Installer
                 updated_at DATETIME NOT NULL,
                 PRIMARY KEY  (id),
                 KEY client_id (client_id),
+                KEY estimate_id (estimate_id),
                 KEY manager_id (manager_id),
                 KEY status (status),
                 KEY billing_type (billing_type)
@@ -264,8 +299,12 @@ class ERP_OMD_Installer
         self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_clients_account_manager', "ALTER TABLE {$clients_table} ADD CONSTRAINT fk_erp_omd_clients_account_manager FOREIGN KEY (account_manager_id) REFERENCES {$employees_table}(id) ON DELETE SET NULL");
         self::add_foreign_key_if_missing($clients_table, 'fk_erp_omd_client_rates_client', "ALTER TABLE {$client_rates_table} ADD CONSTRAINT fk_erp_omd_client_rates_client FOREIGN KEY (client_id) REFERENCES {$clients_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_client_rates_role', "ALTER TABLE {$client_rates_table} ADD CONSTRAINT fk_erp_omd_client_rates_role FOREIGN KEY (role_id) REFERENCES {$roles_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($clients_table, 'fk_erp_omd_estimates_client', "ALTER TABLE {$estimates_table} ADD CONSTRAINT fk_erp_omd_estimates_client FOREIGN KEY (client_id) REFERENCES {$clients_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_estimates_accepted_by', "ALTER TABLE {$estimates_table} ADD CONSTRAINT fk_erp_omd_estimates_accepted_by FOREIGN KEY (accepted_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($estimates_table, 'fk_erp_omd_estimate_items_estimate', "ALTER TABLE {$estimate_items_table} ADD CONSTRAINT fk_erp_omd_estimate_items_estimate FOREIGN KEY (estimate_id) REFERENCES {$estimates_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($clients_table, 'fk_erp_omd_projects_client', "ALTER TABLE {$projects_table} ADD CONSTRAINT fk_erp_omd_projects_client FOREIGN KEY (client_id) REFERENCES {$clients_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_projects_manager', "ALTER TABLE {$projects_table} ADD CONSTRAINT fk_erp_omd_projects_manager FOREIGN KEY (manager_id) REFERENCES {$employees_table}(id) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($estimates_table, 'fk_erp_omd_projects_estimate', "ALTER TABLE {$projects_table} ADD CONSTRAINT fk_erp_omd_projects_estimate FOREIGN KEY (estimate_id) REFERENCES {$estimates_table}(id) ON DELETE SET NULL");
         self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_notes_project', "ALTER TABLE {$project_notes_table} ADD CONSTRAINT fk_erp_omd_project_notes_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_project_notes_author', "ALTER TABLE {$project_notes_table} ADD CONSTRAINT fk_erp_omd_project_notes_author FOREIGN KEY (author_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_rates_project', "ALTER TABLE {$project_rates_table} ADD CONSTRAINT fk_erp_omd_project_rates_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
