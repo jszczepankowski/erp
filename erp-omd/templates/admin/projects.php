@@ -15,12 +15,12 @@
                         <select id="project-billing-type" name="billing_type">
                             <option value="time_material" <?php selected($project['billing_type'] ?? 'time_material', 'time_material'); ?>><?php esc_html_e('Time & Material', 'erp-omd'); ?></option>
                             <option value="fixed_price" <?php selected($project['billing_type'] ?? '', 'fixed_price'); ?>><?php esc_html_e('Ryczałt', 'erp-omd'); ?></option>
-                            <option value="retainer" <?php selected($project['billing_type'] ?? '', 'retainer'); ?>><?php esc_html_e('Retainer', 'erp-omd'); ?></option>
+                            <option value="retainer" <?php selected($project['billing_type'] ?? '', 'retainer'); ?>><?php esc_html_e('Abonament', 'erp-omd'); ?></option>
                         </select>
                     </td>
                 </tr>
-                <tr><th><label for="project-budget"><?php esc_html_e('Budżet', 'erp-omd'); ?></label></th><td><input id="project-budget" type="number" step="0.01" min="0" name="budget" value="<?php echo esc_attr($project['budget'] ?? '0'); ?>" /></td></tr>
-                <tr><th><label for="project-retainer-fee"><?php esc_html_e('Retainer — miesięczna opłata', 'erp-omd'); ?></label></th><td><input id="project-retainer-fee" type="number" step="0.01" min="0" name="retainer_monthly_fee" value="<?php echo esc_attr($project['retainer_monthly_fee'] ?? '0'); ?>" /></td></tr>
+                <tr id="erp-omd-project-budget-row"><th><label for="project-budget"><?php esc_html_e('Budżet', 'erp-omd'); ?></label></th><td><input id="project-budget" type="number" step="0.01" min="0" name="budget" value="<?php echo esc_attr($project['budget'] ?? '0'); ?>" /></td></tr>
+                <tr id="erp-omd-project-retainer-row"><th><label for="project-retainer-fee"><?php esc_html_e('Abonament — opłata miesięczna', 'erp-omd'); ?></label></th><td><input id="project-retainer-fee" type="number" step="0.01" min="0" name="retainer_monthly_fee" value="<?php echo esc_attr($project['retainer_monthly_fee'] ?? '0'); ?>" /></td></tr>
                 <tr>
                     <th><label for="project-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
                     <td>
@@ -40,7 +40,7 @@
                             <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
                             <?php foreach ($employees_for_select as $employee_item) : ?>
                                 <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($project['manager_id'] ?? 0), (int) $employee_item['id']); ?>>
-                                    <?php echo esc_html($employee_item['user_login'] . ' (' . $employee_item['account_type'] . ')'); ?>
+                                    <?php echo esc_html($employee_item['user_login'] . ' (' . $this->account_type_label($employee_item['account_type']) . ')'); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -53,6 +53,7 @@
         </form>
 
         <?php if ($project) : ?>
+            <div id="erp-omd-project-details">
             <hr />
             <h2><?php esc_html_e('Finanse projektu', 'erp-omd'); ?></h2>
             <table class="widefat striped">
@@ -101,6 +102,7 @@
                 <textarea class="large-text" rows="4" name="note" required></textarea>
                 <?php submit_button(__('Dodaj uwagę klienta', 'erp-omd'), 'secondary'); ?>
             </form>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -127,6 +129,7 @@
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['margin'] ?? 0), 2)); ?></td>
                             <td>
                                 <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php')) . '#erp-omd-project-details'); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
                                 <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Dezaktywować projekt?', 'erp-omd')); ?>');">
                                     <?php wp_nonce_field('erp_omd_deactivate_project'); ?>
                                     <input type="hidden" name="erp_omd_action" value="deactivate_project" />
@@ -215,3 +218,23 @@
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var billingTypeField = document.getElementById('project-billing-type');
+    var budgetRow = document.getElementById('erp-omd-project-budget-row');
+    var retainerRow = document.getElementById('erp-omd-project-retainer-row');
+
+    if (!billingTypeField || !budgetRow || !retainerRow) {
+        return;
+    }
+
+    var toggleProjectBillingRows = function () {
+        budgetRow.style.display = billingTypeField.value === 'fixed_price' ? '' : 'none';
+        retainerRow.style.display = billingTypeField.value === 'retainer' ? '' : 'none';
+    };
+
+    billingTypeField.addEventListener('change', toggleProjectBillingRows);
+    toggleProjectBillingRows();
+});
+</script>

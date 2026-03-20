@@ -64,7 +64,7 @@
                     <select id="bulk-time-action" name="bulk_action">
                         <option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option>
                         <?php if (current_user_can('administrator') || current_user_can('erp_omd_approve_time')) : ?>
-                            <option value="submitted"><?php esc_html_e('Ustaw status: Wysłany', 'erp-omd'); ?></option>
+                            <option value="submitted"><?php esc_html_e('Ustaw status: Zgłoszony', 'erp-omd'); ?></option>
                             <option value="approved"><?php esc_html_e('Ustaw status: Zaakceptowany', 'erp-omd'); ?></option>
                             <option value="rejected"><?php esc_html_e('Ustaw status: Odrzucony', 'erp-omd'); ?></option>
                         <?php endif; ?>

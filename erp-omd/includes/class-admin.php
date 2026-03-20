@@ -821,7 +821,7 @@ class ERP_OMD_Admin
             case 'fixed_price':
                 return __('Ryczałt', 'erp-omd');
             case 'retainer':
-                return __('Retainer', 'erp-omd');
+                return __('Abonament', 'erp-omd');
             case 'time_material':
             default:
                 return __('Time & Material', 'erp-omd');
@@ -837,7 +837,7 @@ class ERP_OMD_Admin
                 return __('Odrzucony', 'erp-omd');
             case 'submitted':
             default:
-                return __('Wysłany', 'erp-omd');
+                return __('Zgłoszony', 'erp-omd');
         }
     }
 
