@@ -108,7 +108,6 @@
                     <tr>
                         <th><?php esc_html_e('ID', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Login', 'erp-omd'); ?></th>
-                        <th><?php esc_html_e('Email', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Typ konta', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Aktualna pensja', 'erp-omd'); ?></th>
@@ -117,6 +116,7 @@
                         <th><?php esc_html_e('Godziny do wypracowania', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Koszt godzinowy', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Zysk z pracownika', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Data logowania', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                     </tr>
                 </thead>
@@ -127,8 +127,16 @@
                         <?php foreach ($employees as $item) : ?>
                             <tr>
                                 <td><?php echo esc_html($item['id']); ?></td>
-                                <td><?php echo esc_html($item['user_login']); ?></td>
-                                <td><?php echo esc_html($item['user_email']); ?></td>
+                                <td>
+                                    <?php echo esc_html($item['user_login']); ?>
+                                    <?php if (! empty($item['alerts'])) : ?>
+                                        <div class="erp-omd-badge-list">
+                                            <?php foreach ($item['alerts'] as $employee_alert) : ?>
+                                                <span class="erp-omd-badge erp-omd-badge-<?php echo esc_attr($employee_alert['severity']); ?>"><?php echo esc_html($employee_alert['message']); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo esc_html($this->account_type_label($item['account_type'])); ?></td>
                                 <td><?php echo esc_html($this->active_status_label($item['status'])); ?></td>
                                 <td><?php echo ! empty($item['current_monthly_salary']) ? esc_html(number_format_i18n((float) $item['current_monthly_salary'], 2)) : '—'; ?></td>
@@ -137,13 +145,15 @@
                                 <td><?php echo null !== ($item['target_monthly_hours'] ?? null) ? esc_html(number_format_i18n((float) $item['target_monthly_hours'], 2)) : '—'; ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) ($item['hourly_cost_total'] ?? 0), 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) ($item['employee_profit'] ?? 0), 2)); ?></td>
+                                <td><?php echo ! empty($item['last_login_at']) ? esc_html($item['last_login_at']) : '—'; ?></td>
                                 <td>
                                     <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-employees', 'id' => $item['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
-                                    <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Dezaktywować pracownika?', 'erp-omd')); ?>');">
-                                        <?php wp_nonce_field('erp_omd_deactivate_employee'); ?>
-                                        <input type="hidden" name="erp_omd_action" value="deactivate_employee" />
+                                    <?php $employee_is_inactive = ($item['status'] ?? '') === 'inactive'; ?>
+                                    <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js($employee_is_inactive ? __('Aktywować pracownika?', 'erp-omd') : __('Dezaktywować pracownika?', 'erp-omd')); ?>');">
+                                        <?php wp_nonce_field('erp_omd_toggle_employee_active'); ?>
+                                        <input type="hidden" name="erp_omd_action" value="toggle_employee_active" />
                                         <input type="hidden" name="id" value="<?php echo esc_attr($item['id']); ?>" />
-                                        <button class="button button-small" type="submit"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></button>
+                                        <button class="button button-small" type="submit"><?php echo esc_html($employee_is_inactive ? __('Aktywuj', 'erp-omd') : __('Dezaktywuj', 'erp-omd')); ?></button>
                                     </form>
                                 </td>
                             </tr>

@@ -15,6 +15,7 @@ class ERP_OMD_Plugin
     private $project_cost_repository;
     private $project_financial_repository;
     private $time_entry_repository;
+    private $attachment_repository;
     private $monthly_hours_service;
     private $employee_service;
     private $client_project_service;
@@ -22,6 +23,7 @@ class ERP_OMD_Plugin
     private $time_entry_service;
     private $project_financial_service;
     private $reporting_service;
+    private $alert_service;
     private $admin;
     private $rest_api;
 
@@ -40,6 +42,7 @@ class ERP_OMD_Plugin
         $this->project_cost_repository = new ERP_OMD_Project_Cost_Repository();
         $this->project_financial_repository = new ERP_OMD_Project_Financial_Repository();
         $this->time_entry_repository = new ERP_OMD_Time_Entry_Repository();
+        $this->attachment_repository = new ERP_OMD_Attachment_Repository();
         $this->monthly_hours_service = new ERP_OMD_Monthly_Hours_Service();
         $this->employee_service = new ERP_OMD_Employee_Service(
             $this->employee_repository,
@@ -80,6 +83,15 @@ class ERP_OMD_Plugin
             $this->time_entry_repository,
             $this->project_financial_service
         );
+        $this->alert_service = new ERP_OMD_Alert_Service(
+            $this->employee_repository,
+            $this->client_repository,
+            $this->client_rate_repository,
+            $this->project_repository,
+            $this->project_rate_repository,
+            $this->project_financial_service,
+            $this->time_entry_repository
+        );
         $this->admin = new ERP_OMD_Admin(
             $this->role_repository,
             $this->employee_repository,
@@ -98,9 +110,11 @@ class ERP_OMD_Plugin
             $this->project_cost_repository,
             $this->project_financial_repository,
             $this->time_entry_repository,
+            $this->attachment_repository,
             $this->time_entry_service,
             $this->project_financial_service,
-            $this->reporting_service
+            $this->reporting_service,
+            $this->alert_service
         );
         $this->rest_api = new ERP_OMD_REST_API(
             $this->role_repository,
@@ -132,5 +146,15 @@ class ERP_OMD_Plugin
         ERP_OMD_Capabilities::register_hooks();
         $this->admin->register_hooks();
         $this->rest_api->register_hooks();
+        add_action('wp_login', [$this, 'track_user_login'], 10, 2);
+    }
+
+    public function track_user_login($user_login, $user)
+    {
+        if (! $user instanceof WP_User) {
+            return;
+        }
+
+        update_user_meta($user->ID, 'erp_omd_last_login_at', current_time('mysql'));
     }
 }

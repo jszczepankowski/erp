@@ -19,9 +19,11 @@ class ERP_OMD_Admin
     private $project_costs;
     private $project_financials;
     private $time_entries;
+    private $attachments;
     private $time_entry_service;
     private $project_financial_service;
     private $reporting_service;
+    private $alert_service;
 
     public function __construct(
         ERP_OMD_Role_Repository $roles,
@@ -41,9 +43,11 @@ class ERP_OMD_Admin
         ERP_OMD_Project_Cost_Repository $project_costs,
         ERP_OMD_Project_Financial_Repository $project_financials,
         ERP_OMD_Time_Entry_Repository $time_entries,
+        ERP_OMD_Attachment_Repository $attachments,
         ERP_OMD_Time_Entry_Service $time_entry_service,
         ERP_OMD_Project_Financial_Service $project_financial_service,
-        ERP_OMD_Reporting_Service $reporting_service
+        ERP_OMD_Reporting_Service $reporting_service,
+        ERP_OMD_Alert_Service $alert_service
     ) {
         $this->roles = $roles;
         $this->employees = $employees;
@@ -62,9 +66,11 @@ class ERP_OMD_Admin
         $this->project_costs = $project_costs;
         $this->project_financials = $project_financials;
         $this->time_entries = $time_entries;
+        $this->attachments = $attachments;
         $this->time_entry_service = $time_entry_service;
         $this->project_financial_service = $project_financial_service;
         $this->reporting_service = $reporting_service;
+        $this->alert_service = $alert_service;
     }
 
     public function register_hooks()
@@ -85,6 +91,7 @@ class ERP_OMD_Admin
         add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
         add_submenu_page('erp-omd', __('Czas pracy', 'erp-omd'), __('Czas pracy', 'erp-omd'), 'erp_omd_manage_time', 'erp-omd-time', [$this, 'render_time_entries']);
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
+        add_submenu_page('erp-omd', __('Alerty', 'erp-omd'), __('Alerty', 'erp-omd'), 'erp_omd_access', 'erp-omd-alerts', [$this, 'render_alerts']);
         add_submenu_page('erp-omd', __('Ustawienia', 'erp-omd'), __('Ustawienia', 'erp-omd'), 'erp_omd_manage_settings', 'erp-omd-settings', [$this, 'render_settings']);
     }
 
@@ -95,6 +102,7 @@ class ERP_OMD_Admin
         }
         wp_enqueue_style('erp-omd-admin', ERP_OMD_URL . 'assets/css/admin.css', [], ERP_OMD_VERSION);
         wp_enqueue_script('erp-omd-admin', ERP_OMD_URL . 'assets/js/admin.js', [], ERP_OMD_VERSION, true);
+        wp_enqueue_media();
     }
 
     public function handle_forms()
@@ -108,11 +116,11 @@ class ERP_OMD_Admin
             case 'save_role': $this->handle_role_save(); break;
             case 'delete_role': $this->handle_role_delete(); break;
             case 'save_employee': $this->handle_employee_save(); break;
-            case 'deactivate_employee': $this->handle_employee_deactivate(); break;
+            case 'toggle_employee_active': $this->handle_employee_active_toggle(); break;
             case 'save_salary': $this->handle_salary_save(); break;
             case 'delete_salary': $this->handle_salary_delete(); break;
             case 'save_client': $this->handle_client_save(); break;
-            case 'deactivate_client': $this->handle_client_deactivate(); break;
+            case 'toggle_client_active': $this->handle_client_active_toggle(); break;
             case 'save_client_rate': $this->handle_client_rate_save(); break;
             case 'delete_client_rate': $this->handle_client_rate_delete(); break;
             case 'save_estimate': $this->handle_estimate_save(); break;
@@ -133,6 +141,8 @@ class ERP_OMD_Admin
             case 'change_time_status': $this->handle_time_status_change(); break;
             case 'delete_time_entry': $this->handle_time_entry_delete(); break;
             case 'bulk_time_entries': $this->handle_time_entries_bulk_action(); break;
+            case 'add_attachment': $this->handle_attachment_add(); break;
+            case 'delete_attachment': $this->handle_attachment_delete(); break;
             case 'save_settings': $this->handle_settings_save(); break;
         }
     }
@@ -143,6 +153,7 @@ class ERP_OMD_Admin
         $roles = $this->roles->all();
         $clients = $this->clients->all();
         $projects = $this->projects->all();
+        $alerts = $this->alert_service->all_alerts();
         include ERP_OMD_PATH . 'templates/admin/dashboard.php';
     }
 
@@ -166,6 +177,7 @@ class ERP_OMD_Admin
             }
         }
         $monthly_metrics = $this->build_monthly_performance_metrics($reporting_month);
+        $employee_alerts = $this->index_alerts_by_entity('employee');
         $employees = $this->employees->all();
         foreach ($employees as &$employee_row) {
             $current_salary_row = $this->resolve_current_salary_row((int) $employee_row['id']);
@@ -178,6 +190,7 @@ class ERP_OMD_Admin
             $employee_row['target_monthly_hours'] = isset($current_salary_row['monthly_hours'])
                 ? round((float) $current_salary_row['monthly_hours'] - $employee_row['reported_hours'], 2)
                 : null;
+            $employee_row['alerts'] = $employee_alerts[(int) $employee_row['id']] ?? [];
         }
         unset($employee_row);
         $roles = $this->roles->all();
@@ -209,9 +222,11 @@ class ERP_OMD_Admin
             $client = $selected_client;
         }
         $client_profit_totals = $this->build_client_profit_totals();
+        $client_alerts = $this->index_alerts_by_entity('client');
         $clients = $this->clients->all();
         foreach ($clients as &$client_row) {
             $client_row['total_profit'] = (float) ($client_profit_totals[(int) $client_row['id']] ?? 0);
+            $client_row['alerts'] = $client_alerts[(int) $client_row['id']] ?? [];
         }
         unset($client_row);
         $roles = $this->roles->all();
@@ -225,6 +240,7 @@ class ERP_OMD_Admin
         $estimate = null;
         $estimate_items = [];
         $estimate_totals = ['net' => 0.0, 'tax' => 0.0, 'gross' => 0.0, 'internal_cost' => 0.0];
+        $estimate_attachments = [];
         $editing_estimate_item = null;
         $linked_project = null;
         $is_editing_estimate = ! empty($_GET['edit']) || ! empty($_GET['item_id']);
@@ -234,6 +250,7 @@ class ERP_OMD_Admin
                 $estimate_items = $this->estimate_items->for_estimate((int) $selected_estimate['id']);
                 $estimate_totals = $this->estimate_service->calculate_totals($estimate_items);
                 $linked_project = $this->projects->find_by_estimate_id((int) $selected_estimate['id']);
+                $estimate_attachments = $this->attachments->for_entity('estimate', (int) $selected_estimate['id']);
                 if (! empty($_GET['item_id'])) {
                     $editing_estimate_item = $this->estimate_items->find((int) $_GET['item_id']);
                     if (! $editing_estimate_item || (int) ($editing_estimate_item['estimate_id'] ?? 0) !== (int) $selected_estimate['id']) {
@@ -245,6 +262,12 @@ class ERP_OMD_Admin
         if ($is_editing_estimate && $selected_estimate) {
             $estimate = $selected_estimate;
         }
+        $estimate_project_alerts = $this->index_alerts_by_entity('project');
+        if ($selected_estimate) {
+            $selected_estimate['alerts'] = $linked_project
+                ? ($estimate_project_alerts[(int) ($linked_project['id'] ?? 0)] ?? [])
+                : [];
+        }
         $estimates = $this->estimates->all();
         foreach ($estimates as &$estimate_row) {
             $estimate_row_items = $this->estimate_items->for_estimate((int) $estimate_row['id']);
@@ -252,6 +275,9 @@ class ERP_OMD_Admin
             $estimate_row['total_net'] = $estimate_row_totals['net'];
             $estimate_row['total_gross'] = $estimate_row_totals['gross'];
             $estimate_row['total_internal_cost'] = $estimate_row_totals['internal_cost'];
+            $estimate_row['alerts'] = ! empty($estimate_row['project_id'])
+                ? ($estimate_project_alerts[(int) $estimate_row['project_id']] ?? [])
+                : [];
         }
         unset($estimate_row);
         $clients = $this->clients->all();
@@ -280,10 +306,16 @@ class ERP_OMD_Admin
         $clients = $this->clients->all();
         $employees_for_select = $this->employees->all();
         $roles = $this->roles->all();
+        $project_alerts = $this->index_alerts_by_entity('project');
         $project_financials_by_project = array_replace(
             $this->project_financial_service->get_project_financials(wp_list_pluck($projects, 'id')),
             $project_financials_by_project
         );
+        foreach ($projects as &$project_row) {
+            $project_row['alerts'] = $project_alerts[(int) $project_row['id']] ?? [];
+        }
+        unset($project_row);
+        $project_attachments = $project ? $this->attachments->for_entity('project', (int) $project['id']) : [];
         include ERP_OMD_PATH . 'templates/admin/projects.php';
     }
 
@@ -322,7 +354,14 @@ class ERP_OMD_Admin
     public function render_settings()
     {
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
+        $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
         include ERP_OMD_PATH . 'templates/admin/settings.php';
+    }
+
+    public function render_alerts()
+    {
+        $alerts = $this->alert_service->all_alerts();
+        include ERP_OMD_PATH . 'templates/admin/alerts.php';
     }
 
     public function render_reports()
@@ -388,12 +427,20 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-employees', 'success', $message, ['id' => $id]);
     }
 
-    private function handle_employee_deactivate()
+    private function handle_employee_active_toggle()
     {
-        check_admin_referer('erp_omd_deactivate_employee');
+        check_admin_referer('erp_omd_toggle_employee_active');
         $this->require_capability('erp_omd_manage_employees');
         $id = (int) ($_POST['id'] ?? 0);
-        if ($id && $this->employees->find($id)) { $this->employees->deactivate($id); $this->redirect_with_notice('erp-omd-employees', 'success', __('Pracownik został dezaktywowany.', 'erp-omd')); }
+        $employee = $id ? $this->employees->find($id) : null;
+        if ($employee) {
+            $target_status = ($employee['status'] ?? '') === 'inactive' ? 'active' : 'inactive';
+            $this->employees->set_status($id, $target_status);
+            $message = $target_status === 'inactive'
+                ? __('Pracownik został dezaktywowany.', 'erp-omd')
+                : __('Pracownik został aktywowany.', 'erp-omd');
+            $this->redirect_with_notice('erp-omd-employees', 'success', $message);
+        }
         $this->redirect_with_notice('erp-omd-employees', 'error', __('Nie znaleziono pracownika.', 'erp-omd'));
     }
 
@@ -433,12 +480,20 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-clients', 'success', $message, ['id' => $id, 'edit' => 1]);
     }
 
-    private function handle_client_deactivate()
+    private function handle_client_active_toggle()
     {
-        check_admin_referer('erp_omd_deactivate_client');
+        check_admin_referer('erp_omd_toggle_client_active');
         $this->require_capability('erp_omd_manage_clients');
         $id = (int) ($_POST['id'] ?? 0);
-        if ($id && $this->clients->find($id)) { $this->clients->deactivate($id); $this->redirect_with_notice('erp-omd-clients', 'success', __('Klient został dezaktywowany.', 'erp-omd')); }
+        $client = $id ? $this->clients->find($id) : null;
+        if ($client) {
+            $target_status = ($client['status'] ?? '') === 'inactive' ? 'active' : 'inactive';
+            $this->clients->set_status($id, $target_status);
+            $message = $target_status === 'inactive'
+                ? __('Klient został dezaktywowany.', 'erp-omd')
+                : __('Klient został aktywowany.', 'erp-omd');
+            $this->redirect_with_notice('erp-omd-clients', 'success', $message);
+        }
         $this->redirect_with_notice('erp-omd-clients', 'error', __('Nie znaleziono klienta.', 'erp-omd'));
     }
 
@@ -956,7 +1011,56 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_save_settings');
         $this->require_capability('erp_omd_manage_settings');
         update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
+        update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
+    }
+
+    private function handle_attachment_add()
+    {
+        $entity_type = sanitize_key((string) ($_POST['entity_type'] ?? ''));
+        $entity_id = (int) ($_POST['entity_id'] ?? 0);
+        $attachment_id = (int) ($_POST['attachment_id'] ?? 0);
+        $label = sanitize_text_field(wp_unslash($_POST['label'] ?? ''));
+
+        if (! in_array($entity_type, ['project', 'estimate'], true) || $entity_id <= 0 || $attachment_id <= 0) {
+            wp_die(esc_html__('Niepoprawne dane załącznika.', 'erp-omd'));
+        }
+
+        check_admin_referer('erp_omd_add_attachment_' . $entity_type . '_' . $entity_id);
+        $this->require_capability('erp_omd_manage_projects');
+
+        $entity = $entity_type === 'project'
+            ? $this->projects->find($entity_id)
+            : $this->estimates->find($entity_id);
+        if (! $entity || ! wp_attachment_is_image($attachment_id) && ! get_post($attachment_id)) {
+            $this->redirect_with_notice($entity_type === 'project' ? 'erp-omd-projects' : 'erp-omd-estimates', 'error', __('Nie udało się dodać załącznika.', 'erp-omd'), ['id' => $entity_id]);
+        }
+
+        $this->attachments->create([
+            'entity_type' => $entity_type,
+            'entity_id' => $entity_id,
+            'attachment_id' => $attachment_id,
+            'label' => $label,
+            'created_by_user_id' => get_current_user_id(),
+        ]);
+
+        $this->redirect_with_notice($entity_type === 'project' ? 'erp-omd-projects' : 'erp-omd-estimates', 'success', __('Załącznik został dodany.', 'erp-omd'), ['id' => $entity_id]);
+    }
+
+    private function handle_attachment_delete()
+    {
+        $attachment_relation_id = (int) ($_POST['attachment_relation_id'] ?? 0);
+        $attachment = $attachment_relation_id ? $this->attachments->find($attachment_relation_id) : null;
+        if (! $attachment) {
+            wp_die(esc_html__('Nie znaleziono relacji załącznika.', 'erp-omd'));
+        }
+
+        check_admin_referer('erp_omd_delete_attachment_' . $attachment_relation_id);
+        $this->require_capability('erp_omd_manage_projects');
+        $this->attachments->delete($attachment_relation_id);
+
+        $page = ($attachment['entity_type'] ?? '') === 'project' ? 'erp-omd-projects' : 'erp-omd-estimates';
+        $this->redirect_with_notice($page, 'success', __('Załącznik został usunięty.', 'erp-omd'), ['id' => (int) ($attachment['entity_id'] ?? 0)]);
     }
 
     private function require_capability($capability)
@@ -1049,6 +1153,24 @@ class ERP_OMD_Admin
         unset($profit_total);
 
         return $profit_totals;
+    }
+
+    private function index_alerts_by_entity($entity_type)
+    {
+        $alerts = [];
+        foreach ($this->alert_service->all_alerts() as $alert) {
+            if (($alert['entity_type'] ?? '') !== $entity_type) {
+                continue;
+            }
+
+            $entity_id = (int) ($alert['entity_id'] ?? 0);
+            if (! isset($alerts[$entity_id])) {
+                $alerts[$entity_id] = [];
+            }
+            $alerts[$entity_id][] = $alert;
+        }
+
+        return $alerts;
     }
 
     private function account_type_label($account_type)

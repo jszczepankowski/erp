@@ -119,11 +119,12 @@
                             <td>
                                 <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => (int) $client_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
                                 <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => (int) $client_row['id'], 'edit' => 1], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
-                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Dezaktywować klienta?', 'erp-omd')); ?>');">
-                                    <?php wp_nonce_field('erp_omd_deactivate_client'); ?>
-                                    <input type="hidden" name="erp_omd_action" value="deactivate_client" />
+                                <?php $client_is_inactive = ($client_row['status'] ?? '') === 'inactive'; ?>
+                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js($client_is_inactive ? __('Aktywować klienta?', 'erp-omd') : __('Dezaktywować klienta?', 'erp-omd')); ?>');">
+                                    <?php wp_nonce_field('erp_omd_toggle_client_active'); ?>
+                                    <input type="hidden" name="erp_omd_action" value="toggle_client_active" />
                                     <input type="hidden" name="id" value="<?php echo esc_attr($client_row['id']); ?>" />
-                                    <button class="button button-small" type="submit"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></button>
+                                    <button class="button button-small" type="submit"><?php echo esc_html($client_is_inactive ? __('Aktywuj', 'erp-omd') : __('Dezaktywuj', 'erp-omd')); ?></button>
                                 </form>
                             </td>
                         </tr>

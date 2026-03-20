@@ -93,4 +93,35 @@ document.addEventListener('DOMContentLoaded', () => {
       input.focus();
     });
   });
+
+  document.querySelectorAll('.erp-omd-attachment-form').forEach((form) => {
+    const button = form.querySelector('.erp-omd-media-button');
+    const input = form.querySelector('.erp-omd-media-id');
+    const nameNode = form.querySelector('.erp-omd-media-name');
+
+    if (!button || !(input instanceof HTMLInputElement) || !nameNode || typeof wp === 'undefined' || !wp.media) {
+      return;
+    }
+
+    button.addEventListener('click', () => {
+      const frame = wp.media({
+        title: 'Wybierz załącznik',
+        button: { text: 'Użyj załącznika' },
+        multiple: false,
+      });
+
+      frame.on('select', () => {
+        const selection = frame.state().get('selection').first();
+        if (!selection) {
+          return;
+        }
+
+        const attachment = selection.toJSON();
+        input.value = String(attachment.id || '');
+        nameNode.textContent = attachment.filename || attachment.title || `#${attachment.id}`;
+      });
+
+      frame.open();
+    });
+  });
 });

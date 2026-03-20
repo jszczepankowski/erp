@@ -22,12 +22,14 @@ class ERP_OMD_Employee_Repository
 
         $users_table = $wpdb->users;
         $roles_table = $wpdb->prefix . 'erp_omd_roles';
+        $usermeta_table = $wpdb->usermeta;
 
         return $wpdb->get_results(
-            "SELECT e.*, u.user_login, u.user_email, r.name AS default_role_name
+            "SELECT e.*, u.user_login, u.user_email, r.name AS default_role_name, login_meta.meta_value AS last_login_at
             FROM {$this->table_name()} e
             INNER JOIN {$users_table} u ON u.ID = e.user_id
             LEFT JOIN {$roles_table} r ON r.id = e.default_role_id
+            LEFT JOIN {$usermeta_table} login_meta ON login_meta.user_id = u.ID AND login_meta.meta_key = 'erp_omd_last_login_at'
             ORDER BY u.user_login ASC",
             ARRAY_A
         );
@@ -106,11 +108,16 @@ class ERP_OMD_Employee_Repository
 
     public function deactivate($id)
     {
+        return $this->set_status($id, 'inactive');
+    }
+
+    public function set_status($id, $status)
+    {
         global $wpdb;
 
         return $wpdb->update(
             $this->table_name(),
-            ['status' => 'inactive', 'updated_at' => current_time('mysql')],
+            ['status' => $status, 'updated_at' => current_time('mysql')],
             ['id' => $id],
             ['%s', '%s'],
             ['%d']

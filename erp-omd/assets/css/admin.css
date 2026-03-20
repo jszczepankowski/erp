@@ -70,6 +70,49 @@
     margin-top: 8px;
 }
 
+.erp-omd-admin .erp-omd-badge-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.erp-omd-admin .erp-omd-badge {
+    border-radius: 999px;
+    display: inline-block;
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 2px 10px;
+}
+
+.erp-omd-admin .erp-omd-badge-error {
+    background: #fbeaea;
+    color: #8a2424;
+}
+
+.erp-omd-admin .erp-omd-badge-warning {
+    background: #fff4d6;
+    color: #8a5b00;
+}
+
+.erp-omd-admin .erp-omd-badge-info {
+    background: #e8f4fd;
+    color: #0a4b78;
+}
+
+.erp-omd-admin .erp-omd-attachment-form {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.erp-omd-admin .erp-omd-media-name {
+    color: #50575e;
+    font-size: 12px;
+}
+
 .erp-omd-admin .erp-omd-calendar-table .erp-omd-calendar-cell {
     min-height: 120px;
     vertical-align: top;

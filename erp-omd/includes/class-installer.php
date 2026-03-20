@@ -44,6 +44,7 @@ class ERP_OMD_Installer
         $project_costs_table = $wpdb->prefix . 'erp_omd_project_costs';
         $project_financials_table = $wpdb->prefix . 'erp_omd_project_financials';
         $time_entries_table = $wpdb->prefix . 'erp_omd_time_entries';
+        $attachments_table = $wpdb->prefix . 'erp_omd_attachments';
 
         dbDelta(
             "CREATE TABLE {$roles_table} (
@@ -293,6 +294,23 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
+        dbDelta(
+            "CREATE TABLE {$attachments_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                entity_type VARCHAR(32) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                attachment_id BIGINT UNSIGNED NOT NULL,
+                label VARCHAR(191) NOT NULL DEFAULT '',
+                created_by_user_id BIGINT UNSIGNED NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY attachment_id (attachment_id),
+                KEY created_by_user_id (created_by_user_id)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
         self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_employees_default_role', "ALTER TABLE {$employees_table} ADD CONSTRAINT fk_erp_omd_employees_default_role FOREIGN KEY (default_role_id) REFERENCES {$roles_table}(id) ON DELETE SET NULL");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_employees_user', "ALTER TABLE {$employees_table} ADD CONSTRAINT fk_erp_omd_employees_user FOREIGN KEY (user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_employee_roles_employee', "ALTER TABLE {$employee_roles_table} ADD CONSTRAINT fk_erp_omd_employee_roles_employee FOREIGN KEY (employee_id) REFERENCES {$employees_table}(id) ON DELETE CASCADE");
@@ -319,9 +337,11 @@ class ERP_OMD_Installer
         self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_time_entries_role', "ALTER TABLE {$time_entries_table} ADD CONSTRAINT fk_erp_omd_time_entries_role FOREIGN KEY (role_id) REFERENCES {$roles_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_time_entries_created_by', "ALTER TABLE {$time_entries_table} ADD CONSTRAINT fk_erp_omd_time_entries_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_time_entries_approved_by', "ALTER TABLE {$time_entries_table} ADD CONSTRAINT fk_erp_omd_time_entries_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_attachments_created_by', "ALTER TABLE {$attachments_table} ADD CONSTRAINT fk_erp_omd_attachments_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
 
         update_option('erp_omd_db_version', ERP_OMD_DB_VERSION);
         add_option('erp_omd_delete_data_on_uninstall', false);
+        add_option('erp_omd_alert_margin_threshold', 10);
     }
 
     private static function add_foreign_key_if_missing($referenced_table, $constraint_name, $sql)

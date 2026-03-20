@@ -116,7 +116,16 @@
                         <?php $estimate_label = trim((string) ($estimate_row['name'] ?? '')) !== '' ? (string) $estimate_row['name'] : sprintf(__('Kosztorys #%d', 'erp-omd'), (int) $estimate_row['id']); ?>
                         <tr>
                             <td>#<?php echo esc_html($estimate_row['id']); ?></td>
-                            <td><?php echo esc_html($estimate_label); ?></td>
+                            <td>
+                                <?php echo esc_html($estimate_label); ?>
+                                <?php if (! empty($estimate_row['alerts'])) : ?>
+                                    <div class="erp-omd-badge-list">
+                                        <?php foreach ($estimate_row['alerts'] as $estimate_alert) : ?>
+                                            <span class="erp-omd-badge erp-omd-badge-<?php echo esc_attr($estimate_alert['severity']); ?>"><?php echo esc_html($estimate_alert['message']); ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
                             <td><?php echo esc_html($estimate_row['client_name']); ?></td>
                             <td><?php echo esc_html($estimate_row['status']); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($estimate_row['total_net'] ?? 0), 2)); ?></td>
@@ -178,6 +187,14 @@
                 </div>
                 <?php if ($linked_project) : ?>
                     <p><strong><?php esc_html_e('Powiązany projekt:', 'erp-omd'); ?></strong> <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => (int) $linked_project['id']], admin_url('admin.php'))); ?>"><?php echo esc_html($linked_project['name']); ?></a></p>
+                    <?php $linked_project_alerts = $selected_estimate['alerts'] ?? []; ?>
+                    <?php if (! empty($linked_project_alerts)) : ?>
+                        <div class="erp-omd-badge-list">
+                            <?php foreach ($linked_project_alerts as $linked_project_alert) : ?>
+                                <span class="erp-omd-badge erp-omd-badge-<?php echo esc_attr($linked_project_alert['severity']); ?>"><?php echo esc_html($linked_project_alert['message']); ?></span>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
                 <table class="widefat striped">
                     <thead>
@@ -229,6 +246,69 @@
                     <li><strong><?php esc_html_e('Brutto:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) $estimate_totals['gross'], 2)); ?></li>
                     <li><strong><?php esc_html_e('Koszt wewnętrzny:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) $estimate_totals['internal_cost'], 2)); ?></li>
                 </ul>
+
+                <hr>
+                <div class="erp-omd-section-header">
+                    <div>
+                        <h3><?php esc_html_e('Załączniki', 'erp-omd'); ?></h3>
+                        <p class="description"><?php esc_html_e('Dodaj plik z biblioteki mediów WordPress do kosztorysu.', 'erp-omd'); ?></p>
+                    </div>
+                </div>
+                <form method="post" class="erp-omd-attachment-form">
+                    <?php wp_nonce_field('erp_omd_add_attachment_estimate_' . (int) $selected_estimate['id']); ?>
+                    <input type="hidden" name="erp_omd_action" value="add_attachment">
+                    <input type="hidden" name="entity_type" value="estimate">
+                    <input type="hidden" name="entity_id" value="<?php echo esc_attr($selected_estimate['id']); ?>">
+                    <input type="hidden" name="attachment_id" value="" class="erp-omd-media-id">
+                    <button type="button" class="button erp-omd-media-button"><?php esc_html_e('Wybierz z Media Library', 'erp-omd'); ?></button>
+                    <span class="erp-omd-media-name"><?php esc_html_e('Nie wybrano pliku.', 'erp-omd'); ?></span>
+                    <input type="text" name="label" class="regular-text" placeholder="<?php echo esc_attr__('Etykieta załącznika', 'erp-omd'); ?>">
+                    <button type="submit" class="button button-secondary"><?php esc_html_e('Dodaj załącznik', 'erp-omd'); ?></button>
+                </form>
+                <table class="widefat striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('Etykieta', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Plik', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Dodano', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($estimate_attachments)) : ?>
+                            <tr>
+                                <td colspan="4"><?php esc_html_e('Brak załączników dla tego kosztorysu.', 'erp-omd'); ?></td>
+                            </tr>
+                        <?php endif; ?>
+                        <?php foreach ($estimate_attachments as $estimate_attachment) : ?>
+                            <?php
+                            $attachment_post = get_post((int) ($estimate_attachment['attachment_id'] ?? 0));
+                            $attachment_title = get_the_title((int) ($estimate_attachment['attachment_id'] ?? 0));
+                            $attachment_url = wp_get_attachment_url((int) ($estimate_attachment['attachment_id'] ?? 0));
+                            $attachment_name = $attachment_title ?: ((is_object($attachment_post) && ! empty($attachment_post->post_name)) ? $attachment_post->post_name : ('#' . (int) $estimate_attachment['attachment_id']));
+                            ?>
+                            <tr>
+                                <td><?php echo esc_html($estimate_attachment['label'] ?: '—'); ?></td>
+                                <td>
+                                    <?php if ($attachment_url) : ?>
+                                        <a href="<?php echo esc_url($attachment_url); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($attachment_name); ?></a>
+                                    <?php else : ?>
+                                        <?php echo esc_html($attachment_name); ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?php echo esc_html($estimate_attachment['created_at'] ?? '—'); ?></td>
+                                <td>
+                                    <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć załącznik?', 'erp-omd')); ?>');">
+                                        <?php wp_nonce_field('erp_omd_delete_attachment_' . (int) $estimate_attachment['id']); ?>
+                                        <input type="hidden" name="erp_omd_action" value="delete_attachment">
+                                        <input type="hidden" name="attachment_relation_id" value="<?php echo esc_attr($estimate_attachment['id']); ?>">
+                                        <button type="submit" class="button button-small button-link-delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             <?php endif; ?>
     </section>
 </div>

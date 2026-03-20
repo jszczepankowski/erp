@@ -2,8 +2,8 @@
 /**
  * Plugin Name: ERP OMD
  * Plugin URI: https://example.com/erp-omd
- * Description: ERP_OMD V2 Sprint 6 foundation: Sprint 5 modules plus reports, CSV exports, calendar analytics, admin UI, and REST API.
- * Version: 0.6.0
+ * Description: ERP_OMD V2 Sprint 7 foundation: Sprint 6 modules plus alerts, attachments, soft delete lifecycle, admin polish, and reminders.
+ * Version: 0.7.0
  * Author: OpenAI
  * Text Domain: erp-omd
  */
@@ -12,8 +12,8 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('ERP_OMD_VERSION', '0.6.0');
-define('ERP_OMD_DB_VERSION', '5.0.0');
+define('ERP_OMD_VERSION', '0.7.0');
+define('ERP_OMD_DB_VERSION', '6.0.0');
 define('ERP_OMD_FILE', __FILE__);
 define('ERP_OMD_PATH', plugin_dir_path(__FILE__));
 define('ERP_OMD_URL', plugin_dir_url(__FILE__));
