@@ -42,11 +42,16 @@ class ERP_OMD_Reporting_Service
             $tab = 'reports';
         }
 
+        $status = sanitize_text_field((string) ($raw_filters['status'] ?? ''));
+        if (! in_array($status, $this->allowedStatuses(), true)) {
+            $status = '';
+        }
+
         return [
             'client_id' => (int) ($raw_filters['client_id'] ?? 0),
             'project_id' => (int) ($raw_filters['project_id'] ?? 0),
             'employee_id' => (int) ($raw_filters['employee_id'] ?? 0),
-            'status' => sanitize_text_field((string) ($raw_filters['status'] ?? '')),
+            'status' => $status,
             'month' => $month,
             'report_type' => $report_type,
             'tab' => $tab,
@@ -55,6 +60,8 @@ class ERP_OMD_Reporting_Service
 
     public function build_report($report_type, array $filters)
     {
+        $filters = $this->sanitize_filters($filters);
+
         switch ($report_type) {
             case 'clients':
                 return $this->build_client_report($filters);
@@ -70,6 +77,7 @@ class ERP_OMD_Reporting_Service
 
     public function build_project_report(array $filters)
     {
+        $filters = $this->sanitize_filters($filters);
         $projects = $this->get_filtered_projects($filters);
         $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
         $financials = $this->project_financial_service->get_project_financials($project_ids);
@@ -113,6 +121,7 @@ class ERP_OMD_Reporting_Service
 
     public function build_client_report(array $filters)
     {
+        $filters = $this->sanitize_filters($filters);
         $project_rows = $this->build_project_report($filters);
         $client_rows = [];
 
@@ -154,12 +163,14 @@ class ERP_OMD_Reporting_Service
 
     public function build_invoice_report(array $filters)
     {
+        $filters = $this->sanitize_filters($filters);
         $filters['status'] = 'do_faktury';
         return $this->build_project_report($filters);
     }
 
     public function build_monthly_report(array $filters)
     {
+        $filters = $this->sanitize_filters($filters);
         $projects = $this->get_filtered_projects($filters);
         $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
         $entries = $this->get_filtered_entries($project_ids, $filters);
@@ -229,6 +240,7 @@ class ERP_OMD_Reporting_Service
 
     public function build_calendar(array $filters)
     {
+        $filters = $this->sanitize_filters($filters);
         $projects = $this->get_filtered_projects($filters);
         $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
         $entries = $this->get_filtered_entries($project_ids, $filters);
@@ -311,6 +323,7 @@ class ERP_OMD_Reporting_Service
 
     public function export_definition($report_type, array $filters)
     {
+        $filters = $this->sanitize_filters($filters);
         $rows = $this->build_report($report_type, $filters);
         $month = $filters['month'];
         switch ($report_type) {
@@ -386,14 +399,18 @@ class ERP_OMD_Reporting_Service
     {
         $projects = $this->projects->all();
 
-        return array_values(array_filter($projects, static function ($project) use ($filters) {
+        return array_values(array_filter($projects, function ($project) use ($filters) {
             if ($filters['project_id'] > 0 && (int) ($project['id'] ?? 0) !== $filters['project_id']) {
                 return false;
             }
             if ($filters['client_id'] > 0 && (int) ($project['client_id'] ?? 0) !== $filters['client_id']) {
                 return false;
             }
-            if ($filters['status'] !== '' && (string) ($project['status'] ?? '') !== $filters['status']) {
+            if (
+                $filters['status'] !== ''
+                && $this->isProjectStatusFilter($filters['status'])
+                && (string) ($project['status'] ?? '') !== $filters['status']
+            ) {
                 return false;
             }
             return true;
@@ -404,7 +421,7 @@ class ERP_OMD_Reporting_Service
     {
         $entries = $this->time_entries->all([]);
 
-        return array_values(array_filter($entries, static function ($entry) use ($project_ids, $filters) {
+        return array_values(array_filter($entries, function ($entry) use ($project_ids, $filters) {
             if ($project_ids !== [] && ! in_array((int) ($entry['project_id'] ?? 0), $project_ids, true)) {
                 return false;
             }
@@ -416,7 +433,7 @@ class ERP_OMD_Reporting_Service
             }
             if (
                 $filters['status'] !== ''
-                && in_array($filters['status'], ['submitted', 'approved', 'rejected'], true)
+                && $this->isTimeEntryStatusFilter($filters['status'])
                 && (string) ($entry['status'] ?? '') !== $filters['status']
             ) {
                 return false;
@@ -496,5 +513,31 @@ class ERP_OMD_Reporting_Service
             'time_revenue' => 0.0,
             'time_cost' => 0.0,
         ];
+    }
+
+    private function allowedStatuses()
+    {
+        return [
+            '',
+            'do_rozpoczecia',
+            'w_realizacji',
+            'w_akceptacji',
+            'do_faktury',
+            'zakonczony',
+            'inactive',
+            'submitted',
+            'approved',
+            'rejected',
+        ];
+    }
+
+    private function isProjectStatusFilter($status)
+    {
+        return in_array($status, ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'], true);
+    }
+
+    private function isTimeEntryStatusFilter($status)
+    {
+        return in_array($status, ['submitted', 'approved', 'rejected'], true);
     }
 }

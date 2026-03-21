@@ -235,14 +235,19 @@ final class TimeEntryServiceTestRunner
         );
 
         $worker = new WP_User(101, ['erp_omd_manage_time' => true]);
-        $ownerEntry = ['employee_id' => 1, 'project_id' => 10];
-        $foreignEntry = ['employee_id' => 2, 'project_id' => 10];
+        $ownerEntry = ['employee_id' => 1, 'project_id' => 10, 'status' => 'submitted'];
+        $approvedOwnerEntry = ['employee_id' => 1, 'project_id' => 10, 'status' => 'approved'];
+        $foreignEntry = ['employee_id' => 2, 'project_id' => 10, 'status' => 'submitted'];
         $this->assertTrue($service->can_view_entry($ownerEntry, $worker), 'Worker should be able to view own time entries.');
         $this->assertFalse($service->can_view_entry($foreignEntry, $worker), 'Worker should not be able to view foreign time entries.');
+        $this->assertTrue($service->can_edit_entry($ownerEntry, $worker), 'Worker should be able to edit own submitted entry.');
+        $this->assertFalse($service->can_edit_entry($approvedOwnerEntry, $worker), 'Worker should not be able to edit approved entry.');
+        $this->assertTrue($service->can_delete_entry($worker, $ownerEntry), 'Worker should be able to delete own submitted entry.');
+        $this->assertFalse($service->can_delete_entry($worker, $approvedOwnerEntry), 'Worker should not be able to delete approved entry.');
 
         $projectManager = new WP_User(202, ['erp_omd_manage_time' => true, 'erp_omd_approve_time' => true]);
         $otherManager = new WP_User(303, ['erp_omd_manage_time' => true, 'erp_omd_approve_time' => true]);
-        $managedEntry = ['employee_id' => 2, 'project_id' => 10];
+        $managedEntry = ['employee_id' => 2, 'project_id' => 10, 'status' => 'submitted'];
         $this->assertTrue($service->can_view_entry($managedEntry, $projectManager), 'Assigned project manager should be able to view managed project entries.');
         $this->assertTrue($service->can_approve_entry($managedEntry, $projectManager), 'Assigned project manager should be able to approve entries.');
         $this->assertFalse($service->can_approve_entry($managedEntry, $otherManager), 'Unassigned manager should not be able to approve entries.');
