@@ -6,6 +6,10 @@ Sprint 9 package for ERP_OMD V2.
 - Pełny opis systemu i propozycje usprawnień: `../docs/ERP_OMD_SYSTEM_OVERVIEW.md`
 - Plan rozwoju frontendu dla pracowników i managerów (`FRONT`): `../docs/FRONT_PLAN.md`
 
+## Dokumentacja systemu
+- Pełny opis systemu i propozycje usprawnień: `../docs/ERP_OMD_SYSTEM_OVERVIEW.md`
+- Plan rozwoju frontendu dla pracowników i managerów (`FRONT`): `../docs/FRONT_PLAN.md`
+
 ## Build ZIP
 - Sprint 1 (historyczny): `./scripts/build-sprint-1-zip.sh`
 - Sprint 2 (historyczny): `./scripts/build-sprint-2-zip.sh`
