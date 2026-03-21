@@ -6,11 +6,14 @@ class ERP_OMD_Installer
     {
         self::migrate();
         ERP_OMD_Capabilities::activate();
+        ERP_OMD_Frontend::register_rewrite_rules();
+        flush_rewrite_rules();
     }
 
     public static function deactivate()
     {
         ERP_OMD_Capabilities::deactivate();
+        flush_rewrite_rules();
     }
 
     public static function maybe_upgrade()
