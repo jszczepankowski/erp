@@ -132,6 +132,7 @@ final class ClientProjectServiceTestRunner
             ]),
             new ERP_OMD_Employee_Repository([
                 5 => ['id' => 5],
+                6 => ['id' => 6],
             ]),
             new ERP_OMD_Role_Repository([
                 8 => ['id' => 8],
@@ -189,6 +190,33 @@ final class ClientProjectServiceTestRunner
         ]);
         $this->assertTrue(in_array('Projekt fixed_price wymaga dodatniego budżetu.', $fixedPriceErrors, true), 'Fixed price projects should require a positive budget.');
         $this->assertTrue(in_array('Projekt fixed_price nie może mieć opłaty retainer.', $fixedPriceErrors, true), 'Fixed price projects should reject retainer fees.');
+
+        $preparedProject = $service->prepare_project([
+            'client_id' => 1,
+            'name' => 'Projekt z zespołem managerskim',
+            'billing_type' => 'time_material',
+            'budget' => 0,
+            'retainer_monthly_fee' => 0,
+            'status' => 'do_rozpoczecia',
+            'manager_id' => 5,
+            'manager_ids' => [6],
+        ]);
+        $this->assertSame([5, 6], $preparedProject['manager_ids'], 'Primary manager should be merged into manager_ids list.');
+
+        $multiManagerErrors = $service->validate_project([
+            'client_id' => 1,
+            'name' => 'Projekt C',
+            'billing_type' => 'time_material',
+            'budget' => 0,
+            'retainer_monthly_fee' => 0,
+            'status' => 'do_rozpoczecia',
+            'manager_id' => 5,
+            'manager_ids' => [5, 999],
+            'estimate_id' => 0,
+            'brief' => '',
+            'alert_margin_threshold' => '',
+        ]);
+        $this->assertTrue(in_array('Każdy manager projektu musi wskazywać istniejącego pracownika.', $multiManagerErrors, true), 'Project validation should reject unknown additional managers.');
 
         $retainerErrors = $service->validate_project([
             'client_id' => 1,
