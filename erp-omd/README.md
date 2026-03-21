@@ -1,10 +1,17 @@
 # ERP OMD
 
-Sprint 9 package for ERP_OMD V2.
+ERP_OMD V2 — wersja 0.9.9 rozpoczynająca etap FRONT-1.
 
 ## Dokumentacja systemu
 - Pełny opis systemu i propozycje usprawnień: `../docs/ERP_OMD_SYSTEM_OVERVIEW.md`
 - Plan rozwoju frontendu dla pracowników i managerów (`FRONT`): `../docs/FRONT_PLAN.md`
+
+## FRONT-1
+- Frontowe logowanie: `/erp-front/login/`
+- Routing użytkownika po logowaniu:
+  - pracownik: `/erp-front/worker/`
+  - manager: `/erp-front/manager/`
+- Wylogowanie: `/erp-front/logout/`
 
 ## Build ZIP
 - Sprint 1 (historyczny): `./scripts/build-sprint-1-zip.sh`
