@@ -628,6 +628,54 @@
     grid-column: 1 / -1;
 }
 
+
+.erp-omd-admin .erp-omd-form-grid-project-basics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.erp-omd-admin .erp-omd-form-grid-project-basics .erp-omd-form-field,
+.erp-omd-admin .erp-omd-form-grid-project-basics .erp-omd-form-field.erp-omd-form-field-compact {
+    max-width: none;
+}
+
+.erp-omd-admin .erp-omd-form-field.erp-omd-form-field-span-full {
+    grid-column: 1 / -1;
+}
+
+.erp-omd-admin .erp-omd-form-grid-employee-account {
+    grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 0.7fr) minmax(160px, 0.7fr);
+}
+
+.erp-omd-admin .erp-omd-form-grid-employee-salary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.erp-omd-admin .erp-omd-form-grid-role-definition {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.erp-omd-admin .erp-omd-form-grid-client-basics {
+    grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 1fr) minmax(150px, 0.8fr);
+}
+
+.erp-omd-admin .erp-omd-form-grid-client-address-row {
+    display: grid;
+    gap: 14px 16px;
+    grid-template-columns: minmax(220px, 1.4fr) minmax(110px, 0.65fr) minmax(160px, 1fr) minmax(130px, 0.8fr) minmax(100px, 0.6fr);
+}
+
+.erp-omd-admin .erp-omd-form-grid-project-lifecycle {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.erp-omd-admin .erp-omd-form-grid-time-context {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.erp-omd-admin .erp-omd-form-grid-time-status {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .erp-omd-admin .erp-omd-form-field label,
 .erp-omd-admin .erp-omd-form-field .erp-omd-form-label {
     display: block;
@@ -788,6 +836,21 @@
 @media (max-width: 960px) {
     .erp-omd-admin .erp-omd-grid.two-columns,
     .erp-omd-admin .erp-omd-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .erp-omd-admin .erp-omd-form-grid-project-basics {
+        grid-template-columns: 1fr;
+    }
+
+    .erp-omd-admin .erp-omd-form-grid-employee-account,
+    .erp-omd-admin .erp-omd-form-grid-employee-salary,
+    .erp-omd-admin .erp-omd-form-grid-role-definition,
+    .erp-omd-admin .erp-omd-form-grid-client-basics,
+    .erp-omd-admin .erp-omd-form-grid-client-address-row,
+    .erp-omd-admin .erp-omd-form-grid-project-lifecycle,
+    .erp-omd-admin .erp-omd-form-grid-time-context,
+    .erp-omd-admin .erp-omd-form-grid-time-status {
         grid-template-columns: 1fr;
     }
 

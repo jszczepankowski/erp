@@ -73,12 +73,6 @@
             'variant' => 'erp-omd-metric-tile-accent',
         ],
         [
-            'icon' => 'yes-alt',
-            'value' => (int) $monthly_totals['active_employees'],
-            'label' => __('Aktywni w miesiącu', 'erp-omd'),
-            'variant' => '',
-        ],
-        [
             'icon' => 'warning',
             'value' => count($alerts),
             'label' => __('Aktywne alerty', 'erp-omd'),

@@ -13,12 +13,12 @@
                         <h3><?php esc_html_e('Podstawy projektu', 'erp-omd'); ?></h3>
                         <p><?php esc_html_e('Klient, nazwa i model rozliczenia.', 'erp-omd'); ?></p>
                     </div>
-                    <div class="erp-omd-form-grid">
+                    <div class="erp-omd-form-grid erp-omd-form-grid-project-basics">
                         <div class="erp-omd-form-field">
                             <label for="project-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
                             <select id="project-client" name="client_id" required><option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option><?php foreach ($clients as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) ($project['client_id'] ?? 0), (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select>
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                        <div class="erp-omd-form-field">
                             <label for="project-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
                             <input id="project-name" class="regular-text" type="text" name="name" value="<?php echo esc_attr($project['name'] ?? ''); ?>" required />
                         </div>
@@ -38,12 +38,12 @@
                         <h3><?php esc_html_e('Finanse i lifecycle', 'erp-omd'); ?></h3>
                         <p><?php esc_html_e('Budżet, daty, owner i progi ryzyka w jednym bloku.', 'erp-omd'); ?></p>
                     </div>
-                    <div class="erp-omd-form-grid">
-                        <div id="erp-omd-project-budget-row" class="erp-omd-form-field erp-omd-form-field-compact">
+                    <div class="erp-omd-form-grid erp-omd-form-grid-project-lifecycle">
+                        <div id="erp-omd-project-budget-row" class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-span-2">
                             <label for="project-budget"><?php esc_html_e('Budżet', 'erp-omd'); ?></label>
                             <input id="project-budget" type="number" step="0.01" min="0" name="budget" value="<?php echo esc_attr($project['budget'] ?? '0'); ?>" />
                         </div>
-                        <div id="erp-omd-project-retainer-row" class="erp-omd-form-field">
+                        <div id="erp-omd-project-retainer-row" class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="project-retainer-fee"><?php esc_html_e('Abonament — opłata miesięczna', 'erp-omd'); ?></label>
                             <input id="project-retainer-fee" type="number" step="0.01" min="0" name="retainer_monthly_fee" value="<?php echo esc_attr($project['retainer_monthly_fee'] ?? '0'); ?>" />
                         </div>
@@ -63,7 +63,7 @@
                             <label for="project-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label>
                             <input id="project-end-date" type="date" name="end_date" value="<?php echo esc_attr($project['end_date'] ?? ''); ?>" />
                         </div>
-                        <div class="erp-omd-form-field">
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="project-manager"><?php esc_html_e('Główny manager projektu', 'erp-omd'); ?></label>
                             <select id="project-manager" name="manager_id">
                                 <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>

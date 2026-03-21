@@ -15,8 +15,8 @@
                             <h3><?php esc_html_e('Konto i dostęp', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Powiązanie z WordPressem, typ konta i status aktywności.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-form-grid">
-                            <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                        <div class="erp-omd-form-grid erp-omd-form-grid-employee-account">
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
                                 <label for="erp-user-id"><?php esc_html_e('Konto WordPress', 'erp-omd'); ?></label>
                                 <select id="erp-user-id" name="user_id" required>
                                     <option value=""><?php esc_html_e('Wybierz konto', 'erp-omd'); ?></option>
@@ -125,7 +125,7 @@
                     <input type="hidden" name="employee_id" value="<?php echo esc_attr($employee['id']); ?>" />
                     <div class="erp-omd-form-sections">
                         <section class="erp-omd-form-section">
-                            <div class="erp-omd-form-grid">
+                            <div class="erp-omd-form-grid erp-omd-form-grid-employee-salary">
                                 <div class="erp-omd-form-field erp-omd-form-field-compact">
                                     <label for="erp-monthly-salary"><?php esc_html_e('Pensja miesięczna', 'erp-omd'); ?></label>
                                     <input id="erp-monthly-salary" type="number" step="0.01" min="0" name="monthly_salary" required />
