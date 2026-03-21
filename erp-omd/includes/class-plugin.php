@@ -124,9 +124,14 @@ class ERP_OMD_Plugin
             $this->alert_service
         );
         $this->frontend = new ERP_OMD_Frontend(
-            $this->employee_repository
+            $this->employee_repository,
+            $this->project_repository,
+            $this->role_repository,
+            $this->time_entry_repository,
+            $this->time_entry_service,
+            $this->project_financial_service
         );
-       $this->rest_api = new ERP_OMD_REST_API(
+        $this->rest_api = new ERP_OMD_REST_API(
             $this->role_repository,
             $this->employee_repository,
             $this->salary_repository,

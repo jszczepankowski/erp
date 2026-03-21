@@ -3,10 +3,26 @@
 class ERP_OMD_Frontend
 {
     private $employees;
+    private $projects;
+    private $roles;
+    private $time_entries;
+    private $time_entry_service;
+    private $project_financial_service;
 
-    public function __construct(ERP_OMD_Employee_Repository $employees)
-    {
+    public function __construct(
+        ERP_OMD_Employee_Repository $employees,
+        ERP_OMD_Project_Repository $projects,
+        ERP_OMD_Role_Repository $roles,
+        ERP_OMD_Time_Entry_Repository $time_entries,
+        ERP_OMD_Time_Entry_Service $time_entry_service,
+        ERP_OMD_Project_Financial_Service $project_financial_service
+    ) {
         $this->employees = $employees;
+        $this->projects = $projects;
+        $this->roles = $roles;
+        $this->time_entries = $time_entries;
+        $this->time_entry_service = $time_entry_service;
+        $this->project_financial_service = $project_financial_service;
     }
 
     public static function register_rewrite_rules()
@@ -54,13 +70,21 @@ class ERP_OMD_Frontend
             $this->redirect_to_login($this->front_url($screen));
         }
 
+        $current_user = wp_get_current_user();
+
         if ($screen === 'home') {
-            wp_safe_redirect($this->resolve_dashboard_url_for_user(wp_get_current_user()));
+            wp_safe_redirect($this->resolve_dashboard_url_for_user($current_user));
             exit;
         }
 
-        $this->guard_dashboard_access($screen, wp_get_current_user());
-        $this->render_dashboard($screen, wp_get_current_user());
+        $this->guard_dashboard_access($screen, $current_user);
+
+        if ($screen === 'worker') {
+            $this->handle_worker_screen($current_user);
+            return;
+        }
+
+        $this->render_manager_dashboard($current_user);
     }
 
     public function front_url($screen = 'home', array $args = [])
@@ -171,15 +195,206 @@ class ERP_OMD_Frontend
         exit;
     }
 
-    private function render_dashboard($screen, WP_User $user)
+    private function handle_worker_screen(WP_User $user)
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->process_worker_request($user);
+            return;
+        }
+
+        $this->render_worker_dashboard($user);
+    }
+
+    private function process_worker_request(WP_User $user)
+    {
+        check_admin_referer('erp_omd_front_worker');
+
+        $action = sanitize_text_field(wp_unslash($_POST['erp_omd_front_action'] ?? ''));
+        if ($action === 'save_time_entry') {
+            $this->save_worker_time_entry($user);
+            return;
+        }
+
+        if ($action === 'delete_time_entry') {
+            $this->delete_worker_time_entry($user);
+            return;
+        }
+
+        $this->redirect_worker_with_notice('error', __('Nieobsługiwana akcja formularza FRONT.', 'erp-omd'));
+    }
+
+    private function save_worker_time_entry(WP_User $user)
     {
         $employee = $this->employees->find_by_user_id((int) $user->ID);
-        $dashboard_title = $screen === 'manager'
-            ? __('Panel managera', 'erp-omd')
-            : __('Panel pracownika', 'erp-omd');
-        $dashboard_intro = $screen === 'manager'
-            ? __('To punkt wejścia FRONT-1 dla managera. W kolejnych krokach dołączymy listę projektów, akceptacje czasu i lekkie akcje operacyjne.', 'erp-omd')
-            : __('To punkt wejścia FRONT-1 dla pracownika. W kolejnych krokach dołączymy dashboard czasu pracy, formularz wpisu i listę własnych zgłoszeń.', 'erp-omd');
+        if (! $employee) {
+            $this->redirect_worker_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+        }
+
+        $entry_id = (int) ($_POST['id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $role_id = (int) ($_POST['role_id'] ?? 0);
+        $payload = [
+            'employee_id' => (int) $employee['id'],
+            'project_id' => $project_id,
+            'role_id' => $role_id,
+            'hours' => (float) ($_POST['hours'] ?? 0),
+            'entry_date' => sanitize_text_field(wp_unslash($_POST['entry_date'] ?? '')),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'status' => 'submitted',
+            'created_by_user_id' => (int) $user->ID,
+            'approved_by_user_id' => 0,
+            'approved_at' => null,
+        ];
+
+        $selected_project = $this->projects->find($project_id);
+        if (! $selected_project || (string) ($selected_project['status'] ?? '') !== 'w_realizacji') {
+            $this->redirect_worker_with_notice(
+                'error',
+                __('Możesz raportować czas tylko do aktywnych projektów w realizacji.', 'erp-omd'),
+                $entry_id ? ['entry_id' => $entry_id] : []
+            );
+        }
+
+        $allowed_role_ids = wp_list_pluck($this->get_worker_roles($employee), 'id');
+        if (! in_array($role_id, array_map('intval', $allowed_role_ids), true)) {
+            $this->redirect_worker_with_notice(
+                'error',
+                __('Wybrana rola nie jest dostępna dla tego pracownika.', 'erp-omd'),
+                $entry_id ? ['entry_id' => $entry_id] : []
+            );
+        }
+
+        if ($entry_id) {
+            $existing = $this->time_entries->find($entry_id);
+            if (! $existing || ! $this->time_entry_service->can_edit_entry($existing, $user)) {
+                $this->redirect_worker_with_notice('error', __('Możesz edytować tylko własne wpisy ze statusem submitted.', 'erp-omd'));
+            }
+        }
+
+        $payload = $this->time_entry_service->prepare($payload);
+        $errors = $this->time_entry_service->validate($payload, $entry_id ?: null);
+        if ($errors) {
+            $this->redirect_worker_with_notice('error', implode(' ', $errors), $entry_id ? ['entry_id' => $entry_id] : []);
+        }
+
+        if ($entry_id) {
+            $this->time_entries->update($entry_id, $payload);
+            $message = __('Wpis czasu został zaktualizowany.', 'erp-omd');
+        } else {
+            $entry_id = $this->time_entries->create($payload);
+            $message = __('Wpis czasu został dodany.', 'erp-omd');
+        }
+
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_worker_with_notice('success', $message);
+    }
+
+    private function delete_worker_time_entry(WP_User $user)
+    {
+        $entry_id = (int) ($_POST['id'] ?? 0);
+        $entry = $entry_id ? $this->time_entries->find($entry_id) : null;
+        if (! $entry) {
+            $this->redirect_worker_with_notice('error', __('Nie znaleziono wpisu czasu do usunięcia.', 'erp-omd'));
+        }
+
+        if (! $this->time_entry_service->can_delete_entry($user, $entry)) {
+            $this->redirect_worker_with_notice('error', __('Możesz usuwać tylko własne wpisy ze statusem submitted.', 'erp-omd'));
+        }
+
+        $this->time_entries->delete($entry_id);
+        $this->project_financial_service->rebuild_for_project((int) $entry['project_id']);
+        $this->redirect_worker_with_notice('success', __('Wpis czasu został usunięty.', 'erp-omd'));
+    }
+
+    private function render_worker_dashboard(WP_User $user)
+    {
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee) {
+            $this->redirect_worker_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+        }
+
+        $worker_filters = [
+            'project_id' => (int) ($_GET['project_id'] ?? 0),
+            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'entry_date' => sanitize_text_field(wp_unslash($_GET['entry_date'] ?? '')),
+        ];
+        if ($worker_filters['project_id'] <= 0) {
+            $worker_filters['project_id'] = 0;
+        }
+        if (! in_array($worker_filters['status'], ['', 'submitted', 'approved', 'rejected'], true)) {
+            $worker_filters['status'] = '';
+        }
+
+        $entry_id = (int) ($_GET['entry_id'] ?? 0);
+        $entry = $entry_id ? $this->time_entries->find($entry_id) : null;
+        $editable_entry = $entry && $this->time_entry_service->can_edit_entry($entry, $user) ? $entry : null;
+
+        $available_projects = array_values(
+            array_filter(
+                $this->projects->all(),
+                function ($project) {
+                    return (string) ($project['status'] ?? '') === 'w_realizacji';
+                }
+            )
+        );
+        $available_roles = $this->get_worker_roles($employee);
+        $time_entries = $this->time_entries->all(array_filter([
+            'employee_id' => (int) $employee['id'],
+            'project_id' => $worker_filters['project_id'],
+            'status' => $worker_filters['status'],
+            'entry_date' => $worker_filters['entry_date'],
+        ]));
+        $time_entries = $this->time_entry_service->filter_visible_entries($time_entries, $user);
+
+        $status_totals = [
+            'submitted' => 0,
+            'approved' => 0,
+            'rejected' => 0,
+        ];
+        $hours_total = 0.0;
+        foreach ($time_entries as $time_entry) {
+            $hours_total += (float) ($time_entry['hours'] ?? 0);
+            $status = (string) ($time_entry['status'] ?? '');
+            if (isset($status_totals[$status])) {
+                $status_totals[$status]++;
+            }
+        }
+
+        $worker_notice_type = sanitize_key(wp_unslash($_GET['notice'] ?? ''));
+        $worker_notice_message = sanitize_text_field(wp_unslash($_GET['message'] ?? ''));
+        if (! in_array($worker_notice_type, ['', 'success', 'error', 'warning'], true)) {
+            $worker_notice_type = '';
+            $worker_notice_message = '';
+        }
+
+        $worker_form_defaults = $editable_entry ?: [
+            'id' => 0,
+            'project_id' => 0,
+            'role_id' => (int) ($available_roles[0]['id'] ?? 0),
+            'hours' => '',
+            'entry_date' => gmdate('Y-m-d'),
+            'description' => '',
+            'status' => 'submitted',
+        ];
+
+        $dashboard_title = __('Panel pracownika', 'erp-omd');
+        $dashboard_intro = __('FRONT-2 udostępnia pracownikowi własne raportowanie czasu: szybki formularz, listę wpisów, filtry i operacje tylko na własnych draftach submitted.', 'erp-omd');
+        $front_logout_url = $this->front_url('logout');
+        $front_worker_url = $this->front_url('worker');
+        $front_manager_url = $this->front_url('manager');
+        $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
+        $worker_form_action = $this->front_url('worker');
+
+        $this->send_front_headers();
+        include ERP_OMD_PATH . 'templates/front/worker-dashboard.php';
+        exit;
+    }
+
+    private function render_manager_dashboard(WP_User $user)
+    {
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        $dashboard_title = __('Panel managera', 'erp-omd');
+        $dashboard_intro = __('To punkt wejścia FRONT-1 dla managera. W kolejnych krokach dołączymy listę projektów, akceptacje czasu i lekkie akcje operacyjne.', 'erp-omd');
         $front_login_url = $this->front_url('login');
         $front_logout_url = $this->front_url('logout');
         $front_worker_url = $this->front_url('worker');
@@ -188,6 +403,44 @@ class ERP_OMD_Frontend
 
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/dashboard.php';
+        exit;
+    }
+
+    private function get_worker_roles(array $employee)
+    {
+        $role_ids = array_map('intval', (array) ($employee['role_ids'] ?? []));
+        $default_role_id = (int) ($employee['default_role_id'] ?? 0);
+        if ($default_role_id > 0) {
+            $role_ids[] = $default_role_id;
+        }
+        $role_ids = array_values(array_unique(array_filter($role_ids)));
+
+        $roles = $this->roles->all();
+        if ($role_ids === []) {
+            return $roles;
+        }
+
+        return array_values(
+            array_filter(
+                $roles,
+                function ($role) use ($role_ids) {
+                    return in_array((int) ($role['id'] ?? 0), $role_ids, true);
+                }
+            )
+        );
+    }
+
+    private function redirect_worker_with_notice($type, $message, array $extra_args = [])
+    {
+        $args = array_merge(
+            [
+                'notice' => $type,
+                'message' => $message,
+            ],
+            $extra_args
+        );
+
+        wp_safe_redirect($this->front_url('worker', $args));
         exit;
     }
 
