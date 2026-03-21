@@ -6,54 +6,102 @@
             <?php wp_nonce_field('erp_omd_save_project'); ?>
             <input type="hidden" name="erp_omd_action" value="save_project" />
             <input type="hidden" name="id" value="<?php echo esc_attr($project['id'] ?? ''); ?>" />
-            <table class="form-table">
-                <tr><th colspan="2"><h3 class="erp-omd-form-section-title"><?php esc_html_e('Podstawy projektu', 'erp-omd'); ?></h3></th></tr>
-                <tr><th><label for="project-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label></th><td><select id="project-client" name="client_id" required><option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option><?php foreach ($clients as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) ($project['client_id'] ?? 0), (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select></td></tr>
-                <tr><th><label for="project-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label></th><td><input id="project-name" class="regular-text" type="text" name="name" value="<?php echo esc_attr($project['name'] ?? ''); ?>" required /></td></tr>
-                <tr>
-                    <th><label for="project-billing-type"><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></label></th>
-                    <td>
-                        <select id="project-billing-type" name="billing_type">
-                            <option value="time_material" <?php selected($project['billing_type'] ?? 'time_material', 'time_material'); ?>><?php esc_html_e('Time & Material', 'erp-omd'); ?></option>
-                            <option value="fixed_price" <?php selected($project['billing_type'] ?? '', 'fixed_price'); ?>><?php esc_html_e('Ryczałt', 'erp-omd'); ?></option>
-                            <option value="retainer" <?php selected($project['billing_type'] ?? '', 'retainer'); ?>><?php esc_html_e('Abonament', 'erp-omd'); ?></option>
-                        </select>
-                    </td>
-                </tr>
-                <tr><th colspan="2"><h3 class="erp-omd-form-section-title"><?php esc_html_e('Finanse i lifecycle', 'erp-omd'); ?></h3></th></tr>
-                <tr id="erp-omd-project-budget-row"><th><label for="project-budget"><?php esc_html_e('Budżet', 'erp-omd'); ?></label></th><td><input id="project-budget" type="number" step="0.01" min="0" name="budget" value="<?php echo esc_attr($project['budget'] ?? '0'); ?>" /></td></tr>
-                <tr id="erp-omd-project-retainer-row"><th><label for="project-retainer-fee"><?php esc_html_e('Abonament — opłata miesięczna', 'erp-omd'); ?></label></th><td><input id="project-retainer-fee" type="number" step="0.01" min="0" name="retainer_monthly_fee" value="<?php echo esc_attr($project['retainer_monthly_fee'] ?? '0'); ?>" /></td></tr>
-                <tr>
-                    <th><label for="project-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
-                    <td>
-                        <select id="project-status" name="status">
-                            <?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'] as $project_status) : ?>
-                                <option value="<?php echo esc_attr($project_status); ?>" <?php selected($project['status'] ?? 'do_rozpoczecia', $project_status); ?>><?php echo esc_html($this->project_status_label($project_status)); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </td>
-                </tr>
-                <tr><th><label for="project-start-date"><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></label></th><td><input id="project-start-date" type="date" name="start_date" value="<?php echo esc_attr($project['start_date'] ?? ''); ?>" /></td></tr>
-                <tr><th><label for="project-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label></th><td><input id="project-end-date" type="date" name="end_date" value="<?php echo esc_attr($project['end_date'] ?? ''); ?>" /></td></tr>
-                <tr><th><label for="project-alert-threshold"><?php esc_html_e('Próg marży projektu (%)', 'erp-omd'); ?></label></th><td><input id="project-alert-threshold" type="number" step="0.01" min="0" name="alert_margin_threshold" value="<?php echo esc_attr($project['alert_margin_threshold'] ?? ''); ?>" /><p class="description"><?php esc_html_e('Opcjonalnie nadpisuje próg klienta lub globalny próg alertów.', 'erp-omd'); ?></p></td></tr>
-                <tr>
-                    <th><label for="project-manager"><?php esc_html_e('Manager projektu', 'erp-omd'); ?></label></th>
-                    <td>
-                        <select id="project-manager" name="manager_id">
-                            <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
-                            <?php foreach ($employees_for_select as $employee_item) : ?>
-                                <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($project['manager_id'] ?? 0), (int) $employee_item['id']); ?>>
-                                    <?php echo esc_html($employee_item['user_login'] . ' (' . $this->account_type_label($employee_item['account_type']) . ')'); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </td>
-                </tr>
-                <tr><th colspan="2"><h3 class="erp-omd-form-section-title"><?php esc_html_e('Powiązania i opis', 'erp-omd'); ?></h3></th></tr>
-                <tr><th><label for="project-estimate-id"><?php esc_html_e('ID estymacji', 'erp-omd'); ?></label></th><td><input id="project-estimate-id" type="number" min="0" name="estimate_id" value="<?php echo esc_attr($project['estimate_id'] ?? ''); ?>" /></td></tr>
-                <tr><th><label for="project-brief"><?php esc_html_e('Opis projektu', 'erp-omd'); ?></label></th><td><textarea id="project-brief" class="large-text" rows="5" name="brief"><?php echo esc_textarea($project['brief'] ?? ''); ?></textarea></td></tr>
-            </table>
-            <?php submit_button($project ? __('Zapisz projekt', 'erp-omd') : __('Dodaj projekt', 'erp-omd')); ?>
+            <p class="erp-omd-form-intro"><?php esc_html_e('Formularz projektu jest podzielony na logiczne bloki, a krótsze pola korzystają z układu dwukolumnowego na szerszych ekranach.', 'erp-omd'); ?></p>
+            <div class="erp-omd-form-sections">
+                <section class="erp-omd-form-section">
+                    <div class="erp-omd-form-section-header">
+                        <h3><?php esc_html_e('Podstawy projektu', 'erp-omd'); ?></h3>
+                        <p><?php esc_html_e('Klient, nazwa i model rozliczenia.', 'erp-omd'); ?></p>
+                    </div>
+                    <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-field">
+                            <label for="project-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                            <select id="project-client" name="client_id" required><option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option><?php foreach ($clients as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) ($project['client_id'] ?? 0), (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="project-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
+                            <input id="project-name" class="regular-text" type="text" name="name" value="<?php echo esc_attr($project['name'] ?? ''); ?>" required />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-billing-type"><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></label>
+                            <select id="project-billing-type" name="billing_type">
+                                <option value="time_material" <?php selected($project['billing_type'] ?? 'time_material', 'time_material'); ?>><?php esc_html_e('Time & Material', 'erp-omd'); ?></option>
+                                <option value="fixed_price" <?php selected($project['billing_type'] ?? '', 'fixed_price'); ?>><?php esc_html_e('Ryczałt', 'erp-omd'); ?></option>
+                                <option value="retainer" <?php selected($project['billing_type'] ?? '', 'retainer'); ?>><?php esc_html_e('Abonament', 'erp-omd'); ?></option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="erp-omd-form-section">
+                    <div class="erp-omd-form-section-header">
+                        <h3><?php esc_html_e('Finanse i lifecycle', 'erp-omd'); ?></h3>
+                        <p><?php esc_html_e('Budżet, daty, owner i progi ryzyka w jednym bloku.', 'erp-omd'); ?></p>
+                    </div>
+                    <div class="erp-omd-form-grid">
+                        <div id="erp-omd-project-budget-row" class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-budget"><?php esc_html_e('Budżet', 'erp-omd'); ?></label>
+                            <input id="project-budget" type="number" step="0.01" min="0" name="budget" value="<?php echo esc_attr($project['budget'] ?? '0'); ?>" />
+                        </div>
+                        <div id="erp-omd-project-retainer-row" class="erp-omd-form-field">
+                            <label for="project-retainer-fee"><?php esc_html_e('Abonament — opłata miesięczna', 'erp-omd'); ?></label>
+                            <input id="project-retainer-fee" type="number" step="0.01" min="0" name="retainer_monthly_fee" value="<?php echo esc_attr($project['retainer_monthly_fee'] ?? '0'); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
+                            <select id="project-status" name="status">
+                                <?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'] as $project_status) : ?>
+                                    <option value="<?php echo esc_attr($project_status); ?>" <?php selected($project['status'] ?? 'do_rozpoczecia', $project_status); ?>><?php echo esc_html($this->project_status_label($project_status)); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-start-date"><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></label>
+                            <input id="project-start-date" type="date" name="start_date" value="<?php echo esc_attr($project['start_date'] ?? ''); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label>
+                            <input id="project-end-date" type="date" name="end_date" value="<?php echo esc_attr($project['end_date'] ?? ''); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field">
+                            <label for="project-manager"><?php esc_html_e('Manager projektu', 'erp-omd'); ?></label>
+                            <select id="project-manager" name="manager_id">
+                                <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
+                                <?php foreach ($employees_for_select as $employee_item) : ?>
+                                    <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($project['manager_id'] ?? 0), (int) $employee_item['id']); ?>>
+                                        <?php echo esc_html($employee_item['user_login'] . ' (' . $this->account_type_label($employee_item['account_type']) . ')'); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-alert-threshold"><?php esc_html_e('Próg marży projektu (%)', 'erp-omd'); ?></label>
+                            <input id="project-alert-threshold" type="number" step="0.01" min="0" name="alert_margin_threshold" value="<?php echo esc_attr($project['alert_margin_threshold'] ?? ''); ?>" />
+                            <p class="description"><?php esc_html_e('Opcjonalnie nadpisuje próg klienta lub globalny próg alertów.', 'erp-omd'); ?></p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="erp-omd-form-section">
+                    <div class="erp-omd-form-section-header">
+                        <h3><?php esc_html_e('Powiązania i opis', 'erp-omd'); ?></h3>
+                        <p><?php esc_html_e('Link do estymacji i szerszy opis projektu.', 'erp-omd'); ?></p>
+                    </div>
+                    <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-estimate-id"><?php esc_html_e('ID estymacji', 'erp-omd'); ?></label>
+                            <input id="project-estimate-id" type="number" min="0" name="estimate_id" value="<?php echo esc_attr($project['estimate_id'] ?? ''); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="project-brief"><?php esc_html_e('Opis projektu', 'erp-omd'); ?></label>
+                            <textarea id="project-brief" class="large-text" rows="5" name="brief"><?php echo esc_textarea($project['brief'] ?? ''); ?></textarea>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <div class="erp-omd-form-actions">
+                <?php submit_button($project ? __('Zapisz projekt', 'erp-omd') : __('Dodaj projekt', 'erp-omd')); ?>
+            </div>
         </form>
 
         <?php if ($project) : ?>
@@ -62,18 +110,22 @@
             <div class="erp-omd-detail-grid">
                 <div class="erp-omd-detail-card">
                     <h3><?php esc_html_e('Widok 360° projektu', 'erp-omd'); ?></h3>
-                    <p><strong><?php esc_html_e('Klient:', 'erp-omd'); ?></strong> <?php echo esc_html($project['client_name'] ?? '—'); ?></p>
-                    <p><strong><?php esc_html_e('Status:', 'erp-omd'); ?></strong> <span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($project['status'] ?? 'do_rozpoczecia', 'project')); ?>"><?php echo esc_html($this->project_status_label($project['status'] ?? 'do_rozpoczecia')); ?></span></p>
-                    <p><strong><?php esc_html_e('Typ:', 'erp-omd'); ?></strong> <?php echo esc_html($this->billing_type_label($project['billing_type'] ?? 'time_material')); ?></p>
-                    <p><strong><?php esc_html_e('Manager:', 'erp-omd'); ?></strong> <?php echo esc_html($project['manager_login'] ?? '—'); ?></p>
+                    <div class="erp-omd-detail-list">
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Klient', 'erp-omd'); ?></strong><span><?php echo esc_html($project['client_name'] ?? '—'); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($project['status'] ?? 'do_rozpoczecia', 'project')); ?>"><?php echo esc_html($this->project_status_label($project['status'] ?? 'do_rozpoczecia')); ?></span></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Typ', 'erp-omd'); ?></strong><span><?php echo esc_html($this->billing_type_label($project['billing_type'] ?? 'time_material')); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Manager', 'erp-omd'); ?></strong><span><?php echo esc_html($project['manager_login'] ?? '—'); ?></span></div>
+                    </div>
                 </div>
                 <div class="erp-omd-detail-card">
                     <h3><?php esc_html_e('Kontekst operacyjny', 'erp-omd'); ?></h3>
-                    <p><strong><?php esc_html_e('Budżet:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) ($project['budget'] ?? 0), 2)); ?></p>
-                    <p><strong><?php esc_html_e('Abonament:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) ($project['retainer_monthly_fee'] ?? 0), 2)); ?></p>
-                    <p><strong><?php esc_html_e('Start:', 'erp-omd'); ?></strong> <?php echo esc_html($project['start_date'] ?? '—'); ?></p>
-                    <p><strong><?php esc_html_e('Koniec:', 'erp-omd'); ?></strong> <?php echo esc_html($project['end_date'] ?? '—'); ?></p>
-                    <p><strong><?php esc_html_e('Próg marży:', 'erp-omd'); ?></strong> <?php echo esc_html(($project['alert_margin_threshold'] ?? '') !== '' && $project['alert_margin_threshold'] !== null ? number_format_i18n((float) $project['alert_margin_threshold'], 2) . '%' : '—'); ?></p>
+                    <div class="erp-omd-detail-list">
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Budżet', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project['budget'] ?? 0), 2)); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Abonament', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project['retainer_monthly_fee'] ?? 0), 2)); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Start', 'erp-omd'); ?></strong><span><?php echo esc_html($project['start_date'] ?? '—'); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koniec', 'erp-omd'); ?></strong><span><?php echo esc_html($project['end_date'] ?? '—'); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Próg marży', 'erp-omd'); ?></strong><span><?php echo esc_html(($project['alert_margin_threshold'] ?? '') !== '' && $project['alert_margin_threshold'] !== null ? number_format_i18n((float) $project['alert_margin_threshold'], 2) . '%' : '—'); ?></span></div>
+                    </div>
                 </div>
             </div>
             <h2><?php esc_html_e('Finanse projektu', 'erp-omd'); ?></h2>

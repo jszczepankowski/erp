@@ -7,48 +7,64 @@
                 <?php wp_nonce_field('erp_omd_save_estimate'); ?>
                 <input type="hidden" name="erp_omd_action" value="save_estimate">
                 <input type="hidden" name="id" value="<?php echo esc_attr($estimate['id'] ?? 0); ?>">
-                <table class="form-table" role="presentation">
-                    <tr><th colspan="2"><h3 class="erp-omd-form-section-title"><?php esc_html_e('Podstawy kosztorysu', 'erp-omd'); ?></h3></th></tr>
-                    <tr>
-                        <th scope="row"><label for="estimate-name"><?php esc_html_e('Nazwa kosztorysu', 'erp-omd'); ?></label></th>
-                        <td>
-                            <input id="estimate-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($estimate['name'] ?? ''); ?>" required>
-                            <p class="description"><?php esc_html_e('Np. Audyt SEO Q2 2026 albo Kampania launchowa.', 'erp-omd'); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="estimate-client-id"><?php esc_html_e('Klient', 'erp-omd'); ?></label></th>
-                        <td>
-                            <select id="estimate-client-id" name="client_id" required>
-                                <option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
-                                <?php foreach ($clients as $client_row) : ?>
-                                    <option value="<?php echo esc_attr($client_row['id']); ?>" <?php selected((int) ($estimate['client_id'] ?? 0), (int) $client_row['id']); ?>><?php echo esc_html($client_row['name']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr><th colspan="2"><h3 class="erp-omd-form-section-title"><?php esc_html_e('Lifecycle', 'erp-omd'); ?></h3></th></tr>
-                    <tr>
-                        <th scope="row"><label for="estimate-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
-                        <td>
-                            <select id="estimate-status" name="status">
-                                <?php foreach (['wstepny', 'do_akceptacji', 'zaakceptowany'] as $status_option) : ?>
-                                    <option value="<?php echo esc_attr($status_option); ?>" <?php selected((string) ($estimate['status'] ?? 'wstepny'), $status_option); ?>><?php echo esc_html($status_option); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <?php if (($estimate['status'] ?? '') === 'zaakceptowany') : ?>
-                                <p class="description"><?php esc_html_e('Zaakceptowany kosztorys zachowuje zablokowane pozycje i dane klienta, ale administrator nadal może zmienić jego status.', 'erp-omd'); ?></p>
-                            <?php endif; ?>
-                            <?php if (! empty($estimate['accepted_at'])) : ?>
-                                <p class="description"><?php echo esc_html(sprintf(__('Zaakceptowano: %s', 'erp-omd'), $estimate['accepted_at'])); ?></p>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                </table>
-                <?php submit_button($estimate ? __('Zapisz kosztorys', 'erp-omd') : __('Dodaj kosztorys', 'erp-omd')); ?>
-                <?php if ($estimate) : ?>
-                    <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-estimates&id=' . (int) $estimate['id'])); ?>"><?php esc_html_e('Przejdź do szczegółów', 'erp-omd'); ?></a>
-                <?php endif; ?>
+                <p class="erp-omd-form-intro"><?php esc_html_e('Kosztorys ma teraz krótsze sekcje z lepiej wykorzystaną szerokością ekranu, dzięki czemu łatwiej przejść od podstaw do lifecycle.', 'erp-omd'); ?></p>
+                <div class="erp-omd-form-sections">
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Podstawy kosztorysu', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Nazwa i klient, dla którego przygotowujemy wycenę.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-grid">
+                            <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                <label for="estimate-name"><?php esc_html_e('Nazwa kosztorysu', 'erp-omd'); ?></label>
+                                <input id="estimate-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($estimate['name'] ?? ''); ?>" required>
+                                <p class="description"><?php esc_html_e('Np. Audyt SEO Q2 2026 albo Kampania launchowa.', 'erp-omd'); ?></p>
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <label for="estimate-client-id"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                                <select id="estimate-client-id" name="client_id" required>
+                                    <option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
+                                    <?php foreach ($clients as $client_row) : ?>
+                                        <option value="<?php echo esc_attr($client_row['id']); ?>" <?php selected((int) ($estimate['client_id'] ?? 0), (int) $client_row['id']); ?>><?php echo esc_html($client_row['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Lifecycle', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Stan pracy nad kosztorysem oraz informacje o akceptacji.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-grid">
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="estimate-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
+                                <select id="estimate-status" name="status">
+                                    <?php foreach (['wstepny', 'do_akceptacji', 'zaakceptowany'] as $status_option) : ?>
+                                        <option value="<?php echo esc_attr($status_option); ?>" <?php selected((string) ($estimate['status'] ?? 'wstepny'), $status_option); ?>><?php echo esc_html($status_option); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <span class="erp-omd-form-label"><?php esc_html_e('Informacja o akceptacji', 'erp-omd'); ?></span>
+                                <?php if (($estimate['status'] ?? '') === 'zaakceptowany') : ?>
+                                    <p class="description"><?php esc_html_e('Zaakceptowany kosztorys zachowuje zablokowane pozycje i dane klienta, ale administrator nadal może zmienić jego status.', 'erp-omd'); ?></p>
+                                <?php else : ?>
+                                    <p class="description"><?php esc_html_e('Po akceptacji kosztorys pozostaje czytelny, ale jego pozycje przechodzą w tryb tylko do odczytu.', 'erp-omd'); ?></p>
+                                <?php endif; ?>
+                                <?php if (! empty($estimate['accepted_at'])) : ?>
+                                    <p class="description"><?php echo esc_html(sprintf(__('Zaakceptowano: %s', 'erp-omd'), $estimate['accepted_at'])); ?></p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <div class="erp-omd-form-actions">
+                    <?php submit_button($estimate ? __('Zapisz kosztorys', 'erp-omd') : __('Dodaj kosztorys', 'erp-omd')); ?>
+                    <?php if ($estimate) : ?>
+                        <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-estimates&id=' . (int) $estimate['id'])); ?>"><?php esc_html_e('Przejdź do szczegółów', 'erp-omd'); ?></a>
+                    <?php endif; ?>
+                </div>
             </form>
 
             <?php if ($selected_estimate) : ?>
@@ -65,32 +81,38 @@
                         <input type="hidden" name="erp_omd_action" value="save_estimate_item">
                         <input type="hidden" name="estimate_id" value="<?php echo esc_attr($selected_estimate['id']); ?>">
                         <input type="hidden" name="item_id" value="<?php echo esc_attr($editing_estimate_item['id'] ?? 0); ?>">
-                        <table class="form-table" role="presentation">
-                            <tr>
-                                <th scope="row"><label for="estimate-item-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label></th>
-                                <td><input id="estimate-item-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($editing_estimate_item['name'] ?? ''); ?>" required></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><label for="estimate-item-qty"><?php esc_html_e('Ilość', 'erp-omd'); ?></label></th>
-                                <td><input id="estimate-item-qty" name="qty" type="number" step="0.01" min="0.01" value="<?php echo esc_attr($editing_estimate_item['qty'] ?? '1'); ?>" required></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><label for="estimate-item-price"><?php esc_html_e('Cena', 'erp-omd'); ?></label></th>
-                                <td><input id="estimate-item-price" name="price" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['price'] ?? '0'); ?>" required></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><label for="estimate-item-cost-internal"><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label></th>
-                                <td><input id="estimate-item-cost-internal" name="cost_internal" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['cost_internal'] ?? '0'); ?>" required></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><label for="estimate-item-comment"><?php esc_html_e('Komentarz', 'erp-omd'); ?></label></th>
-                                <td><textarea id="estimate-item-comment" name="comment" rows="3" class="large-text"><?php echo esc_textarea($editing_estimate_item['comment'] ?? ''); ?></textarea></td>
-                            </tr>
-                        </table>
-                        <?php submit_button($editing_estimate_item ? __('Zapisz pozycję', 'erp-omd') : __('Dodaj pozycję', 'erp-omd'), 'secondary'); ?>
-                        <?php if ($editing_estimate_item) : ?>
-                            <a class="button" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-estimates', 'id' => (int) $selected_estimate['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Anuluj edycję pozycji', 'erp-omd'); ?></a>
-                        <?php endif; ?>
+                        <div class="erp-omd-form-sections">
+                            <section class="erp-omd-form-section">
+                                <div class="erp-omd-form-grid">
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                        <label for="estimate-item-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
+                                        <input id="estimate-item-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($editing_estimate_item['name'] ?? ''); ?>" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label for="estimate-item-qty"><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
+                                        <input id="estimate-item-qty" name="qty" type="number" step="0.01" min="0.01" value="<?php echo esc_attr($editing_estimate_item['qty'] ?? '1'); ?>" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label for="estimate-item-price"><?php esc_html_e('Cena', 'erp-omd'); ?></label>
+                                        <input id="estimate-item-price" name="price" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['price'] ?? '0'); ?>" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label for="estimate-item-cost-internal"><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
+                                        <input id="estimate-item-cost-internal" name="cost_internal" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['cost_internal'] ?? '0'); ?>" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                        <label for="estimate-item-comment"><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
+                                        <textarea id="estimate-item-comment" name="comment" rows="3" class="large-text"><?php echo esc_textarea($editing_estimate_item['comment'] ?? ''); ?></textarea>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                        <div class="erp-omd-form-actions">
+                            <?php submit_button($editing_estimate_item ? __('Zapisz pozycję', 'erp-omd') : __('Dodaj pozycję', 'erp-omd'), 'secondary'); ?>
+                            <?php if ($editing_estimate_item) : ?>
+                                <a class="button" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-estimates', 'id' => (int) $selected_estimate['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Anuluj edycję pozycji', 'erp-omd'); ?></a>
+                            <?php endif; ?>
+                        </div>
                     </form>
                 <?php else : ?>
                     <p><?php esc_html_e('Po zaakceptowaniu pozycje kosztorysu są tylko do odczytu — można je przeglądać i eksportować, ale status kosztorysu administrator może nadal zmienić z poziomu formularza edycji.', 'erp-omd'); ?></p>
@@ -202,6 +224,25 @@
                         </form>
                     </div>
                 </div>
+                <div class="erp-omd-detail-grid">
+                    <div class="erp-omd-detail-card">
+                        <h3><?php esc_html_e('Podsumowanie kosztorysu', 'erp-omd'); ?></h3>
+                        <div class="erp-omd-detail-list">
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Klient', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['client_name'] ?? '—'); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($selected_estimate['status'], 'estimate')); ?>"><?php echo esc_html($selected_estimate['status']); ?></span></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Akceptacja', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['accepted_at'] ?? '—'); ?></span></div>
+                        </div>
+                    </div>
+                    <div class="erp-omd-detail-card">
+                        <h3><?php esc_html_e('Wartości finansowe', 'erp-omd'); ?></h3>
+                        <div class="erp-omd-detail-list">
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Netto', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) $estimate_totals['net'], 2)); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('VAT 23%', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) $estimate_totals['tax'], 2)); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Brutto', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) $estimate_totals['gross'], 2)); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) $estimate_totals['internal_cost'], 2)); ?></span></div>
+                        </div>
+                    </div>
+                </div>
                 <?php if ($linked_project) : ?>
                     <p><strong><?php esc_html_e('Powiązany projekt:', 'erp-omd'); ?></strong> <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => (int) $linked_project['id']], admin_url('admin.php'))); ?>"><?php echo esc_html($linked_project['name']); ?></a></p>
                     <?php $linked_project_alerts = $selected_estimate['alerts'] ?? []; ?>
@@ -255,14 +296,6 @@
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-
-                <h3><?php esc_html_e('Podsumowanie', 'erp-omd'); ?></h3>
-                <ul>
-                    <li><strong><?php esc_html_e('Netto:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) $estimate_totals['net'], 2)); ?></li>
-                    <li><strong><?php esc_html_e('VAT 23%:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) $estimate_totals['tax'], 2)); ?></li>
-                    <li><strong><?php esc_html_e('Brutto:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) $estimate_totals['gross'], 2)); ?></li>
-                    <li><strong><?php esc_html_e('Koszt wewnętrzny:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) $estimate_totals['internal_cost'], 2)); ?></li>
-                </ul>
 
                 <hr>
                 <div class="erp-omd-section-header">

@@ -7,51 +7,116 @@
                 <?php wp_nonce_field('erp_omd_save_client'); ?>
                 <input type="hidden" name="erp_omd_action" value="save_client" />
                 <input type="hidden" name="id" value="<?php echo esc_attr($client['id'] ?? ''); ?>" />
-                <table class="form-table">
-                    <tr><th colspan="2"><h3 class="erp-omd-form-section-title"><?php esc_html_e('Podstawy', 'erp-omd'); ?></h3></th></tr>
-                    <tr><th><label for="client-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label></th><td><input id="client-name" class="regular-text" type="text" name="name" value="<?php echo esc_attr($client['name'] ?? ''); ?>" required /></td></tr>
-                    <tr><th><label for="client-company"><?php esc_html_e('Firma', 'erp-omd'); ?></label></th><td><input id="client-company" class="regular-text" type="text" name="company" value="<?php echo esc_attr($client['company'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="client-nip"><?php esc_html_e('NIP', 'erp-omd'); ?></label></th><td><input id="client-nip" class="regular-text" type="text" name="nip" value="<?php echo esc_attr($client['nip'] ?? ''); ?>" /></td></tr>
-                    <tr><th colspan="2"><h3 class="erp-omd-form-section-title"><?php esc_html_e('Adres i kontakt', 'erp-omd'); ?></h3></th></tr>
-                    <tr><th><label for="client-street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label></th><td><input id="client-street" class="regular-text" type="text" name="street" value="<?php echo esc_attr($client['street'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="client-apartment-number"><?php esc_html_e('Numer lokalu', 'erp-omd'); ?></label></th><td><input id="client-apartment-number" class="regular-text" type="text" name="apartment_number" value="<?php echo esc_attr($client['apartment_number'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="client-city"><?php esc_html_e('Miasto', 'erp-omd'); ?></label></th><td><input id="client-city" class="regular-text" type="text" name="city" value="<?php echo esc_attr($client['city'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="client-postal-code"><?php esc_html_e('Kod pocztowy', 'erp-omd'); ?></label></th><td><input id="client-postal-code" class="regular-text" type="text" name="postal_code" value="<?php echo esc_attr($client['postal_code'] ?? ''); ?>" placeholder="00-000" /></td></tr>
-                    <tr><th><label for="client-country"><?php esc_html_e('Kraj (ISO)', 'erp-omd'); ?></label></th><td><input id="client-country" class="small-text" type="text" name="country" value="<?php echo esc_attr($client['country'] ?? 'PL'); ?>" maxlength="2" /></td></tr>
-                    <tr><th><label for="client-email"><?php esc_html_e('Email', 'erp-omd'); ?></label></th><td><input id="client-email" class="regular-text" type="email" name="email" value="<?php echo esc_attr($client['email'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="client-phone"><?php esc_html_e('Telefon', 'erp-omd'); ?></label></th><td><input id="client-phone" class="regular-text" type="text" name="phone" value="<?php echo esc_attr($client['phone'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="contact-person-name"><?php esc_html_e('Osoba kontaktowa — imię i nazwisko', 'erp-omd'); ?></label></th><td><input id="contact-person-name" class="regular-text" type="text" name="contact_person_name" value="<?php echo esc_attr($client['contact_person_name'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="contact-person-email"><?php esc_html_e('Osoba kontaktowa — email', 'erp-omd'); ?></label></th><td><input id="contact-person-email" class="regular-text" type="email" name="contact_person_email" value="<?php echo esc_attr($client['contact_person_email'] ?? ''); ?>" /></td></tr>
-                    <tr><th><label for="contact-person-phone"><?php esc_html_e('Osoba kontaktowa — telefon', 'erp-omd'); ?></label></th><td><input id="contact-person-phone" class="regular-text" type="text" name="contact_person_phone" value="<?php echo esc_attr($client['contact_person_phone'] ?? ''); ?>" /></td></tr>
-                    <tr><th colspan="2"><h3 class="erp-omd-form-section-title"><?php esc_html_e('Lifecycle i odpowiedzialność', 'erp-omd'); ?></h3></th></tr>
-                    <tr>
-                        <th><label for="client-account-manager"><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></label></th>
-                        <td>
-                            <select id="client-account-manager" name="account_manager_id">
-                                <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
-                                <?php foreach ($employees_for_select as $employee_item) : ?>
-                                    <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($client['account_manager_id'] ?? 0), (int) $employee_item['id']); ?>>
-                                        <?php echo esc_html($employee_item['user_login'] . ' (' . $this->account_type_label($employee_item['account_type']) . ')'); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><label for="client-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
-                        <td>
-                            <select id="client-status" name="status">
-                                <option value="active" <?php selected($client['status'] ?? 'active', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
-                                <option value="inactive" <?php selected($client['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr><th><label for="client-alert-threshold"><?php esc_html_e('Próg marży klienta (%)', 'erp-omd'); ?></label></th><td><input id="client-alert-threshold" type="number" step="0.01" min="0" name="alert_margin_threshold" value="<?php echo esc_attr($client['alert_margin_threshold'] ?? ''); ?>" /><p class="description"><?php esc_html_e('Opcjonalnie nadpisuje globalny próg alertu niskiej marży dla projektów klienta.', 'erp-omd'); ?></p></td></tr>
-                </table>
-                <?php submit_button($client ? __('Zapisz klienta', 'erp-omd') : __('Dodaj klienta', 'erp-omd')); ?>
-                <?php if ($client) : ?>
-                    <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-clients&id=' . (int) $client['id'])); ?>"><?php esc_html_e('Przejdź do szczegółów', 'erp-omd'); ?></a>
-                <?php endif; ?>
+                <p class="erp-omd-form-intro"><?php esc_html_e('Podzieliliśmy formularz na krótsze sekcje, żeby szybciej skanować dane i wygodniej pracować na szerszych ekranach.', 'erp-omd'); ?></p>
+                <div class="erp-omd-form-sections">
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Podstawy', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Najważniejsze dane identyfikujące klienta.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-grid">
+                            <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                <label for="client-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
+                                <input id="client-name" class="regular-text" type="text" name="name" value="<?php echo esc_attr($client['name'] ?? ''); ?>" required />
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <label for="client-company"><?php esc_html_e('Firma', 'erp-omd'); ?></label>
+                                <input id="client-company" class="regular-text" type="text" name="company" value="<?php echo esc_attr($client['company'] ?? ''); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="client-nip"><?php esc_html_e('NIP', 'erp-omd'); ?></label>
+                                <input id="client-nip" class="regular-text" type="text" name="nip" value="<?php echo esc_attr($client['nip'] ?? ''); ?>" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Adres i kontakt', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Pola o mniejszej szerokości układają się obok siebie, a dłuższe zajmują cały wiersz.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-grid">
+                            <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                <label for="client-street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label>
+                                <input id="client-street" class="regular-text" type="text" name="street" value="<?php echo esc_attr($client['street'] ?? ''); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="client-apartment-number"><?php esc_html_e('Numer lokalu', 'erp-omd'); ?></label>
+                                <input id="client-apartment-number" class="regular-text" type="text" name="apartment_number" value="<?php echo esc_attr($client['apartment_number'] ?? ''); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <label for="client-city"><?php esc_html_e('Miasto', 'erp-omd'); ?></label>
+                                <input id="client-city" class="regular-text" type="text" name="city" value="<?php echo esc_attr($client['city'] ?? ''); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="client-postal-code"><?php esc_html_e('Kod pocztowy', 'erp-omd'); ?></label>
+                                <input id="client-postal-code" class="regular-text" type="text" name="postal_code" value="<?php echo esc_attr($client['postal_code'] ?? ''); ?>" placeholder="00-000" />
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="client-country"><?php esc_html_e('Kraj (ISO)', 'erp-omd'); ?></label>
+                                <input id="client-country" class="small-text" type="text" name="country" value="<?php echo esc_attr($client['country'] ?? 'PL'); ?>" maxlength="2" />
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <label for="client-email"><?php esc_html_e('Email', 'erp-omd'); ?></label>
+                                <input id="client-email" class="regular-text" type="email" name="email" value="<?php echo esc_attr($client['email'] ?? ''); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <label for="client-phone"><?php esc_html_e('Telefon', 'erp-omd'); ?></label>
+                                <input id="client-phone" class="regular-text" type="text" name="phone" value="<?php echo esc_attr($client['phone'] ?? ''); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <label for="contact-person-name"><?php esc_html_e('Osoba kontaktowa — imię i nazwisko', 'erp-omd'); ?></label>
+                                <input id="contact-person-name" class="regular-text" type="text" name="contact_person_name" value="<?php echo esc_attr($client['contact_person_name'] ?? ''); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <label for="contact-person-email"><?php esc_html_e('Osoba kontaktowa — email', 'erp-omd'); ?></label>
+                                <input id="contact-person-email" class="regular-text" type="email" name="contact_person_email" value="<?php echo esc_attr($client['contact_person_email'] ?? ''); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <label for="contact-person-phone"><?php esc_html_e('Osoba kontaktowa — telefon', 'erp-omd'); ?></label>
+                                <input id="contact-person-phone" class="regular-text" type="text" name="contact_person_phone" value="<?php echo esc_attr($client['contact_person_phone'] ?? ''); ?>" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Lifecycle i odpowiedzialność', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Status klienta, owner i ustawienia ryzyka w jednym miejscu.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-grid">
+                            <div class="erp-omd-form-field">
+                                <label for="client-account-manager"><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></label>
+                                <select id="client-account-manager" name="account_manager_id">
+                                    <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
+                                    <?php foreach ($employees_for_select as $employee_item) : ?>
+                                        <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($client['account_manager_id'] ?? 0), (int) $employee_item['id']); ?>>
+                                            <?php echo esc_html($employee_item['user_login'] . ' (' . $this->account_type_label($employee_item['account_type']) . ')'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="client-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
+                                <select id="client-status" name="status">
+                                    <option value="active" <?php selected($client['status'] ?? 'active', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
+                                    <option value="inactive" <?php selected($client['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="client-alert-threshold"><?php esc_html_e('Próg marży klienta (%)', 'erp-omd'); ?></label>
+                                <input id="client-alert-threshold" type="number" step="0.01" min="0" name="alert_margin_threshold" value="<?php echo esc_attr($client['alert_margin_threshold'] ?? ''); ?>" />
+                                <p class="description"><?php esc_html_e('Opcjonalnie nadpisuje globalny próg alertu niskiej marży dla projektów klienta.', 'erp-omd'); ?></p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <div class="erp-omd-form-actions">
+                    <?php submit_button($client ? __('Zapisz klienta', 'erp-omd') : __('Dodaj klienta', 'erp-omd')); ?>
+                    <?php if ($client) : ?>
+                        <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-clients&id=' . (int) $client['id'])); ?>"><?php esc_html_e('Przejdź do szczegółów', 'erp-omd'); ?></a>
+                    <?php endif; ?>
+                </div>
             </form>
 
             <?php if ($selected_client) : ?>
@@ -59,18 +124,22 @@
                 <div class="erp-omd-detail-grid">
                     <div class="erp-omd-detail-card">
                         <h3><?php esc_html_e('Widok 360° klienta', 'erp-omd'); ?></h3>
-                        <p><strong><?php esc_html_e('Nazwa:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['name'] ?? '—'); ?></p>
-                        <p><strong><?php esc_html_e('Firma:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['company'] ?? '—'); ?></p>
-                        <p><strong><?php esc_html_e('Adres:', 'erp-omd'); ?></strong> <?php echo esc_html(trim(($selected_client['street'] ?? '') . ' ' . ($selected_client['apartment_number'] ?? '') . ', ' . ($selected_client['postal_code'] ?? '') . ' ' . ($selected_client['city'] ?? '') . ', ' . ($selected_client['country'] ?? '')) ?: '—'); ?></p>
-                        <p><strong><?php esc_html_e('Status:', 'erp-omd'); ?></strong> <span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($selected_client['status'] ?? 'active', 'active')); ?>"><?php echo esc_html($this->active_status_label($selected_client['status'] ?? 'active')); ?></span></p>
+                        <div class="erp-omd-detail-list">
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Nazwa', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['name'] ?? '—'); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Firma', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['company'] ?? '—'); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Adres', 'erp-omd'); ?></strong><span><?php echo esc_html(trim(($selected_client['street'] ?? '') . ' ' . ($selected_client['apartment_number'] ?? '') . ', ' . ($selected_client['postal_code'] ?? '') . ' ' . ($selected_client['city'] ?? '') . ', ' . ($selected_client['country'] ?? '')) ?: '—'); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($selected_client['status'] ?? 'active', 'active')); ?>"><?php echo esc_html($this->active_status_label($selected_client['status'] ?? 'active')); ?></span></span></div>
+                        </div>
                     </div>
                     <div class="erp-omd-detail-card">
                         <h3><?php esc_html_e('Kontekst operacyjny', 'erp-omd'); ?></h3>
-                        <p><strong><?php esc_html_e('Opiekun klienta:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['account_manager_login'] ?? '—'); ?></p>
-                        <p><strong><?php esc_html_e('Email:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['email'] ?? '—'); ?></p>
-                        <p><strong><?php esc_html_e('Telefon:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['phone'] ?? '—'); ?></p>
-                        <p><strong><?php esc_html_e('Kontakt główny:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['contact_person_name'] ?? '—'); ?></p>
-                        <p><strong><?php esc_html_e('Próg marży:', 'erp-omd'); ?></strong> <?php echo esc_html(($selected_client['alert_margin_threshold'] ?? '') !== '' && $selected_client['alert_margin_threshold'] !== null ? number_format_i18n((float) $selected_client['alert_margin_threshold'], 2) . '%' : '—'); ?></p>
+                        <div class="erp-omd-detail-list">
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['account_manager_login'] ?? '—'); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Email', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['email'] ?? '—'); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Telefon', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['phone'] ?? '—'); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Kontakt główny', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['contact_person_name'] ?? '—'); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Próg marży', 'erp-omd'); ?></strong><span><?php echo esc_html(($selected_client['alert_margin_threshold'] ?? '') !== '' && $selected_client['alert_margin_threshold'] !== null ? number_format_i18n((float) $selected_client['alert_margin_threshold'], 2) . '%' : '—'); ?></span></div>
+                        </div>
                     </div>
                 </div>
                 <div class="erp-omd-section-header">
