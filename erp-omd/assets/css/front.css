@@ -151,7 +151,7 @@ body.erp-omd-front-body {
 
 .erp-omd-front-grid-worker {
     align-items: start;
-    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     margin-top: 24px;
 }
 
@@ -167,8 +167,7 @@ body.erp-omd-front-body {
 }
 
 .erp-omd-front-panel-form {
-    position: sticky;
-    top: 20px;
+    position: static;
 }
 
 .erp-omd-front-panel-calendar {
