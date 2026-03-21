@@ -6,7 +6,7 @@ if (! defined('ERP_OMD_VERSION')) {
     define('ERP_OMD_VERSION', '0.8.0-rc1');
 }
 if (! defined('ERP_OMD_DB_VERSION')) {
-    define('ERP_OMD_DB_VERSION', '6.0.0');
+    define('ERP_OMD_DB_VERSION', '6.1.0');
 }
 
 if (! function_exists('__')) {
