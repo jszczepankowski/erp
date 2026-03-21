@@ -121,6 +121,26 @@ class ERP_OMD_Time_Entry_Repository
         return $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
     }
 
+
+    public function count_for_project_by_statuses($project_id, array $statuses)
+    {
+        global $wpdb;
+
+        if ($project_id <= 0 || $statuses === []) {
+            return 0;
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($statuses), '%s'));
+        $params = array_merge([(int) $project_id], array_values($statuses));
+
+        return (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_name()} WHERE project_id = %d AND status IN ({$placeholders})",
+                ...$params
+            )
+        );
+    }
+
     public function duplicate_exists($employee_id, $project_id, $role_id, $hours, $exclude_id = null)
     {
         global $wpdb;

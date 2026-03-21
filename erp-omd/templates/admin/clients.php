@@ -16,6 +16,8 @@
                     <tr><th><label for="client-street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label></th><td><input id="client-street" class="regular-text" type="text" name="street" value="<?php echo esc_attr($client['street'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="client-apartment-number"><?php esc_html_e('Numer lokalu', 'erp-omd'); ?></label></th><td><input id="client-apartment-number" class="regular-text" type="text" name="apartment_number" value="<?php echo esc_attr($client['apartment_number'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="client-city"><?php esc_html_e('Miasto', 'erp-omd'); ?></label></th><td><input id="client-city" class="regular-text" type="text" name="city" value="<?php echo esc_attr($client['city'] ?? ''); ?>" /></td></tr>
+                    <tr><th><label for="client-postal-code"><?php esc_html_e('Kod pocztowy', 'erp-omd'); ?></label></th><td><input id="client-postal-code" class="regular-text" type="text" name="postal_code" value="<?php echo esc_attr($client['postal_code'] ?? ''); ?>" placeholder="00-000" /></td></tr>
+                    <tr><th><label for="client-country"><?php esc_html_e('Kraj (ISO)', 'erp-omd'); ?></label></th><td><input id="client-country" class="small-text" type="text" name="country" value="<?php echo esc_attr($client['country'] ?? 'PL'); ?>" maxlength="2" /></td></tr>
                     <tr><th><label for="client-email"><?php esc_html_e('Email', 'erp-omd'); ?></label></th><td><input id="client-email" class="regular-text" type="email" name="email" value="<?php echo esc_attr($client['email'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="client-phone"><?php esc_html_e('Telefon', 'erp-omd'); ?></label></th><td><input id="client-phone" class="regular-text" type="text" name="phone" value="<?php echo esc_attr($client['phone'] ?? ''); ?>" /></td></tr>
                     <tr><th><label for="contact-person-name"><?php esc_html_e('Osoba kontaktowa — imię i nazwisko', 'erp-omd'); ?></label></th><td><input id="contact-person-name" class="regular-text" type="text" name="contact_person_name" value="<?php echo esc_attr($client['contact_person_name'] ?? ''); ?>" /></td></tr>
@@ -44,6 +46,7 @@
                             </select>
                         </td>
                     </tr>
+                    <tr><th><label for="client-alert-threshold"><?php esc_html_e('Próg marży klienta (%)', 'erp-omd'); ?></label></th><td><input id="client-alert-threshold" type="number" step="0.01" min="0" name="alert_margin_threshold" value="<?php echo esc_attr($client['alert_margin_threshold'] ?? ''); ?>" /><p class="description"><?php esc_html_e('Opcjonalnie nadpisuje globalny próg alertu niskiej marży dla projektów klienta.', 'erp-omd'); ?></p></td></tr>
                 </table>
                 <?php submit_button($client ? __('Zapisz klienta', 'erp-omd') : __('Dodaj klienta', 'erp-omd')); ?>
                 <?php if ($client) : ?>
@@ -58,7 +61,7 @@
                         <h3><?php esc_html_e('Widok 360° klienta', 'erp-omd'); ?></h3>
                         <p><strong><?php esc_html_e('Nazwa:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['name'] ?? '—'); ?></p>
                         <p><strong><?php esc_html_e('Firma:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['company'] ?? '—'); ?></p>
-                        <p><strong><?php esc_html_e('Adres:', 'erp-omd'); ?></strong> <?php echo esc_html(trim(($selected_client['street'] ?? '') . ' ' . ($selected_client['apartment_number'] ?? '') . ', ' . ($selected_client['city'] ?? '')) ?: '—'); ?></p>
+                        <p><strong><?php esc_html_e('Adres:', 'erp-omd'); ?></strong> <?php echo esc_html(trim(($selected_client['street'] ?? '') . ' ' . ($selected_client['apartment_number'] ?? '') . ', ' . ($selected_client['postal_code'] ?? '') . ' ' . ($selected_client['city'] ?? '') . ', ' . ($selected_client['country'] ?? '')) ?: '—'); ?></p>
                         <p><strong><?php esc_html_e('Status:', 'erp-omd'); ?></strong> <span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($selected_client['status'] ?? 'active', 'active')); ?>"><?php echo esc_html($this->active_status_label($selected_client['status'] ?? 'active')); ?></span></p>
                     </div>
                     <div class="erp-omd-detail-card">
@@ -67,6 +70,7 @@
                         <p><strong><?php esc_html_e('Email:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['email'] ?? '—'); ?></p>
                         <p><strong><?php esc_html_e('Telefon:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['phone'] ?? '—'); ?></p>
                         <p><strong><?php esc_html_e('Kontakt główny:', 'erp-omd'); ?></strong> <?php echo esc_html($selected_client['contact_person_name'] ?? '—'); ?></p>
+                        <p><strong><?php esc_html_e('Próg marży:', 'erp-omd'); ?></strong> <?php echo esc_html(($selected_client['alert_margin_threshold'] ?? '') !== '' && $selected_client['alert_margin_threshold'] !== null ? number_format_i18n((float) $selected_client['alert_margin_threshold'], 2) . '%' : '—'); ?></p>
                     </div>
                 </div>
                 <div class="erp-omd-section-header">

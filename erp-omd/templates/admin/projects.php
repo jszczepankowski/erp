@@ -35,6 +35,7 @@
                 </tr>
                 <tr><th><label for="project-start-date"><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></label></th><td><input id="project-start-date" type="date" name="start_date" value="<?php echo esc_attr($project['start_date'] ?? ''); ?>" /></td></tr>
                 <tr><th><label for="project-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label></th><td><input id="project-end-date" type="date" name="end_date" value="<?php echo esc_attr($project['end_date'] ?? ''); ?>" /></td></tr>
+                <tr><th><label for="project-alert-threshold"><?php esc_html_e('Próg marży projektu (%)', 'erp-omd'); ?></label></th><td><input id="project-alert-threshold" type="number" step="0.01" min="0" name="alert_margin_threshold" value="<?php echo esc_attr($project['alert_margin_threshold'] ?? ''); ?>" /><p class="description"><?php esc_html_e('Opcjonalnie nadpisuje próg klienta lub globalny próg alertów.', 'erp-omd'); ?></p></td></tr>
                 <tr>
                     <th><label for="project-manager"><?php esc_html_e('Manager projektu', 'erp-omd'); ?></label></th>
                     <td>
@@ -72,6 +73,7 @@
                     <p><strong><?php esc_html_e('Abonament:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) ($project['retainer_monthly_fee'] ?? 0), 2)); ?></p>
                     <p><strong><?php esc_html_e('Start:', 'erp-omd'); ?></strong> <?php echo esc_html($project['start_date'] ?? '—'); ?></p>
                     <p><strong><?php esc_html_e('Koniec:', 'erp-omd'); ?></strong> <?php echo esc_html($project['end_date'] ?? '—'); ?></p>
+                    <p><strong><?php esc_html_e('Próg marży:', 'erp-omd'); ?></strong> <?php echo esc_html(($project['alert_margin_threshold'] ?? '') !== '' && $project['alert_margin_threshold'] !== null ? number_format_i18n((float) $project['alert_margin_threshold'], 2) . '%' : '—'); ?></p>
                 </div>
             </div>
             <h2><?php esc_html_e('Finanse projektu', 'erp-omd'); ?></h2>
