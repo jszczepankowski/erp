@@ -160,6 +160,29 @@ class ERP_OMD_Admin
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $alerts = $this->alert_service->all_alerts();
+        $reporting_month = current_time('Y-m');
+        $reporting_month_label = current_time('m.Y');
+        $monthly_metrics = $this->build_monthly_performance_metrics($reporting_month);
+        $monthly_totals = $monthly_metrics['totals'] ?? [
+            'reported_hours' => 0.0,
+            'hourly_cost_total' => 0.0,
+            'employee_profit' => 0.0,
+            'active_employees' => 0,
+        ];
+        $alert_summary = [
+            'error' => 0,
+            'warning' => 0,
+            'info' => 0,
+        ];
+
+        foreach ($alerts as $alert) {
+            $severity = (string) ($alert['severity'] ?? '');
+            if (isset($alert_summary[$severity])) {
+                $alert_summary[$severity]++;
+            }
+        }
+
+        $dashboard_recent_alerts = array_slice($alerts, 0, 5);
         $dashboard_shortcuts = [
             ['label' => __('Dodaj klienta', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-clients', 'edit' => 1], admin_url('admin.php'))],
             ['label' => __('Dodaj projekt', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-projects'], admin_url('admin.php'))],
@@ -1375,6 +1398,12 @@ class ERP_OMD_Admin
     private function build_monthly_performance_metrics($reporting_month)
     {
         $employee_metrics = [];
+        $totals = [
+            'reported_hours' => 0.0,
+            'hourly_cost_total' => 0.0,
+            'employee_profit' => 0.0,
+            'active_employees' => 0,
+        ];
 
         $time_entries = $this->time_entries->all();
         foreach ($time_entries as $time_entry) {
@@ -1400,6 +1429,9 @@ class ERP_OMD_Admin
             $employee_metrics[$employee_id]['reported_hours'] += $hours;
             $employee_metrics[$employee_id]['hourly_cost_total'] += $cost;
             $employee_metrics[$employee_id]['employee_profit'] += $revenue - $cost;
+            $totals['reported_hours'] += $hours;
+            $totals['hourly_cost_total'] += $cost;
+            $totals['employee_profit'] += $revenue - $cost;
         }
 
         foreach ($employee_metrics as &$employee_metric_row) {
@@ -1409,8 +1441,14 @@ class ERP_OMD_Admin
         }
         unset($employee_metric_row);
 
+        $totals['reported_hours'] = round($totals['reported_hours'], 2);
+        $totals['hourly_cost_total'] = round($totals['hourly_cost_total'], 2);
+        $totals['employee_profit'] = round($totals['employee_profit'], 2);
+        $totals['active_employees'] = count($employee_metrics);
+
         return [
             'employees' => $employee_metrics,
+            'totals' => $totals,
         ];
     }
 

@@ -20,6 +20,32 @@
             <p><a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-alerts')); ?>"><?php esc_html_e('Przejdź do centrum alertów', 'erp-omd'); ?></a></p>
         </div>
         <div class="erp-omd-card">
+            <h2><?php printf(esc_html__('Wydajność za %s', 'erp-omd'), esc_html($reporting_month_label)); ?></h2>
+            <p><strong><?php echo esc_html(number_format_i18n((float) $monthly_totals['reported_hours'], 2)); ?></strong> <?php esc_html_e('zatwierdzonych godzin', 'erp-omd'); ?></p>
+            <p><strong><?php echo esc_html(number_format_i18n((float) $monthly_totals['hourly_cost_total'], 2)); ?></strong> <?php esc_html_e('kosztu godzinowego', 'erp-omd'); ?></p>
+            <p><strong><?php echo esc_html(number_format_i18n((float) $monthly_totals['employee_profit'], 2)); ?></strong> <?php esc_html_e('zysku pracowniczego', 'erp-omd'); ?></p>
+            <p><strong><?php echo esc_html((int) $monthly_totals['active_employees']); ?></strong> <?php esc_html_e('pracowników z zatwierdzonym czasem', 'erp-omd'); ?></p>
+            <p><a class="button button-secondary" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports', 'report_type' => 'monthly'], admin_url('admin.php'))); ?>"><?php esc_html_e('Otwórz raport miesięczny', 'erp-omd'); ?></a></p>
+        </div>
+        <div class="erp-omd-card">
+            <h2><?php esc_html_e('Skrót alertów', 'erp-omd'); ?></h2>
+            <p><strong><?php echo esc_html((int) $alert_summary['error']); ?></strong> <?php esc_html_e('błędów krytycznych', 'erp-omd'); ?></p>
+            <p><strong><?php echo esc_html((int) $alert_summary['warning']); ?></strong> <?php esc_html_e('ostrzeżeń', 'erp-omd'); ?></p>
+            <p><strong><?php echo esc_html((int) $alert_summary['info']); ?></strong> <?php esc_html_e('powiadomień informacyjnych', 'erp-omd'); ?></p>
+            <?php if (! empty($dashboard_recent_alerts)) : ?>
+                <ul>
+                    <?php foreach ($dashboard_recent_alerts as $alert) : ?>
+                        <li>
+                            <strong><?php echo esc_html(strtoupper((string) ($alert['severity'] ?? 'info'))); ?>:</strong>
+                            <?php echo esc_html((string) ($alert['message'] ?? '')); ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php else : ?>
+                <p class="description"><?php esc_html_e('Brak aktywnych alertów.', 'erp-omd'); ?></p>
+            <?php endif; ?>
+        </div>
+        <div class="erp-omd-card">
             <h2><?php esc_html_e('Skróty', 'erp-omd'); ?></h2>
             <div class="erp-omd-action-group">
                 <?php foreach ($dashboard_shortcuts as $shortcut) : ?>
