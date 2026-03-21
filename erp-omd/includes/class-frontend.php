@@ -344,6 +344,7 @@ class ERP_OMD_Frontend
         }
 
         $entry_id = (int) ($_POST['id'] ?? 0);
+        $client_id = (int) ($_POST['client_id'] ?? 0);
         $project_id = (int) ($_POST['project_id'] ?? 0);
         $role_id = (int) ($_POST['role_id'] ?? 0);
         $selected_date = sanitize_text_field(wp_unslash($_POST['selected_date'] ?? ''));
@@ -366,7 +367,14 @@ class ERP_OMD_Frontend
             $this->redirect_worker_with_notice(
                 'error',
                 __('Możesz raportować czas tylko do aktywnych projektów w realizacji.', 'erp-omd'),
-                array_merge($entry_id ? ['entry_id' => $entry_id] : [], $selected_day_args)
+                array_merge($entry_id ? ['entry_id' => $entry_id] : [], $client_id > 0 ? ['client_id' => $client_id] : [], $selected_day_args)
+            );
+        }
+        if ($client_id > 0 && (int) ($selected_project['client_id'] ?? 0) !== $client_id) {
+            $this->redirect_worker_with_notice(
+                'error',
+                __('Wybrany projekt nie należy do wskazanego klienta.', 'erp-omd'),
+                array_merge($entry_id ? ['entry_id' => $entry_id] : [], ['client_id' => $client_id], $selected_day_args)
             );
         }
 
@@ -375,14 +383,18 @@ class ERP_OMD_Frontend
             $this->redirect_worker_with_notice(
                 'error',
                 __('Wybrana rola nie jest dostępna dla tego pracownika.', 'erp-omd'),
-                array_merge($entry_id ? ['entry_id' => $entry_id] : [], $selected_day_args)
+                array_merge($entry_id ? ['entry_id' => $entry_id] : [], $client_id > 0 ? ['client_id' => $client_id] : [], $selected_day_args)
             );
         }
 
         if ($entry_id) {
             $existing = $this->time_entries->find($entry_id);
             if (! $existing || ! $this->time_entry_service->can_edit_entry($existing, $user)) {
-                $this->redirect_worker_with_notice('error', __('Możesz edytować tylko własne wpisy ze statusem submitted.', 'erp-omd'), $selected_day_args);
+                $this->redirect_worker_with_notice(
+                    'error',
+                    __('Możesz edytować tylko własne wpisy ze statusem submitted.', 'erp-omd'),
+                    array_merge($client_id > 0 ? ['client_id' => $client_id] : [], $selected_day_args)
+                );
             }
         }
 
@@ -392,7 +404,7 @@ class ERP_OMD_Frontend
             $this->redirect_worker_with_notice(
                 'error',
                 implode(' ', $errors),
-                array_merge($entry_id ? ['entry_id' => $entry_id] : [], $selected_day_args)
+                array_merge($entry_id ? ['entry_id' => $entry_id] : [], $client_id > 0 ? ['client_id' => $client_id] : [], $selected_day_args)
             );
         }
 
@@ -470,6 +482,19 @@ class ERP_OMD_Frontend
                 }
             )
         );
+        $available_clients = [];
+        foreach ($available_projects as $project) {
+            $client_id = (int) ($project['client_id'] ?? 0);
+            if ($client_id <= 0 || isset($available_clients[$client_id])) {
+                continue;
+            }
+
+            $available_clients[$client_id] = [
+                'id' => $client_id,
+                'name' => (string) ($project['client_name'] ?? ('#' . $client_id)),
+            ];
+        }
+        $available_clients = array_values($available_clients);
         $available_roles = $this->get_worker_roles($employee);
         $recent_entry_templates = $this->build_recent_worker_templates(
             $this->time_entry_service->filter_visible_entries(
@@ -526,6 +551,7 @@ class ERP_OMD_Frontend
 
         $worker_form_defaults = $editable_entry ?: [
             'id' => 0,
+            'client_id' => (int) ($_GET['client_id'] ?? 0),
             'project_id' => 0,
             'role_id' => (int) ($available_roles[0]['id'] ?? 0),
             'hours' => '',
@@ -533,6 +559,10 @@ class ERP_OMD_Frontend
             'description' => '',
             'status' => 'submitted',
         ];
+        if (! isset($worker_form_defaults['client_id']) || (int) $worker_form_defaults['client_id'] <= 0) {
+            $selected_project_for_form = $this->find_project_in_collection($available_projects, (int) ($worker_form_defaults['project_id'] ?? 0));
+            $worker_form_defaults['client_id'] = (int) ($selected_project_for_form['client_id'] ?? 0);
+        }
 
         $dashboard_title = __('Panel pracownika', 'erp-omd');
         $dashboard_intro = __('FRONT-2 udostępnia pracownikowi własne raportowanie czasu: szybki formularz, listę wpisów, filtry i operacje tylko na własnych draftach submitted.', 'erp-omd');
@@ -565,6 +595,7 @@ class ERP_OMD_Frontend
 
             $seen[$key] = true;
             $templates[] = [
+                'client_id' => (int) ($entry['client_id'] ?? 0),
                 'project_id' => (int) ($entry['project_id'] ?? 0),
                 'project_name' => (string) ($entry['project_name'] ?? '—'),
                 'role_id' => (int) ($entry['role_id'] ?? 0),

@@ -14,7 +14,6 @@
                 <div>
                     <span class="erp-omd-front-eyebrow"><?php echo esc_html($front_brand_label); ?></span>
                     <h1><?php echo esc_html($dashboard_title); ?></h1>
-                    <p class="erp-omd-front-lead"><?php echo esc_html($dashboard_intro); ?></p>
                 </div>
                 <div class="erp-omd-front-actions">
                     <?php if (user_can($user, 'erp_omd_front_worker')) : ?>
@@ -36,7 +35,6 @@
                         <li><strong><?php esc_html_e('Użytkownik:', 'erp-omd'); ?></strong> <?php echo esc_html($user->user_login); ?></li>
                         <li><strong><?php esc_html_e('Email:', 'erp-omd'); ?></strong> <?php echo esc_html($user->user_email); ?></li>
                         <li><strong><?php esc_html_e('Typ ERP:', 'erp-omd'); ?></strong> <?php echo esc_html($employee['account_type'] ?? '—'); ?></li>
-                        <li><strong><?php esc_html_e('Status:', 'erp-omd'); ?></strong> <?php echo esc_html($employee['status'] ?? '—'); ?></li>
                     </ul>
                 </article>
 

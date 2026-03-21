@@ -14,7 +14,6 @@
                 <div>
                     <span class="erp-omd-front-eyebrow"><?php echo esc_html($front_brand_label); ?></span>
                     <h1><?php echo esc_html($dashboard_title); ?></h1>
-                    <p class="erp-omd-front-lead"><?php echo esc_html($dashboard_intro); ?></p>
                 </div>
                 <div class="erp-omd-front-actions">
                     <a class="erp-omd-front-button" href="<?php echo esc_url($front_worker_url); ?>"><?php esc_html_e('Odśwież panel', 'erp-omd'); ?></a>
@@ -36,7 +35,6 @@
                         <li><strong><?php esc_html_e('Użytkownik:', 'erp-omd'); ?></strong> <?php echo esc_html($user->user_login); ?></li>
                         <li><strong><?php esc_html_e('Email:', 'erp-omd'); ?></strong> <?php echo esc_html($user->user_email); ?></li>
                         <li><strong><?php esc_html_e('Typ ERP:', 'erp-omd'); ?></strong> <?php echo esc_html($employee['account_type'] ?? '—'); ?></li>
-                        <li><strong><?php esc_html_e('Status:', 'erp-omd'); ?></strong> <?php echo esc_html($employee['status'] ?? '—'); ?></li>
                     </ul>
                 </article>
 
@@ -78,6 +76,7 @@
                                     <button
                                         type="button"
                                         class="erp-omd-front-template-button"
+                                        data-client-id="<?php echo esc_attr((string) ($template['client_id'] ?? 0)); ?>"
                                         data-project-id="<?php echo esc_attr((string) $template['project_id']); ?>"
                                         data-role-id="<?php echo esc_attr((string) $template['role_id']); ?>"
                                         data-hours="<?php echo esc_attr((string) $template['hours']); ?>"
@@ -97,12 +96,22 @@
                         <input type="hidden" name="id" value="<?php echo esc_attr((string) ($worker_form_defaults['id'] ?? 0)); ?>">
                         <input type="hidden" name="selected_date" value="<?php echo esc_attr($selected_day); ?>">
 
+                        <label for="erp-omd-front-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                        <select id="erp-omd-front-client" name="client_id" data-project-target="#erp-omd-front-project" required>
+                            <option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
+                            <?php foreach ($available_clients as $client_item) : ?>
+                                <option value="<?php echo esc_attr((string) $client_item['id']); ?>" <?php selected((int) ($worker_form_defaults['client_id'] ?? 0), (int) $client_item['id']); ?>>
+                                    <?php echo esc_html($client_item['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+
                         <label for="erp-omd-front-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
                         <select id="erp-omd-front-project" name="project_id" required>
-                            <option value=""><?php esc_html_e('Wybierz projekt w realizacji', 'erp-omd'); ?></option>
+                            <option value=""><?php esc_html_e('Wybierz projekt klienta', 'erp-omd'); ?></option>
                             <?php foreach ($available_projects as $project_item) : ?>
-                                <option value="<?php echo esc_attr((string) $project_item['id']); ?>" <?php selected((int) ($worker_form_defaults['project_id'] ?? 0), (int) $project_item['id']); ?>>
-                                    <?php echo esc_html($project_item['client_name'] . ' → ' . $project_item['name']); ?>
+                                <option value="<?php echo esc_attr((string) $project_item['id']); ?>" data-client-id="<?php echo esc_attr((string) $project_item['client_id']); ?>" <?php selected((int) ($worker_form_defaults['project_id'] ?? 0), (int) $project_item['id']); ?>>
+                                    <?php echo esc_html($project_item['name']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -130,7 +139,7 @@
                         <div class="erp-omd-front-quick-hours">
                             <?php foreach ([0.5, 1, 2, 4, 8] as $quick_hours) : ?>
                                 <button type="button" class="erp-omd-front-button erp-omd-front-button-ghost erp-omd-front-quick-hours-button" data-hours="<?php echo esc_attr((string) $quick_hours); ?>">
-                                    <?php echo esc_html(number_format_i18n($quick_hours, $quick_hours === (int) $quick_hours ? 0 : 2)); ?>h
+                                    <?php echo esc_html($quick_hours === (float) ((int) $quick_hours) ? (string) ((int) $quick_hours) : rtrim(rtrim(number_format($quick_hours, 2, '.', ''), '0'), '.')); ?>h
                                 </button>
                             <?php endforeach; ?>
                         </div>
@@ -436,9 +445,44 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var hoursInput = document.getElementById('erp-omd-front-hours');
+            var clientInput = document.getElementById('erp-omd-front-client');
             var projectInput = document.getElementById('erp-omd-front-project');
             var roleInput = document.getElementById('erp-omd-front-role');
             var descriptionInput = document.getElementById('erp-omd-front-description');
+
+            var syncProjectOptions = function () {
+                if (!clientInput || !projectInput) {
+                    return;
+                }
+
+                var selectedClientId = clientInput.value;
+                var hasVisibleSelectedOption = false;
+
+                Array.prototype.forEach.call(projectInput.options, function (option) {
+                    if (option.value === '') {
+                        option.hidden = false;
+                        return;
+                    }
+
+                    var optionClientId = option.getAttribute('data-client-id') || '';
+                    var visible = selectedClientId === '' || optionClientId === selectedClientId;
+                    option.hidden = !visible;
+
+                    if (visible && option.selected) {
+                        hasVisibleSelectedOption = true;
+                    }
+                });
+
+                if (!hasVisibleSelectedOption) {
+                    projectInput.value = '';
+                }
+            };
+
+            if (clientInput) {
+                syncProjectOptions();
+                clientInput.addEventListener('change', syncProjectOptions);
+            }
+
             document.querySelectorAll('.erp-omd-front-quick-hours-button').forEach(function (button) {
                 button.addEventListener('click', function () {
                     if (hoursInput) {
@@ -450,6 +494,10 @@
 
             document.querySelectorAll('.erp-omd-front-template-button').forEach(function (button) {
                 button.addEventListener('click', function () {
+                    if (clientInput) {
+                        clientInput.value = button.getAttribute('data-client-id');
+                        syncProjectOptions();
+                    }
                     if (projectInput) {
                         projectInput.value = button.getAttribute('data-project-id');
                     }

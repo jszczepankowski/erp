@@ -37,7 +37,7 @@ class ERP_OMD_Time_Entry_Repository
             $params[] = $filters['entry_date'];
         }
 
-        $sql = "SELECT t.*, eu.user_login AS employee_login, p.name AS project_name, r.name AS role_name,
+        $sql = "SELECT t.*, eu.user_login AS employee_login, p.client_id AS client_id, p.name AS project_name, r.name AS role_name,
                 au.user_login AS approved_by_login
                 FROM {$this->table_name()} t
                 INNER JOIN {$employees_table} e ON e.id = t.employee_id
