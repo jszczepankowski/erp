@@ -501,6 +501,7 @@ class ERP_OMD_Admin
             $selected_time_client_id = (int) $filters['client_id'];
         }
         $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
+        $saved_views = $this->get_saved_views('time');
         include ERP_OMD_PATH . 'templates/admin/time-entries.php';
     }
 
@@ -544,6 +545,7 @@ class ERP_OMD_Admin
             'monthly' => __('Raport miesięczny', 'erp-omd'),
         ];
         $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');
+        $saved_views = $this->get_saved_views('reports');
         include ERP_OMD_PATH . 'templates/admin/reports.php';
     }
 
