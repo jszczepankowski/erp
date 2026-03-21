@@ -19,16 +19,17 @@ System jest projektowany iteracyjnie. Każdy sprint rozszerza wcześniejsze modu
 
 ## 2. Główna architektura biznesowa systemu
 
-System można podzielić na osiem warstw funkcjonalnych:
+System można podzielić na dziewięć warstw funkcjonalnych:
 
 1. **Administracja i uprawnienia** — użytkownicy WordPress, role ERP, capability, ustawienia i lifecycle danych.
 2. **Zespół i kompetencje** — role projektowe, pracownicy, role przypisane pracownikom, historia wynagrodzeń.
 3. **Klienci i relacje handlowe** — kartoteki klientów, dane kontaktowe, opiekun klienta, stawki klienta.
-4. **Projekty i delivery** — projekty, statusy, manager projektu, brief, stawki projektowe, uwagi klienta.
+4. **Projekty i delivery** — projekty, statusy, jeden lub wielu managerów projektu, brief, stawki projektowe, uwagi klienta.
 5. **Kosztorysy** — kosztorysy, pozycje kosztorysowe, akceptacja i powiązanie z projektem.
 6. **Time tracking i workflow wykonawczy** — wpisy czasu, statusy wpisów, approval flow, snapshoty stawek i kosztów.
 7. **Finanse i raportowanie** — koszty projektowe, agregaty finansowe, raporty, eksporty, kalendarz miesięczny.
-8. **Monitoring i utrzymanie** — alerty, załączniki, meta/system endpoints, uninstall i kontrole operacyjne.
+8. **Frontend operacyjny** — osobny login FRONT, panel pracownika, panel managera, szybkie formularze i kolejki akceptacji poza wp-admin.
+9. **Monitoring i utrzymanie** — alerty, załączniki, meta/system endpoints, uninstall i kontrole operacyjne.
 
 ## 3. Funkcjonalności po sprintach
 
@@ -131,6 +132,19 @@ Sprint 8 domknął warstwę techniczną oraz administracyjną:
 
 Efekt biznesowy: system jest łatwiejszy do utrzymania, testowania i integracji z zewnętrznymi procesami.
 
+### Sprint 9 — frontend operacyjny, multi-manager i workflow wniosków projektowych
+
+Sprint 9 otworzył system na codzienną pracę operacyjną poza klasycznym wp-admin:
+
+- dodano osobny frontend logowania oraz dwa dedykowane panele: pracownika i managera,
+- pracownik otrzymał własny formularz raportowania czasu, widok wpisów, kalendarz i szybkie szablony działań,
+- manager otrzymał panel projektowy z listą swoich projektów, widokiem kosztorysów, kolejką akceptacji czasu i obsługą wniosków projektowych,
+- system wspiera wielu managerów przypisanych do jednego projektu,
+- pojawił się workflow wniosków projektowych: zgłoszenie, review, akceptacja/odrzucenie i konwersja do projektu,
+- administracja została dopracowana o bardziej sekcyjne formularze, lepszy kontekst operacyjny oraz reset hasła pracownika.
+
+Efekt biznesowy: system przestał być wyłącznie zapleczem administracyjnym i zaczął wspierać codzienny rytm pracy wykonawców i managerów w dedykowanym interfejsie operacyjnym.
+
 ## 4. Obecne moduły systemu z perspektywy użytkownika
 
 ### 4.1 Dashboard
@@ -160,6 +174,8 @@ Moduł pracowników pozwala:
 
 To jest fundament dla dalszego liczenia kosztów i autoryzacji działań.
 
+Dodatkowo administrator może zmienić hasło powiązanego konta WordPress bez wychodzenia z modułu pracownika, co upraszcza wsparcie operacyjne.
+
 ### 4.4 Klienci
 
 Karta klienta zawiera:
@@ -181,7 +197,7 @@ Projekt obejmuje:
 - typ rozliczenia,
 - status,
 - daty,
-- managera,
+- głównego managera i dodatkowych managerów współdzielących odpowiedzialność,
 - budżet lub retainer,
 - brief,
 - uwagi klienta,
@@ -189,7 +205,7 @@ Projekt obejmuje:
 - koszty projektowe,
 - dane finansowe i alerty.
 
-Projekt jest główną jednostką delivery i raportowania.
+Projekt jest główną jednostką delivery i raportowania. Model wielu managerów lepiej odzwierciedla współdzieloną odpowiedzialność operacyjną, eskalacje i zastępowalność.
 
 ### 4.6 Kosztorysy
 
@@ -206,6 +222,7 @@ Kosztorysy pozwalają przygotować ofertę dla klienta i kontrolować jej opłac
 
 Time tracking umożliwia:
 
+- raportowanie czasu z frontendu pracownika i z wp-admin,
 - dodanie wpisu czasu do projektu,
 - przypisanie roli i wykonawcy,
 - wskazanie daty i opisu,
@@ -213,6 +230,8 @@ Time tracking umożliwia:
 - zapis snapshotów stawki i kosztu.
 
 Dzięki snapshotom raporty nie są zniekształcane późniejszymi zmianami konfiguracji stawek.
+
+Managerowie mają również własną kolejkę wpisów oczekujących na decyzję, a w projektach wielo-managerowych uprawnienia approval mogą być współdzielone.
 
 ### 4.8 Raporty
 
@@ -265,6 +284,29 @@ REST API obejmuje obszary:
 
 Endpointy meta i system porządkują integracje, bo zwracają konfiguracje referencyjne oraz stan środowiska.
 
+### 4.12 Frontend operacyjny (FRONT)
+
+Frontend operacyjny obejmuje:
+
+- osobną stronę logowania i wylogowania,
+- panel pracownika do raportowania czasu, filtrowania własnych wpisów i pracy na kalendarzu miesięcznym,
+- panel managera do podglądu projektów, alertów, finansów, kosztorysów i kolejki akceptacji,
+- szybkie operacje bez przechodzenia do wp-admin,
+- kontrolę dostępu opartą o oddzielne capability frontendowe.
+
+To jest ważny krok architektoniczny: ERP OMD ma już nie tylko panel administracyjny, ale także warstwę użytkową dla bieżącej pracy operacyjnej.
+
+### 4.13 Wnioski projektowe
+
+Nowy moduł wniosków projektowych pozwala:
+
+- zainicjować projekt z poziomu operacyjnego,
+- przypisać preferowanego managera,
+- przejść przez etap review i decyzji,
+- zamienić zaakceptowany wniosek bezpośrednio w projekt.
+
+To porządkuje moment przejścia od zapotrzebowania biznesowego do pełnego projektu delivery.
+
 ## 5. Główne procesy end-to-end, które system już wspiera
 
 ### Proces 1 — onboarding organizacji
@@ -295,13 +337,31 @@ Rezultat: oferta i realizacja pozostają spięte jednym modelem danych.
 
 ### Proces 4 — realizacja projektu
 
-1. Projekt otrzymuje managera, status i model rozliczenia.
+1. Projekt otrzymuje managera lub zespół managerów, status i model rozliczenia.
 2. Dodawane są stawki projektowe i koszty dodatkowe.
 3. Zespół raportuje czas pracy.
 4. Wpisy przechodzą approval flow.
 5. Finanse projektu aktualizują przychody, koszty i marżę.
 
 Rezultat: projekt ma aktualny, policzalny obraz delivery i rentowności.
+
+### Proces 6 — operacyjny przepływ FRONT
+
+1. Użytkownik loguje się przez dedykowaną stronę FRONT.
+2. Pracownik raportuje własny czas i monitoruje status swoich wpisów.
+3. Manager przegląda projekty, alerty i kosztorysy bez przechodzenia do wp-admin.
+4. Manager akceptuje lub odrzuca wpisy czasu ze swojej kolejki.
+
+Rezultat: codzienna praca delivery może być wykonywana w prostszym, bezpieczniejszym i bardziej zadaniowym interfejsie.
+
+### Proces 7 — od wniosku projektowego do projektu
+
+1. Powstaje wniosek projektowy.
+2. Wniosek trafia do review i decyzji managera.
+3. Po akceptacji może zostać skonwertowany do projektu.
+4. Projekt przejmuje dane klienta, managera i kontekst biznesowy wniosku.
+
+Rezultat: proces inicjacji projektu staje się jawny, śledzalny i mniej zależny od ustaleń poza systemem.
 
 ### Proces 5 — kontrola operacyjna i raportowanie
 
@@ -346,16 +406,19 @@ Poniższe propozycje są podzielone na trzy grupy: logika biznesowa, nowe funkcj
 3. **Powiadomienia e-mail / in-app**  
    Alerty, akceptacje wpisów czasu i zmiany statusów projektów mogłyby wysyłać automatyczne notyfikacje.
 
-4. **Portal klienta**  
+4. **Predykcje czasu i kosztu na podstawie historii**
+   Na bazie wcześniejszych wpisów czasu, typu projektu, klienta, roli i zakresu prac można budować estymacje effortu, ryzyka przekroczenia budżetu i spodziewanej marży.
+
+5. **Portal klienta**
    Klient mógłby otrzymać ograniczony dostęp do kosztorysów, statusów projektu, załączników i akceptacji.
 
-5. **Workflow akceptacji wieloetapowej**  
+6. **Workflow akceptacji wieloetapowej**
    Dla większych organizacji przydatne byłoby np. dwuetapowe zatwierdzanie czasu lub kosztów.
 
-6. **Import/eksport danych referencyjnych**  
+7. **Import/eksport danych referencyjnych**
    Przydałby się import klientów, pracowników i stawek z CSV lub zewnętrznego systemu.
 
-7. **Automatyzacje REST / webhooki**  
+8. **Automatyzacje REST / webhooki**
    Webhooki po utworzeniu kosztorysu, akceptacji, zmianie statusu projektu czy pojawieniu się alertu ułatwiłyby integracje.
 
 ### 6.3 Usprawnienia UX i panelu administracyjnego
