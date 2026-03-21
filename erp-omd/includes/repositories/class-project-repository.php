@@ -9,6 +9,13 @@ class ERP_OMD_Project_Repository
         return $wpdb->prefix . 'erp_omd_projects';
     }
 
+    public function managers_table_name()
+    {
+        global $wpdb;
+
+        return $wpdb->prefix . 'erp_omd_project_managers';
+    }
+
     public function all()
     {
         global $wpdb;
@@ -17,7 +24,7 @@ class ERP_OMD_Project_Repository
         $employees_table = $wpdb->prefix . 'erp_omd_employees';
         $users_table = $wpdb->users;
 
-        return $wpdb->get_results(
+        $projects = $wpdb->get_results(
             "SELECT p.*, c.name AS client_name, u.user_login AS manager_login
             FROM {$this->table_name()} p
             INNER JOIN {$clients_table} c ON c.id = p.client_id
@@ -26,44 +33,115 @@ class ERP_OMD_Project_Repository
             ORDER BY p.created_at DESC, p.id DESC",
             ARRAY_A
         );
+
+        return $this->enrich_projects($projects);
     }
 
     public function find($id)
     {
         global $wpdb;
 
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table_name()} WHERE id = %d", $id), ARRAY_A);
+        $clients_table = $wpdb->prefix . 'erp_omd_clients';
+        $employees_table = $wpdb->prefix . 'erp_omd_employees';
+        $users_table = $wpdb->users;
+
+        $project = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT p.*, c.name AS client_name, u.user_login AS manager_login
+                FROM {$this->table_name()} p
+                LEFT JOIN {$clients_table} c ON c.id = p.client_id
+                LEFT JOIN {$employees_table} e ON e.id = p.manager_id
+                LEFT JOIN {$users_table} u ON u.ID = e.user_id
+                WHERE p.id = %d",
+                $id
+            ),
+            ARRAY_A
+        );
+
+        if (! $project) {
+            return null;
+        }
+
+        return $this->enrich_project($project);
     }
 
     public function ids_managed_by_employee($employee_id)
     {
         global $wpdb;
 
-        return array_map(
-            'intval',
-            $wpdb->get_col(
-                $wpdb->prepare(
-                    "SELECT id
-                    FROM {$this->table_name()}
-                    WHERE manager_id = %d
-                    ORDER BY id ASC",
-                    $employee_id
-                )
+        $project_ids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT DISTINCT project_id FROM (
+                    SELECT id AS project_id FROM {$this->table_name()} WHERE manager_id = %d
+                    UNION ALL
+                    SELECT project_id FROM {$this->managers_table_name()} WHERE employee_id = %d
+                ) managed_projects
+                ORDER BY project_id ASC",
+                $employee_id,
+                $employee_id
             )
         );
+
+        return array_map('intval', $project_ids);
+    }
+
+    public function manager_ids($project_id)
+    {
+        global $wpdb;
+
+        $project = $wpdb->get_row(
+            $wpdb->prepare("SELECT manager_id FROM {$this->table_name()} WHERE id = %d", $project_id),
+            ARRAY_A
+        );
+        if (! $project) {
+            return [];
+        }
+
+        $manager_ids = array_map(
+            'intval',
+            $wpdb->get_col($wpdb->prepare("SELECT employee_id FROM {$this->managers_table_name()} WHERE project_id = %d ORDER BY employee_id ASC", $project_id))
+        );
+
+        if (! empty($project['manager_id'])) {
+            array_unshift($manager_ids, (int) $project['manager_id']);
+        }
+
+        return array_values(array_unique(array_filter($manager_ids)));
+    }
+
+    public function sync_manager_ids($project_id, array $manager_ids)
+    {
+        global $wpdb;
+
+        $manager_ids = array_values(array_unique(array_filter(array_map('intval', $manager_ids))));
+        $wpdb->delete($this->managers_table_name(), ['project_id' => $project_id], ['%d']);
+
+        foreach ($manager_ids as $manager_id) {
+            $wpdb->insert(
+                $this->managers_table_name(),
+                [
+                    'project_id' => (int) $project_id,
+                    'employee_id' => (int) $manager_id,
+                    'assigned_at' => current_time('mysql'),
+                ],
+                ['%d', '%d', '%s']
+            );
+        }
     }
 
     public function find_by_estimate_id($estimate_id)
     {
         global $wpdb;
 
-        return $wpdb->get_row(
+        $project = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT * FROM {$this->table_name()} WHERE estimate_id = %d LIMIT 1",
                 $estimate_id
             ),
             ARRAY_A
         );
+
+        return $project ? $this->enrich_project($project) : null;
     }
 
     public function create(array $data)
@@ -92,14 +170,17 @@ class ERP_OMD_Project_Repository
             ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s']
         );
 
-        return (int) $wpdb->insert_id;
+        $project_id = (int) $wpdb->insert_id;
+        $this->sync_manager_ids($project_id, $data['manager_ids'] ?? array_filter([(int) ($data['manager_id'] ?? 0)]));
+
+        return $project_id;
     }
 
     public function update($id, array $data)
     {
         global $wpdb;
 
-        return $wpdb->update(
+        $updated = $wpdb->update(
             $this->table_name(),
             [
                 'client_id' => $data['client_id'],
@@ -120,11 +201,17 @@ class ERP_OMD_Project_Repository
             ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s'],
             ['%d']
         );
+
+        $this->sync_manager_ids($id, $data['manager_ids'] ?? array_filter([(int) ($data['manager_id'] ?? 0)]));
+
+        return $updated;
     }
 
     public function delete($id)
     {
         global $wpdb;
+
+        $wpdb->delete($this->managers_table_name(), ['project_id' => $id], ['%d']);
 
         return $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
     }
@@ -145,5 +232,71 @@ class ERP_OMD_Project_Repository
             ['%s', '%s'],
             ['%d']
         );
+    }
+
+    private function enrich_projects(array $projects)
+    {
+        foreach ($projects as &$project) {
+            $project = $this->enrich_project($project);
+        }
+        unset($project);
+
+        return $projects;
+    }
+
+    private function enrich_project(array $project)
+    {
+        global $wpdb;
+
+        $project_id = (int) ($project['id'] ?? 0);
+        if ($project_id <= 0) {
+            $project['manager_ids'] = [];
+            $project['manager_logins'] = [];
+            $project['manager_logins_display'] = '';
+
+            return $project;
+        }
+
+        $manager_ids = $this->manager_ids($project_id);
+        $project['manager_ids'] = $manager_ids;
+
+        if ($manager_ids === []) {
+            $project['manager_logins'] = [];
+            $project['manager_logins_display'] = (string) ($project['manager_login'] ?? '');
+
+            return $project;
+        }
+
+        $employees_table = $wpdb->prefix . 'erp_omd_employees';
+        $users_table = $wpdb->users;
+        $placeholders = implode(', ', array_fill(0, count($manager_ids), '%d'));
+        $query = $wpdb->prepare(
+            "SELECT e.id, u.user_login
+            FROM {$employees_table} e
+            INNER JOIN {$users_table} u ON u.ID = e.user_id
+            WHERE e.id IN ({$placeholders})",
+            ...$manager_ids
+        );
+        $rows = $wpdb->get_results($query, ARRAY_A);
+
+        $login_map = [];
+        foreach ($rows as $row) {
+            $login_map[(int) ($row['id'] ?? 0)] = (string) ($row['user_login'] ?? '');
+        }
+
+        $manager_logins = [];
+        foreach ($manager_ids as $manager_id) {
+            if (! empty($login_map[$manager_id])) {
+                $manager_logins[] = $login_map[$manager_id];
+            }
+        }
+
+        $project['manager_logins'] = $manager_logins;
+        $project['manager_logins_display'] = implode(', ', $manager_logins);
+        if ($project['manager_logins_display'] === '' && ! empty($project['manager_login'])) {
+            $project['manager_logins_display'] = (string) $project['manager_login'];
+        }
+
+        return $project;
     }
 }

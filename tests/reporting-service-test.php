@@ -140,6 +140,16 @@ final class ReportingServiceTestRunner
         $this->assertSame(2, count($projectReport), 'Project report should include all matching projects.');
         $this->assertSame(3.0, $projectReport[0]['reported_hours'], 'Project report should aggregate filtered hours per project.');
 
+        $approvedFilters = $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'status' => 'approved']);
+        $approvedProjectReport = $service->build_project_report($approvedFilters);
+        $this->assertSame(2, count($approvedProjectReport), 'Approved time-entry filter should not hide projects by project lifecycle status.');
+        $this->assertSame(2.0, $approvedProjectReport[0]['reported_hours'], 'Approved filter should only count approved project hours.');
+
+        $invoiceStatusFilters = $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'status' => 'do_faktury']);
+        $invoiceStatusProjectReport = $service->build_project_report($invoiceStatusFilters);
+        $this->assertSame(1, count($invoiceStatusProjectReport), 'Project status filter should narrow projects by lifecycle status.');
+        $this->assertSame('Branding', $invoiceStatusProjectReport[0]['project_name'], 'Project status filter should keep matching project rows.');
+
         $clientReport = $service->build_client_report($filters);
         $this->assertSame(2, count($clientReport), 'Client report should aggregate per client.');
         $this->assertSame('ACME', $clientReport[0]['client_name'], 'Client report should keep client name.');
@@ -155,6 +165,9 @@ final class ReportingServiceTestRunner
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame('2026-03', $calendar['month'], 'Calendar should be built for requested month.');
         $this->assertSame(6.0, $calendar['totals']['hours'], 'Calendar totals should aggregate daily hours.');
+
+        $approvedCalendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => 'approved', 'report_type' => 'projects', 'tab' => 'calendar']);
+        $this->assertSame(5.0, $approvedCalendar['totals']['hours'], 'Calendar approved filter should keep approved entry hours.');
 
         $export = $service->export_definition('projects', $filters);
         $this->assertSame('Projekt', $export['headers'][0], 'Project export should expose column headers.');
