@@ -21,7 +21,6 @@
                             <span class="erp-omd-front-eyebrow"><?php echo esc_html($front_brand_label); ?></span>
                         <?php endif; ?>
                         <h1><?php esc_html_e('Zaloguj do systemu', 'erp-omd'); ?></h1>
-                        <p class="erp-omd-front-lead"><?php esc_html_e('Panel FRONT utrzymuje administracyjny styl ERP OMD i prowadzi pracownika lub managera prosto do właściwego widoku pracy.', 'erp-omd'); ?></p>
                     </div>
 
                     <?php if ($logged_out) : ?>
@@ -64,13 +63,7 @@
             </div>
 
             <div class="erp-omd-front-login-pane erp-omd-front-login-pane-visual">
-                <div class="erp-omd-front-login-visual"<?php echo ! empty($front_login_cover_url) ? ' style="background-image: url(' . esc_url($front_login_cover_url) . ');"' : ''; ?>>
-                    <div class="erp-omd-front-login-visual-overlay">
-                        <span class="erp-omd-front-eyebrow"><?php esc_html_e('ERP OMD', 'erp-omd'); ?></span>
-                        <strong><?php esc_html_e('Operacyjny porządek i spokojny interfejs pracy.', 'erp-omd'); ?></strong>
-                        <p><?php esc_html_e('Ta część jest gotowa na konfigurowalną grafikę z ustawień wtyczki i utrzymuje premium, jasny charakter całego panelu.', 'erp-omd'); ?></p>
-                    </div>
-                </div>
+                <div class="erp-omd-front-login-visual"<?php echo ! empty($front_login_cover_url) ? ' style="background-image: url(' . esc_url($front_login_cover_url) . ');"' : ''; ?>></div>
             </div>
         </section>
     </main>
