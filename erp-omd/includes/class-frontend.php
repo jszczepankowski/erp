@@ -6,26 +6,32 @@ class ERP_OMD_Frontend
     private $projects;
     private $roles;
     private $time_entries;
+    private $estimates;
     private $time_entry_service;
     private $project_financial_service;
     private $reporting_service;
+    private $alert_service;
 
     public function __construct(
         ERP_OMD_Employee_Repository $employees,
         ERP_OMD_Project_Repository $projects,
         ERP_OMD_Role_Repository $roles,
         ERP_OMD_Time_Entry_Repository $time_entries,
+        ERP_OMD_Estimate_Repository $estimates,
         ERP_OMD_Time_Entry_Service $time_entry_service,
         ERP_OMD_Project_Financial_Service $project_financial_service,
-        ERP_OMD_Reporting_Service $reporting_service
+        ERP_OMD_Reporting_Service $reporting_service,
+        ERP_OMD_Alert_Service $alert_service
     ) {
         $this->employees = $employees;
         $this->projects = $projects;
         $this->roles = $roles;
         $this->time_entries = $time_entries;
+        $this->estimates = $estimates;
         $this->time_entry_service = $time_entry_service;
         $this->project_financial_service = $project_financial_service;
         $this->reporting_service = $reporting_service;
+        $this->alert_service = $alert_service;
     }
 
     public static function register_rewrite_rules()
@@ -87,7 +93,7 @@ class ERP_OMD_Frontend
             return;
         }
 
-        $this->render_manager_dashboard($current_user);
+        $this->handle_manager_screen($current_user);
     }
 
     public function front_url($screen = 'home', array $args = [])
@@ -208,6 +214,16 @@ class ERP_OMD_Frontend
         $this->render_worker_dashboard($user);
     }
 
+    private function handle_manager_screen(WP_User $user)
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->process_manager_request($user);
+            return;
+        }
+
+        $this->render_manager_dashboard($user);
+    }
+
     private function process_worker_request(WP_User $user)
     {
         check_admin_referer('erp_omd_front_worker');
@@ -224,6 +240,19 @@ class ERP_OMD_Frontend
         }
 
         $this->redirect_worker_with_notice('error', __('Nieobsługiwana akcja formularza FRONT.', 'erp-omd'));
+    }
+
+    private function process_manager_request(WP_User $user)
+    {
+        check_admin_referer('erp_omd_front_manager');
+
+        $action = sanitize_text_field(wp_unslash($_POST['erp_omd_front_action'] ?? ''));
+        if ($action === 'approve_time_entry' || $action === 'reject_time_entry') {
+            $this->change_manager_time_entry_status($user, $action === 'approve_time_entry' ? 'approved' : 'rejected');
+            return;
+        }
+
+        $this->redirect_manager_with_notice('error', __('Nieobsługiwana akcja formularza managera.', 'erp-omd'));
     }
 
     private function save_worker_time_entry(WP_User $user)
@@ -592,17 +621,80 @@ class ERP_OMD_Frontend
     private function render_manager_dashboard(WP_User $user)
     {
         $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee) {
+            $this->redirect_to_login($this->front_url('manager'));
+        }
+
+        $managed_projects = $this->load_managed_projects((int) $employee['id']);
+        $managed_project_ids = array_map('intval', wp_list_pluck($managed_projects, 'id'));
+        $selected_project_id = (int) ($_GET['project_id'] ?? 0);
+        if ($selected_project_id > 0 && ! in_array($selected_project_id, $managed_project_ids, true)) {
+            $selected_project_id = 0;
+        }
+        if ($selected_project_id <= 0) {
+            $selected_project_id = (int) ($managed_projects[0]['id'] ?? 0);
+        }
+
+        $selected_project = $selected_project_id > 0 ? $this->find_project_in_collection($managed_projects, $selected_project_id) : null;
+        $linked_estimates = $this->load_estimates_for_projects($managed_projects);
+        $approval_queue = $this->load_manager_approval_queue($managed_project_ids, $selected_project_id);
+        $queue_summary = $this->summarize_queue_entries($approval_queue);
+        $manager_notice_type = sanitize_key(wp_unslash($_GET['notice'] ?? ''));
+        $manager_notice_message = sanitize_text_field(wp_unslash($_GET['message'] ?? ''));
+        if (! in_array($manager_notice_type, ['', 'success', 'error', 'warning'], true)) {
+            $manager_notice_type = '';
+            $manager_notice_message = '';
+        }
+
+        $dashboard_metrics = [
+            'projects_count' => count($managed_projects),
+            'queue_count' => count($approval_queue),
+            'submitted_hours' => $queue_summary['hours'],
+            'linked_estimates_count' => count($linked_estimates),
+        ];
         $dashboard_title = __('Panel managera', 'erp-omd');
-        $dashboard_intro = __('To punkt wejścia FRONT-1 dla managera. W kolejnych krokach dołączymy listę projektów, akceptacje czasu i lekkie akcje operacyjne.', 'erp-omd');
-        $front_login_url = $this->front_url('login');
+        $dashboard_intro = __('FRONT-3 daje managerowi operacyjny przegląd własnych projektów: finanse, alerty, powiązane kosztorysy i kolejkę wpisów czasu do szybkiej akceptacji.', 'erp-omd');
         $front_logout_url = $this->front_url('logout');
         $front_worker_url = $this->front_url('worker');
         $front_manager_url = $this->front_url('manager');
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
+        $manager_form_action = $this->front_url('manager');
 
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/dashboard.php';
         exit;
+    }
+
+    private function change_manager_time_entry_status(WP_User $user, $status)
+    {
+        $entry_id = (int) ($_POST['id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $entry = $entry_id > 0 ? $this->time_entries->find($entry_id) : null;
+        if (! $entry) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono wpisu czasu do aktualizacji.', 'erp-omd'), $project_id > 0 ? ['project_id' => $project_id] : []);
+        }
+
+        if (! $this->time_entry_service->can_approve_entry($entry, $user)) {
+            $this->redirect_manager_with_notice('error', __('Możesz zmieniać status tylko wpisów przypisanych do Twoich projektów.', 'erp-omd'), ['project_id' => (int) ($entry['project_id'] ?? $project_id)]);
+        }
+
+        $payload = array_merge(
+            $entry,
+            [
+                'status' => $status,
+                'approved_by_user_id' => (int) $user->ID,
+                'approved_at' => current_time('mysql'),
+            ]
+        );
+
+        $this->time_entries->update($entry_id, $payload);
+        $this->project_financial_service->rebuild_for_project((int) $entry['project_id']);
+
+        $message = $status === 'approved'
+            ? __('Wpis czasu został zaakceptowany.', 'erp-omd')
+            : __('Wpis czasu został odrzucony.', 'erp-omd');
+
+        $this->redirect_manager_with_notice('success', $message, ['project_id' => (int) $entry['project_id']]);
     }
 
     private function get_worker_roles(array $employee)
@@ -641,6 +733,135 @@ class ERP_OMD_Frontend
 
         wp_safe_redirect($this->front_url('worker', $args));
         exit;
+    }
+
+    private function redirect_manager_with_notice($type, $message, array $extra_args = [])
+    {
+        $args = array_merge(
+            [
+                'notice' => $type,
+                'message' => $message,
+            ],
+            $extra_args
+        );
+
+        wp_safe_redirect($this->front_url('manager', $args));
+        exit;
+    }
+
+    private function load_managed_projects($employee_id)
+    {
+        $projects = $this->projects->all();
+        if ($employee_id <= 0) {
+            return [];
+        }
+
+        $managed_projects = array_values(
+            array_filter(
+                $projects,
+                function ($project) use ($employee_id) {
+                    return (int) ($project['manager_id'] ?? 0) === (int) $employee_id;
+                }
+            )
+        );
+
+        if ($managed_projects === []) {
+            return [];
+        }
+
+        $financials = $this->project_financial_service->get_project_financials(array_map('intval', wp_list_pluck($managed_projects, 'id')));
+        foreach ($managed_projects as &$project) {
+            $project_id = (int) ($project['id'] ?? 0);
+            $project['financial'] = $financials[$project_id] ?? [];
+            $project['alerts'] = $this->alert_service->alerts_for_entity('project', $project_id);
+            $project['pending_entries_count'] = $this->time_entries->count_for_project_by_statuses($project_id, ['submitted']);
+        }
+        unset($project);
+
+        return $managed_projects;
+    }
+
+    private function load_estimates_for_projects(array $projects)
+    {
+        if ($projects === []) {
+            return [];
+        }
+
+        $project_estimate_ids = array_values(array_unique(array_filter(array_map('intval', wp_list_pluck($projects, 'estimate_id')))));
+        $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
+        $estimates = $this->estimates->all();
+
+        return array_values(
+            array_filter(
+                $estimates,
+                function ($estimate) use ($project_estimate_ids, $project_ids) {
+                    $estimate_id = (int) ($estimate['id'] ?? 0);
+                    $project_id = (int) ($estimate['project_id'] ?? 0);
+
+                    return in_array($estimate_id, $project_estimate_ids, true)
+                        || in_array($project_id, $project_ids, true);
+                }
+            )
+        );
+    }
+
+    private function load_manager_approval_queue(array $managed_project_ids, $selected_project_id = 0)
+    {
+        if ($managed_project_ids === []) {
+            return [];
+        }
+
+        $entries = $this->time_entries->all(['status' => 'submitted']);
+
+        return array_values(
+            array_filter(
+                $entries,
+                function ($entry) use ($managed_project_ids, $selected_project_id) {
+                    $project_id = (int) ($entry['project_id'] ?? 0);
+                    if (! in_array($project_id, $managed_project_ids, true)) {
+                        return false;
+                    }
+
+                    if ($selected_project_id > 0 && $project_id !== $selected_project_id) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            )
+        );
+    }
+
+    private function summarize_queue_entries(array $entries)
+    {
+        $summary = [
+            'hours' => 0.0,
+            'employees' => [],
+        ];
+
+        foreach ($entries as $entry) {
+            $summary['hours'] += (float) ($entry['hours'] ?? 0);
+            $employee_login = (string) ($entry['employee_login'] ?? '');
+            if ($employee_login !== '') {
+                $summary['employees'][$employee_login] = true;
+            }
+        }
+
+        $summary['hours'] = round($summary['hours'], 2);
+        $summary['employees_count'] = count($summary['employees']);
+
+        return $summary;
+    }
+
+    private function find_project_in_collection(array $projects, $project_id)
+    {
+        foreach ($projects as $project) {
+            if ((int) ($project['id'] ?? 0) === (int) $project_id) {
+                return $project;
+            }
+        }
+
+        return null;
     }
 
     private function send_front_headers()

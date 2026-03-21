@@ -159,11 +159,20 @@ body.erp-omd-front-body {
     margin-bottom: 24px;
 }
 
+.erp-omd-front-grid-manager {
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    margin-bottom: 24px;
+}
+
 .erp-omd-front-panel {
     background: #f9fafb;
     border: 1px solid #e5e7eb;
     border-radius: 16px;
     padding: 20px;
+}
+
+.erp-omd-front-panel-subtle {
+    background: #fff;
 }
 
 .erp-omd-front-panel-form {
@@ -268,6 +277,11 @@ body.erp-omd-front-body {
     gap: 10px;
 }
 
+.erp-omd-front-stack {
+    display: grid;
+    gap: 12px;
+}
+
 .erp-omd-front-button-ghost {
     background: #eef2ff;
     border-color: #c7d2fe;
@@ -353,6 +367,84 @@ body.erp-omd-front-body {
 .erp-omd-front-status-rejected {
     background: #fee2e2;
     color: #b91c1c;
+}
+
+.erp-omd-front-chip {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 999px;
+    color: #3730a3;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+}
+
+.erp-omd-front-project-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    color: inherit;
+    display: grid;
+    gap: 10px;
+    padding: 16px;
+    text-decoration: none;
+}
+
+.erp-omd-front-project-card-active {
+    border-color: #4f46e5;
+    box-shadow: inset 0 0 0 1px #4f46e5;
+}
+
+.erp-omd-front-project-card-header {
+    align-items: flex-start;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.erp-omd-front-project-card-header p {
+    color: #6b7280;
+    margin: 4px 0 0;
+}
+
+.erp-omd-front-project-card-meta {
+    color: #4b5563;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.erp-omd-front-detail-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 18px;
+}
+
+.erp-omd-front-detail-item {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    display: grid;
+    gap: 4px;
+    padding: 14px;
+}
+
+.erp-omd-front-detail-item strong {
+    color: #6b7280;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.erp-omd-front-inline-message {
+    align-items: flex-start;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    display: flex;
+    gap: 10px;
+    padding: 14px;
 }
 
 .erp-omd-front-calendar {
@@ -451,6 +543,10 @@ body.erp-omd-front-body {
     }
 
     .erp-omd-front-grid-worker {
+        grid-template-columns: 1fr;
+    }
+
+    .erp-omd-front-grid-manager {
         grid-template-columns: 1fr;
     }
 

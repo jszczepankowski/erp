@@ -128,9 +128,11 @@ class ERP_OMD_Plugin
             $this->project_repository,
             $this->role_repository,
             $this->time_entry_repository,
+            $this->estimate_repository,
             $this->time_entry_service,
             $this->project_financial_service,
-            $this->reporting_service
+            $this->reporting_service,
+            $this->alert_service
         );
         $this->rest_api = new ERP_OMD_REST_API(
             $this->role_repository,
