@@ -511,6 +511,12 @@ class ERP_OMD_Admin
     {
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
+        $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
+        $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
+        $front_login_logo_url = $front_login_logo_id > 0 ? (string) wp_get_attachment_image_url($front_login_logo_id, 'medium') : '';
+        $front_login_cover_url = $front_login_cover_id > 0 ? (string) wp_get_attachment_image_url($front_login_cover_id, 'large') : '';
+        $front_login_logo_name = $front_login_logo_id > 0 ? (get_the_title($front_login_logo_id) ?: ('#' . $front_login_logo_id)) : __('Brak wybranego pliku.', 'erp-omd');
+        $front_login_cover_name = $front_login_cover_id > 0 ? (get_the_title($front_login_cover_id) ?: ('#' . $front_login_cover_id)) : __('Brak wybranego pliku.', 'erp-omd');
         include ERP_OMD_PATH . 'templates/admin/settings.php';
     }
 
@@ -1338,8 +1344,21 @@ class ERP_OMD_Admin
     {
         check_admin_referer('erp_omd_save_settings');
         $this->require_capability('erp_omd_manage_settings');
+        $front_login_logo_id = max(0, (int) ($_POST['front_login_logo_id'] ?? 0));
+        $front_login_cover_id = max(0, (int) ($_POST['front_login_cover_id'] ?? 0));
+
+        if ($front_login_logo_id > 0 && ! wp_attachment_is_image($front_login_logo_id)) {
+            $front_login_logo_id = 0;
+        }
+
+        if ($front_login_cover_id > 0 && ! wp_attachment_is_image($front_login_cover_id)) {
+            $front_login_cover_id = 0;
+        }
+
         update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
         update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
+        update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
+        update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
 
