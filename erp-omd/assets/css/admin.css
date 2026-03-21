@@ -1,3 +1,123 @@
+.erp-omd-admin {
+    --erp-omd-bg: #f7f4ee;
+    --erp-omd-surface: #ffffff;
+    --erp-omd-surface-muted: #fcfaf7;
+    --erp-omd-border: #e8dfd2;
+    --erp-omd-border-strong: #ddb178;
+    --erp-omd-text: #212123;
+    --erp-omd-text-muted: #6d675f;
+    --erp-omd-accent: #ddb178;
+    --erp-omd-accent-strong: #c89a5a;
+    --erp-omd-shadow: 0 18px 40px rgba(33, 33, 35, 0.08);
+    color: var(--erp-omd-text);
+}
+
+.erp-omd-admin.wrap {
+    background: linear-gradient(180deg, #fbfaf8 0%, #f5f1ea 100%);
+    border-radius: 24px;
+    margin: 20px 20px 0 0;
+    padding: 28px;
+}
+
+.erp-omd-admin h1,
+.erp-omd-admin h2,
+.erp-omd-admin h3,
+.erp-omd-admin h4 {
+    color: var(--erp-omd-text);
+    letter-spacing: -0.02em;
+}
+
+.erp-omd-admin h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.erp-omd-admin p,
+.erp-omd-admin li,
+.erp-omd-admin .description,
+.erp-omd-admin .erp-omd-form-intro,
+.erp-omd-admin .erp-omd-form-section-header p,
+.erp-omd-admin .erp-omd-media-name {
+    color: var(--erp-omd-text-muted);
+}
+
+.erp-omd-admin .erp-omd-card,
+.erp-omd-admin .erp-omd-form-section,
+.erp-omd-admin .erp-omd-detail-card {
+    background: var(--erp-omd-surface);
+    border: 1px solid var(--erp-omd-border);
+    border-radius: 20px;
+    box-shadow: var(--erp-omd-shadow);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.erp-omd-admin .erp-omd-card:hover,
+.erp-omd-admin .erp-omd-form-section:hover,
+.erp-omd-admin .erp-omd-detail-card:hover {
+    border-color: rgba(221, 177, 120, 0.7);
+    box-shadow: 0 22px 48px rgba(33, 33, 35, 0.1), 0 0 0 3px rgba(221, 177, 120, 0.12);
+    transform: translateY(-1px);
+}
+
+.erp-omd-admin .erp-omd-card {
+    padding: 24px;
+}
+
+.erp-omd-admin .erp-omd-dashboard-hero {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.erp-omd-admin .erp-omd-dashboard-hero-copy p {
+    margin: 0;
+    max-width: 820px;
+}
+
+.erp-omd-admin .erp-omd-kpi-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.erp-omd-admin .erp-omd-kpi {
+    background: linear-gradient(180deg, #fff 0%, #fcfaf7 100%);
+    border: 1px solid var(--erp-omd-border);
+    border-radius: 18px;
+    padding: 16px 18px;
+}
+
+.erp-omd-admin .erp-omd-kpi-label {
+    color: var(--erp-omd-text-muted);
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.erp-omd-admin .erp-omd-kpi strong {
+    color: var(--erp-omd-text);
+    display: block;
+    font-size: 28px;
+    line-height: 1.1;
+}
+
+.erp-omd-admin .erp-omd-kpi-accent {
+    border-color: rgba(221, 177, 120, 0.8);
+    box-shadow: inset 0 0 0 1px rgba(221, 177, 120, 0.35);
+}
+
+.erp-omd-admin .erp-omd-kpi-profit strong,
+.erp-omd-admin .erp-omd-profit {
+    color: var(--erp-omd-accent-strong);
+}
+
 .erp-omd-admin .erp-omd-grid {
     display: grid;
     gap: 20px;
@@ -410,4 +530,215 @@
     .erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact select {
         max-width: 100%;
     }
+}
+
+.erp-omd-admin .erp-omd-section-header {
+    margin-bottom: 18px;
+}
+
+.erp-omd-admin .erp-omd-section-header h2,
+.erp-omd-admin .erp-omd-section-header h3 {
+    font-size: 22px;
+}
+
+.erp-omd-admin .erp-omd-detail-item {
+    background: linear-gradient(180deg, #fff 0%, #fcfaf7 100%);
+    border-color: var(--erp-omd-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+
+.erp-omd-admin .erp-omd-detail-item strong {
+    color: var(--erp-omd-text-muted);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.erp-omd-admin .erp-omd-detail-item span {
+    color: var(--erp-omd-text);
+}
+
+.erp-omd-admin .button,
+.erp-omd-admin .button-secondary,
+.erp-omd-admin .button-primary {
+    border-radius: 999px;
+    font-weight: 600;
+    min-height: 38px;
+    padding: 0 16px;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.erp-omd-admin .button {
+    background: #fff;
+    border-color: var(--erp-omd-border);
+    color: var(--erp-omd-text);
+}
+
+.erp-omd-admin .button:hover,
+.erp-omd-admin .button:focus {
+    background: #f8f1e7;
+    border-color: var(--erp-omd-border-strong);
+    color: var(--erp-omd-text);
+    box-shadow: 0 0 0 3px rgba(221, 177, 120, 0.14);
+}
+
+.erp-omd-admin .button-primary,
+.erp-omd-admin .button-secondary {
+    background: var(--erp-omd-text);
+    border-color: var(--erp-omd-text);
+    color: #fff;
+}
+
+.erp-omd-admin .button-primary:hover,
+.erp-omd-admin .button-primary:focus,
+.erp-omd-admin .button-secondary:hover,
+.erp-omd-admin .button-secondary:focus {
+    background: var(--erp-omd-accent);
+    border-color: var(--erp-omd-accent);
+    color: var(--erp-omd-text);
+}
+
+.erp-omd-admin input[type="text"],
+.erp-omd-admin input[type="email"],
+.erp-omd-admin input[type="number"],
+.erp-omd-admin input[type="date"],
+.erp-omd-admin input[type="month"],
+.erp-omd-admin input[type="search"],
+.erp-omd-admin select,
+.erp-omd-admin textarea {
+    background: #fff;
+    border: 1px solid var(--erp-omd-border);
+    border-radius: 14px;
+    box-shadow: none;
+    color: var(--erp-omd-text);
+    min-height: 44px;
+    padding: 10px 14px;
+}
+
+.erp-omd-admin textarea {
+    min-height: 120px;
+}
+
+.erp-omd-admin input:focus,
+.erp-omd-admin select:focus,
+.erp-omd-admin textarea:focus {
+    border-color: var(--erp-omd-border-strong);
+    box-shadow: 0 0 0 3px rgba(221, 177, 120, 0.16);
+    outline: none;
+}
+
+.erp-omd-admin .erp-omd-filter-form,
+.erp-omd-admin .erp-omd-table-tools {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(232, 223, 210, 0.9);
+    border-radius: 18px;
+    padding: 14px;
+}
+
+.erp-omd-admin table.widefat {
+    background: #fff;
+    border: 1px solid var(--erp-omd-border);
+    border-radius: 18px;
+    border-spacing: 0;
+    box-shadow: var(--erp-omd-shadow);
+    overflow: hidden;
+}
+
+.erp-omd-admin table.widefat thead th {
+    background: #fcfaf7;
+    border-bottom: 1px solid var(--erp-omd-border);
+    color: var(--erp-omd-text-muted);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    padding: 14px 16px;
+    text-transform: uppercase;
+}
+
+.erp-omd-admin table.widefat td {
+    border-bottom: 1px solid #f1ebe2;
+    color: var(--erp-omd-text);
+    padding: 14px 16px;
+    vertical-align: middle;
+}
+
+.erp-omd-admin table.widefat tbody tr:hover {
+    background: #fffcf8;
+}
+
+.erp-omd-admin table.widefat thead th[data-sort-direction="asc"]::after,
+.erp-omd-admin table.widefat thead th[data-sort-direction="desc"]::after {
+    color: var(--erp-omd-accent-strong);
+}
+
+.erp-omd-admin .erp-omd-badge,
+.erp-omd-admin .erp-omd-alert-icon {
+    border-width: 1px;
+    font-weight: 700;
+}
+
+.erp-omd-admin .erp-omd-badge-success {
+    background: rgba(221, 177, 120, 0.14);
+    color: var(--erp-omd-accent-strong);
+}
+
+.erp-omd-admin .erp-omd-badge-info {
+    background: #f3efe9;
+    color: var(--erp-omd-text);
+}
+
+.erp-omd-admin .erp-omd-badge-warning {
+    background: #fff6e8;
+    color: #9a6b2b;
+}
+
+.erp-omd-admin .erp-omd-badge-error {
+    background: #fdf0ee;
+    color: #a14f43;
+}
+
+.erp-omd-admin .nav-tab-wrapper,
+.erp-omd-admin .erp-omd-nav-tabs {
+    border-bottom-color: var(--erp-omd-border);
+}
+
+.erp-omd-admin .nav-tab {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: var(--erp-omd-text-muted);
+    margin-right: 8px;
+}
+
+.erp-omd-admin .nav-tab:hover,
+.erp-omd-admin .nav-tab:focus,
+.erp-omd-admin .nav-tab-active {
+    background: #fff7ed;
+    border-color: var(--erp-omd-border-strong);
+    color: var(--erp-omd-text);
+}
+
+@media (max-width: 782px) {
+    .erp-omd-admin.wrap {
+        margin-right: 10px;
+        padding: 20px;
+    }
+}
+
+.erp-omd-admin .erp-omd-card,
+.erp-omd-admin .erp-omd-form-section,
+.erp-omd-admin .erp-omd-detail-card,
+.erp-omd-admin .erp-omd-list-actions-menu {
+    background: var(--erp-omd-surface);
+    border: 1px solid var(--erp-omd-border);
+    border-radius: 20px;
+    box-shadow: var(--erp-omd-shadow);
+}
+
+.erp-omd-admin .erp-omd-card {
+    padding: 24px;
+}
+
+.erp-omd-admin .erp-omd-form-section {
+    background: linear-gradient(180deg, #fff 0%, #fcfaf7 100%);
 }
