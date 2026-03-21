@@ -1310,6 +1310,13 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
 
+    private function get_saved_views($screen)
+    {
+        unset($screen);
+
+        return [];
+    }
+
     private function handle_attachment_add()
     {
         $entity_type = sanitize_key((string) ($_POST['entity_type'] ?? ''));
