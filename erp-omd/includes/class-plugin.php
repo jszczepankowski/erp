@@ -26,6 +26,7 @@ class ERP_OMD_Plugin
     private $reporting_service;
     private $alert_service;
     private $admin;
+    private $frontend;
     private $rest_api;
 
     public function __construct()
@@ -122,7 +123,15 @@ class ERP_OMD_Plugin
             $this->reporting_service,
             $this->alert_service
         );
-       $this->rest_api = new ERP_OMD_REST_API(
+        $this->frontend = new ERP_OMD_Frontend(
+            $this->employee_repository,
+            $this->project_repository,
+            $this->role_repository,
+            $this->time_entry_repository,
+            $this->time_entry_service,
+            $this->project_financial_service
+        );
+        $this->rest_api = new ERP_OMD_REST_API(
             $this->role_repository,
             $this->employee_repository,
             $this->salary_repository,
@@ -153,6 +162,7 @@ class ERP_OMD_Plugin
         ERP_OMD_Installer::maybe_upgrade();
         ERP_OMD_Capabilities::register_hooks();
         $this->admin->register_hooks();
+        $this->frontend->register_hooks();
         $this->rest_api->register_hooks();
         add_action('wp_login', [$this, 'track_user_login'], 10, 2);
     }
@@ -166,4 +176,3 @@ class ERP_OMD_Plugin
         update_user_meta($user->ID, 'erp_omd_last_login_at', current_time('mysql'));
     }
 }
-
