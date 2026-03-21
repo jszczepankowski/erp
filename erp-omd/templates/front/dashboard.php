@@ -156,15 +156,15 @@
                         </div>
 
                         <div class="erp-omd-front-metrics">
-                            <div class="erp-omd-front-metric">
+                            <div class="erp-omd-front-metric erp-omd-front-metric-revenue">
                                 <span class="erp-omd-front-metric-label"><?php esc_html_e('Przychód', 'erp-omd'); ?></span>
                                 <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['revenue'] ?? 0), 2)); ?></strong>
                             </div>
-                            <div class="erp-omd-front-metric">
+                            <div class="erp-omd-front-metric erp-omd-front-metric-cost">
                                 <span class="erp-omd-front-metric-label"><?php esc_html_e('Koszt', 'erp-omd'); ?></span>
                                 <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['cost'] ?? 0), 2)); ?></strong>
                             </div>
-                            <div class="erp-omd-front-metric">
+                            <div class="erp-omd-front-metric erp-omd-front-metric-profit">
                                 <span class="erp-omd-front-metric-label"><?php esc_html_e('Zysk', 'erp-omd'); ?></span>
                                 <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['profit'] ?? 0), 2)); ?></strong>
                             </div>
