@@ -224,6 +224,35 @@ body.erp-omd-front-body {
     margin-bottom: 18px;
 }
 
+.erp-omd-front-templates {
+    margin-bottom: 18px;
+}
+
+.erp-omd-front-template-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.erp-omd-front-template-button {
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 14px;
+    cursor: pointer;
+    display: grid;
+    gap: 4px;
+    padding: 12px 14px;
+    text-align: left;
+}
+
+.erp-omd-front-template-button span {
+    font-weight: 600;
+}
+
+.erp-omd-front-template-button small {
+    color: #6b7280;
+}
+
 .erp-omd-front-calendar-toolbar {
     align-items: center;
     display: flex;

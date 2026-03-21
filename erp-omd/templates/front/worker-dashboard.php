@@ -225,6 +225,27 @@
                         <p><?php esc_html_e('Pracownik może zapisywać i poprawiać wyłącznie własne wpisy w statusie submitted.', 'erp-omd'); ?></p>
                     </div>
 
+                    <?php if ($recent_entry_templates) : ?>
+                        <div class="erp-omd-front-templates">
+                            <strong><?php esc_html_e('Szybkie szablony', 'erp-omd'); ?></strong>
+                            <div class="erp-omd-front-template-list">
+                                <?php foreach ($recent_entry_templates as $template) : ?>
+                                    <button
+                                        type="button"
+                                        class="erp-omd-front-template-button"
+                                        data-project-id="<?php echo esc_attr((string) $template['project_id']); ?>"
+                                        data-role-id="<?php echo esc_attr((string) $template['role_id']); ?>"
+                                        data-hours="<?php echo esc_attr((string) $template['hours']); ?>"
+                                        data-description="<?php echo esc_attr($template['description']); ?>"
+                                    >
+                                        <span><?php echo esc_html($template['project_name']); ?></span>
+                                        <small><?php echo esc_html($template['role_name']); ?> · <?php echo esc_html(number_format_i18n((float) $template['hours'], 2)); ?>h</small>
+                                    </button>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <form method="post" action="<?php echo esc_url($worker_form_action); ?>" class="erp-omd-front-form">
                         <?php wp_nonce_field('erp_omd_front_worker'); ?>
                         <input type="hidden" name="erp_omd_front_action" value="save_time_entry">
@@ -404,11 +425,32 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var hoursInput = document.getElementById('erp-omd-front-hours');
+            var projectInput = document.getElementById('erp-omd-front-project');
+            var roleInput = document.getElementById('erp-omd-front-role');
+            var descriptionInput = document.getElementById('erp-omd-front-description');
             document.querySelectorAll('.erp-omd-front-quick-hours-button').forEach(function (button) {
                 button.addEventListener('click', function () {
                     if (hoursInput) {
                         hoursInput.value = button.getAttribute('data-hours');
                         hoursInput.focus();
+                    }
+                });
+            });
+
+            document.querySelectorAll('.erp-omd-front-template-button').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    if (projectInput) {
+                        projectInput.value = button.getAttribute('data-project-id');
+                    }
+                    if (roleInput) {
+                        roleInput.value = button.getAttribute('data-role-id');
+                    }
+                    if (hoursInput) {
+                        hoursInput.value = button.getAttribute('data-hours');
+                    }
+                    if (descriptionInput) {
+                        descriptionInput.value = button.getAttribute('data-description');
+                        descriptionInput.focus();
                     }
                 });
             });

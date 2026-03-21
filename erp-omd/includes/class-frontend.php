@@ -361,6 +361,14 @@ class ERP_OMD_Frontend
             )
         );
         $available_roles = $this->get_worker_roles($employee);
+        $recent_entry_templates = $this->build_recent_worker_templates(
+            $this->time_entry_service->filter_visible_entries(
+                $this->time_entries->all([
+                    'employee_id' => (int) $employee['id'],
+                ]),
+                $user
+            )
+        );
         $time_entries = $this->time_entries->all(array_filter([
             'employee_id' => (int) $employee['id'],
             'project_id' => $worker_filters['project_id'],
@@ -427,6 +435,40 @@ class ERP_OMD_Frontend
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/worker-dashboard.php';
         exit;
+    }
+
+    private function build_recent_worker_templates(array $entries)
+    {
+        $templates = [];
+        $seen = [];
+
+        foreach ($entries as $entry) {
+            $key = implode(':', [
+                (int) ($entry['project_id'] ?? 0),
+                (int) ($entry['role_id'] ?? 0),
+                trim((string) ($entry['description'] ?? '')),
+            ]);
+
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $templates[] = [
+                'project_id' => (int) ($entry['project_id'] ?? 0),
+                'project_name' => (string) ($entry['project_name'] ?? '—'),
+                'role_id' => (int) ($entry['role_id'] ?? 0),
+                'role_name' => (string) ($entry['role_name'] ?? '—'),
+                'hours' => round((float) ($entry['hours'] ?? 0), 2),
+                'description' => trim((string) ($entry['description'] ?? '')),
+            ];
+
+            if (count($templates) === 5) {
+                break;
+            }
+        }
+
+        return $templates;
     }
 
     private function filter_worker_entries_by_focus(array $entries, array $worker_filters)
