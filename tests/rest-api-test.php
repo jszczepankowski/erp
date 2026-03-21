@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 if (! defined('ERP_OMD_VERSION')) {
-    define('ERP_OMD_VERSION', '0.8.0-rc1');
+    define('ERP_OMD_VERSION', '0.9.0');
 }
 if (! defined('ERP_OMD_DB_VERSION')) {
-    define('ERP_OMD_DB_VERSION', '6.0.0');
+    define('ERP_OMD_DB_VERSION', '6.2.0');
 }
 
 if (! function_exists('__')) {
@@ -248,7 +248,7 @@ if (! class_exists('ERP_OMD_Project_Note_Repository')) {
     class ERP_OMD_Project_Note_Repository { public function for_project($id) { return []; } }
 }
 if (! class_exists('ERP_OMD_Client_Project_Service')) {
-    class ERP_OMD_Client_Project_Service { public function validate_client($payload, $id = null) { return []; } public function validate_client_rate($client_id, $role_id, $rate) { return []; } public function validate_project($payload) { return []; } }
+    class ERP_OMD_Client_Project_Service { public function prepare_client($payload) { return $payload; } public function validate_client($payload, $id = null) { return []; } public function validate_client_rate($client_id, $role_id, $rate, $valid_from = '', $valid_to = '') { return []; } public function prepare_project($payload, $existing = null) { return $payload; } public function validate_project($payload, $existing = null) { return []; } }
 }
 if (! class_exists('ERP_OMD_Estimate_Service')) {
     class ERP_OMD_Estimate_Service { public function validate_estimate($payload, $existing = null) { return []; } public function calculate_totals($items) { return ['net' => 0, 'tax' => 0, 'gross' => 0, 'internal_cost' => 0]; } public function validate_item($payload, $estimate = null, $existing = null) { return []; } public function accept($id) { return ['accepted_project_id' => 10]; } }
@@ -357,7 +357,7 @@ final class RestApiTestRunner
         );
 
         $meta = $api->get_meta();
-        $this->assertSame('0.8.0-rc1', $meta['plugin_version'], 'Meta endpoint should expose plugin version.');
+        $this->assertSame('0.9.0', $meta['plugin_version'], 'Meta endpoint should expose plugin version.');
         $this->assertSame(['project', 'estimate'], $meta['attachment_entity_types'], 'Meta endpoint should expose supported attachment entity types.');
 
         $alerts = $api->list_alerts(new WP_REST_Request(['entity_type' => 'project', 'entity_id' => 10]));

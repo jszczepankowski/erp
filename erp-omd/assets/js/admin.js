@@ -94,6 +94,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+
+  const syncProjectOptions = (clientSelect) => {
+    if (!(clientSelect instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const targetSelector = clientSelect.dataset.projectTarget;
+    if (!targetSelector) {
+      return;
+    }
+
+    const projectSelect = document.querySelector(targetSelector);
+    if (!(projectSelect instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const selectedClientId = clientSelect.value;
+    let hasVisibleSelectedOption = false;
+
+    Array.from(projectSelect.options).forEach((option) => {
+      if (option.value === '') {
+        option.hidden = false;
+        return;
+      }
+
+      const optionClientId = option.dataset.clientId || '';
+      const visible = selectedClientId === '' || selectedClientId === '0' || optionClientId === selectedClientId;
+      option.hidden = !visible;
+
+      if (visible && option.selected) {
+        hasVisibleSelectedOption = true;
+      }
+    });
+
+    if (!hasVisibleSelectedOption) {
+      projectSelect.value = '';
+      const firstVisibleOption = Array.from(projectSelect.options).find((option) => !option.hidden && option.value !== '');
+      if (projectSelect.required && firstVisibleOption) {
+        firstVisibleOption.selected = true;
+      }
+    }
+  };
+
+  document.querySelectorAll('select[data-project-target]').forEach((clientSelect) => {
+    syncProjectOptions(clientSelect);
+    clientSelect.addEventListener('change', () => syncProjectOptions(clientSelect));
+  });
+
   document.querySelectorAll('.erp-omd-attachment-form').forEach((form) => {
     const button = form.querySelector('.erp-omd-media-button');
     const input = form.querySelector('.erp-omd-media-id');

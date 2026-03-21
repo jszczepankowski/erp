@@ -41,7 +41,15 @@ class ERP_OMD_Alert_Service
         );
 
         usort($alerts, static function ($left, $right) {
-            return strcmp((string) ($right['severity'] ?? ''), (string) ($left['severity'] ?? ''));
+            $weights = ['error' => 3, 'warning' => 2, 'info' => 1];
+            $left_weight = $weights[(string) ($left['severity'] ?? '')] ?? 0;
+            $right_weight = $weights[(string) ($right['severity'] ?? '')] ?? 0;
+
+            if ($left_weight === $right_weight) {
+                return strcmp((string) ($left['code'] ?? ''), (string) ($right['code'] ?? ''));
+            }
+
+            return $right_weight <=> $left_weight;
         });
 
         return $alerts;
@@ -52,7 +60,6 @@ class ERP_OMD_Alert_Service
         $projects = $this->projects->all();
         $financials = $this->project_financial_service->get_project_financials(wp_list_pluck($projects, 'id'));
         $alerts = [];
-        $margin_threshold = $this->margin_threshold();
 
         foreach ($projects as $project) {
             $project_id = (int) ($project['id'] ?? 0);
@@ -64,13 +71,14 @@ class ERP_OMD_Alert_Service
             $financial = $financials[$project_id] ?? [];
             $budget_usage = (float) ($financial['budget_usage'] ?? 0);
             $margin = (float) ($financial['margin'] ?? 0);
+            $margin_threshold = $this->resolve_margin_threshold($project);
 
             if ($budget_usage > 100) {
                 $alerts[] = $this->make_alert('error', 'project_budget_exceeded', 'project', $project_id, sprintf(__('Projekt %s przekroczył budżet (%s%%).', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id), number_format_i18n($budget_usage, 2)));
             }
 
             if ((float) ($financial['revenue'] ?? 0) > 0 && $margin < $margin_threshold) {
-                $alerts[] = $this->make_alert('warning', 'project_low_margin', 'project', $project_id, sprintf(__('Projekt %s ma niską marżę (%s%%).', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id), number_format_i18n($margin, 2)));
+                $alerts[] = $this->make_alert('warning', 'project_low_margin', 'project', $project_id, sprintf(__('Projekt %s ma niską marżę (%s%%, próg %s%%).', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id), number_format_i18n($margin, 2), number_format_i18n($margin_threshold, 2)));
             }
 
             $project_rates = $this->project_rates->for_project($project_id);
@@ -135,6 +143,26 @@ class ERP_OMD_Alert_Service
             return (string) ($alert['entity_type'] ?? '') === (string) $entity_type
                 && (int) ($alert['entity_id'] ?? 0) === (int) $entity_id;
         }));
+    }
+
+    private function resolve_margin_threshold(array $project)
+    {
+        $project_override = isset($project['alert_margin_threshold']) && $project['alert_margin_threshold'] !== null
+            ? (float) $project['alert_margin_threshold']
+            : null;
+        if ($project_override !== null && $project_override >= 0) {
+            return $project_override;
+        }
+
+        $client = $this->clients->find((int) ($project['client_id'] ?? 0));
+        $client_override = isset($client['alert_margin_threshold']) && $client['alert_margin_threshold'] !== null
+            ? (float) $client['alert_margin_threshold']
+            : null;
+        if ($client_override !== null && $client_override >= 0) {
+            return $client_override;
+        }
+
+        return $this->margin_threshold();
     }
 
     private function make_alert($severity, $code, $entity_type, $entity_id, $message)
