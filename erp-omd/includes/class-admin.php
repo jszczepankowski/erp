@@ -501,7 +501,6 @@ class ERP_OMD_Admin
             $selected_time_client_id = (int) $filters['client_id'];
         }
         $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
-        $saved_views = $this->get_saved_views('time');
         include ERP_OMD_PATH . 'templates/admin/time-entries.php';
     }
 
@@ -545,7 +544,6 @@ class ERP_OMD_Admin
             'monthly' => __('Raport miesięczny', 'erp-omd'),
         ];
         $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');
-        $saved_views = $this->get_saved_views('reports');
         include ERP_OMD_PATH . 'templates/admin/reports.php';
     }
 
@@ -1310,13 +1308,6 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
 
-    private function get_saved_views($screen)
-    {
-        unset($screen);
-
-        return [];
-    }
-
     private function handle_attachment_add()
     {
         $entity_type = sanitize_key((string) ($_POST['entity_type'] ?? ''));
@@ -1598,6 +1589,39 @@ class ERP_OMD_Admin
             default:
                 return 'erp-omd-badge-info';
         }
+    }
+
+    private function render_alert_icons(array $alerts)
+    {
+        if (empty($alerts)) {
+            return;
+        }
+
+        echo '<span class="erp-omd-alert-icons" aria-label="' . esc_attr__('Aktywne alerty', 'erp-omd') . '">';
+
+        foreach ($alerts as $alert) {
+            $severity = sanitize_html_class((string) ($alert['severity'] ?? 'info'));
+            $message = trim((string) ($alert['message'] ?? ''));
+            $code = trim((string) ($alert['code'] ?? ''));
+            $tooltip = $message !== '' ? $message : $code;
+
+            if ($tooltip === '') {
+                $tooltip = __('Alert', 'erp-omd');
+            }
+
+            $icon = 'i';
+            if ($severity === 'error') {
+                $icon = '!';
+            } elseif ($severity === 'warning') {
+                $icon = '!';
+            } elseif ($severity === 'info') {
+                $icon = 'i';
+            }
+
+            echo '<span class="erp-omd-alert-icon erp-omd-alert-icon-' . esc_attr($severity) . '" title="' . esc_attr($tooltip) . '" aria-label="' . esc_attr($tooltip) . '" tabindex="0">' . esc_html($icon) . '</span>';
+        }
+
+        echo '</span>';
     }
 
     private function redirect_with_notice($page, $type, $message, array $extra = [])

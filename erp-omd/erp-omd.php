@@ -2,8 +2,8 @@
 /**
  * Plugin Name: ERP OMD
  * Plugin URI: https://example.com/erp-omd
- * Description: ERP_OMD V2 Sprint 9: duplikacja projektów, usprawnienia UI czasu pracy i porządkowanie operacyjne.
- * Version: 0.9.0
+ * Description: ERP_OMD V2 FRONT-2B: panel pracownika z kalendarzem godzin i skrótami zakresów.
+ * Version: 0.10.1
  * Author: OMD
  * Text Domain: erp-omd
  */
@@ -12,7 +12,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('ERP_OMD_VERSION', '0.9.0');
+define('ERP_OMD_VERSION', '0.10.1');
 define('ERP_OMD_DB_VERSION', '6.2.0');
 define('ERP_OMD_FILE', __FILE__);
 define('ERP_OMD_PATH', plugin_dir_path(__FILE__));

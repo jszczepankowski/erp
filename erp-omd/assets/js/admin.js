@@ -172,4 +172,26 @@ document.addEventListener('DOMContentLoaded', () => {
       frame.open();
     });
   });
+
+  document.querySelectorAll('.erp-omd-list-actions').forEach((detailsNode) => {
+    detailsNode.addEventListener('toggle', () => {
+      if (!detailsNode.open) {
+        return;
+      }
+
+      document.querySelectorAll('.erp-omd-list-actions[open]').forEach((otherNode) => {
+        if (otherNode !== detailsNode) {
+          otherNode.open = false;
+        }
+      });
+    });
+  });
+
+  document.addEventListener('click', (event) => {
+    document.querySelectorAll('.erp-omd-list-actions[open]').forEach((detailsNode) => {
+      if (!detailsNode.contains(event.target)) {
+        detailsNode.open = false;
+      }
+    });
+  });
 });
