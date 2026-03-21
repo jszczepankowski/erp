@@ -50,12 +50,17 @@ class ERP_OMD_Client_Repository
                 'contact_person_email' => $data['contact_person_email'],
                 'contact_person_phone' => $data['contact_person_phone'],
                 'city' => $data['city'],
+                'street' => $data['street'],
+                'apartment_number' => $data['apartment_number'],
+                'postal_code' => $data['postal_code'],
+                'country' => $data['country'],
                 'status' => $data['status'],
                 'account_manager_id' => $data['account_manager_id'] ?: null,
+                'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s']
+            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s']
         );
 
         return (int) $wpdb->insert_id;
@@ -77,12 +82,17 @@ class ERP_OMD_Client_Repository
                 'contact_person_email' => $data['contact_person_email'],
                 'contact_person_phone' => $data['contact_person_phone'],
                 'city' => $data['city'],
+                'street' => $data['street'],
+                'apartment_number' => $data['apartment_number'],
+                'postal_code' => $data['postal_code'],
+                'country' => $data['country'],
                 'status' => $data['status'],
                 'account_manager_id' => $data['account_manager_id'] ?: null,
+                'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => $id],
-            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s'],
+            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s'],
             ['%d']
         );
     }

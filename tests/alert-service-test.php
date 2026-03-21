@@ -55,7 +55,9 @@ if (! class_exists('ERP_OMD_Employee_Repository')) {
 if (! class_exists('ERP_OMD_Client_Repository')) {
     class ERP_OMD_Client_Repository
     {
-        public function __construct(array $clients = []) {}
+        private $clients;
+        public function __construct(array $clients = []) { $this->clients = $clients; }
+        public function find($id) { return $this->clients[(int) $id] ?? null; }
     }
 }
 
@@ -124,7 +126,7 @@ final class AlertServiceTestRunner
                 ['id' => 1, 'user_login' => 'anna', 'status' => 'active'],
                 ['id' => 2, 'user_login' => 'jan', 'status' => 'active'],
             ]),
-            new ERP_OMD_Client_Repository(),
+            new ERP_OMD_Client_Repository([1 => ['id' => 1, 'alert_margin_threshold' => 9]]),
             new ERP_OMD_Client_Rate_Repository([
                 1 => [],
             ]),
