@@ -1,5 +1,24 @@
 <div class="wrap erp-omd-admin">
-    <h1><?php esc_html_e('ERP OMD — Dashboard', 'erp-omd'); ?></h1>
+    <div class="erp-omd-dashboard-hero">
+        <div class="erp-omd-dashboard-hero-copy">
+            <h1><?php esc_html_e('ERP OMD — Dashboard', 'erp-omd'); ?></h1>
+            <p><?php esc_html_e('Premiumowy, spokojny cockpit operacyjny: najważniejsze liczby, skróty i alerty w jednej, czystej warstwie roboczej.', 'erp-omd'); ?></p>
+        </div>
+        <div class="erp-omd-kpi-grid">
+            <div class="erp-omd-kpi">
+                <span class="erp-omd-kpi-label"><?php esc_html_e('Pracownicy', 'erp-omd'); ?></span>
+                <strong><?php echo esc_html(count($employees)); ?></strong>
+            </div>
+            <div class="erp-omd-kpi">
+                <span class="erp-omd-kpi-label"><?php esc_html_e('Projekty', 'erp-omd'); ?></span>
+                <strong><?php echo esc_html(count($projects)); ?></strong>
+            </div>
+            <div class="erp-omd-kpi erp-omd-kpi-accent erp-omd-kpi-profit">
+                <span class="erp-omd-kpi-label"><?php esc_html_e('Zysk miesięczny', 'erp-omd'); ?></span>
+                <strong><?php echo esc_html(number_format_i18n((float) $monthly_totals['employee_profit'], 2)); ?></strong>
+            </div>
+        </div>
+    </div>
     <div class="erp-omd-grid two-columns">
         <div class="erp-omd-card">
             <h2><?php esc_html_e('Zakres systemu', 'erp-omd'); ?></h2>
