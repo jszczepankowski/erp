@@ -1,15 +1,29 @@
 body.erp-omd-front-body {
-    background: #f3f4f6;
-    color: #111827;
+    --erp-omd-front-bg: #f8f5ef;
+    --erp-omd-front-surface: #ffffff;
+    --erp-omd-front-surface-soft: #fcfaf7;
+    --erp-omd-front-border: #eadfce;
+    --erp-omd-front-accent: #ddb178;
+    --erp-omd-front-accent-strong: #c89858;
+    --erp-omd-front-text: #212123;
+    --erp-omd-front-muted: #726b62;
+    --erp-omd-front-shadow: 0 24px 50px rgba(33, 33, 35, 0.08);
+    background: radial-gradient(circle at top, #ffffff 0%, var(--erp-omd-front-bg) 75%);
+    color: var(--erp-omd-front-text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     margin: 0;
 }
 
 .erp-omd-front-shell {
     margin: 0 auto;
-    max-width: 1120px;
+    max-width: 1240px;
     min-height: 100vh;
-    padding: 32px 20px;
+    padding: 40px 24px 56px;
+}
+
+.erp-omd-front-shell-login {
+    max-width: none;
+    padding: 0;
 }
 
 .erp-omd-front-shell-dashboard {
@@ -19,9 +33,9 @@ body.erp-omd-front-body {
 
 .erp-omd-front-card {
     background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 20px;
-    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+    border: 1px solid var(--erp-omd-front-border);
+    border-radius: 28px;
+    box-shadow: var(--erp-omd-front-shadow);
     margin: 0 auto;
     max-width: 540px;
     padding: 32px;
@@ -33,7 +47,7 @@ body.erp-omd-front-body {
 }
 
 .erp-omd-front-eyebrow {
-    color: #4f46e5;
+    color: var(--erp-omd-front-accent-strong);
     display: inline-block;
     font-size: 12px;
     font-weight: 700;
@@ -48,7 +62,7 @@ body.erp-omd-front-body {
 }
 
 .erp-omd-front-lead {
-    color: #4b5563;
+    color: var(--erp-omd-front-muted);
     line-height: 1.6;
     margin-bottom: 24px;
 }
@@ -56,6 +70,11 @@ body.erp-omd-front-body {
 .erp-omd-front-form {
     display: grid;
     gap: 14px;
+}
+
+.erp-omd-front-form-field {
+    display: grid;
+    gap: 8px;
 }
 
 .erp-omd-front-form label {
@@ -72,8 +91,9 @@ body.erp-omd-front-body {
 .erp-omd-front-filter-form input[type="date"],
 .erp-omd-front-filter-form input[type="month"],
 .erp-omd-front-filter-form select {
-    border: 1px solid #d1d5db;
-    border-radius: 12px;
+    background: #fff;
+    border: 1px solid var(--erp-omd-front-border);
+    border-radius: 14px;
     font: inherit;
     padding: 12px 14px;
     width: 100%;
@@ -87,9 +107,9 @@ body.erp-omd-front-body {
 
 .erp-omd-front-button {
     background: #fff;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--erp-omd-front-border);
     border-radius: 999px;
-    color: #111827;
+    color: var(--erp-omd-front-text);
     display: inline-flex;
     font-weight: 600;
     justify-content: center;
@@ -98,14 +118,14 @@ body.erp-omd-front-body {
 }
 
 .erp-omd-front-button-primary {
-    background: #4f46e5;
-    border-color: #4f46e5;
-    color: #fff;
+    background: var(--erp-omd-front-accent);
+    border-color: var(--erp-omd-front-accent);
+    color: var(--erp-omd-front-text);
 }
 
 .erp-omd-front-button-secondary {
-    background: #111827;
-    border-color: #111827;
+    background: var(--erp-omd-front-text);
+    border-color: var(--erp-omd-front-text);
     color: #fff;
 }
 
@@ -183,6 +203,7 @@ body.erp-omd-front-body {
 
 .erp-omd-front-panel-calendar {
     margin-bottom: 24px;
+    margin-top: 24px;
 }
 
 .erp-omd-front-panel-compact h3 {
@@ -602,4 +623,343 @@ body.erp-omd-front-body {
 
 .erp-omd-front-panel-full {
     width: 100%;
+}
+
+.erp-omd-front-card,
+.erp-omd-front-panel,
+.erp-omd-front-metric,
+.erp-omd-front-detail-item,
+.erp-omd-front-inline-message,
+.erp-omd-front-project-card,
+.erp-omd-front-calendar-day,
+.erp-omd-front-template-button {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+}
+
+.erp-omd-front-card {
+    background: linear-gradient(180deg, #fff 0%, #fdfbf8 100%);
+}
+
+.erp-omd-front-card h1,
+.erp-omd-front-card h2,
+.erp-omd-front-card h3,
+.erp-omd-front-panel h1,
+.erp-omd-front-panel h2,
+.erp-omd-front-panel h3 {
+    color: var(--erp-omd-front-text);
+    letter-spacing: -0.02em;
+}
+
+.erp-omd-front-panel,
+.erp-omd-front-metric,
+.erp-omd-front-detail-item,
+.erp-omd-front-inline-message,
+.erp-omd-front-project-card,
+.erp-omd-front-calendar-day,
+.erp-omd-front-template-button {
+    background: var(--erp-omd-front-surface);
+    border-color: var(--erp-omd-front-border);
+    box-shadow: 0 14px 32px rgba(33, 33, 35, 0.04);
+}
+
+.erp-omd-front-panel {
+    border-radius: 22px;
+    padding: 24px;
+}
+
+.erp-omd-front-panel-subtle {
+    background: linear-gradient(180deg, #fff 0%, var(--erp-omd-front-surface-soft) 100%);
+}
+
+.erp-omd-front-card:hover,
+.erp-omd-front-panel:hover,
+.erp-omd-front-project-card:hover,
+.erp-omd-front-template-button:hover,
+.erp-omd-front-calendar-day:hover,
+.erp-omd-front-inline-message-link:hover {
+    border-color: rgba(221, 177, 120, 0.8);
+    box-shadow: 0 22px 48px rgba(33, 33, 35, 0.08), 0 0 0 3px rgba(221, 177, 120, 0.12);
+    transform: translateY(-1px);
+}
+
+.erp-omd-front-form input:focus,
+.erp-omd-front-form select:focus,
+.erp-omd-front-form textarea:focus,
+.erp-omd-front-filter-form input:focus,
+.erp-omd-front-filter-form select:focus {
+    border-color: var(--erp-omd-front-accent);
+    box-shadow: 0 0 0 3px rgba(221, 177, 120, 0.18);
+    outline: none;
+}
+
+.erp-omd-front-button {
+    min-height: 42px;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.erp-omd-front-button:hover,
+.erp-omd-front-button:focus {
+    background: #fbf3e8;
+    border-color: var(--erp-omd-front-accent);
+    box-shadow: 0 0 0 3px rgba(221, 177, 120, 0.14);
+    color: var(--erp-omd-front-text);
+}
+
+.erp-omd-front-button-primary:hover,
+.erp-omd-front-button-primary:focus,
+.erp-omd-front-button-secondary:hover,
+.erp-omd-front-button-secondary:focus,
+.erp-omd-front-button-ghost:hover,
+.erp-omd-front-button-ghost:focus {
+    background: var(--erp-omd-front-accent);
+    border-color: var(--erp-omd-front-accent);
+    color: var(--erp-omd-front-text);
+}
+
+.erp-omd-front-topbar {
+    align-items: end;
+    border-bottom: 1px solid rgba(234, 223, 206, 0.8);
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+}
+
+.erp-omd-front-metric {
+    background: linear-gradient(180deg, #fff 0%, #fdfbf8 100%);
+    border-radius: 18px;
+    padding: 16px 18px;
+}
+
+.erp-omd-front-metric strong {
+    font-size: 30px;
+}
+
+.erp-omd-front-metric-revenue strong {
+    color: var(--erp-omd-front-text);
+}
+
+.erp-omd-front-metric-cost strong {
+    color: #8a847d;
+}
+
+.erp-omd-front-metric-profit {
+    border-color: rgba(221, 177, 120, 0.85);
+    box-shadow: inset 0 0 0 1px rgba(221, 177, 120, 0.35), 0 14px 32px rgba(33, 33, 35, 0.04);
+}
+
+.erp-omd-front-metric-profit strong {
+    color: var(--erp-omd-front-accent-strong);
+}
+
+.erp-omd-front-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.erp-omd-front-table th {
+    background: #fcfaf7;
+    border-bottom-color: var(--erp-omd-front-border);
+    color: var(--erp-omd-front-muted);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.erp-omd-front-table td {
+    color: var(--erp-omd-front-text);
+}
+
+.erp-omd-front-table tbody tr:hover td {
+    background: #fffdf9;
+}
+
+.erp-omd-front-project-card-active,
+.erp-omd-front-calendar-day-active {
+    border-color: var(--erp-omd-front-accent);
+    box-shadow: inset 0 0 0 1px var(--erp-omd-front-accent), 0 16px 36px rgba(33, 33, 35, 0.06);
+}
+
+.erp-omd-front-chip,
+.erp-omd-front-status {
+    border: 1px solid rgba(221, 177, 120, 0.45);
+}
+
+.erp-omd-front-chip {
+    background: #fbf4ea;
+    color: #8c6738;
+}
+
+.erp-omd-front-inline-message-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.erp-omd-front-login {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
+
+.erp-omd-front-login-layout {
+    background: var(--erp-omd-front-surface);
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) minmax(0, 2fr);
+    min-height: 100vh;
+}
+
+.erp-omd-front-login-pane {
+    min-width: 0;
+}
+
+.erp-omd-front-login-pane-form {
+    align-items: center;
+    background: linear-gradient(180deg, #fff 0%, #fcfaf7 100%);
+    display: flex;
+    justify-content: center;
+    padding: 48px 40px;
+}
+
+.erp-omd-front-login-panel {
+    display: grid;
+    gap: 24px;
+    max-width: 420px;
+    width: 100%;
+}
+
+.erp-omd-front-login-brand {
+    display: grid;
+    gap: 14px;
+}
+
+.erp-omd-front-login-brand h1 {
+    font-size: clamp(34px, 4vw, 48px);
+    letter-spacing: -0.03em;
+    margin: 0;
+}
+
+.erp-omd-front-login-brand .erp-omd-front-lead {
+    margin-bottom: 0;
+    max-width: 380px;
+}
+
+.erp-omd-front-login-logo {
+    display: block;
+    height: auto;
+    max-height: 72px;
+    max-width: 220px;
+    object-fit: contain;
+}
+
+.erp-omd-front-login-form {
+    gap: 20px;
+}
+
+.erp-omd-front-login-form input[type="text"],
+.erp-omd-front-login-form input[type="password"] {
+    border-radius: 16px;
+    min-height: 56px;
+    padding: 14px 16px;
+}
+
+.erp-omd-front-login-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: space-between;
+}
+
+.erp-omd-front-login-actions .erp-omd-front-button {
+    min-width: 190px;
+}
+
+.erp-omd-front-login-pane-visual {
+    background: #eef2ff;
+    padding: 24px;
+}
+
+.erp-omd-front-login-visual {
+    background: linear-gradient(180deg, rgba(221, 177, 120, 0.1) 0%, rgba(33, 33, 35, 0.04) 100%), #e9eefc;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    border-left: 1px solid rgba(234, 223, 206, 0.8);
+    height: 100%;
+    min-height: 100%;
+    position: relative;
+}
+
+.erp-omd-front-login-visual-overlay {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.16) 100%);
+    bottom: 0;
+    display: grid;
+    gap: 12px;
+    left: 0;
+    max-width: 420px;
+    padding: 48px;
+    position: absolute;
+}
+
+.erp-omd-front-login-visual-overlay strong {
+    color: var(--erp-omd-front-text);
+    font-size: clamp(28px, 4vw, 42px);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+}
+
+.erp-omd-front-login-visual-overlay p {
+    color: var(--erp-omd-front-muted);
+    line-height: 1.6;
+    margin: 0;
+}
+
+@media (max-width: 782px) {
+    .erp-omd-front-shell {
+        padding: 24px 16px 36px;
+    }
+
+    .erp-omd-front-card {
+        border-radius: 22px;
+        padding: 24px;
+    }
+
+    .erp-omd-front-panel {
+        padding: 20px;
+    }
+
+    .erp-omd-front-shell-login {
+        padding: 0;
+    }
+
+    .erp-omd-front-login-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .erp-omd-front-login-pane-form {
+        padding: 32px 20px;
+    }
+
+    .erp-omd-front-login-pane-visual {
+        min-height: 320px;
+        padding: 16px;
+    }
+
+    .erp-omd-front-login-visual {
+        border-left: 0;
+        border-top: 1px solid rgba(234, 223, 206, 0.8);
+        min-height: 320px;
+    }
+
+    .erp-omd-front-login-visual-overlay {
+        max-width: none;
+        padding: 24px;
+    }
+
+    .erp-omd-front-login-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .erp-omd-front-login-actions .erp-omd-front-button {
+        width: 100%;
+    }
 }
