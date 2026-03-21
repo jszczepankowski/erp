@@ -19,6 +19,93 @@
             </div>
         </div>
     </div>
+    <?php
+    $dashboard_cost_total = max(0.0, (float) ($monthly_totals['hourly_cost_total'] ?? 0));
+    $dashboard_profit_total = max(0.0, (float) ($monthly_totals['employee_profit'] ?? 0));
+    $dashboard_revenue_total = $dashboard_cost_total + $dashboard_profit_total;
+    $dashboard_performance_total = max(1.0, $dashboard_revenue_total);
+    $dashboard_cost_share = max(2, (int) round(($dashboard_cost_total / $dashboard_performance_total) * 100));
+    $dashboard_profit_share = max(2, 100 - $dashboard_cost_share);
+    $dashboard_alert_total = max(1, array_sum($alert_summary));
+    $dashboard_alert_error = (int) round(((int) $alert_summary['error'] / $dashboard_alert_total) * 100);
+    $dashboard_alert_warning_end = (int) round((((int) $alert_summary['error'] + (int) $alert_summary['warning']) / $dashboard_alert_total) * 100);
+    ?>
+    <div class="erp-omd-dashboard-visuals">
+        <div class="erp-omd-card erp-omd-chart-card">
+            <div class="erp-omd-chart-header">
+                <div>
+                    <h2><?php esc_html_e('Wykres rentowności miesiąca', 'erp-omd'); ?></h2>
+                    <p><?php esc_html_e('Szybki obraz relacji między przychodem, kosztem i zyskiem dla bieżącego okresu raportowego.', 'erp-omd'); ?></p>
+                </div>
+                <span class="erp-omd-chart-period"><?php echo esc_html($reporting_month_label); ?></span>
+            </div>
+            <div class="erp-omd-chart-rail" aria-hidden="true">
+                <span class="erp-omd-chart-segment erp-omd-chart-segment-cost" style="width: <?php echo esc_attr((string) $dashboard_cost_share); ?>%"></span>
+                <span class="erp-omd-chart-segment erp-omd-chart-segment-profit" style="width: <?php echo esc_attr((string) $dashboard_profit_share); ?>%"></span>
+            </div>
+            <div class="erp-omd-chart-legend">
+                <div class="erp-omd-chart-legend-item">
+                    <span class="erp-omd-chart-dot erp-omd-chart-dot-revenue"></span>
+                    <span>
+                        <strong><?php echo esc_html(number_format_i18n($dashboard_revenue_total, 2)); ?></strong>
+                        <span><?php esc_html_e('Przychód', 'erp-omd'); ?></span>
+                    </span>
+                </div>
+                <div class="erp-omd-chart-legend-item">
+                    <span class="erp-omd-chart-dot erp-omd-chart-dot-cost"></span>
+                    <span>
+                        <strong><?php echo esc_html(number_format_i18n($dashboard_cost_total, 2)); ?></strong>
+                        <span><?php esc_html_e('Koszt', 'erp-omd'); ?></span>
+                    </span>
+                </div>
+                <div class="erp-omd-chart-legend-item">
+                    <span class="erp-omd-chart-dot erp-omd-chart-dot-profit"></span>
+                    <span>
+                        <strong><?php echo esc_html(number_format_i18n($dashboard_profit_total, 2)); ?></strong>
+                        <span><?php esc_html_e('Zysk', 'erp-omd'); ?></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="erp-omd-card erp-omd-chart-card">
+            <div class="erp-omd-chart-header">
+                <div>
+                    <h2><?php esc_html_e('Mapa alertów', 'erp-omd'); ?></h2>
+                    <p><?php esc_html_e('Rozkład aktywnych alertów pomaga szybciej ocenić, czy dominują błędy, ostrzeżenia czy informacje operacyjne.', 'erp-omd'); ?></p>
+                </div>
+            </div>
+            <div class="erp-omd-donut-chart">
+                <div class="erp-omd-donut-chart-visual" style="--erp-omd-chart-error: <?php echo esc_attr((string) $dashboard_alert_error); ?>%; --erp-omd-chart-warning-end: <?php echo esc_attr((string) $dashboard_alert_warning_end); ?>%;">
+                    <span class="erp-omd-donut-chart-total"><?php echo esc_html((string) array_sum($alert_summary)); ?></span>
+                    <span class="erp-omd-donut-chart-label"><?php esc_html_e('Alertów', 'erp-omd'); ?></span>
+                </div>
+                <div class="erp-omd-chart-legend">
+                    <div class="erp-omd-chart-legend-item">
+                        <span class="erp-omd-chart-dot erp-omd-chart-dot-error"></span>
+                        <span>
+                            <strong><?php echo esc_html((string) ((int) $alert_summary['error'])); ?></strong>
+                            <span><?php esc_html_e('Błędy krytyczne', 'erp-omd'); ?></span>
+                        </span>
+                    </div>
+                    <div class="erp-omd-chart-legend-item">
+                        <span class="erp-omd-chart-dot erp-omd-chart-dot-warning"></span>
+                        <span>
+                            <strong><?php echo esc_html((string) ((int) $alert_summary['warning'])); ?></strong>
+                            <span><?php esc_html_e('Ostrzeżenia', 'erp-omd'); ?></span>
+                        </span>
+                    </div>
+                    <div class="erp-omd-chart-legend-item">
+                        <span class="erp-omd-chart-dot erp-omd-chart-dot-info"></span>
+                        <span>
+                            <strong><?php echo esc_html((string) ((int) $alert_summary['info'])); ?></strong>
+                            <span><?php esc_html_e('Informacje', 'erp-omd'); ?></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="erp-omd-grid two-columns">
         <div class="erp-omd-card">
             <h2><?php esc_html_e('Zakres systemu', 'erp-omd'); ?></h2>

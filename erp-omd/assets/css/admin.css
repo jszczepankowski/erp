@@ -118,6 +118,179 @@
     color: var(--erp-omd-accent-strong);
 }
 
+.erp-omd-admin .erp-omd-dashboard-visuals {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(320px, 1.3fr) minmax(280px, 0.9fr);
+    margin-bottom: 24px;
+}
+
+.erp-omd-admin .erp-omd-chart-card {
+    display: grid;
+    gap: 18px;
+}
+
+.erp-omd-admin .erp-omd-chart-header {
+    align-items: start;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+}
+
+.erp-omd-admin .erp-omd-chart-header p {
+    margin: 6px 0 0;
+}
+
+.erp-omd-admin .erp-omd-chart-period {
+    background: #fff7ed;
+    border: 1px solid rgba(221, 177, 120, 0.5);
+    border-radius: 999px;
+    color: var(--erp-omd-accent-strong);
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+    white-space: nowrap;
+}
+
+.erp-omd-admin .erp-omd-chart-rail {
+    background: #f3eee7;
+    border-radius: 999px;
+    display: flex;
+    min-height: 16px;
+    overflow: hidden;
+}
+
+.erp-omd-admin .erp-omd-chart-segment {
+    min-width: 2%;
+}
+
+.erp-omd-admin .erp-omd-chart-segment-cost {
+    background: #b9b3ac;
+}
+
+.erp-omd-admin .erp-omd-chart-segment-profit {
+    background: linear-gradient(90deg, #ddb178 0%, #c89a5a 100%);
+}
+
+.erp-omd-admin .erp-omd-chart-segment-revenue {
+    background: #212123;
+}
+
+.erp-omd-admin .erp-omd-chart-legend {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.erp-omd-admin .erp-omd-chart-legend-item {
+    align-items: center;
+    background: #fcfaf7;
+    border: 1px solid var(--erp-omd-border);
+    border-radius: 16px;
+    display: grid;
+    gap: 6px;
+    grid-template-columns: auto 1fr;
+    padding: 12px 14px;
+}
+
+.erp-omd-admin .erp-omd-chart-dot {
+    border-radius: 999px;
+    display: inline-block;
+    height: 10px;
+    width: 10px;
+}
+
+.erp-omd-admin .erp-omd-chart-dot-revenue {
+    background: #212123;
+}
+
+.erp-omd-admin .erp-omd-chart-dot-cost {
+    background: #b9b3ac;
+}
+
+.erp-omd-admin .erp-omd-chart-dot-profit {
+    background: #ddb178;
+}
+
+.erp-omd-admin .erp-omd-chart-dot-error {
+    background: #c86b5f;
+}
+
+.erp-omd-admin .erp-omd-chart-dot-warning {
+    background: #ddb178;
+}
+
+.erp-omd-admin .erp-omd-chart-dot-info {
+    background: #212123;
+}
+
+.erp-omd-admin .erp-omd-chart-legend-item strong {
+    color: var(--erp-omd-text);
+    display: block;
+    font-size: 16px;
+}
+
+.erp-omd-admin .erp-omd-chart-legend-item span:last-child {
+    color: var(--erp-omd-text-muted);
+    font-size: 12px;
+}
+
+.erp-omd-admin .erp-omd-donut-chart {
+    align-items: center;
+    display: grid;
+    gap: 18px;
+    grid-template-columns: auto minmax(0, 1fr);
+}
+
+.erp-omd-admin .erp-omd-donut-chart-visual {
+    align-items: center;
+    aspect-ratio: 1;
+    background: conic-gradient(
+        #c86b5f 0 var(--erp-omd-chart-error, 0%),
+        #ddb178 var(--erp-omd-chart-error, 0%) var(--erp-omd-chart-warning-end, 0%),
+        #212123 var(--erp-omd-chart-warning-end, 0%) 100%
+    );
+    border-radius: 50%;
+    display: inline-grid;
+    justify-items: center;
+    min-height: 164px;
+    padding: 16px;
+    width: 164px;
+}
+
+.erp-omd-admin .erp-omd-donut-chart-visual::before {
+    background: #fff;
+    border-radius: 50%;
+    content: "";
+    grid-area: 1 / 1;
+    height: 96px;
+    width: 96px;
+}
+
+.erp-omd-admin .erp-omd-donut-chart-total {
+    color: var(--erp-omd-text);
+    font-size: 30px;
+    font-weight: 700;
+    grid-area: 1 / 1;
+    z-index: 1;
+}
+
+.erp-omd-admin .erp-omd-donut-chart-label {
+    color: var(--erp-omd-text-muted);
+    font-size: 12px;
+    grid-area: 1 / 1;
+    margin-top: 54px;
+    text-transform: uppercase;
+    z-index: 1;
+}
+
+@media (max-width: 960px) {
+    .erp-omd-admin .erp-omd-dashboard-visuals {
+        grid-template-columns: 1fr;
+    }
+}
+
 .erp-omd-admin .erp-omd-grid {
     display: grid;
     gap: 20px;
