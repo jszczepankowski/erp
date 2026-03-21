@@ -22,7 +22,8 @@
                         <?php endif; ?>
                     </td>
                 </tr>
-                <tr><th><label for="time-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label></th><td><select id="time-project" name="project_id" required><?php foreach ($projects_for_time as $project_item) : ?><option value="<?php echo esc_attr($project_item['id']); ?>" <?php selected((int) ($entry['project_id'] ?? 0), (int) $project_item['id']); ?>><?php echo esc_html($project_item['name'] . ' [' . $this->project_status_label($project_item['status']) . ']'); ?></option><?php endforeach; ?></select></td></tr>
+                <tr><th><label for="time-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label></th><td><select id="time-client" name="client_id" data-project-target="#time-project"><option value="0"><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option><?php foreach ($clients_for_time as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) ($selected_time_client_id ?? 0), (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select></td></tr>
+                <tr><th><label for="time-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label></th><td><select id="time-project" name="project_id" required><?php foreach ($projects_for_time as $project_item) : ?><option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr($project_item['client_id']); ?>" <?php selected((int) ($entry['project_id'] ?? 0), (int) $project_item['id']); ?>><?php echo esc_html($project_item['name'] . ' [' . $this->project_status_label($project_item['status']) . ']'); ?></option><?php endforeach; ?></select></td></tr>
                 <tr><th><label for="time-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label></th><td><select id="time-role" name="role_id" required><?php foreach ($roles as $role_item) : ?><option value="<?php echo esc_attr($role_item['id']); ?>" <?php selected((int) ($entry['role_id'] ?? 0), (int) $role_item['id']); ?>><?php echo esc_html($role_item['name']); ?></option><?php endforeach; ?></select></td></tr>
                 <tr>
                     <th><label for="time-hours"><?php esc_html_e('Godziny', 'erp-omd'); ?></label></th>
@@ -55,13 +56,39 @@
 
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Lista wpisów czasu', 'erp-omd'); ?></h2>
+        <div class="erp-omd-section-header">
+            <form method="get" class="erp-omd-inline-form">
+                <input type="hidden" name="page" value="erp-omd-time" />
+                <label for="erp-omd-time-saved-view" class="screen-reader-text"><?php esc_html_e('Zapisany widok', 'erp-omd'); ?></label>
+                <select id="erp-omd-time-saved-view" onchange="if(this.value){window.location.href=this.value;}">
+                    <option value=""><?php esc_html_e('Zapisane widoki', 'erp-omd'); ?></option>
+                    <?php foreach ($saved_views as $saved_view) : ?>
+                        <option value="<?php echo esc_url(add_query_arg(array_merge(['page' => 'erp-omd-time'], $saved_view['params']), admin_url('admin.php'))); ?>"><?php echo esc_html($saved_view['label']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </form>
+            <form method="post" class="erp-omd-action-group">
+                <?php wp_nonce_field('erp_omd_save_saved_view'); ?>
+                <input type="hidden" name="erp_omd_action" value="save_saved_view" />
+                <input type="hidden" name="screen" value="time" />
+                <input type="hidden" name="page_slug" value="erp-omd-time" />
+                <input type="hidden" name="filters[employee_id]" value="<?php echo esc_attr($filters['employee_id'] ?? ''); ?>" />
+                <input type="hidden" name="filters[client_id]" value="<?php echo esc_attr($filters['client_id'] ?? ''); ?>" />
+                <input type="hidden" name="filters[project_id]" value="<?php echo esc_attr($filters['project_id'] ?? ''); ?>" />
+                <input type="hidden" name="filters[status]" value="<?php echo esc_attr($filters['status'] ?? ''); ?>" />
+                <input type="hidden" name="filters[entry_date]" value="<?php echo esc_attr($filters['entry_date'] ?? ''); ?>" />
+                <input type="text" name="label" class="regular-text" placeholder="<?php echo esc_attr__('Nazwa widoku', 'erp-omd'); ?>" required />
+                <button class="button button-secondary" type="submit"><?php esc_html_e('Zapisz widok', 'erp-omd'); ?></button>
+            </form>
+        </div>
         <form method="get" class="erp-omd-filter-form">
             <input type="hidden" name="page" value="erp-omd-time" />
             <input type="date" name="entry_date" value="<?php echo esc_attr($filters['entry_date'] ?? ''); ?>" />
             <?php if ($can_select_any_employee) : ?>
                 <select name="employee_id"><option value=""><?php esc_html_e('Wszyscy pracownicy', 'erp-omd'); ?></option><?php foreach ($employees_for_select as $employee_item) : ?><option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((string) ($filters['employee_id'] ?? ''), (string) $employee_item['id']); ?>><?php echo esc_html($employee_item['user_login']); ?></option><?php endforeach; ?></select>
             <?php endif; ?>
-            <select name="project_id"><option value=""><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option><?php foreach ($projects_for_time as $project_item) : ?><option value="<?php echo esc_attr($project_item['id']); ?>" <?php selected((string) ($filters['project_id'] ?? ''), (string) $project_item['id']); ?>><?php echo esc_html($project_item['name']); ?></option><?php endforeach; ?></select>
+            <select id="time-filter-client" name="client_id" data-project-target="#time-filter-project"><option value=""><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option><?php foreach ($clients_for_time as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((string) ($filters['client_id'] ?? ''), (string) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select>
+            <select id="time-filter-project" name="project_id"><option value=""><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option><?php foreach ($projects_for_time as $project_item) : ?><option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr($project_item['client_id']); ?>" <?php selected((string) ($filters['project_id'] ?? ''), (string) $project_item['id']); ?>><?php echo esc_html($project_item['name']); ?></option><?php endforeach; ?></select>
             <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['submitted', 'approved', 'rejected'] as $time_status) : ?><option value="<?php echo esc_attr($time_status); ?>" <?php selected((string) ($filters['status'] ?? ''), $time_status); ?>><?php echo esc_html($this->time_status_label($time_status)); ?></option><?php endforeach; ?></select>
             <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
         </form>

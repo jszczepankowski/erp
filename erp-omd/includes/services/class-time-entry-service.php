@@ -70,14 +70,21 @@ class ERP_OMD_Time_Entry_Service
     public function prepare(array $data)
     {
         $data['hours'] = round((float) $data['hours'], 2);
-        $data['rate_snapshot'] = $this->resolve_rate_snapshot((int) $data['project_id'], (int) $data['role_id']);
+        $data['rate_snapshot'] = $this->resolve_rate_snapshot((int) $data['project_id'], (int) $data['role_id'], (string) ($data['entry_date'] ?? ''));
         $data['cost_snapshot'] = $this->resolve_cost_snapshot((int) $data['employee_id'], $data['entry_date']);
 
         return $data;
     }
 
-    public function resolve_rate_snapshot($project_id, $role_id)
+    public function resolve_rate_snapshot($project_id, $role_id, $entry_date = '')
     {
+        if ($entry_date !== '' && method_exists($this->project_rates, 'find_effective_rate')) {
+            $project_rate = $this->project_rates->find_effective_rate($project_id, $role_id, $entry_date);
+            if ($project_rate) {
+                return round((float) $project_rate['rate'], 2);
+            }
+        }
+
         $project_rate = $this->project_rates->find_by_project_role($project_id, $role_id);
         if ($project_rate) {
             return round((float) $project_rate['rate'], 2);
@@ -86,6 +93,13 @@ class ERP_OMD_Time_Entry_Service
         $project = $this->projects->find($project_id);
         if (! $project) {
             return 0.0;
+        }
+
+        if ($entry_date !== '' && method_exists($this->client_rates, 'find_effective_rate')) {
+            $client_rate = $this->client_rates->find_effective_rate((int) $project['client_id'], $role_id, $entry_date);
+            if ($client_rate) {
+                return round((float) $client_rate['rate'], 2);
+            }
         }
 
         $client_rates = $this->client_rates->for_client((int) $project['client_id']);

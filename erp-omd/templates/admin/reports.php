@@ -7,6 +7,29 @@
     </nav>
 
     <div class="erp-omd-card">
+        <div class="erp-omd-section-header">
+            <form method="get" class="erp-omd-inline-form">
+                <input type="hidden" name="page" value="erp-omd-reports" />
+                <label for="erp-omd-reports-saved-view" class="screen-reader-text"><?php esc_html_e('Zapisany widok', 'erp-omd'); ?></label>
+                <select id="erp-omd-reports-saved-view" onchange="if(this.value){window.location.href=this.value;}">
+                    <option value=""><?php esc_html_e('Zapisane widoki', 'erp-omd'); ?></option>
+                    <?php foreach ($saved_views as $saved_view) : ?>
+                        <option value="<?php echo esc_url(add_query_arg(array_merge(['page' => 'erp-omd-reports'], $saved_view['params']), admin_url('admin.php'))); ?>"><?php echo esc_html($saved_view['label']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </form>
+            <form method="post" class="erp-omd-action-group">
+                <?php wp_nonce_field('erp_omd_save_saved_view'); ?>
+                <input type="hidden" name="erp_omd_action" value="save_saved_view" />
+                <input type="hidden" name="screen" value="reports" />
+                <input type="hidden" name="page_slug" value="erp-omd-reports" />
+                <?php foreach ($report_filters as $filter_key => $filter_value) : ?>
+                    <input type="hidden" name="filters[<?php echo esc_attr($filter_key); ?>]" value="<?php echo esc_attr(is_scalar($filter_value) ? (string) $filter_value : ''); ?>" />
+                <?php endforeach; ?>
+                <input type="text" name="label" class="regular-text" placeholder="<?php echo esc_attr__('Nazwa widoku', 'erp-omd'); ?>" required />
+                <button class="button button-secondary" type="submit"><?php esc_html_e('Zapisz widok', 'erp-omd'); ?></button>
+            </form>
+        </div>
         <form method="get" class="erp-omd-filter-form">
             <input type="hidden" name="page" value="erp-omd-reports" />
             <input type="hidden" name="tab" value="<?php echo esc_attr($report_filters['tab']); ?>" />
@@ -117,7 +140,7 @@
                         <tr>
                             <td><?php echo esc_html($row['project_name']); ?></td>
                             <td><?php echo esc_html($row['client_name']); ?></td>
-                            <td><?php echo esc_html($this->project_status_label($row['status'])); ?></td>
+                            <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($row['status'], 'project')); ?>"><?php echo esc_html($this->project_status_label($row['status'])); ?></span></td>
                             <td><?php echo esc_html($this->billing_type_label($row['billing_type'])); ?></td>
                             <td><?php echo esc_html($row['manager_login']); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) $row['budget'], 2)); ?></td>
