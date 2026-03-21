@@ -1,5 +1,7 @@
 # ERP OMD — opis systemu po wszystkich sprintach i propozycje rozwoju
 
+> Dalszy plan rozwoju frontendu pracowniczego i managerskiego został zapisany osobno pod hasłem **FRONT** w pliku `docs/FRONT_PLAN.md`.
+
 ## 1. Czym jest ERP OMD
 
 ERP OMD to plugin WordPress pełniący rolę lekkiego systemu ERP/operations dla agencji lub zespołu usługowego. Łączy w jednym miejscu:

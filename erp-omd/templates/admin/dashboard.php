@@ -19,5 +19,14 @@
             <p><strong><?php echo esc_html(count($alerts)); ?></strong> <?php esc_html_e('aktywnych alertów', 'erp-omd'); ?></p>
             <p><a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-alerts')); ?>"><?php esc_html_e('Przejdź do centrum alertów', 'erp-omd'); ?></a></p>
         </div>
+        <div class="erp-omd-card">
+            <h2><?php esc_html_e('Skróty', 'erp-omd'); ?></h2>
+            <div class="erp-omd-action-group">
+                <?php foreach ($dashboard_shortcuts as $shortcut) : ?>
+                    <a class="button button-secondary" href="<?php echo esc_url($shortcut['url']); ?>"><?php echo esc_html($shortcut['label']); ?></a>
+                <?php endforeach; ?>
+            </div>
+            <p class="description"><?php esc_html_e('Najczęściej używane akcje operacyjne dostępne bez przechodzenia przez pełną nawigację.', 'erp-omd'); ?></p>
+        </div>
     </div>
 </div>
