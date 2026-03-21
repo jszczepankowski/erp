@@ -2,8 +2,8 @@
 /**
  * Plugin Name: ERP OMD
  * Plugin URI: https://example.com/erp-omd
- * Description: ERP_OMD V2 FRONT-2B: panel pracownika z kalendarzem godzin i skrótami zakresów.
- * Version: 0.10.1
+ * Description: ERP_OMD V2 FRONT-2C: panel pracownika z wyborem dnia i kontekstem pracy z kalendarza.
+ * Version: 0.10.2
  * Author: OMD
  * Text Domain: erp-omd
  */
@@ -12,7 +12,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('ERP_OMD_VERSION', '0.10.1');
+define('ERP_OMD_VERSION', '0.10.2');
 define('ERP_OMD_DB_VERSION', '6.2.0');
 define('ERP_OMD_FILE', __FILE__);
 define('ERP_OMD_PATH', plugin_dir_path(__FILE__));

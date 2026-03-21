@@ -236,6 +236,8 @@ class ERP_OMD_Frontend
         $entry_id = (int) ($_POST['id'] ?? 0);
         $project_id = (int) ($_POST['project_id'] ?? 0);
         $role_id = (int) ($_POST['role_id'] ?? 0);
+        $selected_date = sanitize_text_field(wp_unslash($_POST['selected_date'] ?? ''));
+        $selected_day_args = preg_match('/^\d{4}-\d{2}-\d{2}$/', $selected_date) ? ['selected_date' => $selected_date] : [];
         $payload = [
             'employee_id' => (int) $employee['id'],
             'project_id' => $project_id,
@@ -254,7 +256,7 @@ class ERP_OMD_Frontend
             $this->redirect_worker_with_notice(
                 'error',
                 __('Możesz raportować czas tylko do aktywnych projektów w realizacji.', 'erp-omd'),
-                $entry_id ? ['entry_id' => $entry_id] : []
+                array_merge($entry_id ? ['entry_id' => $entry_id] : [], $selected_day_args)
             );
         }
 
@@ -263,21 +265,25 @@ class ERP_OMD_Frontend
             $this->redirect_worker_with_notice(
                 'error',
                 __('Wybrana rola nie jest dostępna dla tego pracownika.', 'erp-omd'),
-                $entry_id ? ['entry_id' => $entry_id] : []
+                array_merge($entry_id ? ['entry_id' => $entry_id] : [], $selected_day_args)
             );
         }
 
         if ($entry_id) {
             $existing = $this->time_entries->find($entry_id);
             if (! $existing || ! $this->time_entry_service->can_edit_entry($existing, $user)) {
-                $this->redirect_worker_with_notice('error', __('Możesz edytować tylko własne wpisy ze statusem submitted.', 'erp-omd'));
+                $this->redirect_worker_with_notice('error', __('Możesz edytować tylko własne wpisy ze statusem submitted.', 'erp-omd'), $selected_day_args);
             }
         }
 
         $payload = $this->time_entry_service->prepare($payload);
         $errors = $this->time_entry_service->validate($payload, $entry_id ?: null);
         if ($errors) {
-            $this->redirect_worker_with_notice('error', implode(' ', $errors), $entry_id ? ['entry_id' => $entry_id] : []);
+            $this->redirect_worker_with_notice(
+                'error',
+                implode(' ', $errors),
+                array_merge($entry_id ? ['entry_id' => $entry_id] : [], $selected_day_args)
+            );
         }
 
         if ($entry_id) {
@@ -289,24 +295,26 @@ class ERP_OMD_Frontend
         }
 
         $this->project_financial_service->rebuild_for_project($project_id);
-        $this->redirect_worker_with_notice('success', $message);
+        $this->redirect_worker_with_notice('success', $message, $selected_day_args);
     }
 
     private function delete_worker_time_entry(WP_User $user)
     {
         $entry_id = (int) ($_POST['id'] ?? 0);
+        $selected_date = sanitize_text_field(wp_unslash($_POST['selected_date'] ?? ''));
+        $selected_day_args = preg_match('/^\d{4}-\d{2}-\d{2}$/', $selected_date) ? ['selected_date' => $selected_date] : [];
         $entry = $entry_id ? $this->time_entries->find($entry_id) : null;
         if (! $entry) {
-            $this->redirect_worker_with_notice('error', __('Nie znaleziono wpisu czasu do usunięcia.', 'erp-omd'));
+            $this->redirect_worker_with_notice('error', __('Nie znaleziono wpisu czasu do usunięcia.', 'erp-omd'), $selected_day_args);
         }
 
         if (! $this->time_entry_service->can_delete_entry($user, $entry)) {
-            $this->redirect_worker_with_notice('error', __('Możesz usuwać tylko własne wpisy ze statusem submitted.', 'erp-omd'));
+            $this->redirect_worker_with_notice('error', __('Możesz usuwać tylko własne wpisy ze statusem submitted.', 'erp-omd'), $selected_day_args);
         }
 
         $this->time_entries->delete($entry_id);
         $this->project_financial_service->rebuild_for_project((int) $entry['project_id']);
-        $this->redirect_worker_with_notice('success', __('Wpis czasu został usunięty.', 'erp-omd'));
+        $this->redirect_worker_with_notice('success', __('Wpis czasu został usunięty.', 'erp-omd'), $selected_day_args);
     }
 
     private function render_worker_dashboard(WP_User $user)
@@ -322,6 +330,7 @@ class ERP_OMD_Frontend
             'entry_date' => sanitize_text_field(wp_unslash($_GET['entry_date'] ?? '')),
             'focus' => sanitize_key(wp_unslash($_GET['focus'] ?? 'month')),
             'calendar_month' => sanitize_text_field(wp_unslash($_GET['calendar_month'] ?? gmdate('Y-m'))),
+            'selected_date' => sanitize_text_field(wp_unslash($_GET['selected_date'] ?? '')),
         ];
         if ($worker_filters['project_id'] <= 0) {
             $worker_filters['project_id'] = 0;
@@ -334,6 +343,9 @@ class ERP_OMD_Frontend
         }
         if (! preg_match('/^\d{4}-\d{2}$/', $worker_filters['calendar_month'])) {
             $worker_filters['calendar_month'] = gmdate('Y-m');
+        }
+        if ($worker_filters['selected_date'] !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $worker_filters['selected_date'])) {
+            $worker_filters['selected_date'] = '';
         }
 
         $entry_id = (int) ($_GET['entry_id'] ?? 0);
@@ -367,6 +379,11 @@ class ERP_OMD_Frontend
             'tab' => 'calendar',
         ]);
         $calendar_navigation = $this->get_calendar_navigation($worker_filters['calendar_month'], $worker_filters);
+        $selected_day = $this->resolve_selected_day($worker_filters, $calendar_data);
+        $selected_day_entries = $selected_day !== ''
+            ? $this->load_selected_day_entries((int) $employee['id'], $selected_day, $worker_filters, $user)
+            : [];
+        $selected_day_totals = $this->summarize_selected_day_entries($selected_day_entries);
 
         $status_totals = [
             'submitted' => 0,
@@ -394,7 +411,7 @@ class ERP_OMD_Frontend
             'project_id' => 0,
             'role_id' => (int) ($available_roles[0]['id'] ?? 0),
             'hours' => '',
-            'entry_date' => gmdate('Y-m-d'),
+            'entry_date' => $selected_day ?: gmdate('Y-m-d'),
             'description' => '',
             'status' => 'submitted',
         ];
@@ -460,6 +477,7 @@ class ERP_OMD_Frontend
             'project_id' => $worker_filters['project_id'],
             'status' => $worker_filters['status'],
             'focus' => $worker_filters['focus'],
+            'selected_date' => $worker_filters['selected_date'],
         ];
 
         return [
@@ -467,6 +485,66 @@ class ERP_OMD_Frontend
             'previous_url' => $this->front_url('worker', array_merge($base_args, ['calendar_month' => $previous_month])),
             'next_url' => $this->front_url('worker', array_merge($base_args, ['calendar_month' => $next_month])),
         ];
+    }
+
+    private function resolve_selected_day(array $worker_filters, array $calendar_data)
+    {
+        if ($worker_filters['selected_date'] !== '') {
+            return $worker_filters['selected_date'];
+        }
+
+        if ($worker_filters['entry_date'] !== '') {
+            return $worker_filters['entry_date'];
+        }
+
+        $today = current_time('Y-m-d');
+        if (strpos($today, $worker_filters['calendar_month']) === 0) {
+            return $today;
+        }
+
+        foreach ((array) ($calendar_data['weeks'] ?? []) as $week) {
+            foreach ((array) $week as $day) {
+                if (is_array($day) && ! empty($day['date'])) {
+                    return (string) $day['date'];
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private function load_selected_day_entries($employee_id, $selected_day, array $worker_filters, WP_User $user)
+    {
+        $entries = $this->time_entries->all(array_filter([
+            'employee_id' => $employee_id,
+            'project_id' => $worker_filters['project_id'],
+            'status' => $worker_filters['status'],
+            'entry_date' => $selected_day,
+        ]));
+
+        return $this->time_entry_service->filter_visible_entries($entries, $user);
+    }
+
+    private function summarize_selected_day_entries(array $entries)
+    {
+        $summary = [
+            'hours' => 0.0,
+            'submitted' => 0,
+            'approved' => 0,
+            'rejected' => 0,
+        ];
+
+        foreach ($entries as $entry) {
+            $summary['hours'] += (float) ($entry['hours'] ?? 0);
+            $status = (string) ($entry['status'] ?? '');
+            if (isset($summary[$status])) {
+                $summary[$status]++;
+            }
+        }
+
+        $summary['hours'] = round($summary['hours'], 2);
+
+        return $summary;
     }
 
     private function render_manager_dashboard(WP_User $user)

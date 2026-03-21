@@ -1,6 +1,6 @@
 # ERP OMD
 
-ERP_OMD V2 — wersja 0.10.1 rozwijająca FRONT-2B dla panelu pracownika.
+ERP_OMD V2 — wersja 0.10.2 rozwijająca FRONT-2C dla panelu pracownika.
 
 ## Dokumentacja systemu
 - Pełny opis systemu i propozycje usprawnień: `../docs/ERP_OMD_SYSTEM_OVERVIEW.md`
@@ -18,7 +18,8 @@ ERP_OMD V2 — wersja 0.10.1 rozwijająca FRONT-2B dla panelu pracownika.
   - filtrowanie po dacie / projekcie / statusie,
   - edycja i usuwanie własnych wpisów `submitted`,
   - skróty zakresów: dziś / tydzień / miesiąc / wszystko,
-  - kalendarz własnych godzin w wybranym miesiącu
+  - kalendarz własnych godzin w wybranym miesiącu,
+  - wybór dnia z kalendarza i panel szczegółów dla wskazanej daty
 
 ## Build ZIP
 - Sprint 1 (historyczny): `./scripts/build-sprint-1-zip.sh`
