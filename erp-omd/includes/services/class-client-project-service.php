@@ -171,6 +171,13 @@ class ERP_OMD_Client_Project_Service
             $errors[] = __('Manager projektu musi wskazywać istniejącego pracownika.', 'erp-omd');
         }
 
+        foreach ((array) ($data['manager_ids'] ?? []) as $manager_id) {
+            if (! $this->employees->find((int) $manager_id)) {
+                $errors[] = __('Każdy manager projektu musi wskazywać istniejącego pracownika.', 'erp-omd');
+                break;
+            }
+        }
+
         $errors = array_merge($errors, $this->validate_billing_policy($data));
         $errors = array_merge($errors, $this->validate_status_transition($data, $existing_project));
 
@@ -179,6 +186,12 @@ class ERP_OMD_Client_Project_Service
 
     public function prepare_project(array $data, array $existing_project = null)
     {
+        $manager_ids = $this->prepare_manager_ids($data, $existing_project);
+        $manager_id = (int) ($data['manager_id'] ?? ($existing_project['manager_id'] ?? 0));
+        if ($manager_id <= 0 && ! empty($manager_ids)) {
+            $manager_id = (int) $manager_ids[0];
+        }
+
         return [
             'client_id' => (int) ($data['client_id'] ?? ($existing_project['client_id'] ?? 0)),
             'name' => trim((string) ($data['name'] ?? ($existing_project['name'] ?? ''))),
@@ -188,11 +201,38 @@ class ERP_OMD_Client_Project_Service
             'status' => trim((string) ($data['status'] ?? ($existing_project['status'] ?? 'do_rozpoczecia'))) ?: 'do_rozpoczecia',
             'start_date' => trim((string) ($data['start_date'] ?? ($existing_project['start_date'] ?? ''))),
             'end_date' => trim((string) ($data['end_date'] ?? ($existing_project['end_date'] ?? ''))),
-            'manager_id' => (int) ($data['manager_id'] ?? ($existing_project['manager_id'] ?? 0)),
+            'manager_id' => $manager_id,
+            'manager_ids' => $manager_ids,
             'estimate_id' => (int) ($data['estimate_id'] ?? ($existing_project['estimate_id'] ?? 0)),
             'brief' => trim((string) ($data['brief'] ?? ($existing_project['brief'] ?? ''))),
             'alert_margin_threshold' => $this->normalize_margin_threshold($data['alert_margin_threshold'] ?? ($existing_project['alert_margin_threshold'] ?? null)),
         ];
+    }
+
+
+    private function prepare_manager_ids(array $data, array $existing_project = null)
+    {
+        $incoming_manager_ids = $data['manager_ids'] ?? ($existing_project['manager_ids'] ?? []);
+        if (! is_array($incoming_manager_ids)) {
+            $incoming_manager_ids = [];
+        }
+
+        $manager_id = (int) ($data['manager_id'] ?? ($existing_project['manager_id'] ?? 0));
+        $manager_ids = array_values(array_unique(array_filter(array_map('intval', $incoming_manager_ids))));
+
+        if ($manager_id > 0 && ! in_array($manager_id, $manager_ids, true)) {
+            array_unshift($manager_ids, $manager_id);
+        }
+
+        if ($manager_id <= 0 && ! empty($manager_ids)) {
+            $manager_id = (int) $manager_ids[0];
+        }
+
+        if ($manager_id > 0) {
+            $data['manager_id'] = $manager_id;
+        }
+
+        return array_values(array_unique(array_filter($manager_ids)));
     }
 
     private function validate_billing_policy(array $data)

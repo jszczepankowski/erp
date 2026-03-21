@@ -179,6 +179,7 @@ class ERP_OMD_Estimate_Service
             'start_date' => '',
             'end_date' => '',
             'manager_id' => (int) ($client['account_manager_id'] ?? 0),
+            'manager_ids' => array_values(array_filter([(int) ($client['account_manager_id'] ?? 0)])),
             'estimate_id' => (int) $estimate_id,
             'brief' => implode("\n", $brief_lines),
             'alert_margin_threshold' => null,
