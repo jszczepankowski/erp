@@ -463,6 +463,8 @@ class ERP_OMD_Installer
         update_option('erp_omd_db_version', ERP_OMD_DB_VERSION);
         add_option('erp_omd_delete_data_on_uninstall', false);
         add_option('erp_omd_alert_margin_threshold', 10);
+        add_option('erp_omd_front_login_logo_id', 0);
+        add_option('erp_omd_front_login_cover_id', 0);
     }
 
     private static function add_foreign_key_if_missing($referenced_table, $constraint_name, $sql)

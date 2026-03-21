@@ -146,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const button = form.querySelector('.erp-omd-media-button');
     const input = form.querySelector('.erp-omd-media-id');
     const nameNode = form.querySelector('.erp-omd-media-name');
+    const previewNode = form.querySelector('.erp-omd-media-preview img');
 
     if (!button || !(input instanceof HTMLInputElement) || !nameNode || typeof wp === 'undefined' || !wp.media) {
       return;
@@ -153,8 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     button.addEventListener('click', () => {
       const frame = wp.media({
-        title: 'Wybierz załącznik',
-        button: { text: 'Użyj załącznika' },
+        title: button.dataset.mediaTitle || 'Wybierz załącznik',
+        button: { text: button.dataset.mediaButton || 'Użyj załącznika' },
         multiple: false,
       });
 
@@ -167,6 +168,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const attachment = selection.toJSON();
         input.value = String(attachment.id || '');
         nameNode.textContent = attachment.filename || attachment.title || `#${attachment.id}`;
+        if (previewNode instanceof HTMLImageElement && attachment.url) {
+          previewNode.src = attachment.url;
+          previewNode.hidden = false;
+        }
       });
 
       frame.open();

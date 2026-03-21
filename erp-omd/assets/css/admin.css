@@ -466,13 +466,18 @@
     display: flex;
     gap: 12px;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 18px;
+    margin-top: 18px;
 }
 
 .erp-omd-admin .erp-omd-section-header h2,
 .erp-omd-admin .erp-omd-section-header h3,
 .erp-omd-admin .erp-omd-section-header p {
     margin: 0;
+}
+
+.erp-omd-admin .erp-omd-section-header p {
+    margin: 10px;
 }
 
 .erp-omd-admin .erp-omd-filter-form {
@@ -676,6 +681,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.erp-omd-admin .erp-omd-form-grid-estimate-item-pricing {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .erp-omd-admin .erp-omd-form-field label,
 .erp-omd-admin .erp-omd-form-field .erp-omd-form-label {
     display: block;
@@ -696,6 +705,10 @@
 .erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact input,
 .erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact select {
     max-width: 260px;
+}
+
+.erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact select {
+    max-width: 660px;
 }
 
 .erp-omd-admin .erp-omd-form-actions {
@@ -756,6 +769,45 @@
 .erp-omd-admin .erp-omd-media-name {
     color: #50575e;
     font-size: 12px;
+}
+
+.erp-omd-admin .erp-omd-media-preview {
+    align-items: center;
+    background: linear-gradient(180deg, #fff 0%, #fcfaf7 100%);
+    border: 1px dashed var(--erp-omd-border);
+    border-radius: 16px;
+    display: flex;
+    justify-content: center;
+    min-height: 180px;
+    overflow: hidden;
+    padding: 12px;
+}
+
+.erp-omd-admin .erp-omd-media-preview img {
+    display: block;
+    height: auto;
+    max-height: 180px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.erp-omd-admin .erp-omd-settings-media-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.erp-omd-admin .erp-omd-settings-media-card {
+    display: grid;
+    gap: 14px;
+}
+
+.erp-omd-admin .erp-omd-settings-media-card .erp-omd-media-name {
+    font-size: 13px;
+}
+
+.erp-omd-admin hr {
+    margin: 20px 0;
 }
 
 .erp-omd-admin .erp-omd-calendar-table .erp-omd-calendar-cell {
@@ -850,7 +902,9 @@
     .erp-omd-admin .erp-omd-form-grid-client-address-row,
     .erp-omd-admin .erp-omd-form-grid-project-lifecycle,
     .erp-omd-admin .erp-omd-form-grid-time-context,
-    .erp-omd-admin .erp-omd-form-grid-time-status {
+    .erp-omd-admin .erp-omd-form-grid-time-status,
+    .erp-omd-admin .erp-omd-form-grid-estimate-item-pricing,
+    .erp-omd-admin .erp-omd-settings-media-grid {
         grid-template-columns: 1fr;
     }
 
@@ -858,10 +912,6 @@
     .erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact select {
         max-width: 100%;
     }
-}
-
-.erp-omd-admin .erp-omd-section-header {
-    margin-bottom: 18px;
 }
 
 .erp-omd-admin .erp-omd-section-header h2,
