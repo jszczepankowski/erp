@@ -10,6 +10,7 @@ class ERP_OMD_Plugin
     private $project_repository;
     private $estimate_repository;
     private $estimate_item_repository;
+    private $estimate_audit_repository;
     private $project_note_repository;
     private $project_rate_repository;
     private $project_cost_repository;
@@ -37,6 +38,7 @@ class ERP_OMD_Plugin
         $this->project_repository = new ERP_OMD_Project_Repository();
         $this->estimate_repository = new ERP_OMD_Estimate_Repository();
         $this->estimate_item_repository = new ERP_OMD_Estimate_Item_Repository();
+        $this->estimate_audit_repository = new ERP_OMD_Estimate_Audit_Repository();
         $this->project_note_repository = new ERP_OMD_Project_Note_Repository();
         $this->project_rate_repository = new ERP_OMD_Project_Rate_Repository();
         $this->project_cost_repository = new ERP_OMD_Project_Cost_Repository();
@@ -49,16 +51,12 @@ class ERP_OMD_Plugin
             $this->salary_repository,
             $this->monthly_hours_service
         );
-        $this->client_project_service = new ERP_OMD_Client_Project_Service(
-            $this->client_repository,
-            $this->employee_repository,
-            $this->role_repository
-        );
         $this->estimate_service = new ERP_OMD_Estimate_Service(
             $this->estimate_repository,
             $this->estimate_item_repository,
             $this->client_repository,
-            $this->project_repository
+            $this->project_repository,
+            $this->estimate_audit_repository
         );
         $this->time_entry_service = new ERP_OMD_Time_Entry_Service(
             $this->time_entry_repository,
@@ -91,6 +89,14 @@ class ERP_OMD_Plugin
             $this->project_rate_repository,
             $this->project_financial_service,
             $this->time_entry_repository
+        );
+        $this->client_project_service = new ERP_OMD_Client_Project_Service(
+            $this->client_repository,
+            $this->employee_repository,
+            $this->role_repository,
+            $this->project_repository,
+            $this->time_entry_repository,
+            $this->alert_service
         );
         $this->admin = new ERP_OMD_Admin(
             $this->role_repository,

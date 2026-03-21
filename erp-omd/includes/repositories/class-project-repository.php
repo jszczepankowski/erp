@@ -85,10 +85,11 @@ class ERP_OMD_Project_Repository
                 'manager_id' => $data['manager_id'] ?: null,
                 'estimate_id' => $data['estimate_id'] ?: null,
                 'brief' => $data['brief'],
+                'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s']
+            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s']
         );
 
         return (int) $wpdb->insert_id;
@@ -112,12 +113,20 @@ class ERP_OMD_Project_Repository
                 'manager_id' => $data['manager_id'] ?: null,
                 'estimate_id' => $data['estimate_id'] ?: null,
                 'brief' => $data['brief'],
+                'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => $id],
-            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s'],
+            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s'],
             ['%d']
         );
+    }
+
+    public function delete($id)
+    {
+        global $wpdb;
+
+        return $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
     }
 
     public function deactivate($id)

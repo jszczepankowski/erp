@@ -100,6 +100,137 @@
     color: #0a4b78;
 }
 
+.erp-omd-admin .erp-omd-badge-success {
+    background: #e7f6ea;
+    color: #166534;
+}
+
+.erp-omd-admin .erp-omd-badge-muted {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.erp-omd-admin .erp-omd-detail-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    margin-bottom: 16px;
+}
+
+.erp-omd-admin .erp-omd-form-intro {
+    color: #50575e;
+    margin: 0 0 16px;
+}
+
+.erp-omd-admin .erp-omd-form-sections {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.erp-omd-admin .erp-omd-form-section {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.erp-omd-admin .erp-omd-form-section-header {
+    margin-bottom: 14px;
+}
+
+.erp-omd-admin .erp-omd-form-section-header h3 {
+    margin: 0 0 4px;
+}
+
+.erp-omd-admin .erp-omd-form-section-header p {
+    color: #50575e;
+    margin: 0;
+}
+
+.erp-omd-admin .erp-omd-form-grid {
+    display: grid;
+    gap: 14px 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.erp-omd-admin .erp-omd-form-field {
+    min-width: 0;
+}
+
+.erp-omd-admin .erp-omd-form-field.erp-omd-form-field-span-2 {
+    grid-column: 1 / -1;
+}
+
+.erp-omd-admin .erp-omd-form-field label,
+.erp-omd-admin .erp-omd-form-field .erp-omd-form-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.erp-omd-admin .erp-omd-form-field input[type="text"],
+.erp-omd-admin .erp-omd-form-field input[type="email"],
+.erp-omd-admin .erp-omd-form-field input[type="number"],
+.erp-omd-admin .erp-omd-form-field input[type="date"],
+.erp-omd-admin .erp-omd-form-field select,
+.erp-omd-admin .erp-omd-form-field textarea {
+    max-width: 100%;
+    width: 100%;
+}
+
+.erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact input,
+.erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact select {
+    max-width: 260px;
+}
+
+.erp-omd-admin .erp-omd-form-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.erp-omd-admin .erp-omd-form-actions .submit {
+    margin: 0;
+    padding: 0;
+}
+
+.erp-omd-admin .erp-omd-detail-list {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+}
+
+.erp-omd-admin .erp-omd-detail-item {
+    background: #fff;
+    border: 1px solid #eef2f7;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.erp-omd-admin .erp-omd-detail-item strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.erp-omd-admin .erp-omd-detail-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.erp-omd-admin .erp-omd-detail-card h3 {
+    margin-top: 0;
+}
+
+.erp-omd-admin .erp-omd-form-section-title {
+    border-bottom: 1px solid #e5e7eb;
+    margin: 8px 0 0;
+    padding-bottom: 8px;
+}
+
 .erp-omd-admin .erp-omd-attachment-form {
     align-items: center;
     display: flex;
@@ -161,4 +292,16 @@
 .erp-omd-admin table.widefat thead th[data-sort-direction="desc"]::after {
     color: #2271b1;
     content: "↓";
+}
+
+@media (max-width: 960px) {
+    .erp-omd-admin .erp-omd-grid.two-columns,
+    .erp-omd-admin .erp-omd-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact input,
+    .erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact select {
+        max-width: 100%;
+    }
 }

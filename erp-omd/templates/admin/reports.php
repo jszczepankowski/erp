@@ -117,7 +117,7 @@
                         <tr>
                             <td><?php echo esc_html($row['project_name']); ?></td>
                             <td><?php echo esc_html($row['client_name']); ?></td>
-                            <td><?php echo esc_html($this->project_status_label($row['status'])); ?></td>
+                            <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($row['status'], 'project')); ?>"><?php echo esc_html($this->project_status_label($row['status'])); ?></span></td>
                             <td><?php echo esc_html($this->billing_type_label($row['billing_type'])); ?></td>
                             <td><?php echo esc_html($row['manager_login']); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) $row['budget'], 2)); ?></td>
