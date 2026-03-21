@@ -595,3 +595,11 @@ body.erp-omd-front-body {
 .erp-omd-front-inline-message-link strong {
     min-width: 180px;
 }
+
+.erp-omd-front-estimates-section {
+    margin-bottom: 24px;
+}
+
+.erp-omd-front-panel-full {
+    width: 100%;
+}

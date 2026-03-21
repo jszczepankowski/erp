@@ -43,6 +43,7 @@ class ERP_OMD_Installer
         $estimates_table = $wpdb->prefix . 'erp_omd_estimates';
         $estimate_items_table = $wpdb->prefix . 'erp_omd_estimate_items';
         $projects_table = $wpdb->prefix . 'erp_omd_projects';
+        $project_managers_table = $wpdb->prefix . 'erp_omd_project_managers';
         $project_notes_table = $wpdb->prefix . 'erp_omd_project_notes';
         $project_rates_table = $wpdb->prefix . 'erp_omd_project_rates';
         $project_rate_history_table = $wpdb->prefix . 'erp_omd_project_rate_history';
@@ -232,6 +233,16 @@ class ERP_OMD_Installer
         );
 
         dbDelta(
+            "CREATE TABLE {$project_managers_table} (
+                project_id BIGINT UNSIGNED NOT NULL,
+                employee_id BIGINT UNSIGNED NOT NULL,
+                assigned_at DATETIME NOT NULL,
+                PRIMARY KEY  (project_id, employee_id),
+                KEY employee_id (employee_id)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+        dbDelta(
             "CREATE TABLE {$project_notes_table} (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 project_id BIGINT UNSIGNED NOT NULL,
@@ -413,6 +424,8 @@ class ERP_OMD_Installer
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_estimates_accepted_by', "ALTER TABLE {$estimates_table} ADD CONSTRAINT fk_erp_omd_estimates_accepted_by FOREIGN KEY (accepted_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
         self::add_foreign_key_if_missing($estimates_table, 'fk_erp_omd_estimate_items_estimate', "ALTER TABLE {$estimate_items_table} ADD CONSTRAINT fk_erp_omd_estimate_items_estimate FOREIGN KEY (estimate_id) REFERENCES {$estimates_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($clients_table, 'fk_erp_omd_projects_client', "ALTER TABLE {$projects_table} ADD CONSTRAINT fk_erp_omd_projects_client FOREIGN KEY (client_id) REFERENCES {$clients_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_managers_project', "ALTER TABLE {$project_managers_table} ADD CONSTRAINT fk_erp_omd_project_managers_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_project_managers_employee', "ALTER TABLE {$project_managers_table} ADD CONSTRAINT fk_erp_omd_project_managers_employee FOREIGN KEY (employee_id) REFERENCES {$employees_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_projects_manager', "ALTER TABLE {$projects_table} ADD CONSTRAINT fk_erp_omd_projects_manager FOREIGN KEY (manager_id) REFERENCES {$employees_table}(id) ON DELETE SET NULL");
         self::add_foreign_key_if_missing($estimates_table, 'fk_erp_omd_projects_estimate', "ALTER TABLE {$projects_table} ADD CONSTRAINT fk_erp_omd_projects_estimate FOREIGN KEY (estimate_id) REFERENCES {$estimates_table}(id) ON DELETE SET NULL");
         self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_notes_project', "ALTER TABLE {$project_notes_table} ADD CONSTRAINT fk_erp_omd_project_notes_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
@@ -439,6 +452,13 @@ class ERP_OMD_Installer
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_attachments_created_by', "ALTER TABLE {$attachments_table} ADD CONSTRAINT fk_erp_omd_attachments_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($estimates_table, 'fk_erp_omd_estimate_audit_estimate', "ALTER TABLE {$estimate_audit_table} ADD CONSTRAINT fk_erp_omd_estimate_audit_estimate FOREIGN KEY (estimate_id) REFERENCES {$estimates_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_estimate_audit_user', "ALTER TABLE {$estimate_audit_table} ADD CONSTRAINT fk_erp_omd_estimate_audit_user FOREIGN KEY (changed_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
+
+        $wpdb->query(
+            "INSERT IGNORE INTO {$project_managers_table} (project_id, employee_id, assigned_at)
+            SELECT id, manager_id, updated_at
+            FROM {$projects_table}
+            WHERE manager_id IS NOT NULL"
+        );
 
         update_option('erp_omd_db_version', ERP_OMD_DB_VERSION);
         add_option('erp_omd_delete_data_on_uninstall', false);

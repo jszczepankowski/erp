@@ -247,6 +247,11 @@ class ERP_OMD_Time_Entry_Service
             return false;
         }
 
-        return (int) ($project['manager_id'] ?? 0) === (int) $current_employee['id'];
+        $manager_ids = array_map('intval', (array) ($project['manager_ids'] ?? []));
+        if ($manager_ids === [] && ! empty($project['manager_id'])) {
+            $manager_ids[] = (int) $project['manager_id'];
+        }
+
+        return in_array((int) ($current_employee['id'] ?? 0), $manager_ids, true);
     }
 }

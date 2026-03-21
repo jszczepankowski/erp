@@ -115,6 +115,7 @@ class ERP_OMD_Project_Request_Service
             'retainer_monthly_fee' => 0,
             'status' => 'do_rozpoczecia',
             'manager_id' => (int) ($request['preferred_manager_id'] ?? 0),
+            'manager_ids' => array_values(array_filter([(int) ($request['preferred_manager_id'] ?? 0)])),
             'estimate_id' => (int) ($request['estimate_id'] ?? 0),
             'brief' => (string) ($request['brief'] ?? ''),
         ]);

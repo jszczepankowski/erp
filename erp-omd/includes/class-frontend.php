@@ -1038,11 +1038,12 @@ class ERP_OMD_Frontend
             return [];
         }
 
+        $managed_project_ids = $this->projects->ids_managed_by_employee($employee_id);
         $managed_projects = array_values(
             array_filter(
                 $projects,
-                function ($project) use ($employee_id) {
-                    return (int) ($project['manager_id'] ?? 0) === (int) $employee_id;
+                function ($project) use ($managed_project_ids) {
+                    return in_array((int) ($project['id'] ?? 0), $managed_project_ids, true);
                 }
             )
         );

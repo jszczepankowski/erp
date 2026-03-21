@@ -152,8 +152,8 @@
                                 <span><?php echo esc_html(number_format_i18n((float) ($selected_project['budget'] ?? 0), 2)); ?></span>
                             </div>
                             <div class="erp-omd-front-detail-item">
-                                <strong><?php esc_html_e('Manager', 'erp-omd'); ?></strong>
-                                <span><?php echo esc_html($selected_project['manager_login'] ?? '—'); ?></span>
+                                <strong><?php esc_html_e('Managerowie', 'erp-omd'); ?></strong>
+                                <span><?php echo esc_html(($selected_project['manager_logins_display'] ?? '') !== '' ? $selected_project['manager_logins_display'] : ($selected_project['manager_login'] ?? '—')); ?></span>
                             </div>
                         </div>
 
@@ -222,8 +222,8 @@
                 </article>
             </div>
 
-            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-estimates">
-                <article class="erp-omd-front-panel erp-omd-front-panel-form">
+            <div class="erp-omd-front-stack erp-omd-front-estimates-section">
+                <article class="erp-omd-front-panel erp-omd-front-panel-form erp-omd-front-panel-full">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy kosztorys', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Manager może utworzyć kosztorys bez przechodzenia do wp-admin. Formularz zapisuje kosztorys od razu z pierwszą pozycją.', 'erp-omd'); ?></p>

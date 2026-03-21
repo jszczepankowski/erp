@@ -85,6 +85,36 @@
                 <hr />
                 <div class="erp-omd-section-header">
                     <div>
+                        <h2><?php esc_html_e('Zmiana hasła', 'erp-omd'); ?></h2>
+                        <p class="description"><?php esc_html_e('Zmiana hasła dotyczy powiązanego konta WordPress tego pracownika.', 'erp-omd'); ?></p>
+                    </div>
+                </div>
+                <form method="post">
+                    <?php wp_nonce_field('erp_omd_change_employee_password'); ?>
+                    <input type="hidden" name="erp_omd_action" value="change_employee_password" />
+                    <input type="hidden" name="employee_id" value="<?php echo esc_attr($employee['id']); ?>" />
+                    <div class="erp-omd-form-sections">
+                        <section class="erp-omd-form-section">
+                            <div class="erp-omd-form-grid">
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="erp-new-password"><?php esc_html_e('Nowe hasło', 'erp-omd'); ?></label>
+                                    <input id="erp-new-password" type="password" name="new_password" minlength="8" required />
+                                </div>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="erp-new-password-confirm"><?php esc_html_e('Potwierdź nowe hasło', 'erp-omd'); ?></label>
+                                    <input id="erp-new-password-confirm" type="password" name="new_password_confirm" minlength="8" required />
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="erp-omd-form-actions">
+                        <?php submit_button(__('Zmień hasło pracownika', 'erp-omd'), 'secondary'); ?>
+                    </div>
+                </form>
+
+                <hr />
+                <div class="erp-omd-section-header">
+                    <div>
                         <h2><?php esc_html_e('Historia wynagrodzeń', 'erp-omd'); ?></h2>
                         <p class="description"><?php printf(esc_html__('Podpowiedź godzin dla bieżącego miesiąca: %s h', 'erp-omd'), esc_html($suggested_hours)); ?></p>
                     </div>

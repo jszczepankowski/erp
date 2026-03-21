@@ -109,7 +109,11 @@ if (! class_exists('ERP_OMD_Project_Repository')) {
             $ids = [];
 
             foreach ($this->projects as $project) {
-                if ((int) ($project['manager_id'] ?? 0) === (int) $employee_id) {
+                $manager_ids = array_map('intval', (array) ($project['manager_ids'] ?? []));
+                if ($manager_ids === [] && ! empty($project['manager_id'])) {
+                    $manager_ids[] = (int) $project['manager_id'];
+                }
+                if (in_array((int) $employee_id, $manager_ids, true)) {
                     $ids[] = (int) $project['id'];
                 }
             }
@@ -247,9 +251,11 @@ final class TimeEntryServiceTestRunner
 
         $projectManager = new WP_User(202, ['erp_omd_manage_time' => true, 'erp_omd_approve_time' => true]);
         $otherManager = new WP_User(303, ['erp_omd_manage_time' => true, 'erp_omd_approve_time' => true]);
+        $secondaryManager = new WP_User(505, ['erp_omd_manage_time' => true, 'erp_omd_approve_time' => true]);
         $managedEntry = ['employee_id' => 2, 'project_id' => 10, 'status' => 'submitted'];
         $this->assertTrue($service->can_view_entry($managedEntry, $projectManager), 'Assigned project manager should be able to view managed project entries.');
         $this->assertTrue($service->can_approve_entry($managedEntry, $projectManager), 'Assigned project manager should be able to approve entries.');
+        $this->assertTrue($service->can_approve_entry($managedEntry, $secondaryManager), 'Additional project manager should also be able to approve entries.');
         $this->assertFalse($service->can_approve_entry($managedEntry, $otherManager), 'Unassigned manager should not be able to approve entries.');
 
         $admin = new WP_User(999, ['administrator' => true]);
@@ -282,11 +288,12 @@ final class TimeEntryServiceTestRunner
                 2 => ['id' => 2, 'user_id' => 404],
                 3 => ['id' => 3, 'user_id' => 202],
                 4 => ['id' => 4, 'user_id' => 303],
+                5 => ['id' => 5, 'user_id' => 505],
             ]),
             new ERP_OMD_Project_Repository([
-                10 => ['id' => 10, 'client_id' => 20, 'status' => 'w_realizacji', 'manager_id' => 3],
-                11 => ['id' => 11, 'client_id' => 21, 'status' => 'w_realizacji', 'manager_id' => 4],
-                12 => ['id' => 12, 'client_id' => 20, 'status' => 'do_rozpoczecia', 'manager_id' => 3],
+                10 => ['id' => 10, 'client_id' => 20, 'status' => 'w_realizacji', 'manager_id' => 3, 'manager_ids' => [3, 5]],
+                11 => ['id' => 11, 'client_id' => 21, 'status' => 'w_realizacji', 'manager_id' => 4, 'manager_ids' => [4]],
+                12 => ['id' => 12, 'client_id' => 20, 'status' => 'do_rozpoczecia', 'manager_id' => 3, 'manager_ids' => [3]],
             ]),
             new ERP_OMD_Role_Repository([
                 7 => ['id' => 7, 'name' => 'Developer'],
