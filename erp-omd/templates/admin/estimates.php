@@ -8,6 +8,7 @@
                 <input type="hidden" name="erp_omd_action" value="save_estimate">
                 <input type="hidden" name="id" value="<?php echo esc_attr($estimate['id'] ?? 0); ?>">
                 <table class="form-table" role="presentation">
+                    <tr><th colspan="2"><h3 class="erp-omd-form-section-title"><?php esc_html_e('Podstawy kosztorysu', 'erp-omd'); ?></h3></th></tr>
                     <tr>
                         <th scope="row"><label for="estimate-name"><?php esc_html_e('Nazwa kosztorysu', 'erp-omd'); ?></label></th>
                         <td>
@@ -26,6 +27,7 @@
                             </select>
                         </td>
                     </tr>
+                    <tr><th colspan="2"><h3 class="erp-omd-form-section-title"><?php esc_html_e('Lifecycle', 'erp-omd'); ?></h3></th></tr>
                     <tr>
                         <th scope="row"><label for="estimate-status"><?php esc_html_e('Status', 'erp-omd'); ?></label></th>
                         <td>
@@ -98,9 +100,21 @@
 
     <section class="erp-omd-card">
             <h2><?php esc_html_e('Lista kosztorysów', 'erp-omd'); ?></h2>
+            <form method="get" class="erp-omd-filter-form">
+                <input type="hidden" name="page" value="erp-omd-estimates" />
+                <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj kosztorysu, klienta, projektu…', 'erp-omd'); ?>" value="<?php echo esc_attr($estimate_filters['search'] ?? ''); ?>">
+                <select name="client_id"><option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option><?php foreach ($clients as $client_row) : ?><option value="<?php echo esc_attr($client_row['id']); ?>" <?php selected((int) ($estimate_filters['client_id'] ?? 0), (int) $client_row['id']); ?>><?php echo esc_html($client_row['name']); ?></option><?php endforeach; ?></select>
+                <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['wstepny', 'do_akceptacji', 'zaakceptowany'] as $status_option) : ?><option value="<?php echo esc_attr($status_option); ?>" <?php selected($estimate_filters['status'] ?? '', $status_option); ?>><?php echo esc_html($status_option); ?></option><?php endforeach; ?></select>
+                <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
+            </form>
+            <form method="post">
+                <?php wp_nonce_field('erp_omd_bulk_estimates'); ?>
+                <input type="hidden" name="erp_omd_action" value="bulk_estimates">
+            <div class="tablenav top"><div class="alignleft actions"><select name="bulk_action"><option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option><option value="accept"><?php esc_html_e('Akceptuj', 'erp-omd'); ?></option><option value="delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></option></select><button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button></div></div>
             <table class="widefat striped">
                 <thead>
                     <tr>
+                        <th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-estimate-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th>
                         <th><?php esc_html_e('ID', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Nazwa kosztorysu', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Klient', 'erp-omd'); ?></th>
@@ -112,9 +126,11 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if (empty($estimates)) : ?><tr><td colspan="9"><?php esc_html_e('Brak kosztorysów dla wybranych filtrów. Zmień kryteria albo dodaj nowy kosztorys.', 'erp-omd'); ?></td></tr><?php endif; ?>
                     <?php foreach ($estimates as $estimate_row) : ?>
                         <?php $estimate_label = trim((string) ($estimate_row['name'] ?? '')) !== '' ? (string) $estimate_row['name'] : sprintf(__('Kosztorys #%d', 'erp-omd'), (int) $estimate_row['id']); ?>
                         <tr>
+                            <td><input class="erp-omd-estimate-checkbox" type="checkbox" name="estimate_ids[]" value="<?php echo esc_attr($estimate_row['id']); ?>" /></td>
                             <td>#<?php echo esc_html($estimate_row['id']); ?></td>
                             <td>
                                 <?php echo esc_html($estimate_label); ?>
@@ -127,7 +143,7 @@
                                 <?php endif; ?>
                             </td>
                             <td><?php echo esc_html($estimate_row['client_name']); ?></td>
-                            <td><?php echo esc_html($estimate_row['status']); ?></td>
+                            <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($estimate_row['status'], 'estimate')); ?>"><?php echo esc_html($estimate_row['status']); ?></span></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($estimate_row['total_net'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($estimate_row['total_gross'] ?? 0), 2)); ?></td>
                             <td>
@@ -159,6 +175,7 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </form>
 
             <?php if ($selected_estimate) : ?>
                 <?php $selected_estimate_label = trim((string) ($selected_estimate['name'] ?? '')) !== '' ? (string) $selected_estimate['name'] : sprintf(__('Kosztorys #%d', 'erp-omd'), (int) $selected_estimate['id']); ?>
@@ -210,7 +227,7 @@
                     <tbody>
                         <?php if (empty($estimate_items)) : ?>
                             <tr>
-                                <td colspan="6"><?php esc_html_e('Brak pozycji kosztorysu.', 'erp-omd'); ?></td>
+                                <td colspan="6"><?php esc_html_e('Brak pozycji kosztorysu. Dodaj pozycję, aby móc policzyć netto, brutto i koszt wewnętrzny.', 'erp-omd'); ?></td>
                             </tr>
                         <?php endif; ?>
                         <?php foreach ($estimate_items as $item_row) : ?>
