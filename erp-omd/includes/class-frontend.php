@@ -3,32 +3,44 @@
 class ERP_OMD_Frontend
 {
     private $employees;
+    private $clients;
     private $projects;
     private $roles;
     private $time_entries;
+    private $project_requests;
     private $estimates;
     private $time_entry_service;
+    private $client_project_service;
+    private $project_request_service;
     private $project_financial_service;
     private $reporting_service;
     private $alert_service;
 
     public function __construct(
         ERP_OMD_Employee_Repository $employees,
+        ERP_OMD_Client_Repository $clients,
         ERP_OMD_Project_Repository $projects,
         ERP_OMD_Role_Repository $roles,
         ERP_OMD_Time_Entry_Repository $time_entries,
+        ERP_OMD_Project_Request_Repository $project_requests,
         ERP_OMD_Estimate_Repository $estimates,
         ERP_OMD_Time_Entry_Service $time_entry_service,
+        ERP_OMD_Client_Project_Service $client_project_service,
+        ERP_OMD_Project_Request_Service $project_request_service,
         ERP_OMD_Project_Financial_Service $project_financial_service,
         ERP_OMD_Reporting_Service $reporting_service,
         ERP_OMD_Alert_Service $alert_service
     ) {
         $this->employees = $employees;
+        $this->clients = $clients;
         $this->projects = $projects;
         $this->roles = $roles;
         $this->time_entries = $time_entries;
+        $this->project_requests = $project_requests;
         $this->estimates = $estimates;
         $this->time_entry_service = $time_entry_service;
+        $this->client_project_service = $client_project_service;
+        $this->project_request_service = $project_request_service;
         $this->project_financial_service = $project_financial_service;
         $this->reporting_service = $reporting_service;
         $this->alert_service = $alert_service;
@@ -247,6 +259,14 @@ class ERP_OMD_Frontend
         check_admin_referer('erp_omd_front_manager');
 
         $action = sanitize_text_field(wp_unslash($_POST['erp_omd_front_action'] ?? ''));
+        if ($action === 'create_project_request') {
+            $this->create_manager_project_request($user);
+            return;
+        }
+        if (in_array($action, ['review_project_request', 'approve_project_request', 'reject_project_request', 'convert_project_request'], true)) {
+            $this->process_project_request_action($user, $action);
+            return;
+        }
         if ($action === 'approve_time_entry' || $action === 'reject_time_entry') {
             $this->change_manager_time_entry_status($user, $action === 'approve_time_entry' ? 'approved' : 'rejected');
             return;
@@ -628,6 +648,7 @@ class ERP_OMD_Frontend
         $managed_projects = $this->load_managed_projects((int) $employee['id']);
         $managed_project_ids = array_map('intval', wp_list_pluck($managed_projects, 'id'));
         $selected_project_id = (int) ($_GET['project_id'] ?? 0);
+        $selected_request_id = (int) ($_GET['request_id'] ?? 0);
         if ($selected_project_id > 0 && ! in_array($selected_project_id, $managed_project_ids, true)) {
             $selected_project_id = 0;
         }
@@ -639,6 +660,34 @@ class ERP_OMD_Frontend
         $linked_estimates = $this->load_estimates_for_projects($managed_projects);
         $approval_queue = $this->load_manager_approval_queue($managed_project_ids, $selected_project_id);
         $queue_summary = $this->summarize_queue_entries($approval_queue);
+        $project_requests = $this->load_visible_project_requests((int) $employee['id'], $user);
+        $selected_request = $selected_request_id > 0 ? $this->find_request_in_collection($project_requests, $selected_request_id) : null;
+        $request_form_defaults = $selected_request ?: [
+            'client_id' => 0,
+            'project_name' => '',
+            'billing_type' => 'time_material',
+            'preferred_manager_id' => (int) $employee['id'],
+            'estimate_id' => 0,
+            'brief' => '',
+        ];
+        $available_clients = array_values(
+            array_filter(
+                $this->clients->all(),
+                function ($client) {
+                    return (string) ($client['status'] ?? '') === 'active';
+                }
+            )
+        );
+        $available_managers = array_values(
+            array_filter(
+                $this->employees->all(),
+                function ($employee_row) {
+                    return (string) ($employee_row['account_type'] ?? '') === 'manager'
+                        && (string) ($employee_row['status'] ?? '') === 'active';
+                }
+            )
+        );
+        $available_estimates = $this->estimates->all();
         $manager_notice_type = sanitize_key(wp_unslash($_GET['notice'] ?? ''));
         $manager_notice_message = sanitize_text_field(wp_unslash($_GET['message'] ?? ''));
         if (! in_array($manager_notice_type, ['', 'success', 'error', 'warning'], true)) {
@@ -651,6 +700,7 @@ class ERP_OMD_Frontend
             'queue_count' => count($approval_queue),
             'submitted_hours' => $queue_summary['hours'],
             'linked_estimates_count' => count($linked_estimates),
+            'project_requests_count' => count($project_requests),
         ];
         $dashboard_title = __('Panel managera', 'erp-omd');
         $dashboard_intro = __('FRONT-3 daje managerowi operacyjny przegląd własnych projektów: finanse, alerty, powiązane kosztorysy i kolejkę wpisów czasu do szybkiej akceptacji.', 'erp-omd');
@@ -695,6 +745,96 @@ class ERP_OMD_Frontend
             : __('Wpis czasu został odrzucony.', 'erp-omd');
 
         $this->redirect_manager_with_notice('success', $message, ['project_id' => (int) $entry['project_id']]);
+    }
+
+    private function create_manager_project_request(WP_User $user)
+    {
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+        }
+
+        $payload = $this->project_request_service->prepare([
+            'requester_user_id' => (int) $user->ID,
+            'requester_employee_id' => (int) $employee['id'],
+            'client_id' => (int) ($_POST['client_id'] ?? 0),
+            'project_name' => sanitize_text_field(wp_unslash($_POST['project_name'] ?? '')),
+            'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')),
+            'preferred_manager_id' => (int) ($_POST['preferred_manager_id'] ?? (int) $employee['id']),
+            'estimate_id' => (int) ($_POST['estimate_id'] ?? 0),
+            'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')),
+            'status' => 'new',
+        ]);
+
+        $errors = $this->project_request_service->validate($payload);
+        if ($errors) {
+            $this->redirect_manager_with_notice('error', implode(' ', $errors));
+        }
+
+        $this->project_requests->create($payload);
+        $this->redirect_manager_with_notice('success', __('Wniosek projektowy został zapisany.', 'erp-omd'));
+    }
+
+    private function process_project_request_action(WP_User $user, $action)
+    {
+        $request_id = (int) ($_POST['request_id'] ?? 0);
+        $request = $request_id > 0 ? $this->project_requests->find($request_id) : null;
+        if (! $request) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono wniosku projektowego.', 'erp-omd'));
+        }
+
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee || ! $this->can_review_project_request($request, $employee, $user)) {
+            $this->redirect_manager_with_notice('error', __('Nie możesz zarządzać tym wnioskiem projektowym.', 'erp-omd'));
+        }
+
+        if ($action === 'convert_project_request') {
+            $errors = $this->project_request_service->validate_conversion($request);
+            if ($errors) {
+                $this->redirect_manager_with_notice('error', implode(' ', $errors), ['request_id' => $request_id]);
+            }
+
+            $project_payload = $this->project_request_service->build_project_payload($request);
+            $project_id = $this->projects->create($project_payload);
+            $this->project_financial_service->rebuild_for_project($project_id);
+            $this->project_requests->mark_converted($request_id, $project_id, (int) $user->ID);
+
+            $this->redirect_manager_with_notice('success', __('Wniosek został skonwertowany do projektu.', 'erp-omd'), ['project_id' => $project_id]);
+        }
+
+        $status_map = [
+            'review_project_request' => 'under_review',
+            'approve_project_request' => 'approved',
+            'reject_project_request' => 'rejected',
+        ];
+        $target_status = $status_map[$action] ?? '';
+        if ($target_status === '') {
+            $this->redirect_manager_with_notice('error', __('Nieobsługiwana akcja wniosku projektowego.', 'erp-omd'));
+        }
+
+        $request_payload = $this->project_request_service->prepare(
+            array_merge(
+                $request,
+                [
+                    'status' => $target_status,
+                    'reviewed_by_user_id' => (int) $user->ID,
+                    'reviewed_at' => current_time('mysql'),
+                ]
+            ),
+            $request
+        );
+        $errors = $this->project_request_service->validate($request_payload, $request);
+        if ($errors) {
+            $this->redirect_manager_with_notice('error', implode(' ', $errors), ['request_id' => $request_id]);
+        }
+
+        $this->project_requests->update($request_id, $request_payload);
+        $messages = [
+            'under_review' => __('Wniosek został oznaczony jako analizowany.', 'erp-omd'),
+            'approved' => __('Wniosek został zatwierdzony.', 'erp-omd'),
+            'rejected' => __('Wniosek został odrzucony.', 'erp-omd'),
+        ];
+        $this->redirect_manager_with_notice('success', $messages[$target_status] ?? __('Wniosek został zaktualizowany.', 'erp-omd'), ['request_id' => $request_id]);
     }
 
     private function get_worker_roles(array $employee)
@@ -858,6 +998,44 @@ class ERP_OMD_Frontend
         foreach ($projects as $project) {
             if ((int) ($project['id'] ?? 0) === (int) $project_id) {
                 return $project;
+            }
+        }
+
+        return null;
+    }
+
+    private function load_visible_project_requests($current_employee_id, WP_User $user)
+    {
+        $requests = $this->project_requests->all();
+        if (user_can($user, 'administrator')) {
+            return $requests;
+        }
+
+        return array_values(
+            array_filter(
+                $requests,
+                function ($request) use ($current_employee_id) {
+                    return (int) ($request['requester_employee_id'] ?? 0) === (int) $current_employee_id
+                        || (int) ($request['preferred_manager_id'] ?? 0) === (int) $current_employee_id;
+                }
+            )
+        );
+    }
+
+    private function can_review_project_request(array $request, array $current_employee, WP_User $user)
+    {
+        if (user_can($user, 'administrator')) {
+            return true;
+        }
+
+        return (int) ($request['preferred_manager_id'] ?? 0) === (int) ($current_employee['id'] ?? 0);
+    }
+
+    private function find_request_in_collection(array $requests, $request_id)
+    {
+        foreach ($requests as $request) {
+            if ((int) ($request['id'] ?? 0) === (int) $request_id) {
+                return $request;
             }
         }
 

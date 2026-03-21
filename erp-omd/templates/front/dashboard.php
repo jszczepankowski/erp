@@ -60,6 +60,10 @@
                             <span class="erp-omd-front-metric-label"><?php esc_html_e('Kosztorysy', 'erp-omd'); ?></span>
                             <strong><?php echo esc_html((string) $dashboard_metrics['linked_estimates_count']); ?></strong>
                         </div>
+                        <div class="erp-omd-front-metric">
+                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Wnioski', 'erp-omd'); ?></span>
+                            <strong><?php echo esc_html((string) $dashboard_metrics['project_requests_count']); ?></strong>
+                        </div>
                     </div>
                 </article>
             </div>
@@ -287,6 +291,158 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager">
+                <article class="erp-omd-front-panel">
+                    <div class="erp-omd-front-section-heading">
+                        <h2><?php esc_html_e('Nowy wniosek projektowy', 'erp-omd'); ?></h2>
+                        <p><?php esc_html_e('Zgłoś inicjację projektu bez omijania właściwego lifecycle projektu. Wniosek trafia do review i może zostać później skonwertowany do projektu.', 'erp-omd'); ?></p>
+                    </div>
+
+                    <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-form">
+                        <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                        <input type="hidden" name="erp_omd_front_action" value="create_project_request">
+
+                        <label for="erp-omd-front-request-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                        <select id="erp-omd-front-request-client" name="client_id" required>
+                            <option value="0"><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
+                            <?php foreach ($available_clients as $client_item) : ?>
+                                <option value="<?php echo esc_attr((string) $client_item['id']); ?>" <?php selected((int) ($request_form_defaults['client_id'] ?? 0), (int) $client_item['id']); ?>>
+                                    <?php echo esc_html($client_item['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+
+                        <label for="erp-omd-front-request-project-name"><?php esc_html_e('Nazwa projektu', 'erp-omd'); ?></label>
+                        <input id="erp-omd-front-request-project-name" type="text" name="project_name" value="<?php echo esc_attr((string) ($request_form_defaults['project_name'] ?? '')); ?>" required>
+
+                        <div class="erp-omd-front-form-row">
+                            <div>
+                                <label for="erp-omd-front-request-billing-type"><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></label>
+                                <select id="erp-omd-front-request-billing-type" name="billing_type">
+                                    <?php foreach ([
+                                        'time_material' => __('Time & Material', 'erp-omd'),
+                                        'fixed_price' => __('Fixed price', 'erp-omd'),
+                                        'retainer' => __('Retainer', 'erp-omd'),
+                                    ] as $billing_type => $billing_label) : ?>
+                                        <option value="<?php echo esc_attr($billing_type); ?>" <?php selected((string) ($request_form_defaults['billing_type'] ?? 'time_material'), $billing_type); ?>>
+                                            <?php echo esc_html($billing_label); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="erp-omd-front-request-manager"><?php esc_html_e('Preferowany manager', 'erp-omd'); ?></label>
+                                <select id="erp-omd-front-request-manager" name="preferred_manager_id">
+                                    <option value="0"><?php esc_html_e('Brak preferencji', 'erp-omd'); ?></option>
+                                    <?php foreach ($available_managers as $manager_item) : ?>
+                                        <option value="<?php echo esc_attr((string) $manager_item['id']); ?>" <?php selected((int) ($request_form_defaults['preferred_manager_id'] ?? 0), (int) $manager_item['id']); ?>>
+                                            <?php echo esc_html($manager_item['user_login']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <label for="erp-omd-front-request-estimate"><?php esc_html_e('Kosztorys (opcjonalnie)', 'erp-omd'); ?></label>
+                        <select id="erp-omd-front-request-estimate" name="estimate_id">
+                            <option value="0"><?php esc_html_e('Bez kosztorysu', 'erp-omd'); ?></option>
+                            <?php foreach ($available_estimates as $estimate_item) : ?>
+                                <option value="<?php echo esc_attr((string) $estimate_item['id']); ?>" <?php selected((int) ($request_form_defaults['estimate_id'] ?? 0), (int) $estimate_item['id']); ?>>
+                                    <?php echo esc_html(($estimate_item['name'] ?? ('#' . (int) $estimate_item['id'])) . ' · ' . ($estimate_item['client_name'] ?? '—')); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+
+                        <label for="erp-omd-front-request-brief"><?php esc_html_e('Brief / uzasadnienie', 'erp-omd'); ?></label>
+                        <textarea id="erp-omd-front-request-brief" name="brief" rows="6" required><?php echo esc_textarea((string) ($request_form_defaults['brief'] ?? '')); ?></textarea>
+
+                        <div class="erp-omd-front-inline-actions">
+                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Wyślij wniosek', 'erp-omd'); ?></button>
+                        </div>
+                    </form>
+                </article>
+
+                <article class="erp-omd-front-panel">
+                    <div class="erp-omd-front-section-heading">
+                        <h2><?php esc_html_e('Wnioski projektowe', 'erp-omd'); ?></h2>
+                        <p><?php esc_html_e('Lista zgłoszeń widocznych dla Ciebie: własne wnioski oraz wnioski przypisane do Ciebie jako preferowanego managera.', 'erp-omd'); ?></p>
+                    </div>
+
+                    <?php if ($project_requests) : ?>
+                        <div class="erp-omd-front-stack">
+                            <?php foreach ($project_requests as $project_request) : ?>
+                                <div class="erp-omd-front-project-card">
+                                    <div class="erp-omd-front-project-card-header">
+                                        <div>
+                                            <strong><?php echo esc_html($project_request['project_name'] ?? ('#' . (int) ($project_request['id'] ?? 0))); ?></strong>
+                                            <p>
+                                                <?php echo esc_html($project_request['client_name'] ?? '—'); ?>
+                                                · <?php echo esc_html($project_request['billing_type'] ?? '—'); ?>
+                                                · <?php echo esc_html($project_request['requester_login'] ?? '—'); ?>
+                                            </p>
+                                        </div>
+                                        <span class="erp-omd-front-chip"><?php echo esc_html($project_request['status'] ?? 'new'); ?></span>
+                                    </div>
+
+                                    <div class="erp-omd-front-project-card-meta">
+                                        <span><?php printf(esc_html__('Preferowany manager: %s', 'erp-omd'), esc_html($project_request['preferred_manager_login'] ?? '—')); ?></span>
+                                        <span><?php printf(esc_html__('Kosztorys: %s', 'erp-omd'), (int) ($project_request['estimate_id'] ?? 0) > 0 ? '#' . (int) $project_request['estimate_id'] : __('brak', 'erp-omd')); ?></span>
+                                        <?php if (! empty($project_request['converted_project_name'])) : ?>
+                                            <span><?php printf(esc_html__('Projekt: %s', 'erp-omd'), esc_html($project_request['converted_project_name'])); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <p class="erp-omd-front-lead"><?php echo esc_html($project_request['brief'] ?? ''); ?></p>
+
+                                    <?php $can_review_request = $this->can_review_project_request($project_request, $employee, $user); ?>
+                                    <div class="erp-omd-front-inline-actions">
+                                        <?php if ($can_review_request && in_array((string) ($project_request['status'] ?? 'new'), ['new', 'rejected'], true)) : ?>
+                                            <form method="post" action="<?php echo esc_url($manager_form_action); ?>">
+                                                <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                                <input type="hidden" name="erp_omd_front_action" value="review_project_request">
+                                                <input type="hidden" name="request_id" value="<?php echo esc_attr((string) ($project_request['id'] ?? 0)); ?>">
+                                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Do review', 'erp-omd'); ?></button>
+                                            </form>
+                                        <?php endif; ?>
+
+                                        <?php if ($can_review_request && in_array((string) ($project_request['status'] ?? 'new'), ['new', 'under_review'], true)) : ?>
+                                            <form method="post" action="<?php echo esc_url($manager_form_action); ?>">
+                                                <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                                <input type="hidden" name="erp_omd_front_action" value="approve_project_request">
+                                                <input type="hidden" name="request_id" value="<?php echo esc_attr((string) ($project_request['id'] ?? 0)); ?>">
+                                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary erp-omd-front-button-small"><?php esc_html_e('Zatwierdź', 'erp-omd'); ?></button>
+                                            </form>
+
+                                            <form method="post" action="<?php echo esc_url($manager_form_action); ?>">
+                                                <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                                <input type="hidden" name="erp_omd_front_action" value="reject_project_request">
+                                                <input type="hidden" name="request_id" value="<?php echo esc_attr((string) ($project_request['id'] ?? 0)); ?>">
+                                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Odrzuć', 'erp-omd'); ?></button>
+                                            </form>
+                                        <?php endif; ?>
+
+                                        <?php if ($can_review_request && (string) ($project_request['status'] ?? '') === 'approved') : ?>
+                                            <form method="post" action="<?php echo esc_url($manager_form_action); ?>">
+                                                <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                                <input type="hidden" name="erp_omd_front_action" value="convert_project_request">
+                                                <input type="hidden" name="request_id" value="<?php echo esc_attr((string) ($project_request['id'] ?? 0)); ?>">
+                                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary erp-omd-front-button-small"><?php esc_html_e('Konwertuj do projektu', 'erp-omd'); ?></button>
+                                            </form>
+                                        <?php endif; ?>
+
+                                        <?php if (! $can_review_request) : ?>
+                                            <span class="erp-omd-front-chip"><?php esc_html_e('Tylko podgląd', 'erp-omd'); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else : ?>
+                        <p class="erp-omd-front-lead"><?php esc_html_e('Brak widocznych wniosków projektowych.', 'erp-omd'); ?></p>
+                    <?php endif; ?>
+                </article>
             </div>
         </section>
     </main>

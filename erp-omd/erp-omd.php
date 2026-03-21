@@ -2,8 +2,8 @@
 /**
  * Plugin Name: ERP OMD
  * Plugin URI: https://example.com/erp-omd
- * Description: ERP_OMD V2 FRONT-2D: panel pracownika z szybkimi szablonami wpisów czasu.
- * Version: 0.10.3
+ * Description: ERP_OMD V2 FRONT-4: workflow wniosku projektowego oraz panele FRONT dla pracownika i managera.
+ * Version: 0.10.4
  * Author: OMD
  * Text Domain: erp-omd
  */
@@ -12,8 +12,8 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('ERP_OMD_VERSION', '0.10.3');
-define('ERP_OMD_DB_VERSION', '6.2.0');
+define('ERP_OMD_VERSION', '0.10.4');
+define('ERP_OMD_DB_VERSION', '6.3.0');
 define('ERP_OMD_FILE', __FILE__);
 define('ERP_OMD_PATH', plugin_dir_path(__FILE__));
 define('ERP_OMD_URL', plugin_dir_url(__FILE__));

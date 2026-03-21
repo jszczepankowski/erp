@@ -8,6 +8,7 @@ class ERP_OMD_Plugin
     private $client_repository;
     private $client_rate_repository;
     private $project_repository;
+    private $project_request_repository;
     private $estimate_repository;
     private $estimate_item_repository;
     private $estimate_audit_repository;
@@ -20,6 +21,7 @@ class ERP_OMD_Plugin
     private $monthly_hours_service;
     private $employee_service;
     private $client_project_service;
+    private $project_request_service;
     private $estimate_service;
     private $time_entry_service;
     private $project_financial_service;
@@ -37,6 +39,7 @@ class ERP_OMD_Plugin
         $this->client_repository = new ERP_OMD_Client_Repository();
         $this->client_rate_repository = new ERP_OMD_Client_Rate_Repository();
         $this->project_repository = new ERP_OMD_Project_Repository();
+        $this->project_request_repository = new ERP_OMD_Project_Request_Repository();
         $this->estimate_repository = new ERP_OMD_Estimate_Repository();
         $this->estimate_item_repository = new ERP_OMD_Estimate_Item_Repository();
         $this->estimate_audit_repository = new ERP_OMD_Estimate_Audit_Repository();
@@ -99,6 +102,13 @@ class ERP_OMD_Plugin
             $this->time_entry_repository,
             $this->alert_service
         );
+        $this->project_request_service = new ERP_OMD_Project_Request_Service(
+            $this->client_repository,
+            $this->employee_repository,
+            $this->estimate_repository,
+            $this->project_repository,
+            $this->client_project_service
+        );
         $this->admin = new ERP_OMD_Admin(
             $this->role_repository,
             $this->employee_repository,
@@ -125,11 +135,15 @@ class ERP_OMD_Plugin
         );
         $this->frontend = new ERP_OMD_Frontend(
             $this->employee_repository,
+            $this->client_repository,
             $this->project_repository,
             $this->role_repository,
             $this->time_entry_repository,
+            $this->project_request_repository,
             $this->estimate_repository,
             $this->time_entry_service,
+            $this->client_project_service,
+            $this->project_request_service,
             $this->project_financial_service,
             $this->reporting_service,
             $this->alert_service
