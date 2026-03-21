@@ -148,8 +148,8 @@ class ERP_OMD_Admin
             case 'add_attachment': $this->handle_attachment_add(); break;
             case 'delete_attachment': $this->handle_attachment_delete(); break;
             case 'save_settings': $this->handle_settings_save(); break;
-            case 'save_saved_view': $this->handle_saved_view_save(); break;
-            case 'delete_saved_view': $this->handle_saved_view_delete(); break;
+            case 'delete_client': $this->handle_client_delete(); break;
+            case 'delete_project': $this->handle_project_delete(); break;
         }
     }
 
@@ -444,7 +444,6 @@ class ERP_OMD_Admin
 
             return true;
         }));
-        $saved_views = $this->get_saved_views('projects');
         $project_attachments = $project ? $this->attachments->for_entity('project', (int) $project['id']) : [];
         include ERP_OMD_PATH . 'templates/admin/projects.php';
     }
@@ -651,6 +650,21 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-clients', 'success', $message);
         }
         $this->redirect_with_notice('erp-omd-clients', 'error', __('Nie znaleziono klienta.', 'erp-omd'));
+    }
+
+    private function handle_client_delete()
+    {
+        check_admin_referer('erp_omd_delete_client');
+        $this->require_capability('erp_omd_manage_clients');
+        $id = (int) ($_POST['id'] ?? 0);
+        $client = $id ? $this->clients->find($id) : null;
+
+        if (! $client) {
+            $this->redirect_with_notice('erp-omd-clients', 'error', __('Nie znaleziono klienta.', 'erp-omd'));
+        }
+
+        $this->clients->delete($id);
+        $this->redirect_with_notice('erp-omd-clients', 'success', __('Klient został usunięty.', 'erp-omd'));
     }
 
     private function handle_client_rate_save()
@@ -984,6 +998,21 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono projektu.', 'erp-omd'));
     }
 
+    private function handle_project_delete()
+    {
+        check_admin_referer('erp_omd_delete_project');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = (int) ($_POST['id'] ?? 0);
+        $project = $id ? $this->projects->find($id) : null;
+
+        if (! $project) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono projektu.', 'erp-omd'));
+        }
+
+        $this->projects->delete($id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Projekt został usunięty.', 'erp-omd'));
+    }
+
     private function handle_project_note_add()
     {
         check_admin_referer('erp_omd_add_project_note');
@@ -1270,50 +1299,6 @@ class ERP_OMD_Admin
         }
 
         $this->redirect_with_notice('erp-omd-estimates', 'success', __('Akcja masowa dla kosztorysów została wykonana.', 'erp-omd'));
-    }
-
-    private function handle_saved_view_save()
-    {
-        check_admin_referer('erp_omd_save_saved_view');
-        $this->require_capability('erp_omd_access');
-        $screen = sanitize_key(wp_unslash($_POST['screen'] ?? ''));
-        $page = sanitize_key(wp_unslash($_POST['page_slug'] ?? ''));
-        $label = sanitize_text_field(wp_unslash($_POST['label'] ?? ''));
-        $raw_filters = wp_unslash($_POST['filters'] ?? []);
-
-        if (! in_array($screen, ['projects', 'time', 'reports'], true) || $page === '' || $label === '' || ! is_array($raw_filters)) {
-            $this->redirect_with_notice($page ?: 'erp-omd', 'error', __('Nie udało się zapisać widoku.', 'erp-omd'));
-        }
-
-        $views = $this->get_saved_views($screen);
-        $views[] = [
-            'id' => uniqid('view_', true),
-            'label' => $label,
-            'params' => array_map('sanitize_text_field', $raw_filters),
-        ];
-        update_user_meta(get_current_user_id(), 'erp_omd_saved_views_' . $screen, $views);
-        $this->redirect_with_notice($page, 'success', __('Widok został zapisany.', 'erp-omd'));
-    }
-
-    private function handle_saved_view_delete()
-    {
-        check_admin_referer('erp_omd_delete_saved_view');
-        $this->require_capability('erp_omd_access');
-        $screen = sanitize_key(wp_unslash($_POST['screen'] ?? ''));
-        $page = sanitize_key(wp_unslash($_POST['page_slug'] ?? ''));
-        $view_id = sanitize_text_field(wp_unslash($_POST['view_id'] ?? ''));
-        $views = array_values(array_filter($this->get_saved_views($screen), function ($view) use ($view_id) {
-            return (string) ($view['id'] ?? '') !== $view_id;
-        }));
-        update_user_meta(get_current_user_id(), 'erp_omd_saved_views_' . $screen, $views);
-        $this->redirect_with_notice($page ?: 'erp-omd', 'success', __('Widok został usunięty.', 'erp-omd'));
-    }
-
-    private function get_saved_views($screen)
-    {
-        $views = get_user_meta(get_current_user_id(), 'erp_omd_saved_views_' . $screen, true);
-
-        return is_array($views) ? $views : [];
     }
 
     private function handle_settings_save()

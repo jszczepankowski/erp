@@ -138,19 +138,6 @@
                 <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'] as $project_status) : ?><option value="<?php echo esc_attr($project_status); ?>" <?php selected($project_filters['status'] ?? '', $project_status); ?>><?php echo esc_html($this->project_status_label($project_status)); ?></option><?php endforeach; ?></select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
-            <form method="post" class="erp-omd-action-group">
-                <?php wp_nonce_field('erp_omd_save_saved_view'); ?>
-                <input type="hidden" name="erp_omd_action" value="save_saved_view" />
-                <input type="hidden" name="screen" value="projects" />
-                <input type="hidden" name="page_slug" value="erp-omd-projects" />
-                <?php foreach ($project_filters as $filter_key => $filter_value) : ?><input type="hidden" name="filters[<?php echo esc_attr($filter_key); ?>]" value="<?php echo esc_attr((string) $filter_value); ?>" /><?php endforeach; ?>
-                <select onchange="if(this.value){window.location.href=this.value;}">
-                    <option value=""><?php esc_html_e('Zapisane widoki', 'erp-omd'); ?></option>
-                    <?php foreach ($saved_views as $saved_view) : ?><option value="<?php echo esc_url(add_query_arg(array_merge(['page' => 'erp-omd-projects'], $saved_view['params']), admin_url('admin.php'))); ?>"><?php echo esc_html($saved_view['label']); ?></option><?php endforeach; ?>
-                </select>
-                <input type="text" name="label" class="regular-text" placeholder="<?php echo esc_attr__('Nazwa widoku', 'erp-omd'); ?>" required />
-                <button class="button button-secondary" type="submit"><?php esc_html_e('Zapisz widok', 'erp-omd'); ?></button>
-            </form>
         </div>
         <form method="post">
             <?php wp_nonce_field('erp_omd_bulk_projects'); ?>
@@ -200,6 +187,12 @@
                                     <input type="hidden" name="erp_omd_action" value="toggle_project_active" />
                                     <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
                                     <button class="button button-small" type="submit"><?php echo esc_html($project_is_inactive ? __('Aktywuj', 'erp-omd') : __('Dezaktywuj', 'erp-omd')); ?></button>
+                                </form>
+                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć projekt? Operacja usunie też dane powiązane.', 'erp-omd')); ?>');">
+                                    <?php wp_nonce_field('erp_omd_delete_project'); ?>
+                                    <input type="hidden" name="erp_omd_action" value="delete_project" />
+                                    <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
+                                    <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
                                 </form>
                             </td>
                         </tr>

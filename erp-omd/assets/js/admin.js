@@ -113,8 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedClientId = clientSelect.value;
     let hasVisibleSelectedOption = false;
 
-    Array.from(projectSelect.options).forEach((option, index) => {
-      if (index === 0) {
+    Array.from(projectSelect.options).forEach((option) => {
+      if (option.value === '') {
         option.hidden = false;
         return;
       }
@@ -130,6 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!hasVisibleSelectedOption) {
       projectSelect.value = '';
+      const firstVisibleOption = Array.from(projectSelect.options).find((option) => !option.hidden && option.value !== '');
+      if (projectSelect.required && firstVisibleOption) {
+        firstVisibleOption.selected = true;
+      }
     }
   };
 

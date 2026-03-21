@@ -122,6 +122,13 @@ class ERP_OMD_Project_Repository
         );
     }
 
+    public function delete($id)
+    {
+        global $wpdb;
+
+        return $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
+    }
+
     public function deactivate($id)
     {
         return $this->set_status($id, 'inactive');
