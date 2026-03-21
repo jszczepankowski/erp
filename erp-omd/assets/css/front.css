@@ -171,6 +171,21 @@ body.erp-omd-front-body {
     top: 20px;
 }
 
+.erp-omd-front-panel-calendar {
+    margin-bottom: 24px;
+}
+
+.erp-omd-front-panel-compact h3 {
+    color: #6b7280;
+    font-size: 12px;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+}
+
+.erp-omd-front-panel-compact strong {
+    font-size: 24px;
+}
+
 .erp-omd-front-panel ul {
     margin: 0;
     padding-left: 18px;
@@ -202,6 +217,19 @@ body.erp-omd-front-body {
 
 .erp-omd-front-filter-form {
     align-items: end;
+    margin-bottom: 18px;
+}
+
+.erp-omd-front-focus-actions {
+    margin-bottom: 18px;
+}
+
+.erp-omd-front-calendar-toolbar {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
     margin-bottom: 18px;
 }
 
@@ -299,6 +327,58 @@ body.erp-omd-front-body {
     color: #b91c1c;
 }
 
+.erp-omd-front-calendar {
+    display: grid;
+    gap: 10px;
+}
+
+.erp-omd-front-calendar-header,
+.erp-omd-front-calendar-row {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.erp-omd-front-calendar-header span {
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.erp-omd-front-calendar-day {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    min-height: 110px;
+    padding: 12px;
+}
+
+.erp-omd-front-calendar-day-empty {
+    background: transparent;
+    border: 1px dashed #e5e7eb;
+}
+
+.erp-omd-front-calendar-day-number {
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.erp-omd-front-calendar-day-hours {
+    color: #111827;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.erp-omd-front-calendar-day-meta {
+    color: #6b7280;
+    display: grid;
+    font-size: 12px;
+    gap: 4px;
+}
+
 @media (max-width: 782px) {
     .erp-omd-front-card {
         padding: 24px;
@@ -318,5 +398,15 @@ body.erp-omd-front-body {
 
     .erp-omd-front-panel-form {
         position: static;
+    }
+
+    .erp-omd-front-calendar-header,
+    .erp-omd-front-calendar-row {
+        gap: 6px;
+    }
+
+    .erp-omd-front-calendar-day {
+        min-height: 90px;
+        padding: 10px;
     }
 }

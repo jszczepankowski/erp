@@ -8,6 +8,7 @@ class ERP_OMD_Frontend
     private $time_entries;
     private $time_entry_service;
     private $project_financial_service;
+    private $reporting_service;
 
     public function __construct(
         ERP_OMD_Employee_Repository $employees,
@@ -15,7 +16,8 @@ class ERP_OMD_Frontend
         ERP_OMD_Role_Repository $roles,
         ERP_OMD_Time_Entry_Repository $time_entries,
         ERP_OMD_Time_Entry_Service $time_entry_service,
-        ERP_OMD_Project_Financial_Service $project_financial_service
+        ERP_OMD_Project_Financial_Service $project_financial_service,
+        ERP_OMD_Reporting_Service $reporting_service
     ) {
         $this->employees = $employees;
         $this->projects = $projects;
@@ -23,6 +25,7 @@ class ERP_OMD_Frontend
         $this->time_entries = $time_entries;
         $this->time_entry_service = $time_entry_service;
         $this->project_financial_service = $project_financial_service;
+        $this->reporting_service = $reporting_service;
     }
 
     public static function register_rewrite_rules()
@@ -317,12 +320,20 @@ class ERP_OMD_Frontend
             'project_id' => (int) ($_GET['project_id'] ?? 0),
             'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
             'entry_date' => sanitize_text_field(wp_unslash($_GET['entry_date'] ?? '')),
+            'focus' => sanitize_key(wp_unslash($_GET['focus'] ?? 'month')),
+            'calendar_month' => sanitize_text_field(wp_unslash($_GET['calendar_month'] ?? gmdate('Y-m'))),
         ];
         if ($worker_filters['project_id'] <= 0) {
             $worker_filters['project_id'] = 0;
         }
         if (! in_array($worker_filters['status'], ['', 'submitted', 'approved', 'rejected'], true)) {
             $worker_filters['status'] = '';
+        }
+        if (! in_array($worker_filters['focus'], ['all', 'today', 'week', 'month'], true)) {
+            $worker_filters['focus'] = 'month';
+        }
+        if (! preg_match('/^\d{4}-\d{2}$/', $worker_filters['calendar_month'])) {
+            $worker_filters['calendar_month'] = gmdate('Y-m');
         }
 
         $entry_id = (int) ($_GET['entry_id'] ?? 0);
@@ -345,6 +356,17 @@ class ERP_OMD_Frontend
             'entry_date' => $worker_filters['entry_date'],
         ]));
         $time_entries = $this->time_entry_service->filter_visible_entries($time_entries, $user);
+        $time_entries = $this->filter_worker_entries_by_focus($time_entries, $worker_filters);
+
+        $calendar_data = $this->reporting_service->build_calendar([
+            'employee_id' => (int) $employee['id'],
+            'project_id' => $worker_filters['project_id'],
+            'status' => $worker_filters['status'],
+            'month' => $worker_filters['calendar_month'],
+            'report_type' => 'monthly',
+            'tab' => 'calendar',
+        ]);
+        $calendar_navigation = $this->get_calendar_navigation($worker_filters['calendar_month'], $worker_filters);
 
         $status_totals = [
             'submitted' => 0,
@@ -388,6 +410,63 @@ class ERP_OMD_Frontend
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/worker-dashboard.php';
         exit;
+    }
+
+    private function filter_worker_entries_by_focus(array $entries, array $worker_filters)
+    {
+        if (! empty($worker_filters['entry_date'])) {
+            return $entries;
+        }
+
+        $focus = (string) ($worker_filters['focus'] ?? 'month');
+        if ($focus === 'all') {
+            return $entries;
+        }
+
+        $today = new DateTimeImmutable(current_time('Y-m-d'));
+        if ($focus === 'today') {
+            $start = $today;
+            $end = $today;
+        } elseif ($focus === 'week') {
+            $start = $today->modify('monday this week');
+            $end = $start->modify('+6 days');
+        } else {
+            $month = (string) ($worker_filters['calendar_month'] ?? gmdate('Y-m'));
+            $start = new DateTimeImmutable($month . '-01');
+            $end = $start->modify('last day of this month');
+        }
+
+        return array_values(
+            array_filter(
+                $entries,
+                function ($entry) use ($start, $end) {
+                    $entry_date = DateTimeImmutable::createFromFormat('Y-m-d', (string) ($entry['entry_date'] ?? ''));
+                    if (! $entry_date) {
+                        return false;
+                    }
+
+                    return $entry_date >= $start && $entry_date <= $end;
+                }
+            )
+        );
+    }
+
+    private function get_calendar_navigation($calendar_month, array $worker_filters)
+    {
+        $month = new DateTimeImmutable($calendar_month . '-01');
+        $previous_month = $month->modify('-1 month')->format('Y-m');
+        $next_month = $month->modify('+1 month')->format('Y-m');
+        $base_args = [
+            'project_id' => $worker_filters['project_id'],
+            'status' => $worker_filters['status'],
+            'focus' => $worker_filters['focus'],
+        ];
+
+        return [
+            'label' => wp_date('F Y', $month->getTimestamp()),
+            'previous_url' => $this->front_url('worker', array_merge($base_args, ['calendar_month' => $previous_month])),
+            'next_url' => $this->front_url('worker', array_merge($base_args, ['calendar_month' => $next_month])),
+        ];
     }
 
     private function render_manager_dashboard(WP_User $user)

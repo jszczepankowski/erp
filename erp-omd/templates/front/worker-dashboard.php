@@ -64,6 +64,95 @@
                 </article>
             </div>
 
+            <div class="erp-omd-front-panel erp-omd-front-panel-calendar">
+                <div class="erp-omd-front-section-heading">
+                    <h2><?php esc_html_e('Rytm pracy', 'erp-omd'); ?></h2>
+                    <p><?php esc_html_e('Szybkie skróty pomagają przełączać zakres listy, a kalendarz pokazuje rozkład Twoich godzin w wybranym miesiącu.', 'erp-omd'); ?></p>
+                </div>
+
+                <div class="erp-omd-front-inline-actions erp-omd-front-focus-actions">
+                    <?php foreach ([
+                        'today' => __('Dziś', 'erp-omd'),
+                        'week' => __('Ten tydzień', 'erp-omd'),
+                        'month' => __('Ten miesiąc', 'erp-omd'),
+                        'all' => __('Wszystko', 'erp-omd'),
+                    ] as $focus_key => $focus_label) : ?>
+                        <a
+                            class="erp-omd-front-button <?php echo $worker_filters['focus'] === $focus_key ? 'erp-omd-front-button-primary' : ''; ?>"
+                            href="<?php echo esc_url($this->front_url('worker', [
+                                'focus' => $focus_key,
+                                'project_id' => $worker_filters['project_id'],
+                                'status' => $worker_filters['status'],
+                                'calendar_month' => $worker_filters['calendar_month'],
+                            ])); ?>"
+                        >
+                            <?php echo esc_html($focus_label); ?>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="erp-omd-front-calendar-toolbar">
+                    <div class="erp-omd-front-inline-actions">
+                        <a href="<?php echo esc_url($calendar_navigation['previous_url']); ?>" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('← Poprzedni', 'erp-omd'); ?></a>
+                        <strong><?php echo esc_html($calendar_navigation['label']); ?></strong>
+                        <a href="<?php echo esc_url($calendar_navigation['next_url']); ?>" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Następny →', 'erp-omd'); ?></a>
+                    </div>
+                    <form method="get" action="<?php echo esc_url($front_worker_url); ?>" class="erp-omd-front-inline-actions">
+                        <input type="hidden" name="focus" value="<?php echo esc_attr($worker_filters['focus']); ?>">
+                        <input type="hidden" name="project_id" value="<?php echo esc_attr((string) $worker_filters['project_id']); ?>">
+                        <input type="hidden" name="status" value="<?php echo esc_attr($worker_filters['status']); ?>">
+                        <input type="month" name="calendar_month" value="<?php echo esc_attr($worker_filters['calendar_month']); ?>">
+                        <button type="submit" class="erp-omd-front-button"><?php esc_html_e('Pokaż miesiąc', 'erp-omd'); ?></button>
+                    </form>
+                </div>
+
+                <div class="erp-omd-front-grid erp-omd-front-grid-summary">
+                    <article class="erp-omd-front-panel erp-omd-front-panel-compact">
+                        <h3><?php esc_html_e('Godziny w miesiącu', 'erp-omd'); ?></h3>
+                        <strong><?php echo esc_html(number_format_i18n((float) ($calendar_data['totals']['hours'] ?? 0), 2)); ?></strong>
+                    </article>
+                    <article class="erp-omd-front-panel erp-omd-front-panel-compact">
+                        <h3><?php esc_html_e('Submitted', 'erp-omd'); ?></h3>
+                        <strong><?php echo esc_html(number_format_i18n((float) ($calendar_data['totals']['submitted_hours'] ?? 0), 2)); ?></strong>
+                    </article>
+                    <article class="erp-omd-front-panel erp-omd-front-panel-compact">
+                        <h3><?php esc_html_e('Approved', 'erp-omd'); ?></h3>
+                        <strong><?php echo esc_html(number_format_i18n((float) ($calendar_data['totals']['approved_hours'] ?? 0), 2)); ?></strong>
+                    </article>
+                    <article class="erp-omd-front-panel erp-omd-front-panel-compact">
+                        <h3><?php esc_html_e('Rejected', 'erp-omd'); ?></h3>
+                        <strong><?php echo esc_html(number_format_i18n((float) ($calendar_data['totals']['rejected_hours'] ?? 0), 2)); ?></strong>
+                    </article>
+                </div>
+
+                <div class="erp-omd-front-calendar">
+                    <div class="erp-omd-front-calendar-header">
+                        <?php foreach ([__('Pon', 'erp-omd'), __('Wt', 'erp-omd'), __('Śr', 'erp-omd'), __('Czw', 'erp-omd'), __('Pt', 'erp-omd'), __('Sob', 'erp-omd'), __('Nd', 'erp-omd')] as $weekday) : ?>
+                            <span><?php echo esc_html($weekday); ?></span>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <?php foreach ($calendar_data['weeks'] as $week) : ?>
+                        <div class="erp-omd-front-calendar-row">
+                            <?php foreach ($week as $day) : ?>
+                                <?php if ($day === null) : ?>
+                                    <div class="erp-omd-front-calendar-day erp-omd-front-calendar-day-empty"></div>
+                                <?php else : ?>
+                                    <div class="erp-omd-front-calendar-day">
+                                        <div class="erp-omd-front-calendar-day-number"><?php echo esc_html((string) $day['day']); ?></div>
+                                        <div class="erp-omd-front-calendar-day-hours"><?php echo esc_html(number_format_i18n((float) $day['hours'], 2)); ?>h</div>
+                                        <div class="erp-omd-front-calendar-day-meta">
+                                            <span>S: <?php echo esc_html(number_format_i18n((float) $day['submitted_hours'], 2)); ?></span>
+                                            <span>A: <?php echo esc_html(number_format_i18n((float) $day['approved_hours'], 2)); ?></span>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
             <div class="erp-omd-front-grid erp-omd-front-grid-worker">
                 <article class="erp-omd-front-panel erp-omd-front-panel-form">
                     <div class="erp-omd-front-section-heading">
@@ -141,6 +230,10 @@
                             <input id="erp-omd-front-filter-date" type="date" name="entry_date" value="<?php echo esc_attr((string) ($worker_filters['entry_date'] ?? '')); ?>">
                         </div>
                         <div>
+                            <label for="erp-omd-front-filter-month"><?php esc_html_e('Miesiąc kalendarza', 'erp-omd'); ?></label>
+                            <input id="erp-omd-front-filter-month" type="month" name="calendar_month" value="<?php echo esc_attr((string) ($worker_filters['calendar_month'] ?? '')); ?>">
+                        </div>
+                        <div>
                             <label for="erp-omd-front-filter-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
                             <select id="erp-omd-front-filter-project" name="project_id">
                                 <option value="0"><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option>
@@ -158,6 +251,21 @@
                                 <?php foreach (['submitted', 'approved', 'rejected'] as $status_option) : ?>
                                     <option value="<?php echo esc_attr($status_option); ?>" <?php selected((string) ($worker_filters['status'] ?? ''), $status_option); ?>>
                                         <?php echo esc_html(ucfirst($status_option)); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="erp-omd-front-filter-focus"><?php esc_html_e('Zakres listy', 'erp-omd'); ?></label>
+                            <select id="erp-omd-front-filter-focus" name="focus">
+                                <?php foreach ([
+                                    'today' => __('Dziś', 'erp-omd'),
+                                    'week' => __('Ten tydzień', 'erp-omd'),
+                                    'month' => __('Ten miesiąc', 'erp-omd'),
+                                    'all' => __('Wszystko', 'erp-omd'),
+                                ] as $focus_key => $focus_label) : ?>
+                                    <option value="<?php echo esc_attr($focus_key); ?>" <?php selected((string) ($worker_filters['focus'] ?? 'month'), $focus_key); ?>>
+                                        <?php echo esc_html($focus_label); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
