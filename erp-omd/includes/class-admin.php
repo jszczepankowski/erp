@@ -116,6 +116,7 @@ class ERP_OMD_Admin
             case 'save_role': $this->handle_role_save(); break;
             case 'delete_role': $this->handle_role_delete(); break;
             case 'save_employee': $this->handle_employee_save(); break;
+            case 'change_employee_password': $this->handle_employee_password_change(); break;
             case 'toggle_employee_active': $this->handle_employee_active_toggle(); break;
             case 'save_salary': $this->handle_salary_save(); break;
             case 'delete_salary': $this->handle_salary_delete(); break;
@@ -399,6 +400,8 @@ class ERP_OMD_Admin
                 if ((int) $project_row['id'] === (int) $project['id']) {
                     $project['client_name'] = $project_row['client_name'] ?? '';
                     $project['manager_login'] = $project_row['manager_login'] ?? '';
+                    $project['manager_ids'] = $project_row['manager_ids'] ?? [];
+                    $project['manager_logins_display'] = $project_row['manager_logins_display'] ?? '';
                     break;
                 }
             }
@@ -426,7 +429,7 @@ class ERP_OMD_Admin
                 $haystack = strtolower(implode(' ', [
                     (string) ($project_row['name'] ?? ''),
                     (string) ($project_row['client_name'] ?? ''),
-                    (string) ($project_row['manager_login'] ?? ''),
+                    (string) ($project_row['manager_logins_display'] ?? ($project_row['manager_login'] ?? '')),
                 ]));
                 if (strpos($haystack, strtolower($project_filters['search'])) === false) {
                     return false;
@@ -435,7 +438,7 @@ class ERP_OMD_Admin
             if ($project_filters['client_id'] > 0 && (int) ($project_row['client_id'] ?? 0) !== $project_filters['client_id']) {
                 return false;
             }
-            if ($project_filters['manager_id'] > 0 && (int) ($project_row['manager_id'] ?? 0) !== $project_filters['manager_id']) {
+            if ($project_filters['manager_id'] > 0 && ! in_array($project_filters['manager_id'], array_map('intval', (array) ($project_row['manager_ids'] ?? [])), true)) {
                 return false;
             }
             if ($project_filters['status'] !== '' && (string) ($project_row['status'] ?? '') !== $project_filters['status']) {
@@ -501,7 +504,6 @@ class ERP_OMD_Admin
             $selected_time_client_id = (int) $filters['client_id'];
         }
         $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
-        $saved_views = $this->get_saved_views('time');
         include ERP_OMD_PATH . 'templates/admin/time-entries.php';
     }
 
@@ -545,7 +547,6 @@ class ERP_OMD_Admin
             'monthly' => __('Raport miesięczny', 'erp-omd'),
         ];
         $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');
-        $saved_views = $this->get_saved_views('reports');
         include ERP_OMD_PATH . 'templates/admin/reports.php';
     }
 
@@ -597,6 +598,37 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-employees', 'success', $message);
         }
         $this->redirect_with_notice('erp-omd-employees', 'error', __('Nie znaleziono pracownika.', 'erp-omd'));
+    }
+
+    private function handle_employee_password_change()
+    {
+        check_admin_referer('erp_omd_change_employee_password');
+        $this->require_capability('erp_omd_manage_employees');
+
+        $employee_id = (int) ($_POST['employee_id'] ?? 0);
+        $employee = $employee_id ? $this->employees->find($employee_id) : null;
+        if (! $employee) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', __('Nie znaleziono pracownika do zmiany hasła.', 'erp-omd'));
+        }
+
+        $password = (string) wp_unslash($_POST['new_password'] ?? '');
+        $password_confirm = (string) wp_unslash($_POST['new_password_confirm'] ?? '');
+        if ($password === '' || strlen($password) < 8) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', __('Nowe hasło musi mieć co najmniej 8 znaków.', 'erp-omd'), ['id' => $employee_id]);
+        }
+        if ($password !== $password_confirm) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', __('Hasło i potwierdzenie hasła muszą być identyczne.', 'erp-omd'), ['id' => $employee_id]);
+        }
+
+        $result = wp_update_user([
+            'ID' => (int) ($employee['user_id'] ?? 0),
+            'user_pass' => $password,
+        ]);
+        if (is_wp_error($result)) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', $result->get_error_message(), ['id' => $employee_id]);
+        }
+
+        $this->redirect_with_notice('erp-omd-employees', 'success', __('Hasło pracownika zostało zmienione.', 'erp-omd'), ['id' => $employee_id]);
     }
 
     private function handle_salary_save()
@@ -935,7 +967,7 @@ class ERP_OMD_Admin
         $this->require_capability('erp_omd_manage_projects');
         $id = empty($_POST['id']) ? 0 : (int) $_POST['id'];
         $existing = $id ? $this->projects->find($id) : null;
-        $payload = $this->client_project_service->prepare_project(['client_id' => (int) ($_POST['client_id'] ?? 0), 'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')), 'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')), 'budget' => (float) ($_POST['budget'] ?? 0), 'retainer_monthly_fee' => (float) ($_POST['retainer_monthly_fee'] ?? 0), 'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? 'do_rozpoczecia')), 'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')), 'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')), 'manager_id' => (int) ($_POST['manager_id'] ?? 0), 'estimate_id' => (int) ($_POST['estimate_id'] ?? 0), 'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')), 'alert_margin_threshold' => sanitize_text_field(wp_unslash($_POST['alert_margin_threshold'] ?? ''))], $existing);
+        $payload = $this->client_project_service->prepare_project(['client_id' => (int) ($_POST['client_id'] ?? 0), 'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')), 'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')), 'budget' => (float) ($_POST['budget'] ?? 0), 'retainer_monthly_fee' => (float) ($_POST['retainer_monthly_fee'] ?? 0), 'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? 'do_rozpoczecia')), 'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')), 'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')), 'manager_id' => (int) ($_POST['manager_id'] ?? 0), 'manager_ids' => array_map('intval', wp_unslash($_POST['manager_ids'] ?? [])), 'estimate_id' => (int) ($_POST['estimate_id'] ?? 0), 'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')), 'alert_margin_threshold' => sanitize_text_field(wp_unslash($_POST['alert_margin_threshold'] ?? ''))], $existing);
         $errors = $this->client_project_service->validate_project($payload, $existing);
         if ($errors) { $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), $id ? ['id' => $id] : []); }
         if ($id) { $this->projects->update($id, $payload); $message = __('Projekt został zaktualizowany.', 'erp-omd'); } else { $id = $this->projects->create($payload); $message = __('Projekt został utworzony.', 'erp-omd'); }
@@ -963,6 +995,7 @@ class ERP_OMD_Admin
             'start_date' => '',
             'end_date' => '',
             'manager_id' => (int) ($project['manager_id'] ?? 0),
+            'manager_ids' => array_map('intval', (array) ($project['manager_ids'] ?? array_filter([(int) ($project['manager_id'] ?? 0)]))),
             'estimate_id' => 0,
             'brief' => (string) ($project['brief'] ?? ''),
             'alert_margin_threshold' => $project['alert_margin_threshold'] ?? '',
@@ -1310,13 +1343,6 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
 
-    private function get_saved_views($screen)
-    {
-        unset($screen);
-
-        return [];
-    }
-
     private function handle_attachment_add()
     {
         $entity_type = sanitize_key((string) ($_POST['entity_type'] ?? ''));
@@ -1598,6 +1624,39 @@ class ERP_OMD_Admin
             default:
                 return 'erp-omd-badge-info';
         }
+    }
+
+    private function render_alert_icons(array $alerts)
+    {
+        if (empty($alerts)) {
+            return;
+        }
+
+        echo '<span class="erp-omd-alert-icons" aria-label="' . esc_attr__('Aktywne alerty', 'erp-omd') . '">';
+
+        foreach ($alerts as $alert) {
+            $severity = sanitize_html_class((string) ($alert['severity'] ?? 'info'));
+            $message = trim((string) ($alert['message'] ?? ''));
+            $code = trim((string) ($alert['code'] ?? ''));
+            $tooltip = $message !== '' ? $message : $code;
+
+            if ($tooltip === '') {
+                $tooltip = __('Alert', 'erp-omd');
+            }
+
+            $icon = 'i';
+            if ($severity === 'error') {
+                $icon = '!';
+            } elseif ($severity === 'warning') {
+                $icon = '!';
+            } elseif ($severity === 'info') {
+                $icon = 'i';
+            }
+
+            echo '<span class="erp-omd-alert-icon erp-omd-alert-icon-' . esc_attr($severity) . '" title="' . esc_attr($tooltip) . '" aria-label="' . esc_attr($tooltip) . '" tabindex="0">' . esc_html($icon) . '</span>';
+        }
+
+        echo '</span>';
     }
 
     private function redirect_with_notice($page, $type, $message, array $extra = [])

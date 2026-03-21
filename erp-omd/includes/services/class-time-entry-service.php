@@ -132,7 +132,13 @@ class ERP_OMD_Time_Entry_Service
             return true;
         }
 
-        return false;
+        $current_employee = $this->employees->find_by_user_id($user->ID);
+        if (! $current_employee) {
+            return false;
+        }
+
+        return (int) ($entry['employee_id'] ?? 0) === (int) $current_employee['id']
+            && (string) ($entry['status'] ?? '') === 'submitted';
     }
 
     public function can_view_entry($entry, WP_User $user)
@@ -157,9 +163,23 @@ class ERP_OMD_Time_Entry_Service
         return $this->is_project_manager_for_entry($entry, $current_employee);
     }
 
-    public function can_delete_entry(WP_User $user)
+    public function can_delete_entry(WP_User $user, $entry = null)
     {
-        return user_can($user, 'administrator');
+        if (user_can($user, 'administrator')) {
+            return true;
+        }
+
+        if (! is_array($entry)) {
+            return false;
+        }
+
+        $current_employee = $this->employees->find_by_user_id($user->ID);
+        if (! $current_employee) {
+            return false;
+        }
+
+        return (int) ($entry['employee_id'] ?? 0) === (int) $current_employee['id']
+            && (string) ($entry['status'] ?? '') === 'submitted';
     }
 
     public function can_approve_entry($entry, WP_User $user)
@@ -227,6 +247,11 @@ class ERP_OMD_Time_Entry_Service
             return false;
         }
 
-        return (int) ($project['manager_id'] ?? 0) === (int) $current_employee['id'];
+        $manager_ids = array_map('intval', (array) ($project['manager_ids'] ?? []));
+        if ($manager_ids === [] && ! empty($project['manager_id'])) {
+            $manager_ids[] = (int) $project['manager_id'];
+        }
+
+        return in_array((int) ($current_employee['id'] ?? 0), $manager_ids, true);
     }
 }

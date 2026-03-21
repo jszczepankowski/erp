@@ -20,6 +20,8 @@ class ERP_OMD_Capabilities
             'erp_omd_manage_projects',
             'erp_omd_manage_time',
             'erp_omd_approve_time',
+            'erp_omd_front_worker',
+            'erp_omd_front_manager',
         ];
     }
 
@@ -47,11 +49,14 @@ class ERP_OMD_Capabilities
             'erp_omd_manage_projects' => true,
             'erp_omd_manage_time' => true,
             'erp_omd_approve_time' => true,
+            'erp_omd_front_worker' => true,
+            'erp_omd_front_manager' => true,
         ];
         $worker_caps = [
             'read' => true,
             'erp_omd_access' => true,
             'erp_omd_manage_time' => true,
+            'erp_omd_front_worker' => true,
         ];
 
         add_role('erp_omd_manager', __('ERP Manager', 'erp-omd'), $manager_caps);
