@@ -6,17 +6,20 @@ class ERP_OMD_Estimate_Service
     private $estimate_items;
     private $clients;
     private $projects;
+    private $estimate_audit;
 
     public function __construct(
         ERP_OMD_Estimate_Repository $estimates,
         ERP_OMD_Estimate_Item_Repository $estimate_items,
         ERP_OMD_Client_Repository $clients,
-        ERP_OMD_Project_Repository $projects
+        ERP_OMD_Project_Repository $projects,
+        $estimate_audit = null
     ) {
         $this->estimates = $estimates;
         $this->estimate_items = $estimate_items;
         $this->clients = $clients;
         $this->projects = $projects;
+        $this->estimate_audit = $estimate_audit;
     }
 
     public function validate_estimate(array $data, array $existing = null)
@@ -36,13 +39,19 @@ class ERP_OMD_Estimate_Service
         }
 
         if ($existing && ($existing['status'] ?? '') === 'zaakceptowany') {
-            $existing_name = trim((string) ($existing['name'] ?? ''));
-            $incoming_name = trim((string) ($data['name'] ?? ''));
-            $existing_client_id = (int) ($existing['client_id'] ?? 0);
-            $incoming_client_id = (int) ($data['client_id'] ?? 0);
-
-            if ($existing_name !== $incoming_name || $existing_client_id !== $incoming_client_id) {
-                $errors[] = __('Zaakceptowany kosztorys pozwala zmienić tylko status.', 'erp-omd');
+            $locked_fields = ['client_id', 'name'];
+            foreach ($locked_fields as $field) {
+                $before = (string) ($existing[$field] ?? '');
+                $after = (string) ($data[$field] ?? '');
+                if ($before !== $after) {
+                    $errors[] = __('Zaakceptowany kosztorys pozwala zmienić tylko status.', 'erp-omd');
+                    $this->log_audit((int) ($existing['id'] ?? 0), 'locked_update_rejected', [
+                        'field' => $field,
+                        'before' => $before,
+                        'after' => $after,
+                    ]);
+                    break;
+                }
             }
         }
 
@@ -60,6 +69,10 @@ class ERP_OMD_Estimate_Service
 
         if (($estimate['status'] ?? '') === 'zaakceptowany') {
             $errors[] = __('Nie można zmieniać pozycji zaakceptowanego kosztorysu.', 'erp-omd');
+            $this->log_audit((int) ($estimate['id'] ?? 0), 'locked_item_change_rejected', [
+                'item_id' => (int) ($existing_item['id'] ?? 0),
+                'incoming_name' => (string) ($data['name'] ?? ''),
+            ]);
         }
 
         if ($existing_item && (int) ($existing_item['estimate_id'] ?? 0) !== (int) $estimate['id']) {
@@ -139,6 +152,7 @@ class ERP_OMD_Estimate_Service
         $existing_project = $this->projects->find_by_estimate_id((int) $estimate_id);
         if ($existing_project) {
             $this->estimates->mark_accepted((int) $estimate_id, get_current_user_id());
+            $this->log_audit((int) $estimate_id, 'accepted_existing_project', ['project_id' => (int) ($existing_project['id'] ?? 0)]);
             return ['estimate' => $this->estimates->find((int) $estimate_id), 'project' => $existing_project];
         }
 
@@ -167,6 +181,7 @@ class ERP_OMD_Estimate_Service
             'manager_id' => (int) ($client['account_manager_id'] ?? 0),
             'estimate_id' => (int) $estimate_id,
             'brief' => implode("\n", $brief_lines),
+            'alert_margin_threshold' => null,
         ]);
 
         if ($project_id <= 0) {
@@ -175,6 +190,11 @@ class ERP_OMD_Estimate_Service
         }
 
         $this->estimates->mark_accepted((int) $estimate_id, get_current_user_id());
+        $this->log_audit((int) $estimate_id, 'accepted', [
+            'project_id' => $project_id,
+            'project_budget' => (float) $totals['net'],
+            'items_count' => count($items),
+        ]);
         $wpdb->query('COMMIT');
 
         return [
@@ -182,5 +202,14 @@ class ERP_OMD_Estimate_Service
             'project' => $this->projects->find($project_id),
             'totals' => $totals,
         ];
+    }
+
+    private function log_audit($estimate_id, $action, array $details)
+    {
+        if (! $estimate_id || ! $this->estimate_audit || ! method_exists($this->estimate_audit, 'log')) {
+            return;
+        }
+
+        $this->estimate_audit->log($estimate_id, $action, $details, function_exists('get_current_user_id') ? get_current_user_id() : null);
     }
 }
