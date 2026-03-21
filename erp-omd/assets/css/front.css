@@ -1,0 +1,172 @@
+body.erp-omd-front-body {
+    background: #f3f4f6;
+    color: #111827;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0;
+}
+
+.erp-omd-front-shell {
+    margin: 0 auto;
+    max-width: 1120px;
+    min-height: 100vh;
+    padding: 32px 20px;
+}
+
+.erp-omd-front-shell-dashboard {
+    align-items: stretch;
+    display: flex;
+}
+
+.erp-omd-front-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+    margin: 0 auto;
+    max-width: 540px;
+    padding: 32px;
+}
+
+.erp-omd-front-card-wide {
+    max-width: none;
+    width: 100%;
+}
+
+.erp-omd-front-eyebrow {
+    color: #4f46e5;
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+.erp-omd-front-card h1,
+.erp-omd-front-card h2 {
+    margin-top: 0;
+}
+
+.erp-omd-front-lead {
+    color: #4b5563;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.erp-omd-front-form {
+    display: grid;
+    gap: 14px;
+}
+
+.erp-omd-front-form label {
+    font-weight: 600;
+}
+
+.erp-omd-front-form input[type="text"],
+.erp-omd-front-form input[type="password"] {
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+
+.erp-omd-front-checkbox {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.erp-omd-front-button {
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 999px;
+    color: #111827;
+    display: inline-flex;
+    font-weight: 600;
+    justify-content: center;
+    padding: 10px 18px;
+    text-decoration: none;
+}
+
+.erp-omd-front-button-primary {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: #fff;
+}
+
+.erp-omd-front-button-secondary {
+    background: #111827;
+    border-color: #111827;
+    color: #fff;
+}
+
+.erp-omd-front-notice {
+    border-radius: 12px;
+    margin-bottom: 16px;
+    padding: 12px 14px;
+}
+
+.erp-omd-front-notice-success {
+    background: #ecfdf5;
+    color: #166534;
+}
+
+.erp-omd-front-notice-warning {
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.erp-omd-front-notice-error {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.erp-omd-front-topbar {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.erp-omd-front-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.erp-omd-front-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.erp-omd-front-panel {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.erp-omd-front-panel ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.erp-omd-front-panel li + li {
+    margin-top: 8px;
+}
+
+@media (max-width: 782px) {
+    .erp-omd-front-card {
+        padding: 24px;
+    }
+
+    .erp-omd-front-topbar {
+        flex-direction: column;
+    }
+
+    .erp-omd-front-actions {
+        justify-content: flex-start;
+    }
+}
