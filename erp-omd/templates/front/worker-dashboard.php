@@ -52,11 +52,11 @@
                             <strong><?php echo esc_html(number_format_i18n($hours_total, 2)); ?></strong>
                         </div>
                         <div class="erp-omd-front-metric">
-                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Submitted', 'erp-omd'); ?></span>
+                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Oczekujące', 'erp-omd'); ?></span>
                             <strong><?php echo esc_html((string) $status_totals['submitted']); ?></strong>
                         </div>
                         <div class="erp-omd-front-metric">
-                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Approved', 'erp-omd'); ?></span>
+                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Zaakceptowane', 'erp-omd'); ?></span>
                             <strong><?php echo esc_html((string) $status_totals['approved']); ?></strong>
                         </div>
                     </div>
@@ -67,7 +67,7 @@
                 <article class="erp-omd-front-panel erp-omd-front-panel-form">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php echo ! empty($worker_form_defaults['id']) ? esc_html__('Edytuj wpis czasu', 'erp-omd') : esc_html__('Dodaj wpis czasu', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Pracownik może zapisywać i poprawiać wyłącznie własne wpisy w statusie submitted.', 'erp-omd'); ?></p>
+                        <p><?php esc_html_e('Pracownik może zapisywać i poprawiać wyłącznie własne wpisy w statusie oczekującym na akceptację.', 'erp-omd'); ?></p>
                     </div>
 
                     <?php if ($recent_entry_templates) : ?>
@@ -183,7 +183,11 @@
                                 <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
                                 <?php foreach (['submitted', 'approved', 'rejected'] as $status_option) : ?>
                                     <option value="<?php echo esc_attr($status_option); ?>" <?php selected((string) ($worker_filters['status'] ?? ''), $status_option); ?>>
-                                        <?php echo esc_html(ucfirst($status_option)); ?>
+                                        <?php echo esc_html([
+                                            'submitted' => __('Oczekujące', 'erp-omd'),
+                                            'approved' => __('Zaakceptowane', 'erp-omd'),
+                                            'rejected' => __('Odrzucone', 'erp-omd'),
+                                        ][$status_option] ?? $status_option); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -232,7 +236,11 @@
                                             <td><?php echo esc_html(number_format_i18n((float) ($time_entry['hours'] ?? 0), 2)); ?></td>
                                             <td>
                                                 <span class="erp-omd-front-status erp-omd-front-status-<?php echo esc_attr((string) $time_entry['status']); ?>">
-                                                    <?php echo esc_html(ucfirst((string) $time_entry['status'])); ?>
+                                                    <?php echo esc_html([
+                                                    'submitted' => __('Oczekuje', 'erp-omd'),
+                                                    'approved' => __('Zaakceptowany', 'erp-omd'),
+                                                    'rejected' => __('Odrzucony', 'erp-omd'),
+                                                ][(string) $time_entry['status']] ?? (string) $time_entry['status']); ?>
                                                 </span>
                                             </td>
                                             <td><?php echo esc_html(wp_trim_words((string) ($time_entry['description'] ?? ''), 14)); ?></td>
@@ -315,15 +323,15 @@
                         <strong><?php echo esc_html(number_format_i18n((float) ($calendar_data['totals']['hours'] ?? 0), 2)); ?></strong>
                     </article>
                     <article class="erp-omd-front-panel erp-omd-front-panel-compact">
-                        <h3><?php esc_html_e('Submitted', 'erp-omd'); ?></h3>
+                        <h3><?php esc_html_e('Oczekujące', 'erp-omd'); ?></h3>
                         <strong><?php echo esc_html(number_format_i18n((float) ($calendar_data['totals']['submitted_hours'] ?? 0), 2)); ?></strong>
                     </article>
                     <article class="erp-omd-front-panel erp-omd-front-panel-compact">
-                        <h3><?php esc_html_e('Approved', 'erp-omd'); ?></h3>
+                        <h3><?php esc_html_e('Zaakceptowane', 'erp-omd'); ?></h3>
                         <strong><?php echo esc_html(number_format_i18n((float) ($calendar_data['totals']['approved_hours'] ?? 0), 2)); ?></strong>
                     </article>
                     <article class="erp-omd-front-panel erp-omd-front-panel-compact">
-                        <h3><?php esc_html_e('Rejected', 'erp-omd'); ?></h3>
+                        <h3><?php esc_html_e('Odrzucone', 'erp-omd'); ?></h3>
                         <strong><?php echo esc_html(number_format_i18n((float) ($calendar_data['totals']['rejected_hours'] ?? 0), 2)); ?></strong>
                     </article>
                 </div>
@@ -386,15 +394,15 @@
                             <strong><?php echo esc_html(number_format_i18n((float) $selected_day_totals['hours'], 2)); ?></strong>
                         </div>
                         <div class="erp-omd-front-metric">
-                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Submitted', 'erp-omd'); ?></span>
+                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Oczekujące', 'erp-omd'); ?></span>
                             <strong><?php echo esc_html((string) $selected_day_totals['submitted']); ?></strong>
                         </div>
                         <div class="erp-omd-front-metric">
-                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Approved', 'erp-omd'); ?></span>
+                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Zaakceptowane', 'erp-omd'); ?></span>
                             <strong><?php echo esc_html((string) $selected_day_totals['approved']); ?></strong>
                         </div>
                         <div class="erp-omd-front-metric">
-                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Rejected', 'erp-omd'); ?></span>
+                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Odrzucone', 'erp-omd'); ?></span>
                             <strong><?php echo esc_html((string) $selected_day_totals['rejected']); ?></strong>
                         </div>
                     </div>
@@ -408,7 +416,11 @@
                                         <p><?php echo esc_html($day_entry['role_name'] ?? '—'); ?> · <?php echo esc_html(number_format_i18n((float) ($day_entry['hours'] ?? 0), 2)); ?>h</p>
                                     </div>
                                     <span class="erp-omd-front-status erp-omd-front-status-<?php echo esc_attr((string) $day_entry['status']); ?>">
-                                        <?php echo esc_html(ucfirst((string) $day_entry['status'])); ?>
+                                        <?php echo esc_html([
+                                        'submitted' => __('Oczekuje', 'erp-omd'),
+                                        'approved' => __('Zaakceptowany', 'erp-omd'),
+                                        'rejected' => __('Odrzucony', 'erp-omd'),
+                                    ][(string) $day_entry['status']] ?? (string) $day_entry['status']); ?>
                                     </span>
                                 </article>
                             <?php endforeach; ?>

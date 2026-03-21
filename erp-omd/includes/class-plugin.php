@@ -141,9 +141,11 @@ class ERP_OMD_Plugin
             $this->time_entry_repository,
             $this->project_request_repository,
             $this->estimate_repository,
+            $this->estimate_item_repository,
             $this->time_entry_service,
             $this->client_project_service,
             $this->project_request_service,
+            $this->estimate_service,
             $this->project_financial_service,
             $this->reporting_service,
             $this->alert_service
