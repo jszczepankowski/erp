@@ -1,15 +1,13 @@
 <div class="wrap erp-omd-admin">
-    <h1><?php esc_html_e('ERP OMD — Sprint 8 RC', 'erp-omd'); ?></h1>
+    <h1><?php esc_html_e('ERP OMD — Dashboard', 'erp-omd'); ?></h1>
     <div class="erp-omd-grid two-columns">
         <div class="erp-omd-card">
-            <h2><?php esc_html_e('Status wdrożenia Sprintu 8', 'erp-omd'); ?></h2>
+            <h2><?php esc_html_e('Zakres systemu', 'erp-omd'); ?></h2>
             <ul>
-                <li><?php esc_html_e('Sprint 1: pracownicy, role, salary history, uninstall i REST API.', 'erp-omd'); ?></li>
-                <li><?php esc_html_e('Sprint 2: klienci, stawki klienta, projekty i historia uwag klienta.', 'erp-omd'); ?></li>
-                <li><?php esc_html_e('Sprint 3: stawki projektowe, time tracking, snapshoty i approval flow.', 'erp-omd'); ?></li>
-                <li><?php esc_html_e('Sprint 4–6: finanse projektów, kosztorysy, raporty i kalendarz.', 'erp-omd'); ?></li>
-                <li><?php esc_html_e('Sprint 7: alerty, załączniki, soft delete i lifecycle polish.', 'erp-omd'); ?></li>
-                <li><?php esc_html_e('Sprint 8: hardening produkcyjny, API finalne, UX/admin polish i release candidate.', 'erp-omd'); ?></li>
+                <li><?php esc_html_e('Kadry i role: pracownicy, role projektowe, salary history oraz uprawnienia.', 'erp-omd'); ?></li>
+                <li><?php esc_html_e('CRM i delivery: klienci, stawki klienta, projekty, kosztorysy i uwagi projektowe.', 'erp-omd'); ?></li>
+                <li><?php esc_html_e('Operacje: time tracking, approval flow, snapshoty stawek i kosztów oraz raportowanie.', 'erp-omd'); ?></li>
+                <li><?php esc_html_e('Kontrola i utrzymanie: alerty, załączniki, ustawienia lifecycle oraz REST API.', 'erp-omd'); ?></li>
             </ul>
         </div>
         <div class="erp-omd-card">
@@ -22,10 +20,39 @@
             <p><a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-alerts')); ?>"><?php esc_html_e('Przejdź do centrum alertów', 'erp-omd'); ?></a></p>
         </div>
         <div class="erp-omd-card">
-            <h2><?php esc_html_e('Release candidate', 'erp-omd'); ?></h2>
-            <p><strong><?php esc_html_e('Wersja pluginu:', 'erp-omd'); ?></strong> <?php echo esc_html(ERP_OMD_VERSION); ?></p>
-            <p><strong><?php esc_html_e('API finalne:', 'erp-omd'); ?></strong> <?php esc_html_e('role, pracownicy, klienci, projekty, kosztorysy, time tracking, raporty, alerty, załączniki, meta i system.', 'erp-omd'); ?></p>
-            <p><strong><?php esc_html_e('Paczka RC:', 'erp-omd'); ?></strong> <code>dist/erp-omd-sprint-8-rc.zip</code></p>
+            <h2><?php printf(esc_html__('Wydajność za %s', 'erp-omd'), esc_html($reporting_month_label)); ?></h2>
+            <p><strong><?php echo esc_html(number_format_i18n((float) $monthly_totals['reported_hours'], 2)); ?></strong> <?php esc_html_e('zatwierdzonych godzin', 'erp-omd'); ?></p>
+            <p><strong><?php echo esc_html(number_format_i18n((float) $monthly_totals['hourly_cost_total'], 2)); ?></strong> <?php esc_html_e('kosztu godzinowego', 'erp-omd'); ?></p>
+            <p><strong><?php echo esc_html(number_format_i18n((float) $monthly_totals['employee_profit'], 2)); ?></strong> <?php esc_html_e('zysku pracowniczego', 'erp-omd'); ?></p>
+            <p><strong><?php echo esc_html((int) $monthly_totals['active_employees']); ?></strong> <?php esc_html_e('pracowników z zatwierdzonym czasem', 'erp-omd'); ?></p>
+            <p><a class="button button-secondary" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports', 'report_type' => 'monthly'], admin_url('admin.php'))); ?>"><?php esc_html_e('Otwórz raport miesięczny', 'erp-omd'); ?></a></p>
+        </div>
+        <div class="erp-omd-card">
+            <h2><?php esc_html_e('Skrót alertów', 'erp-omd'); ?></h2>
+            <p><strong><?php echo esc_html((int) $alert_summary['error']); ?></strong> <?php esc_html_e('błędów krytycznych', 'erp-omd'); ?></p>
+            <p><strong><?php echo esc_html((int) $alert_summary['warning']); ?></strong> <?php esc_html_e('ostrzeżeń', 'erp-omd'); ?></p>
+            <p><strong><?php echo esc_html((int) $alert_summary['info']); ?></strong> <?php esc_html_e('powiadomień informacyjnych', 'erp-omd'); ?></p>
+            <?php if (! empty($dashboard_recent_alerts)) : ?>
+                <ul>
+                    <?php foreach ($dashboard_recent_alerts as $alert) : ?>
+                        <li>
+                            <strong><?php echo esc_html(strtoupper((string) ($alert['severity'] ?? 'info'))); ?>:</strong>
+                            <?php echo esc_html((string) ($alert['message'] ?? '')); ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php else : ?>
+                <p class="description"><?php esc_html_e('Brak aktywnych alertów.', 'erp-omd'); ?></p>
+            <?php endif; ?>
+        </div>
+        <div class="erp-omd-card">
+            <h2><?php esc_html_e('Skróty', 'erp-omd'); ?></h2>
+            <div class="erp-omd-action-group">
+                <?php foreach ($dashboard_shortcuts as $shortcut) : ?>
+                    <a class="button button-secondary" href="<?php echo esc_url($shortcut['url']); ?>"><?php echo esc_html($shortcut['label']); ?></a>
+                <?php endforeach; ?>
+            </div>
+            <p class="description"><?php esc_html_e('Najczęściej używane akcje operacyjne dostępne bez przechodzenia przez pełną nawigację.', 'erp-omd'); ?></p>
         </div>
     </div>
 </div>
