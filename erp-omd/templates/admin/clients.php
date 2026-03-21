@@ -229,27 +229,32 @@
                         <tr>
                             <td><input class="erp-omd-client-checkbox" type="checkbox" name="client_ids[]" value="<?php echo esc_attr($client_row['id']); ?>" /></td>
                             <td><?php echo esc_html($client_row['id']); ?></td>
-                            <td><?php echo esc_html($client_row['name']); ?><?php if (! empty($client_row['alerts'])) : ?><div class="erp-omd-badge-list"><?php foreach ($client_row['alerts'] as $client_alert) : ?><span class="erp-omd-badge erp-omd-badge-<?php echo esc_attr($client_alert['severity']); ?>"><?php echo esc_html($client_alert['message']); ?></span><?php endforeach; ?></div><?php endif; ?></td>
+                            <td><?php echo esc_html($client_row['name']); ?><?php $this->render_alert_icons($client_row['alerts'] ?? []); ?></td>
                             <td><?php echo esc_html($client_row['company']); ?></td>
                             <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($client_row['status'], 'active')); ?>"><?php echo esc_html($this->active_status_label($client_row['status'])); ?></span></td>
                             <td><?php echo esc_html($client_row['account_manager_login'] ?: '—'); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($client_row['total_profit'] ?? 0), 2)); ?></td>
                             <td>
-                                <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => (int) $client_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
-                                <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => (int) $client_row['id'], 'edit' => 1], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                 <?php $client_is_inactive = ($client_row['status'] ?? '') === 'inactive'; ?>
-                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js($client_is_inactive ? __('Aktywować klienta?', 'erp-omd') : __('Dezaktywować klienta?', 'erp-omd')); ?>');">
-                                    <?php wp_nonce_field('erp_omd_toggle_client_active'); ?>
-                                    <input type="hidden" name="erp_omd_action" value="toggle_client_active" />
-                                    <input type="hidden" name="id" value="<?php echo esc_attr($client_row['id']); ?>" />
-                                    <button class="button button-small" type="submit"><?php echo esc_html($client_is_inactive ? __('Aktywuj', 'erp-omd') : __('Dezaktywuj', 'erp-omd')); ?></button>
-                                </form>
-                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć klienta? Operacja usunie też jego projekty i dane powiązane.', 'erp-omd')); ?>');">
-                                    <?php wp_nonce_field('erp_omd_delete_client'); ?>
-                                    <input type="hidden" name="erp_omd_action" value="delete_client" />
-                                    <input type="hidden" name="id" value="<?php echo esc_attr($client_row['id']); ?>" />
-                                    <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
-                                </form>
+                                <details class="erp-omd-list-actions">
+                                    <summary class="button button-small"><?php esc_html_e('Akcje', 'erp-omd'); ?></summary>
+                                    <div class="erp-omd-list-actions-menu">
+                                        <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => (int) $client_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
+                                        <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => (int) $client_row['id'], 'edit' => 1], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                        <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js($client_is_inactive ? __('Aktywować klienta?', 'erp-omd') : __('Dezaktywować klienta?', 'erp-omd')); ?>');">
+                                            <?php wp_nonce_field('erp_omd_toggle_client_active'); ?>
+                                            <input type="hidden" name="erp_omd_action" value="toggle_client_active" />
+                                            <input type="hidden" name="id" value="<?php echo esc_attr($client_row['id']); ?>" />
+                                            <button class="button button-small" type="submit"><?php echo esc_html($client_is_inactive ? __('Aktywuj', 'erp-omd') : __('Dezaktywuj', 'erp-omd')); ?></button>
+                                        </form>
+                                        <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć klienta? Operacja usunie też jego projekty i dane powiązane.', 'erp-omd')); ?>');">
+                                            <?php wp_nonce_field('erp_omd_delete_client'); ?>
+                                            <input type="hidden" name="erp_omd_action" value="delete_client" />
+                                            <input type="hidden" name="id" value="<?php echo esc_attr($client_row['id']); ?>" />
+                                            <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                        </form>
+                                    </div>
+                                </details>
                             </td>
                         </tr>
                     <?php endforeach; ?>

@@ -209,13 +209,7 @@
                             <td><?php echo esc_html($project_row['client_name']); ?></td>
                             <td>
                                 <?php echo esc_html($project_row['name']); ?>
-                                <?php if (! empty($project_row['alerts'])) : ?>
-                                    <div class="erp-omd-badge-list">
-                                        <?php foreach ($project_row['alerts'] as $project_alert) : ?>
-                                            <span class="erp-omd-badge erp-omd-badge-<?php echo esc_attr($project_alert['severity']); ?>"><?php echo esc_html($project_alert['message']); ?></span>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php endif; ?>
+                                <?php $this->render_alert_icons($project_row['alerts'] ?? []); ?>
                             </td>
                             <td><?php echo esc_html($this->billing_type_label($project_row['billing_type'])); ?></td>
                             <td><?php echo esc_html($project_row['manager_login'] ?: '—'); ?></td>
@@ -225,27 +219,32 @@
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['margin'] ?? 0), 2)); ?></td>
                             <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($project_row['status'], 'project')); ?>"><?php echo esc_html($this->project_status_label($project_row['status'])); ?></span></td>
                             <td>
-                                <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
-                                <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php')) . '#erp-omd-project-details'); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
-                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Zduplikować projekt?', 'erp-omd')); ?>');">
-                                    <?php wp_nonce_field('erp_omd_duplicate_project'); ?>
-                                    <input type="hidden" name="erp_omd_action" value="duplicate_project" />
-                                    <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
-                                    <button class="button button-small" type="submit"><?php esc_html_e('Duplikuj', 'erp-omd'); ?></button>
-                                </form>
                                 <?php $project_is_inactive = ($project_row['status'] ?? '') === 'inactive'; ?>
-                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js($project_is_inactive ? __('Aktywować projekt?', 'erp-omd') : __('Dezaktywować projekt?', 'erp-omd')); ?>');">
-                                    <?php wp_nonce_field('erp_omd_toggle_project_active'); ?>
-                                    <input type="hidden" name="erp_omd_action" value="toggle_project_active" />
-                                    <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
-                                    <button class="button button-small" type="submit"><?php echo esc_html($project_is_inactive ? __('Aktywuj', 'erp-omd') : __('Dezaktywuj', 'erp-omd')); ?></button>
-                                </form>
-                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć projekt? Operacja usunie też dane powiązane.', 'erp-omd')); ?>');">
-                                    <?php wp_nonce_field('erp_omd_delete_project'); ?>
-                                    <input type="hidden" name="erp_omd_action" value="delete_project" />
-                                    <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
-                                    <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
-                                </form>
+                                <details class="erp-omd-list-actions">
+                                    <summary class="button button-small"><?php esc_html_e('Akcje', 'erp-omd'); ?></summary>
+                                    <div class="erp-omd-list-actions-menu">
+                                        <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                        <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php')) . '#erp-omd-project-details'); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
+                                        <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Zduplikować projekt?', 'erp-omd')); ?>');">
+                                            <?php wp_nonce_field('erp_omd_duplicate_project'); ?>
+                                            <input type="hidden" name="erp_omd_action" value="duplicate_project" />
+                                            <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
+                                            <button class="button button-small" type="submit"><?php esc_html_e('Duplikuj', 'erp-omd'); ?></button>
+                                        </form>
+                                        <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js($project_is_inactive ? __('Aktywować projekt?', 'erp-omd') : __('Dezaktywować projekt?', 'erp-omd')); ?>');">
+                                            <?php wp_nonce_field('erp_omd_toggle_project_active'); ?>
+                                            <input type="hidden" name="erp_omd_action" value="toggle_project_active" />
+                                            <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
+                                            <button class="button button-small" type="submit"><?php echo esc_html($project_is_inactive ? __('Aktywuj', 'erp-omd') : __('Dezaktywuj', 'erp-omd')); ?></button>
+                                        </form>
+                                        <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć projekt? Operacja usunie też dane powiązane.', 'erp-omd')); ?>');">
+                                            <?php wp_nonce_field('erp_omd_delete_project'); ?>
+                                            <input type="hidden" name="erp_omd_action" value="delete_project" />
+                                            <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
+                                            <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                        </form>
+                                    </div>
+                                </details>
                             </td>
                         </tr>
                     <?php endforeach; ?>
