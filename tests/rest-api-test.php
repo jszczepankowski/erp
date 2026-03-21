@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 if (! defined('ERP_OMD_VERSION')) {
-    define('ERP_OMD_VERSION', '0.8.0-rc1');
+    define('ERP_OMD_VERSION', '0.9.0');
 }
 if (! defined('ERP_OMD_DB_VERSION')) {
     define('ERP_OMD_DB_VERSION', '6.2.0');
@@ -357,7 +357,7 @@ final class RestApiTestRunner
         );
 
         $meta = $api->get_meta();
-        $this->assertSame('0.8.0-rc1', $meta['plugin_version'], 'Meta endpoint should expose plugin version.');
+        $this->assertSame('0.9.0', $meta['plugin_version'], 'Meta endpoint should expose plugin version.');
         $this->assertSame(['project', 'estimate'], $meta['attachment_entity_types'], 'Meta endpoint should expose supported attachment entity types.');
 
         $alerts = $api->list_alerts(new WP_REST_Request(['entity_type' => 'project', 'entity_id' => 10]));

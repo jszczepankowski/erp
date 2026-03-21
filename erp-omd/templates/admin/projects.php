@@ -157,7 +157,7 @@
             <input type="hidden" name="erp_omd_action" value="bulk_projects" />
             <div class="tablenav top"><div class="alignleft actions"><select name="bulk_action"><option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option><option value="activate"><?php esc_html_e('Aktywuj', 'erp-omd'); ?></option><option value="deactivate"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></option></select><button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button></div></div>
         <table class="widefat striped">
-            <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-project-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Typ', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Manager', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-project-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Typ', 'erp-omd'); ?></th><th><?php esc_html_e('Manager', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
             <tbody>
                 <?php if (empty($projects)) : ?>
                     <tr><td colspan="12"><?php esc_html_e('Brak projektów dla wybranych filtrów. Zmień kryteria albo dodaj nowy projekt.', 'erp-omd'); ?></td></tr>
@@ -167,6 +167,7 @@
                         <tr>
                             <td><input class="erp-omd-project-checkbox" type="checkbox" name="project_ids[]" value="<?php echo esc_attr($project_row['id']); ?>" /></td>
                             <td><?php echo esc_html($project_row['id']); ?></td>
+                            <td><?php echo esc_html($project_row['client_name']); ?></td>
                             <td>
                                 <?php echo esc_html($project_row['name']); ?>
                                 <?php if (! empty($project_row['alerts'])) : ?>
@@ -177,17 +178,22 @@
                                     </div>
                                 <?php endif; ?>
                             </td>
-                            <td><?php echo esc_html($project_row['client_name']); ?></td>
                             <td><?php echo esc_html($this->billing_type_label($project_row['billing_type'])); ?></td>
-                            <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($project_row['status'], 'project')); ?>"><?php echo esc_html($this->project_status_label($project_row['status'])); ?></span></td>
                             <td><?php echo esc_html($project_row['manager_login'] ?: '—'); ?></td>
-                            <td><?php echo esc_html(number_format_i18n((float) ($list_financial['revenue'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['cost'] ?? 0), 2)); ?></td>
+                            <td><?php echo esc_html(number_format_i18n((float) ($list_financial['revenue'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['profit'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['margin'] ?? 0), 2)); ?></td>
+                            <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($project_row['status'], 'project')); ?>"><?php echo esc_html($this->project_status_label($project_row['status'])); ?></span></td>
                             <td>
                                 <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                 <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php')) . '#erp-omd-project-details'); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
+                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Zduplikować projekt?', 'erp-omd')); ?>');">
+                                    <?php wp_nonce_field('erp_omd_duplicate_project'); ?>
+                                    <input type="hidden" name="erp_omd_action" value="duplicate_project" />
+                                    <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
+                                    <button class="button button-small" type="submit"><?php esc_html_e('Duplikuj', 'erp-omd'); ?></button>
+                                </form>
                                 <?php $project_is_inactive = ($project_row['status'] ?? '') === 'inactive'; ?>
                                 <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js($project_is_inactive ? __('Aktywować projekt?', 'erp-omd') : __('Dezaktywować projekt?', 'erp-omd')); ?>');">
                                     <?php wp_nonce_field('erp_omd_toggle_project_active'); ?>

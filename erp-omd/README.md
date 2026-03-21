@@ -1,6 +1,10 @@
 # ERP OMD
 
-Sprint 8 release candidate package for ERP_OMD V2.
+Sprint 9 package for ERP_OMD V2.
+
+## Dokumentacja systemu
+- Pełny opis systemu i propozycje usprawnień: `../docs/ERP_OMD_SYSTEM_OVERVIEW.md`
+- Plan rozwoju frontendu dla pracowników i managerów (`FRONT`): `../docs/FRONT_PLAN.md`
 
 ## Dokumentacja systemu
 - Pełny opis systemu i propozycje usprawnień: `../docs/ERP_OMD_SYSTEM_OVERVIEW.md`
@@ -14,7 +18,8 @@ Sprint 8 release candidate package for ERP_OMD V2.
 - Sprint 5 (historyczny): `./scripts/build-sprint-5-zip.sh`
 - Sprint 6 (historyczny): `./scripts/build-sprint-6-zip.sh`
 - Sprint 7 (historyczny): `./scripts/build-sprint-7-zip.sh`
-- Sprint 8 RC (aktualny): `./scripts/build-sprint-8-rc.sh`
+- Sprint 8 RC (historyczny): `./scripts/build-sprint-8-rc.sh`
+- Sprint 9 (aktualny): `./scripts/build-sprint-9.sh`
 
 ## Testy Sprintu 3
 - Automatyczne sanity checki: `./scripts/test-sprint-3.sh`
@@ -45,3 +50,9 @@ Sprint 8 release candidate package for ERP_OMD V2.
 - Automatyczne sanity checki: `./scripts/test-sprint-8.sh`
 - Test REST API / hardening: `php tests/rest-api-test.php`
 - Checklista odbiorowa Sprintu 8: `docs/SPRINT_8_CHECKLIST.md`
+
+## Testy Sprintu 9
+- Automatyczne sanity checki: `./scripts/test-sprint-9.sh`
+- Test walidacji klient/projekt: `php tests/client-project-service-test.php`
+- Test REST API / hardening: `php tests/rest-api-test.php`
+- Checklista odbiorowa Sprintu 9: `docs/SPRINT_9_CHECKLIST.md`

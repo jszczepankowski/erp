@@ -131,6 +131,7 @@ class ERP_OMD_Admin
             case 'export_estimate': $this->handle_estimate_export(); break;
             case 'export_report': $this->handle_report_export(); break;
             case 'save_project': $this->handle_project_save(); break;
+            case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
             case 'bulk_clients': $this->handle_clients_bulk_action(); break;
             case 'bulk_projects': $this->handle_projects_bulk_action(); break;
@@ -434,6 +435,7 @@ class ERP_OMD_Admin
         $can_delete_entries = $this->time_entry_service->can_delete_entry($current_user);
         $filters = [
             'employee_id' => $_GET['employee_id'] ?? '',
+            'client_id' => $_GET['client_id'] ?? '',
             'project_id' => $_GET['project_id'] ?? '',
             'status' => $_GET['status'] ?? '',
             'entry_date' => $_GET['entry_date'] ?? '',
@@ -450,9 +452,32 @@ class ERP_OMD_Admin
 
         $employees_for_select = $this->employees->all();
         $projects_for_time = $this->projects->all();
+        $clients_for_time = $this->clients->all();
         $roles = $this->roles->all();
-        $time_entries = $this->time_entry_service->filter_visible_entries($this->time_entries->all($filters), $current_user);
+        $time_entries = $this->time_entry_service->filter_visible_entries($this->time_entries->all(array_diff_key($filters, ['client_id' => ''])), $current_user);
+        if (! empty($filters['client_id'])) {
+            $time_entries = array_values(array_filter($time_entries, function ($time_row) use ($filters, $projects_for_time) {
+                foreach ($projects_for_time as $project_row) {
+                    if ((int) ($project_row['id'] ?? 0) === (int) ($time_row['project_id'] ?? 0)) {
+                        return (int) ($project_row['client_id'] ?? 0) === (int) $filters['client_id'];
+                    }
+                }
+
+                return false;
+            }));
+        }
         $selected_employee_id = $entry['employee_id'] ?? ($current_employee['id'] ?? 0);
+        $selected_time_client_id = 0;
+        if ($entry) {
+            foreach ($projects_for_time as $project_row) {
+                if ((int) ($project_row['id'] ?? 0) === (int) ($entry['project_id'] ?? 0)) {
+                    $selected_time_client_id = (int) ($project_row['client_id'] ?? 0);
+                    break;
+                }
+            }
+        } elseif (! empty($filters['client_id'])) {
+            $selected_time_client_id = (int) $filters['client_id'];
+        }
         $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
         $saved_views = $this->get_saved_views('time');
         include ERP_OMD_PATH . 'templates/admin/time-entries.php';
@@ -585,7 +610,7 @@ class ERP_OMD_Admin
         $errors = $this->client_project_service->validate_client($payload, $id ?: null);
         if ($errors) { $this->redirect_with_notice('erp-omd-clients', 'error', implode(' ', $errors), $id ? ['id' => $id, 'edit' => 1] : []); }
         if ($id) { $this->clients->update($id, $payload); $message = __('Klient został zaktualizowany.', 'erp-omd'); } else { $id = $this->clients->create($payload); $message = __('Klient został utworzony.', 'erp-omd'); }
-        $this->redirect_with_notice('erp-omd-clients', 'success', $message, ['id' => $id, 'edit' => 1]);
+        $this->redirect_with_notice('erp-omd-clients', 'success', $message, ['id' => $id]);
     }
 
     private function handle_client_active_toggle()
@@ -627,7 +652,7 @@ class ERP_OMD_Admin
             $this->client_rates->upsert($client_id, $role_id, $rate);
         }
 
-        $this->redirect_with_notice('erp-omd-clients', 'success', __('Stawka klienta została zapisana.', 'erp-omd'), ['id' => $client_id, 'edit' => 1]);
+        $this->redirect_with_notice('erp-omd-clients', 'success', __('Stawka klienta została zapisana.', 'erp-omd'), ['id' => $client_id]);
     }
 
     private function handle_client_rate_delete()
@@ -637,7 +662,7 @@ class ERP_OMD_Admin
         $id = (int) ($_POST['id'] ?? 0);
         $client_id = (int) ($_POST['client_id'] ?? 0);
         if ($id) { $this->client_rates->delete($id); }
-        $this->redirect_with_notice('erp-omd-clients', 'success', __('Stawka klienta została usunięta.', 'erp-omd'), ['id' => $client_id, 'edit' => 1]);
+        $this->redirect_with_notice('erp-omd-clients', 'success', __('Stawka klienta została usunięta.', 'erp-omd'), ['id' => $client_id]);
     }
 
     private function handle_estimate_save()
@@ -710,7 +735,7 @@ class ERP_OMD_Admin
             $this->estimate_items->create($payload);
             $message = __('Pozycja kosztorysu została dodana.', 'erp-omd');
         }
-        $this->redirect_with_notice('erp-omd-estimates', 'success', $message, ['id' => $estimate_id, 'edit' => 1]);
+        $this->redirect_with_notice('erp-omd-estimates', 'success', $message, ['id' => $estimate_id]);
     }
 
     private function handle_estimate_item_delete()
@@ -728,7 +753,7 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie można usuwać pozycji z zaakceptowanego kosztorysu.', 'erp-omd'), ['id' => $estimate_id, 'edit' => 1]);
         }
         $this->estimate_items->delete($item_id);
-        $this->redirect_with_notice('erp-omd-estimates', 'success', __('Pozycja kosztorysu została usunięta.', 'erp-omd'), ['id' => $estimate_id, 'edit' => 1]);
+        $this->redirect_with_notice('erp-omd-estimates', 'success', __('Pozycja kosztorysu została usunięta.', 'erp-omd'), ['id' => $estimate_id]);
     }
 
     private function handle_estimate_accept()
@@ -881,6 +906,42 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $id]);
     }
 
+    private function handle_project_duplicate()
+    {
+        check_admin_referer('erp_omd_duplicate_project');
+        $this->require_capability('erp_omd_manage_projects');
+        $project_id = (int) ($_POST['id'] ?? 0);
+        $project = $project_id ? $this->projects->find($project_id) : null;
+        if (! $project) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono projektu do duplikacji.', 'erp-omd'));
+        }
+
+        $duplicate_payload = $this->client_project_service->prepare_project([
+            'client_id' => (int) ($project['client_id'] ?? 0),
+            'name' => sprintf(__('Kopia — %s', 'erp-omd'), (string) ($project['name'] ?? '')),
+            'billing_type' => (string) ($project['billing_type'] ?? 'time_material'),
+            'budget' => (float) ($project['budget'] ?? 0),
+            'retainer_monthly_fee' => (float) ($project['retainer_monthly_fee'] ?? 0),
+            'status' => 'do_rozpoczecia',
+            'start_date' => '',
+            'end_date' => '',
+            'manager_id' => (int) ($project['manager_id'] ?? 0),
+            'estimate_id' => 0,
+            'brief' => (string) ($project['brief'] ?? ''),
+            'alert_margin_threshold' => $project['alert_margin_threshold'] ?? '',
+        ]);
+
+        $errors = $this->client_project_service->validate_project($duplicate_payload);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+        }
+
+        $new_project_id = $this->projects->create($duplicate_payload);
+        $this->project_financial_service->rebuild_for_project($new_project_id);
+
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Projekt został zduplikowany.', 'erp-omd'), ['id' => $new_project_id]);
+    }
+
     private function handle_project_active_toggle()
     {
         check_admin_referer('erp_omd_toggle_project_active');
@@ -991,7 +1052,12 @@ class ERP_OMD_Admin
         if (! current_user_can('administrator')) {
             $status = $id && current_user_can('erp_omd_approve_time') ? $status : 'submitted';
         }
+        $selected_client_id = (int) ($_POST['client_id'] ?? 0);
         $payload = ['employee_id' => $employee_id, 'project_id' => (int) ($_POST['project_id'] ?? 0), 'role_id' => (int) ($_POST['role_id'] ?? 0), 'hours' => (float) ($_POST['hours'] ?? 0), 'entry_date' => sanitize_text_field(wp_unslash($_POST['entry_date'] ?? '')), 'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')), 'status' => $status, 'created_by_user_id' => (int) $current_user->ID, 'approved_by_user_id' => in_array($status, ['approved', 'rejected'], true) ? (int) $current_user->ID : 0, 'approved_at' => in_array($status, ['approved', 'rejected'], true) ? current_time('mysql') : null];
+        $selected_project = $this->projects->find((int) $payload['project_id']);
+        if ($selected_client_id > 0 && $selected_project && (int) ($selected_project['client_id'] ?? 0) !== $selected_client_id) {
+            $this->redirect_with_notice('erp-omd-time', 'error', __('Wybrany projekt nie należy do wskazanego klienta.', 'erp-omd'));
+        }
         if ($id) {
             $existing = $this->time_entries->find($id);
             if (! $existing || ! $this->time_entry_service->can_edit_entry($existing, $current_user)) {
@@ -1003,7 +1069,7 @@ class ERP_OMD_Admin
         if ($errors) { $this->redirect_with_notice('erp-omd-time', 'error', implode(' ', $errors), $id ? ['id' => $id] : []); }
         if ($id) { $this->time_entries->update($id, $payload); $message = __('Wpis czasu został zaktualizowany.', 'erp-omd'); } else { $id = $this->time_entries->create($payload); $message = __('Wpis czasu został dodany.', 'erp-omd'); }
         $this->project_financial_service->rebuild_for_project((int) $payload['project_id']);
-        $this->redirect_with_notice('erp-omd-time', 'success', $message, $id && ! empty($_POST['id']) ? ['id' => $id] : []);
+        $this->redirect_with_notice('erp-omd-time', 'success', $message);
     }
 
     private function handle_time_status_change()
