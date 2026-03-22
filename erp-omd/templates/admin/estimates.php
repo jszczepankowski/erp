@@ -88,17 +88,19 @@
                                         <label for="estimate-item-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
                                         <input id="estimate-item-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($editing_estimate_item['name'] ?? ''); ?>" required>
                                     </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                        <label for="estimate-item-qty"><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
-                                        <input id="estimate-item-qty" name="qty" type="number" step="0.01" min="0.01" value="<?php echo esc_attr($editing_estimate_item['qty'] ?? '1'); ?>" required>
-                                    </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                        <label for="estimate-item-price"><?php esc_html_e('Cena', 'erp-omd'); ?></label>
-                                        <input id="estimate-item-price" name="price" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['price'] ?? '0'); ?>" required>
-                                    </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                        <label for="estimate-item-cost-internal"><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
-                                        <input id="estimate-item-cost-internal" name="cost_internal" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['cost_internal'] ?? '0'); ?>" required>
+                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-pricing erp-omd-form-field erp-omd-form-field-span-2">
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label for="estimate-item-qty"><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
+                                            <input id="estimate-item-qty" name="qty" type="number" step="0.01" min="0.01" value="<?php echo esc_attr($editing_estimate_item['qty'] ?? '1'); ?>" required>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label for="estimate-item-price"><?php esc_html_e('Cena', 'erp-omd'); ?></label>
+                                            <input id="estimate-item-price" name="price" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['price'] ?? '0'); ?>" required>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label for="estimate-item-cost-internal"><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
+                                            <input id="estimate-item-cost-internal" name="cost_internal" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['cost_internal'] ?? '0'); ?>" required>
+                                        </div>
                                     </div>
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label for="estimate-item-comment"><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
@@ -129,10 +131,11 @@
                 <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['wstepny', 'do_akceptacji', 'zaakceptowany'] as $status_option) : ?><option value="<?php echo esc_attr($status_option); ?>" <?php selected($estimate_filters['status'] ?? '', $status_option); ?>><?php echo esc_html($status_option); ?></option><?php endforeach; ?></select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
-            <form method="post">
+            <form method="post" id="erp-omd-bulk-estimates-form">
                 <?php wp_nonce_field('erp_omd_bulk_estimates'); ?>
                 <input type="hidden" name="erp_omd_action" value="bulk_estimates">
-            <div class="tablenav top"><div class="alignleft actions"><select name="bulk_action"><option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option><option value="accept"><?php esc_html_e('Akceptuj', 'erp-omd'); ?></option><option value="delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></option></select><button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button></div></div>
+                <div class="tablenav top"><div class="alignleft actions"><select name="bulk_action"><option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option><option value="accept"><?php esc_html_e('Akceptuj', 'erp-omd'); ?></option><option value="delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></option></select><button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button></div></div>
+            </form>
             <table class="widefat striped">
                 <thead>
                     <tr>
@@ -152,7 +155,7 @@
                     <?php foreach ($estimates as $estimate_row) : ?>
                         <?php $estimate_label = trim((string) ($estimate_row['name'] ?? '')) !== '' ? (string) $estimate_row['name'] : sprintf(__('Kosztorys #%d', 'erp-omd'), (int) $estimate_row['id']); ?>
                         <tr>
-                            <td><input class="erp-omd-estimate-checkbox" type="checkbox" name="estimate_ids[]" value="<?php echo esc_attr($estimate_row['id']); ?>" /></td>
+                            <td><input class="erp-omd-estimate-checkbox" type="checkbox" name="estimate_ids[]" value="<?php echo esc_attr($estimate_row['id']); ?>" form="erp-omd-bulk-estimates-form" /></td>
                             <td>#<?php echo esc_html($estimate_row['id']); ?></td>
                             <td>
                                 <?php echo esc_html($estimate_label); ?>
@@ -196,7 +199,6 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            </form>
 
             <?php if ($selected_estimate) : ?>
                 <?php $selected_estimate_label = trim((string) ($selected_estimate['name'] ?? '')) !== '' ? (string) $selected_estimate['name'] : sprintf(__('Kosztorys #%d', 'erp-omd'), (int) $selected_estimate['id']); ?>
