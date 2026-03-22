@@ -119,7 +119,7 @@
                 <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['submitted', 'approved', 'rejected'] as $time_status) : ?><option value="<?php echo esc_attr($time_status); ?>" <?php selected((string) ($filters['status'] ?? ''), $time_status); ?>><?php echo esc_html($this->time_status_label($time_status)); ?></option><?php endforeach; ?></select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
-            <form method="post">
+            <form method="post" id="erp-omd-bulk-time-entries-form">
                 <?php wp_nonce_field('erp_omd_bulk_time_entries'); ?>
                 <input type="hidden" name="erp_omd_action" value="bulk_time_entries" />
                 <div class="tablenav top">
@@ -139,15 +139,16 @@
                         <button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
                     </div>
                 </div>
-                <table class="widefat striped">
-                    <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-time-entry-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
-                    <tbody>
+            </form>
+            <table class="widefat striped">
+                <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-time-entry-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                <tbody>
                         <?php if (empty($time_entries)) : ?>
                             <tr><td colspan="9"><?php esc_html_e('Brak wpisów czasu.', 'erp-omd'); ?></td></tr>
                         <?php else : ?>
                             <?php foreach ($time_entries as $time_row) : ?>
                                 <tr>
-                                    <td><input class="erp-omd-time-entry-checkbox" type="checkbox" name="time_entry_ids[]" value="<?php echo esc_attr($time_row['id']); ?>" /></td>
+                                    <td><input class="erp-omd-time-entry-checkbox" type="checkbox" name="time_entry_ids[]" value="<?php echo esc_attr($time_row['id']); ?>" form="erp-omd-bulk-time-entries-form" /></td>
                                     <td><?php echo esc_html($time_row['entry_date']); ?></td>
                                     <td><?php echo esc_html($time_row['employee_login']); ?></td>
                                     <td><?php echo esc_html($time_row['project_name']); ?></td>
@@ -194,9 +195,8 @@
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
-                    </tbody>
-                </table>
-            </form>
+                </tbody>
+            </table>
         </section>
     </div>
 </div>

@@ -216,19 +216,20 @@
                 </select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
-            <form method="post">
-            <?php wp_nonce_field('erp_omd_bulk_clients'); ?>
-            <input type="hidden" name="erp_omd_action" value="bulk_clients" />
-            <div class="tablenav top">
-                <div class="alignleft actions">
-                    <select name="bulk_action">
-                        <option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option>
-                        <option value="activate"><?php esc_html_e('Aktywuj', 'erp-omd'); ?></option>
-                        <option value="deactivate"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></option>
-                    </select>
-                    <button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
+            <form method="post" id="erp-omd-bulk-clients-form">
+                <?php wp_nonce_field('erp_omd_bulk_clients'); ?>
+                <input type="hidden" name="erp_omd_action" value="bulk_clients" />
+                <div class="tablenav top">
+                    <div class="alignleft actions">
+                        <select name="bulk_action">
+                            <option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option>
+                            <option value="activate"><?php esc_html_e('Aktywuj', 'erp-omd'); ?></option>
+                            <option value="deactivate"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></option>
+                        </select>
+                        <button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
+                    </div>
                 </div>
-            </div>
+            </form>
             <table class="widefat striped">
                 <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-client-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Firma', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                 <tbody>
@@ -237,7 +238,7 @@
                 <?php else : ?>
                     <?php foreach ($clients as $client_row) : ?>
                         <tr>
-                            <td><input class="erp-omd-client-checkbox" type="checkbox" name="client_ids[]" value="<?php echo esc_attr($client_row['id']); ?>" /></td>
+                            <td><input class="erp-omd-client-checkbox" type="checkbox" name="client_ids[]" value="<?php echo esc_attr($client_row['id']); ?>" form="erp-omd-bulk-clients-form" /></td>
                             <td><?php echo esc_html($client_row['id']); ?></td>
                             <td><?php echo esc_html($client_row['name']); ?><?php $this->render_alert_icons($client_row['alerts'] ?? []); ?></td>
                             <td><?php echo esc_html($client_row['company']); ?></td>
@@ -271,7 +272,6 @@
                 <?php endif; ?>
                 </tbody>
             </table>
-            </form>
 
             <?php if ($selected_client) : ?>
                 <hr />
