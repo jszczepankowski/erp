@@ -565,7 +565,7 @@ class ERP_OMD_Frontend
             'id' => 0,
             'client_id' => (int) ($_GET['client_id'] ?? 0),
             'project_id' => 0,
-            'role_id' => (int) ($available_roles[0]['id'] ?? 0),
+            'role_id' => 0,
             'hours' => '',
             'entry_date' => $selected_day ?: gmdate('Y-m-d'),
             'description' => '',
@@ -1284,6 +1284,26 @@ class ERP_OMD_Frontend
         }
 
         return (int) ($request['preferred_manager_id'] ?? 0) === (int) ($current_employee['id'] ?? 0);
+    }
+
+    private function project_status_label($status)
+    {
+        switch ((string) $status) {
+            case 'do_rozpoczecia':
+                return __('Do rozpoczęcia', 'erp-omd');
+            case 'w_realizacji':
+                return __('W realizacji', 'erp-omd');
+            case 'w_akceptacji':
+                return __('W akceptacji', 'erp-omd');
+            case 'do_faktury':
+                return __('Do faktury', 'erp-omd');
+            case 'zakonczony':
+                return __('Zakończony', 'erp-omd');
+            case 'inactive':
+                return __('Nieaktywny', 'erp-omd');
+            default:
+                return $status ?: '—';
+        }
     }
 
     private function find_request_in_collection(array $requests, $request_id)

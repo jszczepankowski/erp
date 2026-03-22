@@ -95,6 +95,29 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
+  const syncRoleAvailability = (projectSelect) => {
+    if (!(projectSelect instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const roleSelector = projectSelect.dataset.roleTarget;
+    if (!roleSelector) {
+      return;
+    }
+
+    const roleSelect = document.querySelector(roleSelector);
+    if (!(roleSelect instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const hasProject = projectSelect.value !== '' && projectSelect.value !== '0';
+    roleSelect.disabled = !hasProject;
+
+    if (!hasProject) {
+      roleSelect.value = '';
+    }
+  };
+
   const syncProjectOptions = (clientSelect) => {
     if (!(clientSelect instanceof HTMLSelectElement)) {
       return;
@@ -111,7 +134,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const selectedClientId = clientSelect.value;
+    const requiresClient = clientSelect.dataset.projectRequiresClient === '1';
+    const hasClient = selectedClientId !== '' && selectedClientId !== '0';
     let hasVisibleSelectedOption = false;
+
+    if (requiresClient) {
+      projectSelect.disabled = !hasClient;
+    }
 
     Array.from(projectSelect.options).forEach((option) => {
       if (option.value === '') {
@@ -120,7 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const optionClientId = option.dataset.clientId || '';
-      const visible = selectedClientId === '' || selectedClientId === '0' || optionClientId === selectedClientId;
+      const visible = requiresClient
+        ? hasClient && optionClientId === selectedClientId
+        : selectedClientId === '' || selectedClientId === '0' || optionClientId === selectedClientId;
       option.hidden = !visible;
 
       if (visible && option.selected) {
@@ -131,15 +162,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasVisibleSelectedOption) {
       projectSelect.value = '';
       const firstVisibleOption = Array.from(projectSelect.options).find((option) => !option.hidden && option.value !== '');
-      if (projectSelect.required && firstVisibleOption) {
+      if (!requiresClient && projectSelect.required && firstVisibleOption) {
         firstVisibleOption.selected = true;
       }
     }
+
+    syncRoleAvailability(projectSelect);
   };
 
   document.querySelectorAll('select[data-project-target]').forEach((clientSelect) => {
     syncProjectOptions(clientSelect);
     clientSelect.addEventListener('change', () => syncProjectOptions(clientSelect));
+  });
+
+  document.querySelectorAll('select[data-role-target]').forEach((projectSelect) => {
+    syncRoleAvailability(projectSelect);
+    projectSelect.addEventListener('change', () => syncRoleAvailability(projectSelect));
   });
 
   document.querySelectorAll('.erp-omd-attachment-form').forEach((form) => {

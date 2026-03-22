@@ -246,6 +246,10 @@ body.erp-omd-front-body {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
+.erp-omd-front-form-row-time-context {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .erp-omd-front-filter-form {
     align-items: end;
     margin-bottom: 18px;
@@ -894,6 +898,10 @@ body.erp-omd-front-body {
 
     .erp-omd-front-panel {
         padding: 20px;
+    }
+
+    .erp-omd-front-form-row-time-context {
+        grid-template-columns: 1fr;
     }
 
     .erp-omd-front-shell-login {

@@ -93,7 +93,7 @@
                                             <strong><?php echo esc_html($project['name'] ?? ('#' . $project_id)); ?></strong>
                                             <p><?php echo esc_html($project['client_name'] ?? '—'); ?> · <?php echo esc_html($project['billing_type'] ?? '—'); ?></p>
                                         </div>
-                                        <span class="erp-omd-front-chip"><?php echo esc_html($project['status'] ?? '—'); ?></span>
+                                        <span class="erp-omd-front-chip"><?php echo esc_html($this->project_status_label($project['status'] ?? '')); ?></span>
                                     </div>
                                     <div class="erp-omd-front-project-card-meta">
                                         <span><?php printf(esc_html__('Marża: %s%%', 'erp-omd'), esc_html(number_format_i18n((float) ($project_financial['margin'] ?? 0), 2))); ?></span>
@@ -139,7 +139,7 @@
                             </div>
                             <div class="erp-omd-front-detail-item">
                                 <strong><?php esc_html_e('Status', 'erp-omd'); ?></strong>
-                                <span><?php echo esc_html($selected_project['status'] ?? '—'); ?></span>
+                                <span><?php echo esc_html($this->project_status_label($selected_project['status'] ?? '')); ?></span>
                             </div>
                             <div class="erp-omd-front-detail-item">
                                 <strong><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></strong>

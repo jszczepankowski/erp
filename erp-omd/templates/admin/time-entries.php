@@ -32,7 +32,7 @@
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="time-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
-                                <select id="time-client" name="client_id" data-project-target="#time-project">
+                                <select id="time-client" name="client_id" data-project-target="#time-project" data-project-requires-client="1">
                                     <option value="0"><?php esc_html_e('Wybierz', 'erp-omd'); ?></option>
                                     <?php foreach ($clients_for_time as $client_item) : ?>
                                         <option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) ($selected_time_client_id ?? 0), (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option>
@@ -41,7 +41,7 @@
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="time-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
-                                <select id="time-project" name="project_id" required>
+                                <select id="time-project" name="project_id" data-role-target="#time-role" <?php disabled((int) ($selected_time_client_id ?? 0) <= 0); ?> required>
                                     <option value=""><?php esc_html_e('Wybierz', 'erp-omd'); ?></option>
                                     <?php foreach ($projects_for_time as $project_item) : ?>
                                         <option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr($project_item['client_id']); ?>" <?php selected((int) ($entry['project_id'] ?? 0), (int) $project_item['id']); ?>><?php echo esc_html($project_item['name'] . ' [' . $this->project_status_label($project_item['status']) . ']'); ?></option>
@@ -50,7 +50,7 @@
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="time-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label>
-                                <select id="time-role" name="role_id" required>
+                                <select id="time-role" name="role_id" <?php disabled((int) ($entry['project_id'] ?? 0) <= 0); ?> required>
                                     <option value=""><?php esc_html_e('Wybierz', 'erp-omd'); ?></option>
                                     <?php foreach ($roles as $role_item) : ?>
                                         <option value="<?php echo esc_attr($role_item['id']); ?>" <?php selected((int) ($entry['role_id'] ?? 0), (int) $role_item['id']); ?>><?php echo esc_html($role_item['name']); ?></option>
