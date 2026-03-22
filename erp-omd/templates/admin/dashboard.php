@@ -37,12 +37,6 @@
             'variant' => '',
         ],
         [
-            'icon' => 'networking',
-            'value' => count($roles),
-            'label' => __('Role projektowe', 'erp-omd'),
-            'variant' => '',
-        ],
-        [
             'icon' => 'businessman',
             'value' => count($clients),
             'label' => __('Klienci', 'erp-omd'),

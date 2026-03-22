@@ -157,7 +157,6 @@ class ERP_OMD_Admin
     public function render_dashboard()
     {
         $employees = $this->employees->all();
-        $roles = $this->roles->all();
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $alerts = $this->alert_service->all_alerts();
