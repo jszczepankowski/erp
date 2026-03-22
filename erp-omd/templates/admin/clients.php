@@ -14,8 +14,8 @@
                             <h3><?php esc_html_e('Podstawy', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Najważniejsze dane identyfikujące klienta.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-form-grid">
-                            <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                        <div class="erp-omd-form-grid erp-omd-form-grid-client-basics">
+                            <div class="erp-omd-form-field">
                                 <label for="client-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
                                 <input id="client-name" class="regular-text" type="text" name="name" value="<?php echo esc_attr($client['name'] ?? ''); ?>" required />
                             </div>
@@ -36,25 +36,27 @@
                             <p><?php esc_html_e('Pola o mniejszej szerokości układają się obok siebie, a dłuższe zajmują cały wiersz.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid">
-                            <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                                <label for="client-street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label>
+                            <div class="erp-omd-form-grid erp-omd-form-grid-client-address-row erp-omd-form-field-span-full">
+                                <div class="erp-omd-form-field">
+                                    <label for="client-street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label>
                                 <input id="client-street" class="regular-text" type="text" name="street" value="<?php echo esc_attr($client['street'] ?? ''); ?>" />
                             </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="client-apartment-number"><?php esc_html_e('Numer lokalu', 'erp-omd'); ?></label>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="client-apartment-number"><?php esc_html_e('Numer lokalu', 'erp-omd'); ?></label>
                                 <input id="client-apartment-number" class="regular-text" type="text" name="apartment_number" value="<?php echo esc_attr($client['apartment_number'] ?? ''); ?>" />
                             </div>
-                            <div class="erp-omd-form-field">
-                                <label for="client-city"><?php esc_html_e('Miasto', 'erp-omd'); ?></label>
+                                <div class="erp-omd-form-field">
+                                    <label for="client-city"><?php esc_html_e('Miasto', 'erp-omd'); ?></label>
                                 <input id="client-city" class="regular-text" type="text" name="city" value="<?php echo esc_attr($client['city'] ?? ''); ?>" />
                             </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="client-postal-code"><?php esc_html_e('Kod pocztowy', 'erp-omd'); ?></label>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="client-postal-code"><?php esc_html_e('Kod pocztowy', 'erp-omd'); ?></label>
                                 <input id="client-postal-code" class="regular-text" type="text" name="postal_code" value="<?php echo esc_attr($client['postal_code'] ?? ''); ?>" placeholder="00-000" />
                             </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="client-country"><?php esc_html_e('Kraj (ISO)', 'erp-omd'); ?></label>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="client-country"><?php esc_html_e('Kraj (ISO)', 'erp-omd'); ?></label>
                                 <input id="client-country" class="small-text" type="text" name="country" value="<?php echo esc_attr($client['country'] ?? 'PL'); ?>" maxlength="2" />
+                            </div>
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="client-email"><?php esc_html_e('Email', 'erp-omd'); ?></label>
@@ -214,19 +216,20 @@
                 </select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
-            <form method="post">
-            <?php wp_nonce_field('erp_omd_bulk_clients'); ?>
-            <input type="hidden" name="erp_omd_action" value="bulk_clients" />
-            <div class="tablenav top">
-                <div class="alignleft actions">
-                    <select name="bulk_action">
-                        <option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option>
-                        <option value="activate"><?php esc_html_e('Aktywuj', 'erp-omd'); ?></option>
-                        <option value="deactivate"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></option>
-                    </select>
-                    <button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
+            <form method="post" id="erp-omd-bulk-clients-form">
+                <?php wp_nonce_field('erp_omd_bulk_clients'); ?>
+                <input type="hidden" name="erp_omd_action" value="bulk_clients" />
+                <div class="tablenav top">
+                    <div class="alignleft actions">
+                        <select name="bulk_action">
+                            <option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option>
+                            <option value="activate"><?php esc_html_e('Aktywuj', 'erp-omd'); ?></option>
+                            <option value="deactivate"><?php esc_html_e('Dezaktywuj', 'erp-omd'); ?></option>
+                        </select>
+                        <button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
+                    </div>
                 </div>
-            </div>
+            </form>
             <table class="widefat striped">
                 <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-client-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Firma', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                 <tbody>
@@ -235,7 +238,7 @@
                 <?php else : ?>
                     <?php foreach ($clients as $client_row) : ?>
                         <tr>
-                            <td><input class="erp-omd-client-checkbox" type="checkbox" name="client_ids[]" value="<?php echo esc_attr($client_row['id']); ?>" /></td>
+                            <td><input class="erp-omd-client-checkbox" type="checkbox" name="client_ids[]" value="<?php echo esc_attr($client_row['id']); ?>" form="erp-omd-bulk-clients-form" /></td>
                             <td><?php echo esc_html($client_row['id']); ?></td>
                             <td><?php echo esc_html($client_row['name']); ?><?php $this->render_alert_icons($client_row['alerts'] ?? []); ?></td>
                             <td><?php echo esc_html($client_row['company']); ?></td>
@@ -269,7 +272,6 @@
                 <?php endif; ?>
                 </tbody>
             </table>
-            </form>
 
             <?php if ($selected_client) : ?>
                 <hr />

@@ -263,6 +263,18 @@ class ERP_OMD_Frontend
         $denied = ! empty($_GET['denied']);
         $front_login_url = $this->front_url('login');
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
+        $front_login_logo_url = '';
+        $front_login_cover_url = '';
+        $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
+        $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
+
+        if ($front_login_logo_id > 0) {
+            $front_login_logo_url = (string) wp_get_attachment_image_url($front_login_logo_id, 'medium');
+        }
+
+        if ($front_login_cover_id > 0) {
+            $front_login_cover_url = (string) wp_get_attachment_image_url($front_login_cover_id, 'large');
+        }
 
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/login.php';
