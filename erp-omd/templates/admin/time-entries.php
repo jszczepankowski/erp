@@ -15,10 +15,11 @@
                             <h3><?php esc_html_e('Kontekst wpisu', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Pracownik, klient, projekt i rola raportowana w jednym bloku.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-grid erp-omd-form-grid-time-context">
                             <div class="erp-omd-form-field">
                                 <label for="time-employee"><?php esc_html_e('Pracownik', 'erp-omd'); ?></label>
                                 <select id="time-employee" name="employee_id" <?php disabled(! $can_select_any_employee); ?>>
+                                    <?php if ($can_select_any_employee) : ?><option value=""><?php esc_html_e('Wybierz', 'erp-omd'); ?></option><?php endif; ?>
                                     <?php foreach ($employees_for_select as $employee_item) : ?>
                                         <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($selected_employee_id ?? 0), (int) $employee_item['id']); ?>>
                                             <?php echo esc_html($employee_item['user_login']); ?>
@@ -31,8 +32,8 @@
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="time-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
-                                <select id="time-client" name="client_id" data-project-target="#time-project">
-                                    <option value="0"><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
+                                <select id="time-client" name="client_id" data-project-target="#time-project" data-project-requires-client="1">
+                                    <option value="0"><?php esc_html_e('Wybierz', 'erp-omd'); ?></option>
                                     <?php foreach ($clients_for_time as $client_item) : ?>
                                         <option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) ($selected_time_client_id ?? 0), (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option>
                                     <?php endforeach; ?>
@@ -40,8 +41,8 @@
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="time-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
-                                <select id="time-project" name="project_id" required>
-                                    <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
+                                <select id="time-project" name="project_id" data-role-target="#time-role" <?php disabled((int) ($selected_time_client_id ?? 0) <= 0); ?> required>
+                                    <option value=""><?php esc_html_e('Wybierz', 'erp-omd'); ?></option>
                                     <?php foreach ($projects_for_time as $project_item) : ?>
                                         <option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr($project_item['client_id']); ?>" <?php selected((int) ($entry['project_id'] ?? 0), (int) $project_item['id']); ?>><?php echo esc_html($project_item['name'] . ' [' . $this->project_status_label($project_item['status']) . ']'); ?></option>
                                     <?php endforeach; ?>
@@ -49,7 +50,8 @@
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="time-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label>
-                                <select id="time-role" name="role_id" required>
+                                <select id="time-role" name="role_id" <?php disabled((int) ($entry['project_id'] ?? 0) <= 0); ?> required>
+                                    <option value=""><?php esc_html_e('Wybierz', 'erp-omd'); ?></option>
                                     <?php foreach ($roles as $role_item) : ?>
                                         <option value="<?php echo esc_attr($role_item['id']); ?>" <?php selected((int) ($entry['role_id'] ?? 0), (int) $role_item['id']); ?>><?php echo esc_html($role_item['name']); ?></option>
                                     <?php endforeach; ?>
@@ -63,7 +65,7 @@
                             <h3><?php esc_html_e('Czas i status', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Wartość wpisu, data wykonania i etap akceptacji.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-grid erp-omd-form-grid-time-status">
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
                                 <label for="time-hours"><?php esc_html_e('Godziny', 'erp-omd'); ?></label>
                                 <input id="time-hours" type="number" step="0.01" min="0.01" name="hours" value="<?php echo esc_attr($entry['hours'] ?? ''); ?>" required />
@@ -117,7 +119,7 @@
                 <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['submitted', 'approved', 'rejected'] as $time_status) : ?><option value="<?php echo esc_attr($time_status); ?>" <?php selected((string) ($filters['status'] ?? ''), $time_status); ?>><?php echo esc_html($this->time_status_label($time_status)); ?></option><?php endforeach; ?></select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
-            <form method="post">
+            <form method="post" id="erp-omd-bulk-time-entries-form">
                 <?php wp_nonce_field('erp_omd_bulk_time_entries'); ?>
                 <input type="hidden" name="erp_omd_action" value="bulk_time_entries" />
                 <div class="tablenav top">
@@ -137,15 +139,16 @@
                         <button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
                     </div>
                 </div>
-                <table class="widefat striped">
-                    <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-time-entry-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
-                    <tbody>
+            </form>
+            <table class="widefat striped">
+                <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-time-entry-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                <tbody>
                         <?php if (empty($time_entries)) : ?>
                             <tr><td colspan="9"><?php esc_html_e('Brak wpisów czasu.', 'erp-omd'); ?></td></tr>
                         <?php else : ?>
                             <?php foreach ($time_entries as $time_row) : ?>
                                 <tr>
-                                    <td><input class="erp-omd-time-entry-checkbox" type="checkbox" name="time_entry_ids[]" value="<?php echo esc_attr($time_row['id']); ?>" /></td>
+                                    <td><input class="erp-omd-time-entry-checkbox" type="checkbox" name="time_entry_ids[]" value="<?php echo esc_attr($time_row['id']); ?>" form="erp-omd-bulk-time-entries-form" /></td>
                                     <td><?php echo esc_html($time_row['entry_date']); ?></td>
                                     <td><?php echo esc_html($time_row['employee_login']); ?></td>
                                     <td><?php echo esc_html($time_row['project_name']); ?></td>
@@ -192,9 +195,8 @@
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
-                    </tbody>
-                </table>
-            </form>
+                </tbody>
+            </table>
         </section>
     </div>
 </div>

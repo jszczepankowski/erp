@@ -95,6 +95,29 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
+  const syncRoleAvailability = (projectSelect) => {
+    if (!(projectSelect instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const roleSelector = projectSelect.dataset.roleTarget;
+    if (!roleSelector) {
+      return;
+    }
+
+    const roleSelect = document.querySelector(roleSelector);
+    if (!(roleSelect instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const hasProject = projectSelect.value !== '' && projectSelect.value !== '0';
+    roleSelect.disabled = !hasProject;
+
+    if (!hasProject) {
+      roleSelect.value = '';
+    }
+  };
+
   const syncProjectOptions = (clientSelect) => {
     if (!(clientSelect instanceof HTMLSelectElement)) {
       return;
@@ -111,7 +134,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const selectedClientId = clientSelect.value;
+    const requiresClient = clientSelect.dataset.projectRequiresClient === '1';
+    const hasClient = selectedClientId !== '' && selectedClientId !== '0';
     let hasVisibleSelectedOption = false;
+
+    if (requiresClient) {
+      projectSelect.disabled = !hasClient;
+    }
 
     Array.from(projectSelect.options).forEach((option) => {
       if (option.value === '') {
@@ -120,7 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const optionClientId = option.dataset.clientId || '';
-      const visible = selectedClientId === '' || selectedClientId === '0' || optionClientId === selectedClientId;
+      const visible = requiresClient
+        ? hasClient && optionClientId === selectedClientId
+        : selectedClientId === '' || selectedClientId === '0' || optionClientId === selectedClientId;
       option.hidden = !visible;
 
       if (visible && option.selected) {
@@ -131,10 +162,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!hasVisibleSelectedOption) {
       projectSelect.value = '';
       const firstVisibleOption = Array.from(projectSelect.options).find((option) => !option.hidden && option.value !== '');
-      if (projectSelect.required && firstVisibleOption) {
+      if (!requiresClient && projectSelect.required && firstVisibleOption) {
         firstVisibleOption.selected = true;
       }
     }
+
+    syncRoleAvailability(projectSelect);
   };
 
   document.querySelectorAll('select[data-project-target]').forEach((clientSelect) => {
@@ -142,10 +175,16 @@ document.addEventListener('DOMContentLoaded', () => {
     clientSelect.addEventListener('change', () => syncProjectOptions(clientSelect));
   });
 
+  document.querySelectorAll('select[data-role-target]').forEach((projectSelect) => {
+    syncRoleAvailability(projectSelect);
+    projectSelect.addEventListener('change', () => syncRoleAvailability(projectSelect));
+  });
+
   document.querySelectorAll('.erp-omd-attachment-form').forEach((form) => {
     const button = form.querySelector('.erp-omd-media-button');
     const input = form.querySelector('.erp-omd-media-id');
     const nameNode = form.querySelector('.erp-omd-media-name');
+    const previewNode = form.querySelector('.erp-omd-media-preview img');
 
     if (!button || !(input instanceof HTMLInputElement) || !nameNode || typeof wp === 'undefined' || !wp.media) {
       return;
@@ -153,8 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     button.addEventListener('click', () => {
       const frame = wp.media({
-        title: 'Wybierz załącznik',
-        button: { text: 'Użyj załącznika' },
+        title: button.dataset.mediaTitle || 'Wybierz załącznik',
+        button: { text: button.dataset.mediaButton || 'Użyj załącznika' },
         multiple: false,
       });
 
@@ -167,6 +206,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const attachment = selection.toJSON();
         input.value = String(attachment.id || '');
         nameNode.textContent = attachment.filename || attachment.title || `#${attachment.id}`;
+        if (previewNode instanceof HTMLImageElement && attachment.url) {
+          previewNode.src = attachment.url;
+          previewNode.hidden = false;
+        }
       });
 
       frame.open();

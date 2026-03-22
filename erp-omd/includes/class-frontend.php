@@ -263,6 +263,18 @@ class ERP_OMD_Frontend
         $denied = ! empty($_GET['denied']);
         $front_login_url = $this->front_url('login');
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
+        $front_login_logo_url = '';
+        $front_login_cover_url = '';
+        $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
+        $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
+
+        if ($front_login_logo_id > 0) {
+            $front_login_logo_url = (string) wp_get_attachment_image_url($front_login_logo_id, 'medium');
+        }
+
+        if ($front_login_cover_id > 0) {
+            $front_login_cover_url = (string) wp_get_attachment_image_url($front_login_cover_id, 'large');
+        }
 
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/login.php';
@@ -553,7 +565,7 @@ class ERP_OMD_Frontend
             'id' => 0,
             'client_id' => (int) ($_GET['client_id'] ?? 0),
             'project_id' => 0,
-            'role_id' => (int) ($available_roles[0]['id'] ?? 0),
+            'role_id' => 0,
             'hours' => '',
             'entry_date' => $selected_day ?: gmdate('Y-m-d'),
             'description' => '',
@@ -1272,6 +1284,26 @@ class ERP_OMD_Frontend
         }
 
         return (int) ($request['preferred_manager_id'] ?? 0) === (int) ($current_employee['id'] ?? 0);
+    }
+
+    private function project_status_label($status)
+    {
+        switch ((string) $status) {
+            case 'do_rozpoczecia':
+                return __('Do rozpoczęcia', 'erp-omd');
+            case 'w_realizacji':
+                return __('W realizacji', 'erp-omd');
+            case 'w_akceptacji':
+                return __('W akceptacji', 'erp-omd');
+            case 'do_faktury':
+                return __('Do faktury', 'erp-omd');
+            case 'zakonczony':
+                return __('Zakończony', 'erp-omd');
+            case 'inactive':
+                return __('Nieaktywny', 'erp-omd');
+            default:
+                return $status ?: '—';
+        }
     }
 
     private function find_request_in_collection(array $requests, $request_id)

@@ -15,7 +15,7 @@
                             <h3><?php esc_html_e('Definicja roli', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Nazwa, slug i status publikacji roli projektowej.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-grid erp-omd-form-grid-role-definition">
                             <div class="erp-omd-form-field">
                                 <label for="erp-role-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
                                 <input id="erp-role-name" class="regular-text" type="text" name="name" value="<?php echo esc_attr($role['name'] ?? ''); ?>" required />
@@ -31,7 +31,7 @@
                                     <option value="inactive" <?php selected($role['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
                                 </select>
                             </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <div class="erp-omd-form-field erp-omd-form-field-span-full">
                                 <label for="erp-role-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
                                 <textarea id="erp-role-description" class="large-text" rows="4" name="description"><?php echo esc_textarea($role['description'] ?? ''); ?></textarea>
                             </div>

@@ -96,34 +96,43 @@
                         <input type="hidden" name="id" value="<?php echo esc_attr((string) ($worker_form_defaults['id'] ?? 0)); ?>">
                         <input type="hidden" name="selected_date" value="<?php echo esc_attr($selected_day); ?>">
 
-                        <label for="erp-omd-front-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
-                        <select id="erp-omd-front-client" name="client_id" data-project-target="#erp-omd-front-project" required>
-                            <option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
-                            <?php foreach ($available_clients as $client_item) : ?>
-                                <option value="<?php echo esc_attr((string) $client_item['id']); ?>" <?php selected((int) ($worker_form_defaults['client_id'] ?? 0), (int) $client_item['id']); ?>>
-                                    <?php echo esc_html($client_item['name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <div class="erp-omd-front-form-row erp-omd-front-form-row-time-context">
+                            <div>
+                                <label for="erp-omd-front-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                                <select id="erp-omd-front-client" name="client_id" data-project-target="#erp-omd-front-project" data-project-requires-client="1" required>
+                                    <option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
+                                    <?php foreach ($available_clients as $client_item) : ?>
+                                        <option value="<?php echo esc_attr((string) $client_item['id']); ?>" <?php selected((int) ($worker_form_defaults['client_id'] ?? 0), (int) $client_item['id']); ?>>
+                                            <?php echo esc_html($client_item['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
 
-                        <label for="erp-omd-front-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
-                        <select id="erp-omd-front-project" name="project_id" required>
-                            <option value=""><?php esc_html_e('Wybierz projekt klienta', 'erp-omd'); ?></option>
-                            <?php foreach ($available_projects as $project_item) : ?>
-                                <option value="<?php echo esc_attr((string) $project_item['id']); ?>" data-client-id="<?php echo esc_attr((string) $project_item['client_id']); ?>" <?php selected((int) ($worker_form_defaults['project_id'] ?? 0), (int) $project_item['id']); ?>>
-                                    <?php echo esc_html($project_item['name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                            <div>
+                                <label for="erp-omd-front-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
+                                <select id="erp-omd-front-project" name="project_id" data-role-target="#erp-omd-front-role" <?php disabled((int) ($worker_form_defaults['client_id'] ?? 0) <= 0); ?> required>
+                                    <option value=""><?php esc_html_e('Wybierz projekt klienta', 'erp-omd'); ?></option>
+                                    <?php foreach ($available_projects as $project_item) : ?>
+                                        <option value="<?php echo esc_attr((string) $project_item['id']); ?>" data-client-id="<?php echo esc_attr((string) $project_item['client_id']); ?>" <?php selected((int) ($worker_form_defaults['project_id'] ?? 0), (int) $project_item['id']); ?>>
+                                            <?php echo esc_html($project_item['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
 
-                        <label for="erp-omd-front-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label>
-                        <select id="erp-omd-front-role" name="role_id" required>
-                            <?php foreach ($available_roles as $role_item) : ?>
-                                <option value="<?php echo esc_attr((string) $role_item['id']); ?>" <?php selected((int) ($worker_form_defaults['role_id'] ?? 0), (int) $role_item['id']); ?>>
-                                    <?php echo esc_html($role_item['name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                            <div>
+                                <label for="erp-omd-front-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label>
+                                <select id="erp-omd-front-role" name="role_id" <?php disabled((int) ($worker_form_defaults['project_id'] ?? 0) <= 0); ?> required>
+                                    <option value=""><?php esc_html_e('Wybierz rolę', 'erp-omd'); ?></option>
+                                    <?php foreach ($available_roles as $role_item) : ?>
+                                        <option value="<?php echo esc_attr((string) $role_item['id']); ?>" <?php selected((int) ($worker_form_defaults['role_id'] ?? 0), (int) $role_item['id']); ?>>
+                                            <?php echo esc_html($role_item['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
 
                         <div class="erp-omd-front-form-row">
                             <div>
@@ -456,7 +465,13 @@
                 }
 
                 var selectedClientId = clientInput.value;
+                var requiresClient = clientInput.getAttribute('data-project-requires-client') === '1';
+                var hasClient = selectedClientId !== '' && selectedClientId !== '0';
                 var hasVisibleSelectedOption = false;
+
+                if (requiresClient) {
+                    projectInput.disabled = !hasClient;
+                }
 
                 Array.prototype.forEach.call(projectInput.options, function (option) {
                     if (option.value === '') {
@@ -465,7 +480,9 @@
                     }
 
                     var optionClientId = option.getAttribute('data-client-id') || '';
-                    var visible = selectedClientId === '' || optionClientId === selectedClientId;
+                    var visible = requiresClient
+                        ? hasClient && optionClientId === selectedClientId
+                        : selectedClientId === '' || optionClientId === selectedClientId;
                     option.hidden = !visible;
 
                     if (visible && option.selected) {
@@ -476,11 +493,31 @@
                 if (!hasVisibleSelectedOption) {
                     projectInput.value = '';
                 }
+
+                syncRoleAvailability();
+            };
+
+            var syncRoleAvailability = function () {
+                if (!projectInput || !roleInput) {
+                    return;
+                }
+
+                var hasProject = projectInput.value !== '' && projectInput.value !== '0';
+                roleInput.disabled = !hasProject;
+
+                if (!hasProject) {
+                    roleInput.value = '';
+                }
             };
 
             if (clientInput) {
                 syncProjectOptions();
                 clientInput.addEventListener('change', syncProjectOptions);
+            }
+
+            if (projectInput) {
+                syncRoleAvailability();
+                projectInput.addEventListener('change', syncRoleAvailability);
             }
 
             document.querySelectorAll('.erp-omd-front-quick-hours-button').forEach(function (button) {
@@ -500,6 +537,7 @@
                     }
                     if (projectInput) {
                         projectInput.value = button.getAttribute('data-project-id');
+                        syncRoleAvailability();
                     }
                     if (roleInput) {
                         roleInput.value = button.getAttribute('data-role-id');
