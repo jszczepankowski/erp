@@ -196,6 +196,14 @@ background-image: none !important;
     grid-template-columns: minmax(0, 1fr);
 }
 
+.erp-omd-front-grid-manager-full {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.erp-omd-front-grid-manager-full {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .erp-omd-front-panel {
     background: #f9fafb;
     border: 1px solid #e5e7eb;
