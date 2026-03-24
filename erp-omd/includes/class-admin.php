@@ -716,10 +716,6 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-requests', 'error', __('Nie znaleziono wniosku projektowego.', 'erp-omd'));
         }
 
-        if ((string) ($request['status'] ?? '') === 'converted') {
-            $this->redirect_with_notice('erp-omd-requests', 'error', __('Nie można usunąć wniosku, który został już skonwertowany do projektu.', 'erp-omd'));
-        }
-
         $this->project_requests->delete($request_id);
         $this->redirect_with_notice('erp-omd-requests', 'success', __('Wniosek projektowy został usunięty.', 'erp-omd'));
     }
@@ -1130,8 +1126,7 @@ class ERP_OMD_Admin
             __('Komentarz', 'erp-omd'),
         ];
         if ($audience === 'agency') {
-            $header[] = __('Koszt wewnętrzny jednostkowy', 'erp-omd');
-            $header[] = __('Koszt wewnętrzny łącznie', 'erp-omd');
+            $header[] = __('Koszt wewnętrzny pozycji', 'erp-omd');
         }
         fputcsv($output, $header, ';');
 
@@ -1149,7 +1144,6 @@ class ERP_OMD_Admin
             ];
             if ($audience === 'agency') {
                 $row[] = number_format($cost_internal, 2, '.', '');
-                $row[] = number_format($qty * $cost_internal, 2, '.', '');
             }
             fputcsv($output, $row, ';');
         }

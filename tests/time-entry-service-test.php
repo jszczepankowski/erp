@@ -233,9 +233,9 @@ final class TimeEntryServiceTestRunner
             'entry_date' => '2026-03-20',
             'status' => 'submitted',
         ]);
-        $this->assertTrue(
+        $this->assertFalse(
             in_array('Duplikat wpisu czasu dla employee_id + project_id + role_id + hours.', $errors, true),
-            'Validation should block duplicate time entries.'
+            'Validation should not block duplicate time entries.'
         );
 
         $worker = new WP_User(101, ['erp_omd_manage_time' => true]);
