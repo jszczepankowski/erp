@@ -113,7 +113,7 @@ class ERP_OMD_Estimate_Service
             $internal_cost = (float) ($item['cost_internal'] ?? 0);
 
             $totals['net'] += $qty * $price;
-            $totals['internal_cost'] += $qty * $internal_cost;
+            $totals['internal_cost'] += $internal_cost;
         }
 
         $totals['net'] = round($totals['net'], 2);

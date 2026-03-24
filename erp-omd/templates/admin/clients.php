@@ -58,7 +58,7 @@
                                 <input id="client-country" class="small-text" type="text" name="country" value="<?php echo esc_attr($client['country'] ?? 'PL'); ?>" maxlength="2" />
                             </div>
                             </div>
-                            <div class="erp-omd-form-field">
+                            <div class="erp-omd-form-field erp-omd-form-field-span-full">
                                 <label for="client-email"><?php esc_html_e('Email', 'erp-omd'); ?></label>
                                 <input id="client-email" class="regular-text" type="email" name="email" value="<?php echo esc_attr($client['email'] ?? ''); ?>" />
                             </div>

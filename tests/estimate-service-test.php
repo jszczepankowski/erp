@@ -160,7 +160,7 @@ final class EstimateServiceTestRunner
         $this->assertSame(400.0, $totals['net'], 'Estimate net total should sum qty * price.');
         $this->assertSame(92.0, $totals['tax'], 'Estimate tax should apply 23% VAT.');
         $this->assertSame(492.0, $totals['gross'], 'Estimate gross should equal net plus VAT.');
-        $this->assertSame(180.0, $totals['internal_cost'], 'Estimate internal cost should sum qty * internal cost.');
+        $this->assertSame(130.0, $totals['internal_cost'], 'Estimate internal cost should sum per-item internal cost values.');
 
         $acceptResult = $service->accept(1);
         $this->assertSame('zaakceptowany', $acceptResult['estimate']['status'], 'Accepting estimate should lock estimate as zaakceptowany.');
