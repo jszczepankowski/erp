@@ -58,6 +58,44 @@
                             </div>
                         </div>
                     </section>
+                    <?php if (! $estimate) : ?>
+                        <section class="erp-omd-form-section">
+                            <div class="erp-omd-form-section-header">
+                                <h3><?php esc_html_e('Pozycje kosztorysu', 'erp-omd'); ?></h3>
+                                <p><?php esc_html_e('Dodaj minimum jedną pozycję. Możesz od razu dodać wiele pozycji przed zapisaniem kosztorysu.', 'erp-omd'); ?></p>
+                            </div>
+                            <div class="erp-omd-estimate-create-items" data-admin-initial-items>
+                                <div class="erp-omd-form-grid erp-omd-estimate-create-item-row" data-admin-initial-item-row>
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                        <label><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
+                                        <input name="initial_item_name[]" type="text" class="regular-text" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
+                                        <input name="initial_item_qty[]" type="number" step="0.01" min="0.01" value="1" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
+                                        <input name="initial_item_price[]" type="number" step="0.01" min="0" value="0" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
+                                        <input name="initial_item_cost_internal[]" type="number" step="0.01" min="0" value="0" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                        <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
+                                        <textarea name="initial_item_comment[]" rows="3" class="large-text"></textarea>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2 erp-omd-estimate-create-item-actions">
+                                        <button type="button" class="button button-link-delete" data-admin-remove-item><?php esc_html_e('Usuń pozycję', 'erp-omd'); ?></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="erp-omd-form-actions">
+                                <button type="button" class="button button-secondary" data-admin-add-item><?php esc_html_e('Dodaj kolejną pozycję', 'erp-omd'); ?></button>
+                            </div>
+                        </section>
+                    <?php endif; ?>
                 </div>
                 <div class="erp-omd-form-actions">
                     <?php submit_button($estimate ? __('Zapisz kosztorys', 'erp-omd') : __('Dodaj kosztorys', 'erp-omd')); ?>
@@ -116,11 +154,88 @@
                             <?php endif; ?>
                         </div>
                     </form>
+                    <form method="post" class="erp-omd-inline-form">
+                        <?php wp_nonce_field('erp_omd_save_estimate'); ?>
+                        <input type="hidden" name="erp_omd_action" value="save_estimate">
+                        <input type="hidden" name="id" value="<?php echo esc_attr((string) ($selected_estimate['id'] ?? 0)); ?>">
+                        <input type="hidden" name="name" value="<?php echo esc_attr((string) ($selected_estimate['name'] ?? '')); ?>">
+                        <input type="hidden" name="client_id" value="<?php echo esc_attr((string) ($selected_estimate['client_id'] ?? 0)); ?>">
+                        <input type="hidden" name="status" value="<?php echo esc_attr((string) ($selected_estimate['status'] ?? 'wstepny')); ?>">
+                        <div class="erp-omd-form-actions">
+                            <?php submit_button(__('Zapisz kosztorys', 'erp-omd'), 'primary'); ?>
+                        </div>
+                    </form>
                 <?php else : ?>
                     <p><?php esc_html_e('Po zaakceptowaniu pozycje kosztorysu są tylko do odczytu — można je przeglądać i eksportować, ale status kosztorysu administrator może nadal zmienić z poziomu formularza edycji.', 'erp-omd'); ?></p>
                 <?php endif; ?>
             <?php endif; ?>
     </section>
+
+    <?php if (! $estimate) : ?>
+        <script>
+            (function () {
+                var root = document.querySelector('[data-admin-initial-items]');
+                var addButton = document.querySelector('[data-admin-add-item]');
+                if (!root || !addButton) {
+                    return;
+                }
+
+                var updateRemoveButtons = function () {
+                    var rows = root.querySelectorAll('[data-admin-initial-item-row]');
+                    rows.forEach(function (row, index) {
+                        var removeButton = row.querySelector('[data-admin-remove-item]');
+                        if (removeButton) {
+                            removeButton.disabled = rows.length === 1;
+                            removeButton.hidden = rows.length === 1;
+                        }
+                        var nameInput = row.querySelector('input[name="initial_item_name[]"]');
+                        if (nameInput) {
+                            nameInput.required = index === 0;
+                        }
+                    });
+                };
+
+                addButton.addEventListener('click', function () {
+                    var firstRow = root.querySelector('[data-admin-initial-item-row]');
+                    if (!firstRow) {
+                        return;
+                    }
+                    var clone = firstRow.cloneNode(true);
+                    clone.querySelectorAll('input, textarea').forEach(function (field) {
+                        if (field.name === 'initial_item_qty[]') {
+                            field.value = '1';
+                        } else if (field.name === 'initial_item_price[]' || field.name === 'initial_item_cost_internal[]') {
+                            field.value = '0';
+                        } else {
+                            field.value = '';
+                        }
+                        field.required = false;
+                    });
+                    root.appendChild(clone);
+                    updateRemoveButtons();
+                });
+
+                root.addEventListener('click', function (event) {
+                    var button = event.target.closest('[data-admin-remove-item]');
+                    if (!button) {
+                        return;
+                    }
+                    var row = button.closest('[data-admin-initial-item-row]');
+                    if (!row) {
+                        return;
+                    }
+                    var rows = root.querySelectorAll('[data-admin-initial-item-row]');
+                    if (rows.length <= 1) {
+                        return;
+                    }
+                    row.remove();
+                    updateRemoveButtons();
+                });
+
+                updateRemoveButtons();
+            }());
+        </script>
+    <?php endif; ?>
 
     <section class="erp-omd-card">
             <h2><?php esc_html_e('Lista kosztorysów', 'erp-omd'); ?></h2>

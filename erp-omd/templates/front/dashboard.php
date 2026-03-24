@@ -29,7 +29,7 @@
             <?php endif; ?>
 
             <div class="erp-omd-front-grid erp-omd-front-grid-summary">
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="manager-projects">
                     <h2><?php esc_html_e('Twoje konto', 'erp-omd'); ?></h2>
                     <ul>
                         <li><strong><?php esc_html_e('Użytkownik:', 'erp-omd'); ?></strong> <?php echo esc_html($user->user_login); ?></li>
@@ -65,7 +65,7 @@
                 </article>
             </div>
 
-            <div class="erp-omd-front-grid erp-omd-front-grid-manager">
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-full">
                 <article class="erp-omd-front-panel">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Twoje projekty', 'erp-omd'); ?></h2>
@@ -73,42 +73,52 @@
                     </div>
 
                     <?php if ($managed_projects) : ?>
-                        <div class="erp-omd-front-stack">
-                            <?php foreach ($managed_projects as $project) : ?>
-                                <?php
-                                $project_id = (int) ($project['id'] ?? 0);
-                                $project_financial = (array) ($project['financial'] ?? []);
-                                $project_alerts = (array) ($project['alerts'] ?? []);
-                                $project_url = add_query_arg(
-                                    [
-                                        'project_id' => $project_id,
-                                        'estimate_id' => (int) ($selected_estimate['id'] ?? 0),
-                                    ],
-                                    $front_manager_url
-                                ) . '#project-detail';
-                                ?>
-                                <a class="erp-omd-front-project-card <?php echo $selected_project && (int) ($selected_project['id'] ?? 0) === $project_id ? 'erp-omd-front-project-card-active' : ''; ?>" href="<?php echo esc_url($project_url); ?>">
-                                    <div class="erp-omd-front-project-card-header">
-                                        <div>
-                                            <strong><?php echo esc_html($project['name'] ?? ('#' . $project_id)); ?></strong>
-                                            <p><?php echo esc_html($project['client_name'] ?? '—'); ?> · <?php echo esc_html($project['billing_type'] ?? '—'); ?></p>
-                                        </div>
-                                        <span class="erp-omd-front-chip"><?php echo esc_html($this->project_status_label($project['status'] ?? '')); ?></span>
-                                    </div>
-                                    <div class="erp-omd-front-project-card-meta">
-                                        <span><?php printf(esc_html__('Marża: %s%%', 'erp-omd'), esc_html(number_format_i18n((float) ($project_financial['margin'] ?? 0), 2))); ?></span>
-                                        <span><?php printf(esc_html__('Zgłoszone wpisy: %d', 'erp-omd'), (int) ($project['pending_entries_count'] ?? 0)); ?></span>
-                                        <span><?php printf(esc_html__('Alerty: %d', 'erp-omd'), count($project_alerts)); ?></span>
-                                    </div>
-                                </a>
-                            <?php endforeach; ?>
+                        <div class="erp-omd-front-table-wrap">
+                            <table class="erp-omd-front-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Klient', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Marża %', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Zgłoszone wpisy', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Alerty', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Akcja', 'erp-omd'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($managed_projects as $project) : ?>
+                                        <?php
+                                        $project_id = (int) ($project['id'] ?? 0);
+                                        $project_financial = (array) ($project['financial'] ?? []);
+                                        $project_alerts = (array) ($project['alerts'] ?? []);
+                                        $project_url = add_query_arg(
+                                            [
+                                                'project_id' => $project_id,
+                                                'estimate_id' => (int) ($selected_estimate['id'] ?? 0),
+                                            ],
+                                            $front_manager_url
+                                        ) . '#project-detail';
+                                        ?>
+                                        <tr class="<?php echo $selected_project && (int) ($selected_project['id'] ?? 0) === $project_id ? 'erp-omd-front-table-row-active' : ''; ?>">
+                                            <td><?php echo esc_html($project['name'] ?? ('#' . $project_id)); ?></td>
+                                            <td><?php echo esc_html($project['client_name'] ?? '—'); ?></td>
+                                            <td><?php echo esc_html($this->project_status_label($project['status'] ?? '')); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($project_financial['margin'] ?? 0), 2)); ?></td>
+                                            <td><?php echo esc_html((string) ((int) ($project['pending_entries_count'] ?? 0))); ?></td>
+                                            <td><?php echo esc_html((string) count($project_alerts)); ?></td>
+                                            <td><a class="erp-omd-front-button erp-omd-front-button-small" href="<?php echo esc_url($project_url); ?>"><?php esc_html_e('Otwórz kartę', 'erp-omd'); ?></a></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
                     <?php else : ?>
                         <p class="erp-omd-front-lead"><?php esc_html_e('Nie masz jeszcze przypisanych projektów managerskich.', 'erp-omd'); ?></p>
                     <?php endif; ?>
                 </article>
 
-                <article id="project-detail" class="erp-omd-front-panel">
+                <article id="project-detail" class="erp-omd-front-panel" data-collapsible-section="manager-project-card">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Karta projektu', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Podstawowe dane biznesowe, marża, alerty i powiązane kosztorysy dla wybranego projektu.', 'erp-omd'); ?></p>
@@ -221,7 +231,7 @@
             </div>
 
             <div class="erp-omd-front-stack erp-omd-front-estimates-section">
-                <article class="erp-omd-front-panel erp-omd-front-panel-form erp-omd-front-panel-full">
+                <article class="erp-omd-front-panel erp-omd-front-panel-form erp-omd-front-panel-full" data-collapsible-section="manager-new-estimate">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy kosztorys', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Manager może utworzyć kosztorys bez przechodzenia do wp-admin. Formularz zapisuje kosztorys od razu z pierwszą pozycją.', 'erp-omd'); ?></p>
@@ -251,32 +261,53 @@
 
                         <div class="erp-omd-front-panel erp-omd-front-panel-subtle">
                             <div class="erp-omd-front-section-heading">
-                                <h3><?php esc_html_e('Pierwsza pozycja kosztorysu', 'erp-omd'); ?></h3>
-                                <p><?php esc_html_e('Jedna pozycja jest wymagana, aby kosztorys od razu nadawał się do dalszej pracy i akceptacji.', 'erp-omd'); ?></p>
+                                <h3><?php esc_html_e('Pozycje kosztorysu', 'erp-omd'); ?></h3>
+                                <p><?php esc_html_e('Dodaj wiele pozycji jeszcze przed zapisaniem. Minimum jedna pozycja jest wymagana.', 'erp-omd'); ?></p>
                             </div>
 
-                            <label for="erp-omd-front-estimate-item-name"><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
-                            <input id="erp-omd-front-estimate-item-name" type="text" name="item_name" required>
+                            <div id="erp-omd-front-estimate-items">
+                                <div class="erp-omd-front-estimate-item-row" data-item-row="1">
+                                    <label><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
+                                    <input type="text" name="item_name[]" required>
 
-                            <div class="erp-omd-front-form-row">
-                                <div>
-                                    <label for="erp-omd-front-estimate-item-qty"><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
-                                    <input id="erp-omd-front-estimate-item-qty" type="number" min="0.01" step="0.01" name="item_qty" value="1" required>
-                                </div>
-                                <div>
-                                    <label for="erp-omd-front-estimate-item-price"><?php esc_html_e('Cena sprzedaży', 'erp-omd'); ?></label>
-                                    <input id="erp-omd-front-estimate-item-price" type="number" min="0" step="0.01" name="item_price" value="0" required>
+                                    <div class="erp-omd-front-form-row">
+                                        <div>
+                                            <label><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
+                                            <input type="number" min="0.01" step="0.01" name="item_qty[]" value="1" required>
+                                        </div>
+                                        <div>
+                                            <label><?php esc_html_e('Cena sprzedaży', 'erp-omd'); ?></label>
+                                            <input type="number" min="0" step="0.01" name="item_price[]" value="0" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="erp-omd-front-form-row">
+                                        <div>
+                                            <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
+                                            <input type="number" min="0" step="0.01" name="item_cost_internal[]" value="0" required>
+                                        </div>
+                                        <div>
+                                            <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
+                                            <textarea name="item_comment[]" rows="3"></textarea>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div class="erp-omd-front-form-row">
-                                <div>
-                                    <label for="erp-omd-front-estimate-item-cost"><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
-                                    <input id="erp-omd-front-estimate-item-cost" type="number" min="0" step="0.01" name="item_cost_internal" value="0" required>
+                            <div class="erp-omd-front-inline-actions">
+                                <button type="button" class="erp-omd-front-button erp-omd-front-button-ghost" id="erp-omd-front-add-item"><?php esc_html_e('Dodaj pozycję', 'erp-omd'); ?></button>
+                            </div>
+                            <div class="erp-omd-front-metrics">
+                                <div class="erp-omd-front-metric">
+                                    <span class="erp-omd-front-metric-label"><?php esc_html_e('Suma netto', 'erp-omd'); ?></span>
+                                    <strong id="erp-omd-front-estimate-net">0.00</strong>
                                 </div>
-                                <div>
-                                    <label for="erp-omd-front-estimate-item-comment"><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
-                                    <textarea id="erp-omd-front-estimate-item-comment" name="item_comment" rows="4"></textarea>
+                                <div class="erp-omd-front-metric">
+                                    <span class="erp-omd-front-metric-label"><?php esc_html_e('VAT 23%', 'erp-omd'); ?></span>
+                                    <strong id="erp-omd-front-estimate-tax">0.00</strong>
+                                </div>
+                                <div class="erp-omd-front-metric">
+                                    <span class="erp-omd-front-metric-label"><?php esc_html_e('Suma brutto', 'erp-omd'); ?></span>
+                                    <strong id="erp-omd-front-estimate-gross">0.00</strong>
                                 </div>
                             </div>
                         </div>
@@ -287,7 +318,7 @@
                     </form>
                 </article>
 
-                <article id="estimate-detail" class="erp-omd-front-panel">
+                <article id="estimate-detail" class="erp-omd-front-panel" data-collapsible-section="manager-estimates">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Kosztorysy', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Wszystkie kosztorysy widoczne z perspektywy Twoich klientów i projektów. Możesz przełączać szczegóły bez opuszczania frontu.', 'erp-omd'); ?></p>
@@ -370,6 +401,15 @@
                                     </div>
                                 </div>
 
+                                <div class="erp-omd-front-inline-actions">
+                                    <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-inline-form">
+                                        <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                        <input type="hidden" name="erp_omd_front_action" value="export_estimate_csv">
+                                        <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ($selected_estimate['id'] ?? 0)); ?>">
+                                        <button type="submit" class="erp-omd-front-button erp-omd-front-button-ghost"><?php esc_html_e('Eksport CSV dla klienta', 'erp-omd'); ?></button>
+                                    </form>
+                                </div>
+
                                 <?php if (($selected_estimate['status'] ?? '') !== 'zaakceptowany') : ?>
                                     <div class="erp-omd-front-inline-actions erp-omd-front-estimate-actions">
                                         <form method="post" action="<?php echo esc_url($manager_form_action); ?>">
@@ -419,7 +459,7 @@
                 </article>
             </div>
 
-            <div class="erp-omd-front-panel">
+            <div class="erp-omd-front-panel" data-collapsible-section="manager-approval-queue">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Kolejka wpisów czasu do akceptacji', 'erp-omd'); ?></h2>
                     <p><?php esc_html_e('Szybkie decyzje operacyjne dla wpisów w statusie „submitted” przypisanych do Twoich projektów.', 'erp-omd'); ?></p>
@@ -494,8 +534,8 @@
                 </div>
             </div>
 
-            <div class="erp-omd-front-grid erp-omd-front-grid-manager">
-                <article class="erp-omd-front-panel">
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-half">
+                <article class="erp-omd-front-panel" data-collapsible-section="manager-new-request">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy wniosek projektowy', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Zgłoś inicjację projektu bez omijania właściwego lifecycle projektu. Wniosek trafia do review i może zostać później skonwertowany do projektu.', 'erp-omd'); ?></p>
@@ -647,6 +687,134 @@
             </div>
         </section>
     </main>
+    <script>
+    (function () {
+        var setupCollapsibleSections = function () {
+            var storagePrefix = 'erp_omd_front_manager_section_';
+            document.querySelectorAll('[data-collapsible-section]').forEach(function (panel) {
+                var sectionKey = panel.getAttribute('data-collapsible-section');
+                if (!sectionKey) {
+                    return;
+                }
+
+                var headerNode = panel.querySelector(':scope > .erp-omd-front-section-heading');
+                if (!headerNode) {
+                    var heading = panel.querySelector(':scope > h2, :scope > h3');
+                    if (!heading) {
+                        return;
+                    }
+                    headerNode = document.createElement('div');
+                    headerNode.className = 'erp-omd-front-collapsible-header';
+                    heading.parentNode.insertBefore(headerNode, heading);
+                    headerNode.appendChild(heading);
+                }
+
+                if (headerNode.querySelector('.erp-omd-front-collapse-toggle')) {
+                    return;
+                }
+
+                var contentNodes = Array.from(panel.children).filter(function (child) {
+                    return child !== headerNode;
+                });
+
+                var toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'erp-omd-front-collapse-toggle';
+                headerNode.appendChild(toggle);
+
+                var storageKey = storagePrefix + sectionKey;
+                var isCollapsed = localStorage.getItem(storageKey) === '1';
+                var applyState = function () {
+                    contentNodes.forEach(function (node) {
+                        node.hidden = isCollapsed;
+                    });
+                    toggle.textContent = isCollapsed ? '<?php echo esc_js(__('Rozwiń', 'erp-omd')); ?>' : '<?php echo esc_js(__('Zwiń', 'erp-omd')); ?>';
+                    panel.classList.toggle('erp-omd-front-panel-collapsed', isCollapsed);
+                };
+
+                toggle.addEventListener('click', function () {
+                    isCollapsed = !isCollapsed;
+                    localStorage.setItem(storageKey, isCollapsed ? '1' : '0');
+                    applyState();
+                });
+
+                applyState();
+            });
+        };
+
+        setupCollapsibleSections();
+
+        var itemsContainer = document.getElementById('erp-omd-front-estimate-items');
+        var addButton = document.getElementById('erp-omd-front-add-item');
+        var netNode = document.getElementById('erp-omd-front-estimate-net');
+        var taxNode = document.getElementById('erp-omd-front-estimate-tax');
+        var grossNode = document.getElementById('erp-omd-front-estimate-gross');
+        if (!itemsContainer || !addButton || !netNode || !taxNode || !grossNode) {
+            return;
+        }
+
+        var formatAmount = function (value) { return Number(value || 0).toFixed(2); };
+        var updateTotals = function () {
+            var net = 0;
+            itemsContainer.querySelectorAll('.erp-omd-front-estimate-item-row').forEach(function (row) {
+                var qtyInput = row.querySelector('input[name="item_qty[]"]');
+                var priceInput = row.querySelector('input[name="item_price[]"]');
+                var qty = parseFloat(qtyInput ? qtyInput.value : '0');
+                var price = parseFloat(priceInput ? priceInput.value : '0');
+                net += qty * price;
+            });
+            var tax = net * 0.23;
+            var gross = net + tax;
+            netNode.textContent = formatAmount(net);
+            taxNode.textContent = formatAmount(tax);
+            grossNode.textContent = formatAmount(gross);
+        };
+
+        var bindRow = function (row) {
+            row.querySelectorAll('input').forEach(function (input) {
+                input.addEventListener('input', updateTotals);
+            });
+            var removeButton = row.querySelector('.erp-omd-front-remove-item');
+            if (removeButton) {
+                removeButton.addEventListener('click', function () {
+                    if (itemsContainer.querySelectorAll('.erp-omd-front-estimate-item-row').length <= 1) {
+                        return;
+                    }
+                    row.remove();
+                    updateTotals();
+                });
+            }
+        };
+
+        var firstRow = itemsContainer.querySelector('.erp-omd-front-estimate-item-row');
+        if (firstRow) {
+            bindRow(firstRow);
+        }
+
+        addButton.addEventListener('click', function () {
+            var row = itemsContainer.querySelector('.erp-omd-front-estimate-item-row');
+            if (!row) {
+                return;
+            }
+            var clone = row.cloneNode(true);
+            clone.querySelectorAll('input[type="text"], textarea').forEach(function (node) { node.value = ''; });
+            clone.querySelectorAll('input[type="number"]').forEach(function (node) {
+                node.value = node.name === 'item_qty[]' ? '1' : '0';
+            });
+            if (!clone.querySelector('.erp-omd-front-remove-item')) {
+                var removeWrap = document.createElement('div');
+                removeWrap.className = 'erp-omd-front-inline-actions';
+                removeWrap.innerHTML = '<button type="button" class="erp-omd-front-button erp-omd-front-button-ghost erp-omd-front-remove-item"><?php echo esc_js(__('Usuń pozycję', 'erp-omd')); ?></button>';
+                clone.appendChild(removeWrap);
+            }
+            itemsContainer.appendChild(clone);
+            bindRow(clone);
+            updateTotals();
+        });
+
+        updateTotals();
+    })();
+    </script>
     <?php wp_footer(); ?>
 </body>
 </html>

@@ -333,12 +333,13 @@
                 <?php else : ?>
                     <?php foreach ($projects as $project_row) : ?>
                         <?php $list_financial = $project_financials_by_project[(int) $project_row['id']] ?? []; ?>
+                        <?php $inline_project_form_id = 'erp-omd-inline-project-' . (int) $project_row['id']; ?>
                         <tr>
                             <td><input class="erp-omd-project-checkbox" type="checkbox" name="project_ids[]" value="<?php echo esc_attr($project_row['id']); ?>" form="erp-omd-bulk-projects-form" /></td>
                             <td><?php echo esc_html($project_row['id']); ?></td>
                             <td><?php echo esc_html($project_row['client_name']); ?></td>
                             <td>
-                                <?php echo esc_html($project_row['name']); ?>
+                                <input type="text" name="name" value="<?php echo esc_attr((string) ($project_row['name'] ?? '')); ?>" form="<?php echo esc_attr($inline_project_form_id); ?>" />
                                 <?php $this->render_alert_icons($project_row['alerts'] ?? []); ?>
                             </td>
                             <td><?php echo esc_html($this->billing_type_label($project_row['billing_type'])); ?></td>
@@ -347,12 +348,26 @@
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['revenue'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['profit'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['margin'] ?? 0), 2)); ?></td>
-                            <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($project_row['status'], 'project')); ?>"><?php echo esc_html($this->project_status_label($project_row['status'])); ?></span></td>
+                            <td>
+                                <select name="status" form="<?php echo esc_attr($inline_project_form_id); ?>">
+                                    <?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'] as $project_status_option) : ?>
+                                        <option value="<?php echo esc_attr($project_status_option); ?>" <?php selected((string) ($project_row['status'] ?? 'do_rozpoczecia'), $project_status_option); ?>>
+                                            <?php echo esc_html($this->project_status_label($project_status_option)); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </td>
                             <td>
                                 <?php $project_is_inactive = ($project_row['status'] ?? '') === 'inactive'; ?>
                                 <details class="erp-omd-list-actions">
                                     <summary class="button button-small"><?php esc_html_e('Akcje', 'erp-omd'); ?></summary>
                                     <div class="erp-omd-list-actions-menu">
+                                        <form method="post" id="<?php echo esc_attr($inline_project_form_id); ?>" class="erp-omd-inline-form">
+                                            <?php wp_nonce_field('erp_omd_inline_project_update'); ?>
+                                            <input type="hidden" name="erp_omd_action" value="inline_update_project" />
+                                            <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
+                                            <button class="button button-small button-primary" type="submit"><?php esc_html_e('Zapisz inline', 'erp-omd'); ?></button>
+                                        </form>
                                         <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                         <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php')) . '#erp-omd-project-details'); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
                                         <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Zduplikować projekt?', 'erp-omd')); ?>');">

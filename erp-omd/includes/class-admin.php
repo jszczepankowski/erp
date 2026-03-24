@@ -10,10 +10,12 @@ class ERP_OMD_Admin
     private $clients;
     private $client_rates;
     private $projects;
+    private $project_requests;
     private $estimates;
     private $estimate_items;
     private $project_notes;
     private $client_project_service;
+    private $project_request_service;
     private $estimate_service;
     private $project_rates;
     private $project_costs;
@@ -34,10 +36,12 @@ class ERP_OMD_Admin
         ERP_OMD_Client_Repository $clients,
         ERP_OMD_Client_Rate_Repository $client_rates,
         ERP_OMD_Project_Repository $projects,
+        ERP_OMD_Project_Request_Repository $project_requests,
         ERP_OMD_Estimate_Repository $estimates,
         ERP_OMD_Estimate_Item_Repository $estimate_items,
         ERP_OMD_Project_Note_Repository $project_notes,
         ERP_OMD_Client_Project_Service $client_project_service,
+        ERP_OMD_Project_Request_Service $project_request_service,
         ERP_OMD_Estimate_Service $estimate_service,
         ERP_OMD_Project_Rate_Repository $project_rates,
         ERP_OMD_Project_Cost_Repository $project_costs,
@@ -57,10 +61,12 @@ class ERP_OMD_Admin
         $this->clients = $clients;
         $this->client_rates = $client_rates;
         $this->projects = $projects;
+        $this->project_requests = $project_requests;
         $this->estimates = $estimates;
         $this->estimate_items = $estimate_items;
         $this->project_notes = $project_notes;
         $this->client_project_service = $client_project_service;
+        $this->project_request_service = $project_request_service;
         $this->estimate_service = $estimate_service;
         $this->project_rates = $project_rates;
         $this->project_costs = $project_costs;
@@ -89,6 +95,7 @@ class ERP_OMD_Admin
         add_submenu_page('erp-omd', __('Klienci', 'erp-omd'), __('Klienci', 'erp-omd'), 'erp_omd_manage_clients', 'erp-omd-clients', [$this, 'render_clients']);
         add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
         add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
+        add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
         add_submenu_page('erp-omd', __('Czas pracy', 'erp-omd'), __('Czas pracy', 'erp-omd'), 'erp_omd_manage_time', 'erp-omd-time', [$this, 'render_time_entries']);
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
         add_submenu_page('erp-omd', __('Alerty', 'erp-omd'), __('Alerty', 'erp-omd'), 'erp_omd_access', 'erp-omd-alerts', [$this, 'render_alerts']);
@@ -116,6 +123,7 @@ class ERP_OMD_Admin
             case 'save_role': $this->handle_role_save(); break;
             case 'delete_role': $this->handle_role_delete(); break;
             case 'save_employee': $this->handle_employee_save(); break;
+            case 'inline_update_employee': $this->handle_inline_employee_update_action(); break;
             case 'change_employee_password': $this->handle_employee_password_change(); break;
             case 'toggle_employee_active': $this->handle_employee_active_toggle(); break;
             case 'save_salary': $this->handle_salary_save(); break;
@@ -132,6 +140,7 @@ class ERP_OMD_Admin
             case 'export_estimate': $this->handle_estimate_export(); break;
             case 'export_report': $this->handle_report_export(); break;
             case 'save_project': $this->handle_project_save(); break;
+            case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
             case 'bulk_clients': $this->handle_clients_bulk_action(); break;
@@ -143,9 +152,13 @@ class ERP_OMD_Admin
             case 'save_project_cost': $this->handle_project_cost_save(); break;
             case 'delete_project_cost': $this->handle_project_cost_delete(); break;
             case 'save_time_entry': $this->handle_time_entry_save(); break;
+            case 'inline_update_time_entry': $this->handle_inline_time_entry_update_action(); break;
             case 'change_time_status': $this->handle_time_status_change(); break;
             case 'delete_time_entry': $this->handle_time_entry_delete(); break;
             case 'bulk_time_entries': $this->handle_time_entries_bulk_action(); break;
+            case 'update_project_request_status': $this->handle_project_request_status_update_action(); break;
+            case 'convert_project_request': $this->handle_project_request_conversion_action(); break;
+            case 'delete_project_request': $this->handle_project_request_delete_action(); break;
             case 'add_attachment': $this->handle_attachment_add(); break;
             case 'delete_attachment': $this->handle_attachment_delete(); break;
             case 'save_settings': $this->handle_settings_save(); break;
@@ -555,6 +568,53 @@ class ERP_OMD_Admin
         include ERP_OMD_PATH . 'templates/admin/reports.php';
     }
 
+    public function render_project_requests()
+    {
+        $project_requests = $this->project_requests->all();
+        $request_filters = [
+            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
+        ];
+
+        if ($request_filters['status'] !== '') {
+            $project_requests = array_values(
+                array_filter(
+                    $project_requests,
+                    function ($request_row) use ($request_filters) {
+                        return (string) ($request_row['status'] ?? '') === $request_filters['status'];
+                    }
+                )
+            );
+        }
+
+        if ($request_filters['search'] !== '') {
+            $needle = strtolower($request_filters['search']);
+            $project_requests = array_values(
+                array_filter(
+                    $project_requests,
+                    function ($request_row) use ($needle) {
+                        $haystack = strtolower(
+                            implode(
+                                ' ',
+                                [
+                                    (string) ($request_row['project_name'] ?? ''),
+                                    (string) ($request_row['client_name'] ?? ''),
+                                    (string) ($request_row['requester_login'] ?? ''),
+                                    (string) ($request_row['preferred_manager_login'] ?? ''),
+                                    (string) ($request_row['status'] ?? ''),
+                                ]
+                            )
+                        );
+
+                        return strpos($haystack, $needle) !== false;
+                    }
+                )
+            );
+        }
+
+        include ERP_OMD_PATH . 'templates/admin/project-requests.php';
+    }
+
     private function handle_role_save() { /* retained */
         check_admin_referer('erp_omd_save_role');
         $this->require_capability('erp_omd_manage_roles');
@@ -586,6 +646,111 @@ class ERP_OMD_Admin
         if ($id) { $this->employees->update($id, $payload); $message = __('Pracownik został zaktualizowany.', 'erp-omd'); } else { $id = $this->employees->create($payload); $message = __('Pracownik został utworzony.', 'erp-omd'); }
         $this->sync_wp_role($payload['user_id'], $payload['account_type']);
         $this->redirect_with_notice('erp-omd-employees', 'success', $message, ['id' => $id]);
+    }
+
+    private function handle_project_request_status_update_action()
+    {
+        check_admin_referer('erp_omd_update_project_request_status');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $request_id = (int) ($_POST['request_id'] ?? 0);
+        $target_status = sanitize_text_field(wp_unslash($_POST['status'] ?? ''));
+        $request = $request_id > 0 ? $this->project_requests->find($request_id) : null;
+        if (! $request) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', __('Nie znaleziono wniosku projektowego.', 'erp-omd'));
+        }
+
+        $payload = $this->project_request_service->prepare(
+            array_merge(
+                $request,
+                [
+                    'status' => $target_status,
+                    'reviewed_by_user_id' => get_current_user_id(),
+                    'reviewed_at' => current_time('mysql'),
+                ]
+            ),
+            $request
+        );
+
+        $errors = $this->project_request_service->validate($payload, $request);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', implode(' ', $errors));
+        }
+
+        $this->project_requests->update($request_id, $payload);
+        $this->redirect_with_notice('erp-omd-requests', 'success', __('Status wniosku został zaktualizowany.', 'erp-omd'));
+    }
+
+    private function handle_project_request_conversion_action()
+    {
+        check_admin_referer('erp_omd_convert_project_request');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $request_id = (int) ($_POST['request_id'] ?? 0);
+        $request = $request_id > 0 ? $this->project_requests->find($request_id) : null;
+        if (! $request) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', __('Nie znaleziono wniosku projektowego.', 'erp-omd'));
+        }
+
+        $errors = $this->project_request_service->validate_conversion($request);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', implode(' ', $errors));
+        }
+
+        $project_payload = $this->project_request_service->build_project_payload($request);
+        $project_id = $this->projects->create($project_payload);
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->project_requests->mark_converted($request_id, $project_id, get_current_user_id());
+
+        $this->redirect_with_notice('erp-omd-requests', 'success', __('Wniosek został skonwertowany do projektu.', 'erp-omd'), ['id' => $request_id]);
+    }
+
+    private function handle_project_request_delete_action()
+    {
+        check_admin_referer('erp_omd_delete_project_request');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $request_id = (int) ($_POST['request_id'] ?? 0);
+        $request = $request_id > 0 ? $this->project_requests->find($request_id) : null;
+        if (! $request) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', __('Nie znaleziono wniosku projektowego.', 'erp-omd'));
+        }
+
+        if ((string) ($request['status'] ?? '') === 'converted') {
+            $this->redirect_with_notice('erp-omd-requests', 'error', __('Nie można usunąć wniosku, który został już skonwertowany do projektu.', 'erp-omd'));
+        }
+
+        $this->project_requests->delete($request_id);
+        $this->redirect_with_notice('erp-omd-requests', 'success', __('Wniosek projektowy został usunięty.', 'erp-omd'));
+    }
+
+    private function handle_inline_employee_update_action()
+    {
+        check_admin_referer('erp_omd_inline_employee_update');
+        $this->require_capability('erp_omd_manage_employees');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $employee = $id ? $this->employees->find($id) : null;
+        if (! $employee) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', __('Nie znaleziono pracownika do aktualizacji inline.', 'erp-omd'));
+        }
+
+        $payload = [
+            'user_id' => (int) ($employee['user_id'] ?? 0),
+            'default_role_id' => (int) ($employee['default_role_id'] ?? 0),
+            'account_type' => sanitize_text_field(wp_unslash($_POST['account_type'] ?? ($employee['account_type'] ?? 'worker'))),
+            'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? ($employee['status'] ?? 'active'))),
+            'role_ids' => array_map('intval', (array) ($employee['role_ids'] ?? [])),
+        ];
+
+        $errors = $this->employee_service->validate_employee($payload, $id);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', implode(' ', $errors));
+        }
+
+        $this->employees->update($id, $payload);
+        $this->sync_wp_role($payload['user_id'], $payload['account_type']);
+        $this->redirect_with_notice('erp-omd-employees', 'success', __('Dane pracownika zostały zaktualizowane inline.', 'erp-omd'));
     }
 
     private function handle_employee_active_toggle()
@@ -753,6 +918,15 @@ class ERP_OMD_Admin
             'accepted_at' => $existing['accepted_at'] ?? null,
         ];
         $errors = $this->estimate_service->validate_estimate($payload, $existing);
+        $initial_items_payload = $this->collect_initial_estimate_items();
+        if (! $existing) {
+            if ($initial_items_payload === []) {
+                $errors[] = __('Kosztorys musi zawierać minimum jedną pozycję.', 'erp-omd');
+            }
+            foreach ($initial_items_payload as $initial_item_payload) {
+                $errors = array_merge($errors, $this->estimate_service->validate_item($initial_item_payload, ['id' => 0, 'status' => $payload['status']]));
+            }
+        }
         if ($errors) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', implode(' ', $errors), $id ? ['id' => $id, 'edit' => 1] : []);
         }
@@ -761,9 +935,63 @@ class ERP_OMD_Admin
             $message = __('Kosztorys został zaktualizowany.', 'erp-omd');
         } else {
             $id = $this->estimates->create($payload);
+            foreach ($initial_items_payload as $initial_item_payload) {
+                $initial_item_payload['estimate_id'] = $id;
+                $this->estimate_items->create($initial_item_payload);
+            }
             $message = __('Kosztorys został utworzony.', 'erp-omd');
         }
         $this->redirect_with_notice('erp-omd-estimates', 'success', $message, ['id' => $id]);
+    }
+
+    private function collect_initial_estimate_items()
+    {
+        $names = wp_unslash($_POST['initial_item_name'] ?? []);
+        $qtys = wp_unslash($_POST['initial_item_qty'] ?? []);
+        $prices = wp_unslash($_POST['initial_item_price'] ?? []);
+        $costs = wp_unslash($_POST['initial_item_cost_internal'] ?? []);
+        $comments = wp_unslash($_POST['initial_item_comment'] ?? []);
+
+        if (! is_array($names)) {
+            $names = [$names];
+        }
+        if (! is_array($qtys)) {
+            $qtys = [$qtys];
+        }
+        if (! is_array($prices)) {
+            $prices = [$prices];
+        }
+        if (! is_array($costs)) {
+            $costs = [$costs];
+        }
+        if (! is_array($comments)) {
+            $comments = [$comments];
+        }
+
+        $count = max(count($names), count($qtys), count($prices), count($costs), count($comments));
+        $items = [];
+        for ($index = 0; $index < $count; $index++) {
+            $name = sanitize_text_field((string) ($names[$index] ?? ''));
+            $qty = (float) ($qtys[$index] ?? 0);
+            $price = (float) ($prices[$index] ?? 0);
+            $cost = (float) ($costs[$index] ?? 0);
+            $comment = sanitize_textarea_field((string) ($comments[$index] ?? ''));
+
+            if ($name === '' && $qty <= 0 && $price <= 0 && $cost <= 0 && $comment === '') {
+                continue;
+            }
+
+            $items[] = [
+                'estimate_id' => 0,
+                'name' => $name,
+                'qty' => $qty,
+                'price' => $price,
+                'cost_internal' => $cost,
+                'comment' => $comment,
+            ];
+        }
+
+        return $items;
     }
 
     private function handle_estimate_delete()
@@ -975,9 +1203,46 @@ class ERP_OMD_Admin
         $payload = $this->client_project_service->prepare_project(['client_id' => (int) ($_POST['client_id'] ?? 0), 'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')), 'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')), 'budget' => (float) ($_POST['budget'] ?? 0), 'retainer_monthly_fee' => (float) ($_POST['retainer_monthly_fee'] ?? 0), 'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? 'do_rozpoczecia')), 'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')), 'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')), 'manager_id' => (int) ($_POST['manager_id'] ?? 0), 'manager_ids' => array_map('intval', wp_unslash($_POST['manager_ids'] ?? [])), 'estimate_id' => (int) ($_POST['estimate_id'] ?? 0), 'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')), 'alert_margin_threshold' => sanitize_text_field(wp_unslash($_POST['alert_margin_threshold'] ?? ''))], $existing);
         $errors = $this->client_project_service->validate_project($payload, $existing);
         if ($errors) { $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), $id ? ['id' => $id] : []); }
+        $was_update = $id > 0;
         if ($id) { $this->projects->update($id, $payload); $message = __('Projekt został zaktualizowany.', 'erp-omd'); } else { $id = $this->projects->create($payload); $message = __('Projekt został utworzony.', 'erp-omd'); }
         $this->project_financial_service->rebuild_for_project($id);
-        $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $id]);
+        $this->redirect_with_notice('erp-omd-projects', 'success', $message, $was_update ? ['id' => $id] : []);
+    }
+
+    private function handle_inline_project_update_action()
+    {
+        check_admin_referer('erp_omd_inline_project_update');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $existing = $id ? $this->projects->find($id) : null;
+        if (! $existing) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono projektu do aktualizacji inline.', 'erp-omd'));
+        }
+
+        $manager_ids = array_map('intval', wp_unslash($_POST['manager_ids'] ?? []));
+        if ($manager_ids === []) {
+            $manager_ids = array_map('intval', (array) ($existing['manager_ids'] ?? []));
+        }
+        $manager_id = $manager_ids !== [] ? (int) $manager_ids[0] : (int) ($existing['manager_id'] ?? 0);
+
+        $payload = $this->client_project_service->prepare_project(
+            [
+                'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? ($existing['name'] ?? ''))),
+                'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? ($existing['status'] ?? 'do_rozpoczecia'))),
+                'manager_id' => $manager_id,
+                'manager_ids' => $manager_ids,
+            ],
+            $existing
+        );
+        $errors = $this->client_project_service->validate_project($payload, $existing);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors));
+        }
+
+        $this->projects->update($id, $payload);
+        $this->project_financial_service->rebuild_for_project($id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Projekt został zaktualizowany inline.', 'erp-omd'));
     }
 
     private function handle_project_duplicate()
@@ -1160,6 +1425,48 @@ class ERP_OMD_Admin
         if ($id) { $this->time_entries->update($id, $payload); $message = __('Wpis czasu został zaktualizowany.', 'erp-omd'); } else { $id = $this->time_entries->create($payload); $message = __('Wpis czasu został dodany.', 'erp-omd'); }
         $this->project_financial_service->rebuild_for_project((int) $payload['project_id']);
         $this->redirect_with_notice('erp-omd-time', 'success', $message);
+    }
+
+    private function handle_inline_time_entry_update_action()
+    {
+        check_admin_referer('erp_omd_inline_time_entry_update');
+        $this->require_capability('erp_omd_manage_time');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $entry = $id ? $this->time_entries->find($id) : null;
+        if (! $entry) {
+            $this->redirect_with_notice('erp-omd-time', 'error', __('Nie znaleziono wpisu czasu do aktualizacji inline.', 'erp-omd'));
+        }
+
+        $current_user = wp_get_current_user();
+        if (! $this->time_entry_service->can_edit_entry($entry, $current_user)) {
+            $this->redirect_with_notice('erp-omd-time', 'error', __('Brak uprawnień do edycji wybranego wpisu czasu.', 'erp-omd'));
+        }
+
+        $status = sanitize_text_field(wp_unslash($_POST['status'] ?? ($entry['status'] ?? 'submitted')));
+        $payload = $this->time_entry_service->prepare(
+            [
+                'employee_id' => (int) ($entry['employee_id'] ?? 0),
+                'project_id' => (int) ($entry['project_id'] ?? 0),
+                'role_id' => (int) ($entry['role_id'] ?? 0),
+                'hours' => (float) ($_POST['hours'] ?? ($entry['hours'] ?? 0)),
+                'entry_date' => (string) ($entry['entry_date'] ?? ''),
+                'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? ($entry['description'] ?? ''))),
+                'status' => $status,
+                'created_by_user_id' => (int) ($entry['created_by_user_id'] ?? 0),
+                'approved_by_user_id' => in_array($status, ['approved', 'rejected'], true) ? (int) $current_user->ID : (int) ($entry['approved_by_user_id'] ?? 0),
+                'approved_at' => in_array($status, ['approved', 'rejected'], true) ? current_time('mysql') : ($entry['approved_at'] ?? null),
+            ]
+        );
+
+        $errors = $this->time_entry_service->validate($payload, $id);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-time', 'error', implode(' ', $errors));
+        }
+
+        $this->time_entries->update($id, $payload);
+        $this->project_financial_service->rebuild_for_project((int) $payload['project_id']);
+        $this->redirect_with_notice('erp-omd-time', 'success', __('Wpis czasu został zaktualizowany inline.', 'erp-omd'));
     }
 
     private function handle_time_status_change()
