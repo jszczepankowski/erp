@@ -1,7 +1,7 @@
 <div class="wrap erp-omd-admin">
     <h1><?php esc_html_e('ERP OMD — Ustawienia', 'erp-omd'); ?></h1>
     <div class="erp-omd-card">
-        <h2><?php esc_html_e('Konfiguracja lifecycle, alertów i logowania FRONT', 'erp-omd'); ?></h2>
+        <h2><?php esc_html_e('Konfiguracja lifecycle, alertów, backupów i powiadomień', 'erp-omd'); ?></h2>
         <form method="post">
             <?php wp_nonce_field('erp_omd_save_settings'); ?>
             <input type="hidden" name="erp_omd_action" value="save_settings" />
@@ -23,6 +23,93 @@
                             </label>
                         </div>
                     </div>
+                </section>
+
+                <section class="erp-omd-form-section">
+                    <div class="erp-omd-form-section-header">
+                        <h3><?php esc_html_e('Automatyczny backup bazy (co tydzień)', 'erp-omd'); ?></h3>
+                        <p><?php esc_html_e('System zapisuje backup bazy do pliku ZIP na serwerze (katalog uploads/erp-omd-backups).', 'erp-omd'); ?></p>
+                    </div>
+                    <p>
+                        <strong><?php esc_html_e('Ostatni backup:', 'erp-omd'); ?></strong>
+                        <?php echo $last_backup_at !== '' ? esc_html($last_backup_at) : esc_html__('brak', 'erp-omd'); ?>
+                        <?php if ($last_backup_status !== '') : ?>
+                            · <em><?php echo esc_html($last_backup_status); ?></em>
+                        <?php endif; ?>
+                    </p>
+                    <?php if ($last_backup_file !== '') : ?>
+                        <p><code><?php echo esc_html($last_backup_file); ?></code></p>
+                    <?php endif; ?>
+                </section>
+
+                <section class="erp-omd-form-section">
+                    <div class="erp-omd-form-section-header">
+                        <h3><?php esc_html_e('Powiadomienia o brakujących godzinach', 'erp-omd'); ?></h3>
+                        <p><?php esc_html_e('Skonfiguruj scenariusz automatycznej wysyłki oraz listę pracowników, którzy mają otrzymywać przypomnienia.', 'erp-omd'); ?></p>
+                    </div>
+                    <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-missing-hours-mode"><?php esc_html_e('Aktywny scenariusz', 'erp-omd'); ?></label>
+                            <select id="erp-omd-missing-hours-mode" name="missing_hours_mode">
+                                <option value="after_x_days" <?php selected($notification_settings['mode'], 'after_x_days'); ?>><?php esc_html_e('Wysłanie po X dniach', 'erp-omd'); ?></option>
+                                <option value="day_of_month" <?php selected($notification_settings['mode'], 'day_of_month'); ?>><?php esc_html_e('Wysłanie w dniu X', 'erp-omd'); ?></option>
+                            </select>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-missing-hours-after-days"><?php esc_html_e('Ile dni od ostatniego raportu', 'erp-omd'); ?></label>
+                            <input id="erp-omd-missing-hours-after-days" type="number" min="1" max="60" step="1" name="missing_hours_after_days" value="<?php echo esc_attr((string) $notification_settings['after_days']); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-missing-hours-day-of-month"><?php esc_html_e('Dzień miesiąca (1-28)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-missing-hours-day-of-month" type="number" min="1" max="28" step="1" name="missing_hours_day_of_month" value="<?php echo esc_attr((string) $notification_settings['day_of_month']); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-missing-hours-mail-subject"><?php esc_html_e('Temat maila', 'erp-omd'); ?></label>
+                            <input id="erp-omd-missing-hours-mail-subject" type="text" name="missing_hours_mail_subject" value="<?php echo esc_attr((string) $notification_settings['subject']); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-missing-hours-mail-body"><?php esc_html_e('Treść maila', 'erp-omd'); ?></label>
+                            <?php wp_editor((string) ($notification_settings['body'] ?? ''), 'erp-omd-missing-hours-mail-body-editor', [
+                                'textarea_name' => 'missing_hours_mail_body',
+                                'textarea_rows' => 8,
+                                'media_buttons' => false,
+                                'teeny' => true,
+                            ]); ?>
+                            <p class="description"><?php esc_html_e('Dostępne tokeny: {login}, {employee_id}, {last_reported_date}, {days_since_last_report}.', 'erp-omd'); ?></p>
+                        </div>
+                    </div>
+
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('ID', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Login', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Ostatnie powiadomienie', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Aktywne / Nieaktywne', 'erp-omd'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($employees)) : ?>
+                                <tr>
+                                    <td colspan="4"><?php esc_html_e('Brak pracowników.', 'erp-omd'); ?></td>
+                                </tr>
+                            <?php else : ?>
+                                <?php foreach ($employees as $employee) : ?>
+                                    <tr>
+                                        <td><?php echo esc_html((string) ($employee['id'] ?? 0)); ?></td>
+                                        <td><?php echo esc_html((string) ($employee['user_login'] ?? '—')); ?></td>
+                                        <td><?php echo ! empty($employee['last_notification_at']) ? esc_html((string) $employee['last_notification_at']) : '—'; ?></td>
+                                        <td>
+                                            <label>
+                                                <input type="checkbox" name="missing_hours_recipients_active[]" value="<?php echo esc_attr((string) ($employee['id'] ?? 0)); ?>" <?php checked(! empty($employee['notification_active'])); ?> />
+                                                <?php esc_html_e('Aktywne', 'erp-omd'); ?>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </section>
 
                 <section class="erp-omd-form-section">
