@@ -1123,6 +1123,22 @@
     background: linear-gradient(180deg, #fff 0%, #fcfaf7 100%);
 }
 
+.erp-omd-admin .erp-omd-estimate-create-items {
+    display: grid;
+    gap: 12px;
+}
+
+.erp-omd-admin .erp-omd-estimate-create-item-row {
+    border: 1px solid var(--erp-omd-border);
+    border-radius: 16px;
+    padding: 14px;
+}
+
+.erp-omd-admin .erp-omd-estimate-create-item-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
 .erp-omd-admin table.widefat td input[type="text"],
 .erp-omd-admin table.widefat td input[type="number"],
 .erp-omd-admin table.widefat td select {

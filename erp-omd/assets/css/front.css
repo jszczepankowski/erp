@@ -192,6 +192,14 @@ background-image: none !important;
 	margin-top: 24px;
 }
 
+.erp-omd-front-grid-manager-half {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.erp-omd-front-grid-manager-full {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .erp-omd-front-grid-manager-full {
     grid-template-columns: minmax(0, 1fr);
 }

@@ -158,6 +158,7 @@ class ERP_OMD_Admin
             case 'bulk_time_entries': $this->handle_time_entries_bulk_action(); break;
             case 'update_project_request_status': $this->handle_project_request_status_update_action(); break;
             case 'convert_project_request': $this->handle_project_request_conversion_action(); break;
+            case 'delete_project_request': $this->handle_project_request_delete_action(); break;
             case 'add_attachment': $this->handle_attachment_add(); break;
             case 'delete_attachment': $this->handle_attachment_delete(); break;
             case 'save_settings': $this->handle_settings_save(); break;
@@ -704,6 +705,25 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-requests', 'success', __('Wniosek został skonwertowany do projektu.', 'erp-omd'), ['id' => $request_id]);
     }
 
+    private function handle_project_request_delete_action()
+    {
+        check_admin_referer('erp_omd_delete_project_request');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $request_id = (int) ($_POST['request_id'] ?? 0);
+        $request = $request_id > 0 ? $this->project_requests->find($request_id) : null;
+        if (! $request) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', __('Nie znaleziono wniosku projektowego.', 'erp-omd'));
+        }
+
+        if ((string) ($request['status'] ?? '') === 'converted') {
+            $this->redirect_with_notice('erp-omd-requests', 'error', __('Nie można usunąć wniosku, który został już skonwertowany do projektu.', 'erp-omd'));
+        }
+
+        $this->project_requests->delete($request_id);
+        $this->redirect_with_notice('erp-omd-requests', 'success', __('Wniosek projektowy został usunięty.', 'erp-omd'));
+    }
+
     private function handle_inline_employee_update_action()
     {
         check_admin_referer('erp_omd_inline_employee_update');
@@ -898,16 +918,14 @@ class ERP_OMD_Admin
             'accepted_at' => $existing['accepted_at'] ?? null,
         ];
         $errors = $this->estimate_service->validate_estimate($payload, $existing);
-        $initial_item_payload = [
-            'estimate_id' => 0,
-            'name' => sanitize_text_field(wp_unslash($_POST['initial_item_name'] ?? '')),
-            'qty' => (float) ($_POST['initial_item_qty'] ?? 0),
-            'price' => (float) ($_POST['initial_item_price'] ?? 0),
-            'cost_internal' => (float) ($_POST['initial_item_cost_internal'] ?? 0),
-            'comment' => sanitize_textarea_field(wp_unslash($_POST['initial_item_comment'] ?? '')),
-        ];
+        $initial_items_payload = $this->collect_initial_estimate_items();
         if (! $existing) {
-            $errors = array_merge($errors, $this->estimate_service->validate_item($initial_item_payload, ['id' => 0, 'status' => $payload['status']]));
+            if ($initial_items_payload === []) {
+                $errors[] = __('Kosztorys musi zawierać minimum jedną pozycję.', 'erp-omd');
+            }
+            foreach ($initial_items_payload as $initial_item_payload) {
+                $errors = array_merge($errors, $this->estimate_service->validate_item($initial_item_payload, ['id' => 0, 'status' => $payload['status']]));
+            }
         }
         if ($errors) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', implode(' ', $errors), $id ? ['id' => $id, 'edit' => 1] : []);
@@ -917,11 +935,63 @@ class ERP_OMD_Admin
             $message = __('Kosztorys został zaktualizowany.', 'erp-omd');
         } else {
             $id = $this->estimates->create($payload);
-            $initial_item_payload['estimate_id'] = $id;
-            $this->estimate_items->create($initial_item_payload);
+            foreach ($initial_items_payload as $initial_item_payload) {
+                $initial_item_payload['estimate_id'] = $id;
+                $this->estimate_items->create($initial_item_payload);
+            }
             $message = __('Kosztorys został utworzony.', 'erp-omd');
         }
         $this->redirect_with_notice('erp-omd-estimates', 'success', $message, ['id' => $id]);
+    }
+
+    private function collect_initial_estimate_items()
+    {
+        $names = wp_unslash($_POST['initial_item_name'] ?? []);
+        $qtys = wp_unslash($_POST['initial_item_qty'] ?? []);
+        $prices = wp_unslash($_POST['initial_item_price'] ?? []);
+        $costs = wp_unslash($_POST['initial_item_cost_internal'] ?? []);
+        $comments = wp_unslash($_POST['initial_item_comment'] ?? []);
+
+        if (! is_array($names)) {
+            $names = [$names];
+        }
+        if (! is_array($qtys)) {
+            $qtys = [$qtys];
+        }
+        if (! is_array($prices)) {
+            $prices = [$prices];
+        }
+        if (! is_array($costs)) {
+            $costs = [$costs];
+        }
+        if (! is_array($comments)) {
+            $comments = [$comments];
+        }
+
+        $count = max(count($names), count($qtys), count($prices), count($costs), count($comments));
+        $items = [];
+        for ($index = 0; $index < $count; $index++) {
+            $name = sanitize_text_field((string) ($names[$index] ?? ''));
+            $qty = (float) ($qtys[$index] ?? 0);
+            $price = (float) ($prices[$index] ?? 0);
+            $cost = (float) ($costs[$index] ?? 0);
+            $comment = sanitize_textarea_field((string) ($comments[$index] ?? ''));
+
+            if ($name === '' && $qty <= 0 && $price <= 0 && $cost <= 0 && $comment === '') {
+                continue;
+            }
+
+            $items[] = [
+                'estimate_id' => 0,
+                'name' => $name,
+                'qty' => $qty,
+                'price' => $price,
+                'cost_internal' => $cost,
+                'comment' => $comment,
+            ];
+        }
+
+        return $items;
     }
 
     private function handle_estimate_delete()

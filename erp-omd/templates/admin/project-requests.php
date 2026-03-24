@@ -63,6 +63,15 @@
                                                 <button class="button button-small button-primary" type="submit"><?php esc_html_e('Konwertuj do projektu', 'erp-omd'); ?></button>
                                             </form>
                                         <?php endif; ?>
+
+                                        <?php if ((string) ($request_row['status'] ?? '') !== 'converted') : ?>
+                                            <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć ten wniosek projektowy?', 'erp-omd')); ?>');">
+                                                <?php wp_nonce_field('erp_omd_delete_project_request'); ?>
+                                                <input type="hidden" name="erp_omd_action" value="delete_project_request" />
+                                                <input type="hidden" name="request_id" value="<?php echo esc_attr((string) ($request_row['id'] ?? 0)); ?>" />
+                                                <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                            </form>
+                                        <?php endif; ?>
                                     </div>
                                 </details>
                             </td>

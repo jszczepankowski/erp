@@ -534,7 +534,7 @@
                 </div>
             </div>
 
-            <div class="erp-omd-front-grid erp-omd-front-grid-manager">
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-half">
                 <article class="erp-omd-front-panel" data-collapsible-section="manager-new-request">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy wniosek projektowy', 'erp-omd'); ?></h2>
