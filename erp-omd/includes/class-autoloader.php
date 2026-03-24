@@ -12,6 +12,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Admin' => 'includes/class-admin.php',
         'ERP_OMD_Frontend' => 'includes/class-frontend.php',
         'ERP_OMD_REST_API' => 'includes/class-rest-api.php',
+        'ERP_OMD_Cron_Manager' => 'includes/class-cron-manager.php',
         'ERP_OMD_Role_Repository' => 'includes/repositories/class-role-repository.php',
         'ERP_OMD_Employee_Repository' => 'includes/repositories/class-employee-repository.php',
         'ERP_OMD_Salary_History_Repository' => 'includes/repositories/class-salary-history-repository.php',
