@@ -200,6 +200,10 @@ background-image: none !important;
     grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
 }
 
+.erp-omd-front-grid-manager-two-fifths {
+    grid-template-columns: minmax(320px, 2fr) minmax(0, 3fr);
+}
+
 .erp-omd-front-grid-manager-full {
     grid-template-columns: minmax(0, 1fr);
 }

@@ -10,6 +10,7 @@ class ERP_OMD_Frontend
     private $project_requests;
     private $estimates;
     private $estimate_items;
+    private $project_costs;
     private $time_entry_service;
     private $client_project_service;
     private $project_request_service;
@@ -27,6 +28,7 @@ class ERP_OMD_Frontend
         ERP_OMD_Project_Request_Repository $project_requests,
         ERP_OMD_Estimate_Repository $estimates,
         ERP_OMD_Estimate_Item_Repository $estimate_items,
+        ERP_OMD_Project_Cost_Repository $project_costs,
         ERP_OMD_Time_Entry_Service $time_entry_service,
         ERP_OMD_Client_Project_Service $client_project_service,
         ERP_OMD_Project_Request_Service $project_request_service,
@@ -43,6 +45,7 @@ class ERP_OMD_Frontend
         $this->project_requests = $project_requests;
         $this->estimates = $estimates;
         $this->estimate_items = $estimate_items;
+        $this->project_costs = $project_costs;
         $this->time_entry_service = $time_entry_service;
         $this->client_project_service = $client_project_service;
         $this->project_request_service = $project_request_service;
@@ -332,12 +335,20 @@ class ERP_OMD_Frontend
             $this->create_manager_estimate($user);
             return;
         }
-        if ($action === 'update_estimate') {
-            $this->update_manager_estimate($user);
+        if ($action === 'update_estimate_status') {
+            $this->update_manager_estimate_status($user);
+            return;
+        }
+        if ($action === 'update_estimate_item_inline') {
+            $this->update_manager_estimate_item_inline($user);
             return;
         }
         if ($action === 'update_project_status') {
             $this->update_manager_project_status($user);
+            return;
+        }
+        if ($action === 'add_project_cost') {
+            $this->add_manager_project_cost($user);
             return;
         }
         if ($action === 'accept_estimate') {
@@ -936,7 +947,7 @@ class ERP_OMD_Frontend
         $this->redirect_manager_with_notice('success', __('Kosztorys został utworzony.', 'erp-omd'), ['estimate_id' => $estimate_id]);
     }
 
-    private function update_manager_estimate(WP_User $user)
+    private function update_manager_estimate_status(WP_User $user)
     {
         $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
         $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
@@ -957,7 +968,7 @@ class ERP_OMD_Frontend
 
         $payload = [
             'client_id' => (int) ($estimate['client_id'] ?? 0),
-            'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? ($estimate['name'] ?? ''))),
+            'name' => (string) ($estimate['name'] ?? ''),
             'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? ($estimate['status'] ?? 'wstepny'))),
             'accepted_by_user_id' => (int) ($estimate['accepted_by_user_id'] ?? 0),
             'accepted_at' => $estimate['accepted_at'] ?? null,
@@ -970,6 +981,44 @@ class ERP_OMD_Frontend
 
         $this->estimates->update($estimate_id, $payload);
         $this->redirect_manager_with_notice('success', __('Kosztorys został zaktualizowany.', 'erp-omd'), ['estimate_id' => $estimate_id]);
+    }
+
+    private function update_manager_estimate_item_inline(WP_User $user)
+    {
+        $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+        $item_id = (int) ($_POST['item_id'] ?? 0);
+        $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
+        $item = $item_id > 0 ? $this->estimate_items->find($item_id) : null;
+        if (! $estimate || ! $item || (int) ($item['estimate_id'] ?? 0) !== $estimate_id) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono pozycji kosztorysu do aktualizacji.', 'erp-omd'), ['estimate_id' => $estimate_id]);
+        }
+
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+        }
+
+        $managed_projects = $this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator'));
+        $visible_estimate_ids = array_map('intval', wp_list_pluck($this->load_visible_manager_estimates((int) $employee['id'], $managed_projects, user_can($user, 'administrator')), 'id'));
+        if (! in_array($estimate_id, $visible_estimate_ids, true)) {
+            $this->redirect_manager_with_notice('error', __('Nie możesz edytować pozycji kosztorysów spoza własnego zakresu odpowiedzialności.', 'erp-omd'), ['estimate_id' => $estimate_id]);
+        }
+
+        $payload = [
+            'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
+            'qty' => (float) ($_POST['qty'] ?? 0),
+            'price' => (float) ($_POST['price'] ?? 0),
+            'cost_internal' => (float) ($_POST['cost_internal'] ?? 0),
+            'comment' => sanitize_textarea_field(wp_unslash($_POST['comment'] ?? '')),
+        ];
+
+        $errors = $this->estimate_service->validate_item($payload, $estimate, $item);
+        if ($errors) {
+            $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)), ['estimate_id' => $estimate_id]);
+        }
+
+        $this->estimate_items->update($item_id, $payload);
+        $this->redirect_manager_with_notice('success', __('Pozycja kosztorysu została zaktualizowana.', 'erp-omd'), ['estimate_id' => $estimate_id]);
     }
 
     private function update_manager_project_status(WP_User $user)
@@ -993,6 +1042,36 @@ class ERP_OMD_Frontend
 
         $this->projects->set_status($project_id, $status);
         $this->redirect_manager_with_notice('success', __('Status projektu został zaktualizowany.', 'erp-omd'), ['project_id' => $project_id]);
+    }
+
+    private function add_manager_project_cost(WP_User $user)
+    {
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+        }
+
+        $managed_project_ids = array_map('intval', wp_list_pluck($this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator')), 'id'));
+        if (! in_array($project_id, $managed_project_ids, true)) {
+            $this->redirect_manager_with_notice('error', __('Nie możesz dodawać kosztów do projektów spoza własnego zakresu odpowiedzialności.', 'erp-omd'));
+        }
+
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($_POST['amount'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'cost_date' => sanitize_text_field(wp_unslash($_POST['cost_date'] ?? '')),
+            'created_by_user_id' => (int) $user->ID,
+        ];
+        $errors = $this->project_financial_service->validate_project_cost($payload);
+        if ($errors) {
+            $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)), ['project_id' => $project_id]);
+        }
+
+        $this->project_costs->create($payload);
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_manager_with_notice('success', __('Koszt projektu został dodany.', 'erp-omd'), ['project_id' => $project_id]);
     }
 
     private function accept_manager_estimate(WP_User $user)
