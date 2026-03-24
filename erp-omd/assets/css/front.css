@@ -192,6 +192,10 @@ background-image: none !important;
 	margin-top: 24px;
 }
 
+.erp-omd-front-grid-manager-full {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .erp-omd-front-panel {
     background: #f9fafb;
     border: 1px solid #e5e7eb;
@@ -941,4 +945,44 @@ background-image: none !important;
     .erp-omd-front-login-actions .erp-omd-front-button {
         width: 100%;
     }
+}
+
+.erp-omd-front-table-row-active {
+    background: rgba(221, 177, 120, 0.12);
+}
+
+.erp-omd-front-button-small {
+    font-size: 12px;
+    padding: 8px 12px;
+}
+
+.erp-omd-front-estimate-item-row {
+    border: 1px solid #efe6d9;
+    border-radius: 14px;
+    margin-bottom: 12px;
+    padding: 12px;
+}
+
+.erp-omd-front-collapsible-header,
+.erp-omd-front-section-heading {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.erp-omd-front-collapse-toggle {
+    background: #fff;
+    border: 1px solid #d9c8b1;
+    border-radius: 999px;
+    color: #7a6046;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 8px 12px;
+}
+
+.erp-omd-front-panel-collapsed {
+    opacity: 0.95;
 }
