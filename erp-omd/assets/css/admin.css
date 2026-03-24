@@ -1121,3 +1121,14 @@
 .erp-omd-admin .erp-omd-form-section {
     background: linear-gradient(180deg, #fff 0%, #fcfaf7 100%);
 }
+
+.erp-omd-admin table.widefat td input[type="text"],
+.erp-omd-admin table.widefat td input[type="number"],
+.erp-omd-admin table.widefat td select {
+    max-width: 100%;
+    min-width: 110px;
+}
+
+.erp-omd-admin table.widefat td select[multiple] {
+    min-width: 180px;
+}

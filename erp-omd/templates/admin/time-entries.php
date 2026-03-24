@@ -147,19 +147,32 @@
                             <tr><td colspan="9"><?php esc_html_e('Brak wpisów czasu.', 'erp-omd'); ?></td></tr>
                         <?php else : ?>
                             <?php foreach ($time_entries as $time_row) : ?>
+                                <?php $inline_time_form_id = 'erp-omd-inline-time-' . (int) $time_row['id']; ?>
                                 <tr>
                                     <td><input class="erp-omd-time-entry-checkbox" type="checkbox" name="time_entry_ids[]" value="<?php echo esc_attr($time_row['id']); ?>" form="erp-omd-bulk-time-entries-form" /></td>
                                     <td><?php echo esc_html($time_row['entry_date']); ?></td>
                                     <td><?php echo esc_html($time_row['employee_login']); ?></td>
                                     <td><?php echo esc_html($time_row['project_name']); ?></td>
                                     <td><?php echo esc_html($time_row['role_name']); ?></td>
-                                    <td><?php echo esc_html(number_format_i18n((float) $time_row['hours'], 2)); ?></td>
-                                    <td><?php echo esc_html($time_row['description'] ?: '—'); ?></td>
-                                    <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($time_row['status'], 'time')); ?>"><?php echo esc_html($this->time_status_label($time_row['status'])); ?></span></td>
+                                    <td><input type="number" min="0.01" step="0.01" name="hours" value="<?php echo esc_attr((string) $time_row['hours']); ?>" form="<?php echo esc_attr($inline_time_form_id); ?>" /></td>
+                                    <td><input type="text" name="description" value="<?php echo esc_attr((string) ($time_row['description'] ?: '')); ?>" form="<?php echo esc_attr($inline_time_form_id); ?>" /></td>
+                                    <td>
+                                        <select name="status" form="<?php echo esc_attr($inline_time_form_id); ?>">
+                                            <?php foreach (['submitted', 'approved', 'rejected'] as $inline_status) : ?>
+                                                <option value="<?php echo esc_attr($inline_status); ?>" <?php selected((string) ($time_row['status'] ?? 'submitted'), $inline_status); ?>><?php echo esc_html($this->time_status_label($inline_status)); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
                                     <td>
                                         <details class="erp-omd-list-actions">
                                             <summary class="button button-small"><?php esc_html_e('Akcje', 'erp-omd'); ?></summary>
                                             <div class="erp-omd-list-actions-menu">
+                                                <form method="post" id="<?php echo esc_attr($inline_time_form_id); ?>" class="erp-omd-inline-form">
+                                                    <?php wp_nonce_field('erp_omd_inline_time_entry_update'); ?>
+                                                    <input type="hidden" name="erp_omd_action" value="inline_update_time_entry" />
+                                                    <input type="hidden" name="id" value="<?php echo esc_attr($time_row['id']); ?>" />
+                                                    <button class="button button-small button-primary" type="submit"><?php esc_html_e('Zapisz inline', 'erp-omd'); ?></button>
+                                                </form>
                                                 <?php if ($can_edit_any_entry) : ?>
                                                     <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-time', 'id' => $time_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                                 <?php endif; ?>

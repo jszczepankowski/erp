@@ -116,6 +116,17 @@
                             <?php endif; ?>
                         </div>
                     </form>
+                    <form method="post" class="erp-omd-inline-form">
+                        <?php wp_nonce_field('erp_omd_save_estimate'); ?>
+                        <input type="hidden" name="erp_omd_action" value="save_estimate">
+                        <input type="hidden" name="id" value="<?php echo esc_attr((string) ($selected_estimate['id'] ?? 0)); ?>">
+                        <input type="hidden" name="name" value="<?php echo esc_attr((string) ($selected_estimate['name'] ?? '')); ?>">
+                        <input type="hidden" name="client_id" value="<?php echo esc_attr((string) ($selected_estimate['client_id'] ?? 0)); ?>">
+                        <input type="hidden" name="status" value="<?php echo esc_attr((string) ($selected_estimate['status'] ?? 'wstepny')); ?>">
+                        <div class="erp-omd-form-actions">
+                            <?php submit_button(__('Zapisz kosztorys', 'erp-omd'), 'primary'); ?>
+                        </div>
+                    </form>
                 <?php else : ?>
                     <p><?php esc_html_e('Po zaakceptowaniu pozycje kosztorysu są tylko do odczytu — można je przeglądać i eksportować, ale status kosztorysu administrator może nadal zmienić z poziomu formularza edycji.', 'erp-omd'); ?></p>
                 <?php endif; ?>
