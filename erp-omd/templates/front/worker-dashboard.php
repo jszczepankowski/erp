@@ -167,7 +167,7 @@
                     </form>
                 </article>
 
-                <article class="erp-omd-front-panel erp-omd-front-panel-form">
+                <article class="erp-omd-front-panel erp-omd-front-panel-form" data-collapsible-section="worker-new-project-request">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy wniosek projektowy', 'erp-omd'); ?></h2>
                     </div>

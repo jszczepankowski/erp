@@ -522,6 +522,7 @@ class ERP_OMD_Admin
     public function render_settings()
     {
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
+        $front_admin_redirect_enabled = (bool) get_option('erp_omd_front_admin_redirect_enabled', true);
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
         $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
         $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
@@ -1704,6 +1705,7 @@ class ERP_OMD_Admin
         }
 
         update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
+        update_option('erp_omd_front_admin_redirect_enabled', ! empty($_POST['front_admin_redirect_enabled']));
         update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
         update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
         update_option('erp_omd_front_login_cover_id', $front_login_cover_id);

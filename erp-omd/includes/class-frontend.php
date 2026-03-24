@@ -235,6 +235,10 @@ class ERP_OMD_Frontend
             return false;
         }
 
+        if (! (bool) get_option('erp_omd_front_admin_redirect_enabled', true)) {
+            return false;
+        }
+
         if (user_can($user, 'administrator')) {
             return false;
         }

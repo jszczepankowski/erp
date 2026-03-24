@@ -278,7 +278,7 @@
                 </article>
             </div>
 
-            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-two-fifths erp-omd-front-estimates-section">
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-thirty-seventy erp-omd-front-estimates-section">
                 <article class="erp-omd-front-panel erp-omd-front-panel-form" data-collapsible-section="manager-new-estimate">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy kosztorys', 'erp-omd'); ?></h2>

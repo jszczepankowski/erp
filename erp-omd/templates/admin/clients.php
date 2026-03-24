@@ -200,6 +200,53 @@
                             </div>
                         </form>
                     </section>
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-section-header">
+                            <div>
+                                <h2><?php echo esc_html(sprintf(__('Stawki klienta — lista (%s)', 'erp-omd'), $selected_client['name'])); ?></h2>
+                                <p class="description"><?php esc_html_e('Lista stawek klienta korzysta teraz z tej samej sekcyjnej prezentacji co pozostałe detale.', 'erp-omd'); ?></p>
+                            </div>
+                        </div>
+                        <table class="widefat striped">
+                            <thead><tr><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Stawka', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                            <tbody>
+                            <?php if (empty($client_rates)) : ?>
+                                <tr><td colspan="3"><?php esc_html_e('Brak stawek klienta. Dodaj pierwszą stawkę, aby projekty mogły dziedziczyć wartości z poziomu klienta.', 'erp-omd'); ?></td></tr>
+                            <?php else : ?>
+                                <?php foreach ($client_rates as $rate_item) : ?>
+                                    <?php
+                                    $rate_id = isset($rate_item['id']) ? (int) $rate_item['id'] : 0;
+                                    $role_name = $rate_item['role_name'] ?? '—';
+                                    $rate_value = isset($rate_item['rate']) ? (float) $rate_item['rate'] : 0.0;
+                                    ?>
+                                    <tr>
+                                        <td><?php echo esc_html($role_name); ?></td>
+                                        <td><?php echo esc_html(number_format_i18n($rate_value, 2)); ?></td>
+                                        <td>
+                                            <?php if ($rate_id > 0) : ?>
+                                                <details class="erp-omd-list-actions">
+                                                    <summary class="button button-small"><?php esc_html_e('Akcje', 'erp-omd'); ?></summary>
+                                                    <div class="erp-omd-list-actions-menu">
+                                                        <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => (int) $selected_client['id'], 'edit' => 1, 'rate_id' => $rate_id], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                                        <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć stawkę klienta?', 'erp-omd')); ?>');">
+                                                            <?php wp_nonce_field('erp_omd_delete_client_rate'); ?>
+                                                            <input type="hidden" name="erp_omd_action" value="delete_client_rate" />
+                                                            <input type="hidden" name="id" value="<?php echo esc_attr($rate_id); ?>" />
+                                                            <input type="hidden" name="client_id" value="<?php echo esc_attr($selected_client['id']); ?>" />
+                                                            <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                                        </form>
+                                                    </div>
+                                                </details>
+                                            <?php else : ?>
+                                                <span>—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </section>
                 </div>
             <?php endif; ?>
     </section>
@@ -272,56 +319,5 @@
                 <?php endif; ?>
                 </tbody>
             </table>
-
-            <?php if ($selected_client) : ?>
-                <hr />
-                <section class="erp-omd-form-section">
-                    <div class="erp-omd-section-header">
-                        <div>
-                            <h2><?php echo esc_html(sprintf(__('Stawki klienta — lista (%s)', 'erp-omd'), $selected_client['name'])); ?></h2>
-                            <p class="description"><?php esc_html_e('Lista stawek klienta korzysta teraz z tej samej sekcyjnej prezentacji co pozostałe detale.', 'erp-omd'); ?></p>
-                        </div>
-                    </div>
-                    <table class="widefat striped">
-                        <thead><tr><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Stawka', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
-                        <tbody>
-                        <?php if (empty($client_rates)) : ?>
-                            <tr><td colspan="3"><?php esc_html_e('Brak stawek klienta. Dodaj pierwszą stawkę, aby projekty mogły dziedziczyć wartości z poziomu klienta.', 'erp-omd'); ?></td></tr>
-                        <?php else : ?>
-                            <?php foreach ($client_rates as $rate_item) : ?>
-                                <?php
-                                $rate_id = isset($rate_item['id']) ? (int) $rate_item['id'] : 0;
-                                $role_name = $rate_item['role_name'] ?? '—';
-                                $rate_value = isset($rate_item['rate']) ? (float) $rate_item['rate'] : 0.0;
-                                ?>
-                                <tr>
-                                    <td><?php echo esc_html($role_name); ?></td>
-                                    <td><?php echo esc_html(number_format_i18n($rate_value, 2)); ?></td>
-                                    <td>
-                                        <?php if ($rate_id > 0) : ?>
-                                            <details class="erp-omd-list-actions">
-                                                <summary class="button button-small"><?php esc_html_e('Akcje', 'erp-omd'); ?></summary>
-                                                <div class="erp-omd-list-actions-menu">
-                                                    <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-clients', 'id' => (int) $selected_client['id'], 'edit' => 1, 'rate_id' => $rate_id], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
-                                                    <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć stawkę klienta?', 'erp-omd')); ?>');">
-                                                        <?php wp_nonce_field('erp_omd_delete_client_rate'); ?>
-                                                        <input type="hidden" name="erp_omd_action" value="delete_client_rate" />
-                                                        <input type="hidden" name="id" value="<?php echo esc_attr($rate_id); ?>" />
-                                                        <input type="hidden" name="client_id" value="<?php echo esc_attr($selected_client['id']); ?>" />
-                                                        <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
-                                                    </form>
-                                                </div>
-                                            </details>
-                                        <?php else : ?>
-                                            <span>—</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                        </tbody>
-                    </table>
-                </section>
-            <?php endif; ?>
     </section>
 </div>

@@ -22,6 +22,12 @@
                                 <?php esc_html_e('Usuń dane ERP OMD podczas uninstall pluginu.', 'erp-omd'); ?>
                             </label>
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label class="erp-omd-form-label">
+                                <input type="checkbox" name="front_admin_redirect_enabled" value="1" <?php checked($front_admin_redirect_enabled); ?> />
+                                <?php esc_html_e('Przekierowuj użytkowników FRONT z wp-admin do ERP Front.', 'erp-omd'); ?>
+                            </label>
+                        </div>
                     </div>
                 </section>
 
