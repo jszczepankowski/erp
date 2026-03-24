@@ -343,16 +343,7 @@
                                 <?php $this->render_alert_icons($project_row['alerts'] ?? []); ?>
                             </td>
                             <td><?php echo esc_html($this->billing_type_label($project_row['billing_type'])); ?></td>
-                            <td>
-                                <select name="manager_ids[]" form="<?php echo esc_attr($inline_project_form_id); ?>" multiple size="3">
-                                    <?php foreach ($employees_for_select as $employee_item) : ?>
-                                        <?php $selected_manager_ids = array_map('intval', (array) ($project_row['manager_ids'] ?? [])); ?>
-                                        <option value="<?php echo esc_attr((string) $employee_item['id']); ?>" <?php selected(in_array((int) $employee_item['id'], $selected_manager_ids, true)); ?>>
-                                            <?php echo esc_html($employee_item['user_login']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </td>
+                            <td><?php echo esc_html(($project_row['manager_logins_display'] ?? '') !== '' ? $project_row['manager_logins_display'] : ($project_row['manager_login'] ?: '—')); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['cost'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['revenue'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['profit'] ?? 0), 2)); ?></td>
