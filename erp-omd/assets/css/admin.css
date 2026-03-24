@@ -440,7 +440,7 @@
     gap: 8px;
     min-width: 180px;
     padding: 10px;
-    position: absolute;
+    position: static;
     right: 0;
     top: calc(100% + 8px);
     z-index: 20;
@@ -477,7 +477,7 @@
 }
 
 .erp-omd-admin .erp-omd-section-header p {
-    margin: 10px;
+    margin: 10px 0px;
 }
 
 .erp-omd-admin .erp-omd-filter-form {

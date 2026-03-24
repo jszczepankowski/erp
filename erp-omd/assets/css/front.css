@@ -14,9 +14,13 @@ body.erp-omd-front-body {
     margin: 0;
 }
 
+.wp-core-ui select.disabled, .wp-core-ui select:disabled {
+background-image: none !important;
+}
+
+
 .erp-omd-front-shell {
     margin: 0 auto;
-    max-width: 1240px;
     min-height: 100vh;
     padding: 40px 24px 56px;
 }
@@ -179,11 +183,13 @@ body.erp-omd-front-body {
 
 .erp-omd-front-grid-summary {
     margin-bottom: 24px;
+	margin-top: 24px;
 }
 
 .erp-omd-front-grid-manager {
     grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
     margin-bottom: 24px;
+	margin-top: 24px;
 }
 
 .erp-omd-front-panel {
@@ -309,10 +315,11 @@ body.erp-omd-front-body {
     gap: 12px;
 }
 
-.erp-omd-front-button-ghost {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-    color: #3730a3;
+.erp-omd-front-button-ghost {	
+	background: #fff;
+  border: 1px solid var(--erp-omd-front-border);
+  border-radius: 999px;
+  color: var(--erp-omd-front-text);
 }
 
 .erp-omd-front-button-small {
@@ -835,9 +842,9 @@ body.erp-omd-front-body {
 }
 
 .erp-omd-front-login-brand h1 {
-    font-size: clamp(34px, 4vw, 48px);
+    font-size: 20px;
     letter-spacing: -0.03em;
-    margin: 0;
+	margin-top: 10px;
 }
 
 .erp-omd-front-login-logo {
@@ -880,8 +887,7 @@ body.erp-omd-front-body {
     background: #212123;
     background-position: center;
     background-repeat: no-repeat;
-    background-size: cover;
-    border-left: 1px solid rgba(234, 223, 206, 0.8);
+    background-size: auto;
     height: 100%;
     min-height: 100%;
 }
