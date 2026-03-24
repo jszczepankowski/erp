@@ -186,6 +186,7 @@ class ERP_OMD_Plugin
         $this->frontend->register_hooks();
         $this->rest_api->register_hooks();
         add_action('wp_login', [$this, 'track_user_login'], 10, 2);
+        ERP_OMD_Cron_Manager::register_hooks();
     }
 
     public function track_user_login($user_login, $user)
