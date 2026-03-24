@@ -29,7 +29,7 @@
             <?php endif; ?>
 
             <div class="erp-omd-front-grid erp-omd-front-grid-summary">
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="worker-time-entries">
                     <h2><?php esc_html_e('Twoje konto', 'erp-omd'); ?></h2>
                     <ul>
                         <li><strong><?php esc_html_e('Użytkownik:', 'erp-omd'); ?></strong> <?php echo esc_html($user->user_login); ?></li>
@@ -291,7 +291,7 @@
                 </article>
             </div>
 
-            <div class="erp-omd-front-panel erp-omd-front-panel-calendar">
+            <div class="erp-omd-front-panel erp-omd-front-panel-calendar" data-collapsible-section="worker-rhythm">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Rytm pracy', 'erp-omd'); ?></h2>
                     <p><?php esc_html_e('Szybkie skróty pomagają przełączać zakres listy, a kalendarz pokazuje rozkład Twoich godzin w wybranym miesiącu.', 'erp-omd'); ?></p>
@@ -393,7 +393,7 @@
             </div>
 
             <div class="erp-omd-front-grid erp-omd-front-grid-summary">
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="worker-day-details">
                     <div class="erp-omd-front-section-heading">
                         <h2>
                             <?php
@@ -453,6 +453,61 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            var setupCollapsibleSections = function () {
+                var storagePrefix = 'erp_omd_front_worker_section_';
+                document.querySelectorAll('[data-collapsible-section]').forEach(function (panel) {
+                    var sectionKey = panel.getAttribute('data-collapsible-section');
+                    if (!sectionKey) {
+                        return;
+                    }
+
+                    var headerNode = panel.querySelector(':scope > .erp-omd-front-section-heading');
+                    if (!headerNode) {
+                        var heading = panel.querySelector(':scope > h2, :scope > h3');
+                        if (!heading) {
+                            return;
+                        }
+                        headerNode = document.createElement('div');
+                        headerNode.className = 'erp-omd-front-collapsible-header';
+                        heading.parentNode.insertBefore(headerNode, heading);
+                        headerNode.appendChild(heading);
+                    }
+
+                    if (headerNode.querySelector('.erp-omd-front-collapse-toggle')) {
+                        return;
+                    }
+
+                    var contentNodes = Array.from(panel.children).filter(function (child) {
+                        return child !== headerNode;
+                    });
+
+                    var toggle = document.createElement('button');
+                    toggle.type = 'button';
+                    toggle.className = 'erp-omd-front-collapse-toggle';
+                    headerNode.appendChild(toggle);
+
+                    var storageKey = storagePrefix + sectionKey;
+                    var isCollapsed = localStorage.getItem(storageKey) === '1';
+                    var applyState = function () {
+                        contentNodes.forEach(function (node) {
+                            node.hidden = isCollapsed;
+                        });
+                        toggle.textContent = isCollapsed ? '<?php echo esc_js(__('Rozwiń', 'erp-omd')); ?>' : '<?php echo esc_js(__('Zwiń', 'erp-omd')); ?>';
+                        panel.classList.toggle('erp-omd-front-panel-collapsed', isCollapsed);
+                    };
+
+                    toggle.addEventListener('click', function () {
+                        isCollapsed = !isCollapsed;
+                        localStorage.setItem(storageKey, isCollapsed ? '1' : '0');
+                        applyState();
+                    });
+
+                    applyState();
+                });
+            };
+
+            setupCollapsibleSections();
+
             var hoursInput = document.getElementById('erp-omd-front-hours');
             var clientInput = document.getElementById('erp-omd-front-client');
             var projectInput = document.getElementById('erp-omd-front-project');

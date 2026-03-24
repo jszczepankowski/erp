@@ -29,7 +29,7 @@
             <?php endif; ?>
 
             <div class="erp-omd-front-grid erp-omd-front-grid-summary">
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="manager-projects">
                     <h2><?php esc_html_e('Twoje konto', 'erp-omd'); ?></h2>
                     <ul>
                         <li><strong><?php esc_html_e('Użytkownik:', 'erp-omd'); ?></strong> <?php echo esc_html($user->user_login); ?></li>
@@ -118,7 +118,7 @@
                     <?php endif; ?>
                 </article>
 
-                <article id="project-detail" class="erp-omd-front-panel">
+                <article id="project-detail" class="erp-omd-front-panel" data-collapsible-section="manager-project-card">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Karta projektu', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Podstawowe dane biznesowe, marża, alerty i powiązane kosztorysy dla wybranego projektu.', 'erp-omd'); ?></p>
@@ -231,7 +231,7 @@
             </div>
 
             <div class="erp-omd-front-stack erp-omd-front-estimates-section">
-                <article class="erp-omd-front-panel erp-omd-front-panel-form erp-omd-front-panel-full">
+                <article class="erp-omd-front-panel erp-omd-front-panel-form erp-omd-front-panel-full" data-collapsible-section="manager-new-estimate">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy kosztorys', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Manager może utworzyć kosztorys bez przechodzenia do wp-admin. Formularz zapisuje kosztorys od razu z pierwszą pozycją.', 'erp-omd'); ?></p>
@@ -318,7 +318,7 @@
                     </form>
                 </article>
 
-                <article id="estimate-detail" class="erp-omd-front-panel">
+                <article id="estimate-detail" class="erp-omd-front-panel" data-collapsible-section="manager-estimates">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Kosztorysy', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Wszystkie kosztorysy widoczne z perspektywy Twoich klientów i projektów. Możesz przełączać szczegóły bez opuszczania frontu.', 'erp-omd'); ?></p>
@@ -459,7 +459,7 @@
                 </article>
             </div>
 
-            <div class="erp-omd-front-panel">
+            <div class="erp-omd-front-panel" data-collapsible-section="manager-approval-queue">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Kolejka wpisów czasu do akceptacji', 'erp-omd'); ?></h2>
                     <p><?php esc_html_e('Szybkie decyzje operacyjne dla wpisów w statusie „submitted” przypisanych do Twoich projektów.', 'erp-omd'); ?></p>
@@ -535,7 +535,7 @@
             </div>
 
             <div class="erp-omd-front-grid erp-omd-front-grid-manager">
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="manager-new-request">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy wniosek projektowy', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Zgłoś inicjację projektu bez omijania właściwego lifecycle projektu. Wniosek trafia do review i może zostać później skonwertowany do projektu.', 'erp-omd'); ?></p>
@@ -689,6 +689,61 @@
     </main>
     <script>
     (function () {
+        var setupCollapsibleSections = function () {
+            var storagePrefix = 'erp_omd_front_manager_section_';
+            document.querySelectorAll('[data-collapsible-section]').forEach(function (panel) {
+                var sectionKey = panel.getAttribute('data-collapsible-section');
+                if (!sectionKey) {
+                    return;
+                }
+
+                var headerNode = panel.querySelector(':scope > .erp-omd-front-section-heading');
+                if (!headerNode) {
+                    var heading = panel.querySelector(':scope > h2, :scope > h3');
+                    if (!heading) {
+                        return;
+                    }
+                    headerNode = document.createElement('div');
+                    headerNode.className = 'erp-omd-front-collapsible-header';
+                    heading.parentNode.insertBefore(headerNode, heading);
+                    headerNode.appendChild(heading);
+                }
+
+                if (headerNode.querySelector('.erp-omd-front-collapse-toggle')) {
+                    return;
+                }
+
+                var contentNodes = Array.from(panel.children).filter(function (child) {
+                    return child !== headerNode;
+                });
+
+                var toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'erp-omd-front-collapse-toggle';
+                headerNode.appendChild(toggle);
+
+                var storageKey = storagePrefix + sectionKey;
+                var isCollapsed = localStorage.getItem(storageKey) === '1';
+                var applyState = function () {
+                    contentNodes.forEach(function (node) {
+                        node.hidden = isCollapsed;
+                    });
+                    toggle.textContent = isCollapsed ? '<?php echo esc_js(__('Rozwiń', 'erp-omd')); ?>' : '<?php echo esc_js(__('Zwiń', 'erp-omd')); ?>';
+                    panel.classList.toggle('erp-omd-front-panel-collapsed', isCollapsed);
+                };
+
+                toggle.addEventListener('click', function () {
+                    isCollapsed = !isCollapsed;
+                    localStorage.setItem(storageKey, isCollapsed ? '1' : '0');
+                    applyState();
+                });
+
+                applyState();
+            });
+        };
+
+        setupCollapsibleSections();
+
         var itemsContainer = document.getElementById('erp-omd-front-estimate-items');
         var addButton = document.getElementById('erp-omd-front-add-item');
         var netNode = document.getElementById('erp-omd-front-estimate-net');

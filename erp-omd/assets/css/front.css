@@ -962,3 +962,27 @@ background-image: none !important;
     margin-bottom: 12px;
     padding: 12px;
 }
+
+.erp-omd-front-collapsible-header,
+.erp-omd-front-section-heading {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.erp-omd-front-collapse-toggle {
+    background: #fff;
+    border: 1px solid #d9c8b1;
+    border-radius: 999px;
+    color: #7a6046;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 8px 12px;
+}
+
+.erp-omd-front-panel-collapsed {
+    opacity: 0.95;
+}

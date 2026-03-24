@@ -60,6 +60,18 @@ class ERP_OMD_Time_Entry_Service
             $errors[] = __('Status wpisu czasu jest niepoprawny.', 'erp-omd');
         }
 
+        if (
+            $this->time_entries->duplicate_exists(
+                (int) $data['employee_id'],
+                (int) $data['project_id'],
+                (int) $data['role_id'],
+                (float) $data['hours'],
+                $entry_id ? (int) $entry_id : null
+            )
+        ) {
+            $errors[] = __('Duplikat wpisu czasu dla employee_id + project_id + role_id + hours.', 'erp-omd');
+        }
+
         return $errors;
     }
 
