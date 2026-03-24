@@ -522,6 +522,7 @@ class ERP_OMD_Admin
     public function render_settings()
     {
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
+        $front_admin_redirect_enabled = (bool) get_option('erp_omd_front_admin_redirect_enabled', true);
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
         $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
         $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
@@ -529,6 +530,27 @@ class ERP_OMD_Admin
         $front_login_cover_url = $front_login_cover_id > 0 ? (string) wp_get_attachment_image_url($front_login_cover_id, 'large') : '';
         $front_login_logo_name = $front_login_logo_id > 0 ? (get_the_title($front_login_logo_id) ?: ('#' . $front_login_logo_id)) : __('Brak wybranego pliku.', 'erp-omd');
         $front_login_cover_name = $front_login_cover_id > 0 ? (get_the_title($front_login_cover_id) ?: ('#' . $front_login_cover_id)) : __('Brak wybranego pliku.', 'erp-omd');
+
+        $notification_settings = $this->missing_hours_notification_defaults();
+        $notification_settings = wp_parse_args((array) get_option('erp_omd_missing_hours_notification_settings', []), $notification_settings);
+        $notification_settings['mode'] = in_array($notification_settings['mode'], ['after_x_days', 'day_of_month'], true) ? $notification_settings['mode'] : 'after_x_days';
+        $notification_settings['after_days'] = max(1, (int) $notification_settings['after_days']);
+        $notification_settings['day_of_month'] = min(31, max(1, (int) $notification_settings['day_of_month']));
+
+        $notification_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
+        $employees = $this->employees->all();
+        foreach ($employees as &$employee_row) {
+            $employee_id = (int) ($employee_row['id'] ?? 0);
+            $state = (array) ($notification_recipients[$employee_id] ?? []);
+            $employee_row['notification_active'] = array_key_exists('active', $state) ? ! empty($state['active']) : true;
+            $employee_row['last_notification_at'] = (string) ($state['last_sent_at'] ?? '');
+        }
+        unset($employee_row);
+
+        $last_backup_at = (string) get_option('erp_omd_last_backup_at', '');
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+        $last_backup_file = (string) get_option('erp_omd_last_backup_file', '');
+
         include ERP_OMD_PATH . 'templates/admin/settings.php';
     }
 
@@ -1655,10 +1677,40 @@ class ERP_OMD_Admin
             $front_login_cover_id = 0;
         }
 
+        $defaults = $this->missing_hours_notification_defaults();
+        $raw_mode = sanitize_key((string) ($_POST['missing_hours_mode'] ?? $defaults['mode']));
+        $mode = in_array($raw_mode, ['after_x_days', 'day_of_month'], true) ? $raw_mode : $defaults['mode'];
+        $notification_settings = [
+            'mode' => $mode,
+            'after_days' => max(1, (int) ($_POST['missing_hours_after_days'] ?? $defaults['after_days'])),
+            'day_of_month' => min(31, max(1, (int) ($_POST['missing_hours_day_of_month'] ?? $defaults['day_of_month']))),
+            'subject' => sanitize_text_field(wp_unslash($_POST['missing_hours_mail_subject'] ?? $defaults['subject'])),
+            'body' => wp_kses_post(wp_unslash($_POST['missing_hours_mail_body'] ?? $defaults['body'])),
+        ];
+
+        $active_recipients = array_values(array_filter(array_map('intval', wp_unslash($_POST['missing_hours_recipients_active'] ?? []))));
+        $existing_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
+        $recipient_state = [];
+        foreach ($this->employees->all() as $employee_row) {
+            $employee_id = (int) ($employee_row['id'] ?? 0);
+            if ($employee_id <= 0) {
+                continue;
+            }
+
+            $previous = (array) ($existing_recipients[$employee_id] ?? []);
+            $recipient_state[$employee_id] = [
+                'active' => in_array($employee_id, $active_recipients, true) ? 1 : 0,
+                'last_sent_at' => (string) ($previous['last_sent_at'] ?? ''),
+            ];
+        }
+
         update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
+        update_option('erp_omd_front_admin_redirect_enabled', ! empty($_POST['front_admin_redirect_enabled']));
         update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
         update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
         update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
+        update_option('erp_omd_missing_hours_notification_settings', $notification_settings);
+        update_option('erp_omd_missing_hours_notification_recipients', $recipient_state);
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
 
@@ -1976,6 +2028,18 @@ class ERP_OMD_Admin
         }
 
         echo '</span>';
+    }
+
+
+    private function missing_hours_notification_defaults()
+    {
+        return [
+            'mode' => 'after_x_days',
+            'after_days' => 3,
+            'day_of_month' => 1,
+            'subject' => __('Przypomnienie o raporcie godzin pracy', 'erp-omd'),
+            'body' => __('Cześć {login},<br><br>ostatni raport godzin wysłałeś: <strong>{last_reported_date}</strong>.<br>Prosimy o uzupełnienie brakujących godzin.', 'erp-omd'),
+        ];
     }
 
     private function redirect_with_notice($page, $type, $message, array $extra = [])
