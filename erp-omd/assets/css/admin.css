@@ -716,6 +716,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+    margin-top: 24px;
 }
 
 .erp-omd-admin .erp-omd-form-actions .submit {

@@ -10,10 +10,12 @@ class ERP_OMD_Admin
     private $clients;
     private $client_rates;
     private $projects;
+    private $project_requests;
     private $estimates;
     private $estimate_items;
     private $project_notes;
     private $client_project_service;
+    private $project_request_service;
     private $estimate_service;
     private $project_rates;
     private $project_costs;
@@ -34,10 +36,12 @@ class ERP_OMD_Admin
         ERP_OMD_Client_Repository $clients,
         ERP_OMD_Client_Rate_Repository $client_rates,
         ERP_OMD_Project_Repository $projects,
+        ERP_OMD_Project_Request_Repository $project_requests,
         ERP_OMD_Estimate_Repository $estimates,
         ERP_OMD_Estimate_Item_Repository $estimate_items,
         ERP_OMD_Project_Note_Repository $project_notes,
         ERP_OMD_Client_Project_Service $client_project_service,
+        ERP_OMD_Project_Request_Service $project_request_service,
         ERP_OMD_Estimate_Service $estimate_service,
         ERP_OMD_Project_Rate_Repository $project_rates,
         ERP_OMD_Project_Cost_Repository $project_costs,
@@ -57,10 +61,12 @@ class ERP_OMD_Admin
         $this->clients = $clients;
         $this->client_rates = $client_rates;
         $this->projects = $projects;
+        $this->project_requests = $project_requests;
         $this->estimates = $estimates;
         $this->estimate_items = $estimate_items;
         $this->project_notes = $project_notes;
         $this->client_project_service = $client_project_service;
+        $this->project_request_service = $project_request_service;
         $this->estimate_service = $estimate_service;
         $this->project_rates = $project_rates;
         $this->project_costs = $project_costs;
@@ -89,6 +95,7 @@ class ERP_OMD_Admin
         add_submenu_page('erp-omd', __('Klienci', 'erp-omd'), __('Klienci', 'erp-omd'), 'erp_omd_manage_clients', 'erp-omd-clients', [$this, 'render_clients']);
         add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
         add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
+        add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
         add_submenu_page('erp-omd', __('Czas pracy', 'erp-omd'), __('Czas pracy', 'erp-omd'), 'erp_omd_manage_time', 'erp-omd-time', [$this, 'render_time_entries']);
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
         add_submenu_page('erp-omd', __('Alerty', 'erp-omd'), __('Alerty', 'erp-omd'), 'erp_omd_access', 'erp-omd-alerts', [$this, 'render_alerts']);
@@ -149,6 +156,8 @@ class ERP_OMD_Admin
             case 'change_time_status': $this->handle_time_status_change(); break;
             case 'delete_time_entry': $this->handle_time_entry_delete(); break;
             case 'bulk_time_entries': $this->handle_time_entries_bulk_action(); break;
+            case 'update_project_request_status': $this->handle_project_request_status_update(); break;
+            case 'convert_project_request': $this->handle_project_request_conversion(); break;
             case 'add_attachment': $this->handle_attachment_add(); break;
             case 'delete_attachment': $this->handle_attachment_delete(); break;
             case 'save_settings': $this->handle_settings_save(); break;
@@ -558,6 +567,53 @@ class ERP_OMD_Admin
         include ERP_OMD_PATH . 'templates/admin/reports.php';
     }
 
+    public function render_project_requests()
+    {
+        $project_requests = $this->project_requests->all();
+        $request_filters = [
+            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
+        ];
+
+        if ($request_filters['status'] !== '') {
+            $project_requests = array_values(
+                array_filter(
+                    $project_requests,
+                    function ($request_row) use ($request_filters) {
+                        return (string) ($request_row['status'] ?? '') === $request_filters['status'];
+                    }
+                )
+            );
+        }
+
+        if ($request_filters['search'] !== '') {
+            $needle = strtolower($request_filters['search']);
+            $project_requests = array_values(
+                array_filter(
+                    $project_requests,
+                    function ($request_row) use ($needle) {
+                        $haystack = strtolower(
+                            implode(
+                                ' ',
+                                [
+                                    (string) ($request_row['project_name'] ?? ''),
+                                    (string) ($request_row['client_name'] ?? ''),
+                                    (string) ($request_row['requester_login'] ?? ''),
+                                    (string) ($request_row['preferred_manager_login'] ?? ''),
+                                    (string) ($request_row['status'] ?? ''),
+                                ]
+                            )
+                        );
+
+                        return strpos($haystack, $needle) !== false;
+                    }
+                )
+            );
+        }
+
+        include ERP_OMD_PATH . 'templates/admin/project-requests.php';
+    }
+
     private function handle_role_save() { /* retained */
         check_admin_referer('erp_omd_save_role');
         $this->require_capability('erp_omd_manage_roles');
@@ -589,6 +645,63 @@ class ERP_OMD_Admin
         if ($id) { $this->employees->update($id, $payload); $message = __('Pracownik został zaktualizowany.', 'erp-omd'); } else { $id = $this->employees->create($payload); $message = __('Pracownik został utworzony.', 'erp-omd'); }
         $this->sync_wp_role($payload['user_id'], $payload['account_type']);
         $this->redirect_with_notice('erp-omd-employees', 'success', $message, ['id' => $id]);
+    }
+
+    private function handle_project_request_status_update()
+    {
+        check_admin_referer('erp_omd_update_project_request_status');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $request_id = (int) ($_POST['request_id'] ?? 0);
+        $target_status = sanitize_text_field(wp_unslash($_POST['status'] ?? ''));
+        $request = $request_id > 0 ? $this->project_requests->find($request_id) : null;
+        if (! $request) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', __('Nie znaleziono wniosku projektowego.', 'erp-omd'));
+        }
+
+        $payload = $this->project_request_service->prepare(
+            array_merge(
+                $request,
+                [
+                    'status' => $target_status,
+                    'reviewed_by_user_id' => get_current_user_id(),
+                    'reviewed_at' => current_time('mysql'),
+                ]
+            ),
+            $request
+        );
+
+        $errors = $this->project_request_service->validate($payload, $request);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', implode(' ', $errors));
+        }
+
+        $this->project_requests->update($request_id, $payload);
+        $this->redirect_with_notice('erp-omd-requests', 'success', __('Status wniosku został zaktualizowany.', 'erp-omd'));
+    }
+
+    private function handle_project_request_conversion()
+    {
+        check_admin_referer('erp_omd_convert_project_request');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $request_id = (int) ($_POST['request_id'] ?? 0);
+        $request = $request_id > 0 ? $this->project_requests->find($request_id) : null;
+        if (! $request) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', __('Nie znaleziono wniosku projektowego.', 'erp-omd'));
+        }
+
+        $errors = $this->project_request_service->validate_conversion($request);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', implode(' ', $errors));
+        }
+
+        $project_payload = $this->project_request_service->build_project_payload($request);
+        $project_id = $this->projects->create($project_payload);
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->project_requests->mark_converted($request_id, $project_id, get_current_user_id());
+
+        $this->redirect_with_notice('erp-omd-requests', 'success', __('Wniosek został skonwertowany do projektu.', 'erp-omd'), ['id' => $request_id]);
     }
 
     private function handle_inline_employee_update()
@@ -785,6 +898,17 @@ class ERP_OMD_Admin
             'accepted_at' => $existing['accepted_at'] ?? null,
         ];
         $errors = $this->estimate_service->validate_estimate($payload, $existing);
+        $initial_item_payload = [
+            'estimate_id' => 0,
+            'name' => sanitize_text_field(wp_unslash($_POST['initial_item_name'] ?? '')),
+            'qty' => (float) ($_POST['initial_item_qty'] ?? 0),
+            'price' => (float) ($_POST['initial_item_price'] ?? 0),
+            'cost_internal' => (float) ($_POST['initial_item_cost_internal'] ?? 0),
+            'comment' => sanitize_textarea_field(wp_unslash($_POST['initial_item_comment'] ?? '')),
+        ];
+        if (! $existing) {
+            $errors = array_merge($errors, $this->estimate_service->validate_item($initial_item_payload, ['id' => 0, 'status' => $payload['status']]));
+        }
         if ($errors) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', implode(' ', $errors), $id ? ['id' => $id, 'edit' => 1] : []);
         }
@@ -793,6 +917,8 @@ class ERP_OMD_Admin
             $message = __('Kosztorys został zaktualizowany.', 'erp-omd');
         } else {
             $id = $this->estimates->create($payload);
+            $initial_item_payload['estimate_id'] = $id;
+            $this->estimate_items->create($initial_item_payload);
             $message = __('Kosztorys został utworzony.', 'erp-omd');
         }
         $this->redirect_with_notice('erp-omd-estimates', 'success', $message, ['id' => $id]);
