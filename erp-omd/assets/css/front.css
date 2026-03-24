@@ -942,3 +942,19 @@ background-image: none !important;
         width: 100%;
     }
 }
+
+.erp-omd-front-table-row-active {
+    background: rgba(221, 177, 120, 0.12);
+}
+
+.erp-omd-front-button-small {
+    font-size: 12px;
+    padding: 8px 12px;
+}
+
+.erp-omd-front-estimate-item-row {
+    border: 1px solid #efe6d9;
+    border-radius: 14px;
+    margin-bottom: 12px;
+    padding: 12px;
+}
