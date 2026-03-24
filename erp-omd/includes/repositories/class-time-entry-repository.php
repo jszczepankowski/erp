@@ -141,6 +141,25 @@ class ERP_OMD_Time_Entry_Repository
         );
     }
 
+
+    public function latest_entry_dates_by_employee()
+    {
+        global $wpdb;
+
+        $rows = $wpdb->get_results("SELECT employee_id, MAX(entry_date) AS last_entry_date FROM {$this->table_name()} GROUP BY employee_id", ARRAY_A);
+        $map = [];
+
+        foreach ($rows as $row) {
+            $employee_id = (int) ($row['employee_id'] ?? 0);
+            $last_entry_date = (string) ($row['last_entry_date'] ?? '');
+            if ($employee_id > 0 && $last_entry_date !== '') {
+                $map[$employee_id] = $last_entry_date;
+            }
+        }
+
+        return $map;
+    }
+
     public function duplicate_exists($employee_id, $project_id, $role_id, $hours, $exclude_id = null)
     {
         global $wpdb;
