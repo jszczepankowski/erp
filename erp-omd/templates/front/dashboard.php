@@ -164,6 +164,29 @@
                                 <span><?php echo esc_html(($selected_project['manager_logins_display'] ?? '') !== '' ? $selected_project['manager_logins_display'] : ($selected_project['manager_login'] ?? '—')); ?></span>
                             </div>
                         </div>
+                        <div class="erp-omd-front-inline-actions">
+                            <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-inline-form">
+                                <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                <input type="hidden" name="erp_omd_front_action" value="update_project_status">
+                                <input type="hidden" name="project_id" value="<?php echo esc_attr((string) ($selected_project['id'] ?? 0)); ?>">
+                                <label for="erp-omd-front-project-status"><?php esc_html_e('Zmień status projektu', 'erp-omd'); ?></label>
+                                <select id="erp-omd-front-project-status" name="status">
+                                    <?php foreach ([
+                                        'do_rozpoczecia' => __('Do rozpoczęcia', 'erp-omd'),
+                                        'w_realizacji' => __('W realizacji', 'erp-omd'),
+                                        'w_akceptacji' => __('W akceptacji', 'erp-omd'),
+                                        'do_faktury' => __('Do faktury', 'erp-omd'),
+                                        'zakonczony' => __('Zakończony', 'erp-omd'),
+                                        'inactive' => __('Nieaktywny', 'erp-omd'),
+                                    ] as $project_status => $project_status_label) : ?>
+                                        <option value="<?php echo esc_attr($project_status); ?>" <?php selected((string) ($selected_project['status'] ?? ''), $project_status); ?>>
+                                            <?php echo esc_html($project_status_label); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Zapisz status', 'erp-omd'); ?></button>
+                            </form>
+                        </div>
 
                         <div class="erp-omd-front-metrics">
                             <div class="erp-omd-front-metric erp-omd-front-metric-revenue">
@@ -230,11 +253,10 @@
                 </article>
             </div>
 
-            <div class="erp-omd-front-stack erp-omd-front-estimates-section">
-                <article class="erp-omd-front-panel erp-omd-front-panel-form erp-omd-front-panel-full" data-collapsible-section="manager-new-estimate">
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-third erp-omd-front-estimates-section">
+                <article class="erp-omd-front-panel erp-omd-front-panel-form" data-collapsible-section="manager-new-estimate">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy kosztorys', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Manager może utworzyć kosztorys bez przechodzenia do wp-admin. Formularz zapisuje kosztorys od razu z pierwszą pozycją.', 'erp-omd'); ?></p>
                     </div>
 
                     <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-form">
@@ -409,6 +431,32 @@
                                         <button type="submit" class="erp-omd-front-button erp-omd-front-button-ghost"><?php esc_html_e('Eksport CSV dla klienta', 'erp-omd'); ?></button>
                                     </form>
                                 </div>
+                                <div class="erp-omd-front-panel erp-omd-front-panel-subtle">
+                                    <div class="erp-omd-front-section-heading">
+                                        <h3><?php esc_html_e('Edycja kosztorysu', 'erp-omd'); ?></h3>
+                                    </div>
+                                    <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-form">
+                                        <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                        <input type="hidden" name="erp_omd_front_action" value="update_estimate">
+                                        <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ($selected_estimate['id'] ?? 0)); ?>">
+
+                                        <label for="erp-omd-front-edit-estimate-name"><?php esc_html_e('Nazwa kosztorysu', 'erp-omd'); ?></label>
+                                        <input id="erp-omd-front-edit-estimate-name" type="text" name="name" value="<?php echo esc_attr((string) ($selected_estimate['name'] ?? '')); ?>" required>
+
+                                        <label for="erp-omd-front-edit-estimate-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
+                                        <select id="erp-omd-front-edit-estimate-status" name="status">
+                                            <?php foreach (['wstepny' => __('Wstępny', 'erp-omd'), 'do_akceptacji' => __('Do akceptacji', 'erp-omd'), 'zaakceptowany' => __('Zaakceptowany', 'erp-omd')] as $estimate_status => $estimate_status_label) : ?>
+                                                <option value="<?php echo esc_attr($estimate_status); ?>" <?php selected((string) ($selected_estimate['status'] ?? ''), $estimate_status); ?>>
+                                                    <?php echo esc_html($estimate_status_label); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+
+                                        <div class="erp-omd-front-inline-actions">
+                                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Zapisz zmiany kosztorysu', 'erp-omd'); ?></button>
+                                        </div>
+                                    </form>
+                                </div>
 
                                 <?php if (($selected_estimate['status'] ?? '') !== 'zaakceptowany') : ?>
                                     <div class="erp-omd-front-inline-actions erp-omd-front-estimate-actions">
@@ -534,11 +582,10 @@
                 </div>
             </div>
 
-            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-half">
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-third">
                 <article class="erp-omd-front-panel" data-collapsible-section="manager-new-request">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy wniosek projektowy', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Zgłoś inicjację projektu bez omijania właściwego lifecycle projektu. Wniosek trafia do review i może zostać później skonwertowany do projektu.', 'erp-omd'); ?></p>
                     </div>
 
                     <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-form">

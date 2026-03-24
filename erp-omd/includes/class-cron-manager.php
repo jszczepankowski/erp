@@ -29,7 +29,8 @@ class ERP_OMD_Cron_Manager
         if (! isset($schedules['erp_omd_weekly'])) {
             $schedules['erp_omd_weekly'] = [
                 'interval' => 7 * DAY_IN_SECONDS,
-                'display' => __('Raz w tygodniu', 'erp-omd'),
+                // Intentionally not translated here to avoid loading textdomain before init.
+                'display' => 'ERP OMD Weekly',
             ];
         }
 
@@ -220,7 +221,7 @@ class ERP_OMD_Cron_Manager
         $settings = wp_parse_args($settings, $defaults);
         $settings['mode'] = in_array($settings['mode'], ['after_x_days', 'day_of_month'], true) ? $settings['mode'] : 'after_x_days';
         $settings['after_days'] = max(1, (int) $settings['after_days']);
-        $settings['day_of_month'] = min(28, max(1, (int) $settings['day_of_month']));
+        $settings['day_of_month'] = min(31, max(1, (int) $settings['day_of_month']));
 
         return $settings;
     }
@@ -240,7 +241,9 @@ class ERP_OMD_Cron_Manager
         $last_date = $last_entry_date !== '' ? DateTimeImmutable::createFromFormat('Y-m-d', $last_entry_date) : null;
 
         if ($settings['mode'] === 'day_of_month') {
-            if ((int) $today->format('j') !== (int) $settings['day_of_month']) {
+            $days_in_month = (int) $today->format('t');
+            $trigger_day = min((int) $settings['day_of_month'], $days_in_month);
+            if ((int) $today->format('j') !== $trigger_day) {
                 return false;
             }
 

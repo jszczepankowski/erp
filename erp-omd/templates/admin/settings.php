@@ -60,8 +60,8 @@
                             <input id="erp-omd-missing-hours-after-days" type="number" min="1" max="60" step="1" name="missing_hours_after_days" value="<?php echo esc_attr((string) $notification_settings['after_days']); ?>" />
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="erp-omd-missing-hours-day-of-month"><?php esc_html_e('Dzień miesiąca (1-28)', 'erp-omd'); ?></label>
-                            <input id="erp-omd-missing-hours-day-of-month" type="number" min="1" max="28" step="1" name="missing_hours_day_of_month" value="<?php echo esc_attr((string) $notification_settings['day_of_month']); ?>" />
+                            <label for="erp-omd-missing-hours-day-of-month"><?php esc_html_e('Dzień miesiąca (1-31)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-missing-hours-day-of-month" type="number" min="1" max="31" step="1" name="missing_hours_day_of_month" value="<?php echo esc_attr((string) $notification_settings['day_of_month']); ?>" />
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-missing-hours-mail-subject"><?php esc_html_e('Temat maila', 'erp-omd'); ?></label>

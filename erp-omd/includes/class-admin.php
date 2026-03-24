@@ -534,7 +534,7 @@ class ERP_OMD_Admin
         $notification_settings = wp_parse_args((array) get_option('erp_omd_missing_hours_notification_settings', []), $notification_settings);
         $notification_settings['mode'] = in_array($notification_settings['mode'], ['after_x_days', 'day_of_month'], true) ? $notification_settings['mode'] : 'after_x_days';
         $notification_settings['after_days'] = max(1, (int) $notification_settings['after_days']);
-        $notification_settings['day_of_month'] = min(28, max(1, (int) $notification_settings['day_of_month']));
+        $notification_settings['day_of_month'] = min(31, max(1, (int) $notification_settings['day_of_month']));
 
         $notification_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
         $employees = $this->employees->all();
@@ -1682,7 +1682,7 @@ class ERP_OMD_Admin
         $notification_settings = [
             'mode' => $mode,
             'after_days' => max(1, (int) ($_POST['missing_hours_after_days'] ?? $defaults['after_days'])),
-            'day_of_month' => min(28, max(1, (int) ($_POST['missing_hours_day_of_month'] ?? $defaults['day_of_month']))),
+            'day_of_month' => min(31, max(1, (int) ($_POST['missing_hours_day_of_month'] ?? $defaults['day_of_month']))),
             'subject' => sanitize_text_field(wp_unslash($_POST['missing_hours_mail_subject'] ?? $defaults['subject'])),
             'body' => wp_kses_post(wp_unslash($_POST['missing_hours_mail_body'] ?? $defaults['body'])),
         ];
