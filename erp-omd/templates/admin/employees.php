@@ -182,14 +182,26 @@
                     <?php else : ?>
                         <?php foreach ($employees as $item) : ?>
                             <?php $employee_is_inactive = ($item['status'] ?? '') === 'inactive'; ?>
+                            <?php $inline_form_id = 'erp-omd-inline-employee-' . (int) $item['id']; ?>
                             <tr>
                                 <td><?php echo esc_html($item['id']); ?></td>
                                 <td>
                                     <?php echo esc_html($item['user_login']); ?>
                                     <?php $this->render_alert_icons($item['alerts'] ?? []); ?>
                                 </td>
-                                <td><?php echo esc_html($this->account_type_label($item['account_type'])); ?></td>
-                                <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($item['status'], 'active')); ?>"><?php echo esc_html($this->active_status_label($item['status'])); ?></span></td>
+                                <td>
+                                    <select name="account_type" form="<?php echo esc_attr($inline_form_id); ?>">
+                                        <option value="admin" <?php selected((string) ($item['account_type'] ?? 'worker'), 'admin'); ?>><?php esc_html_e('Administrator', 'erp-omd'); ?></option>
+                                        <option value="manager" <?php selected((string) ($item['account_type'] ?? 'worker'), 'manager'); ?>><?php esc_html_e('Manager', 'erp-omd'); ?></option>
+                                        <option value="worker" <?php selected((string) ($item['account_type'] ?? 'worker'), 'worker'); ?>><?php esc_html_e('Pracownik', 'erp-omd'); ?></option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="status" form="<?php echo esc_attr($inline_form_id); ?>">
+                                        <option value="active" <?php selected((string) ($item['status'] ?? 'active'), 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
+                                        <option value="inactive" <?php selected((string) ($item['status'] ?? 'active'), 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
+                                    </select>
+                                </td>
                                 <td><?php echo ! empty($item['current_monthly_salary']) ? esc_html(number_format_i18n((float) $item['current_monthly_salary'], 2)) : '—'; ?></td>
                                 <td><?php echo ! empty($item['current_hourly_cost']) ? esc_html(number_format_i18n((float) $item['current_hourly_cost'], 2)) : '—'; ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) ($item['reported_hours'] ?? 0), 2)); ?></td>
@@ -201,6 +213,12 @@
                                     <details class="erp-omd-list-actions">
                                         <summary class="button button-small"><?php esc_html_e('Akcje', 'erp-omd'); ?></summary>
                                         <div class="erp-omd-list-actions-menu">
+                                            <form method="post" id="<?php echo esc_attr($inline_form_id); ?>" class="erp-omd-inline-form">
+                                                <?php wp_nonce_field('erp_omd_inline_employee_update'); ?>
+                                                <input type="hidden" name="erp_omd_action" value="inline_update_employee" />
+                                                <input type="hidden" name="id" value="<?php echo esc_attr($item['id']); ?>" />
+                                                <button class="button button-small button-primary" type="submit"><?php esc_html_e('Zapisz inline', 'erp-omd'); ?></button>
+                                            </form>
                                             <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-employees', 'id' => $item['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                             <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js($employee_is_inactive ? __('Aktywować pracownika?', 'erp-omd') : __('Dezaktywować pracownika?', 'erp-omd')); ?>');">
                                                 <?php wp_nonce_field('erp_omd_toggle_employee_active'); ?>
