@@ -1,6 +1,6 @@
 # ERP OMD
 
-ERP_OMD V2 — wersja 0.10.3 rozwijająca FRONT-2D dla panelu pracownika.
+ERP_OMD V2 — wersja 0.10.6 przygotowana pod wdrożenie Sprintu 10.
 
 ## Dokumentacja systemu
 - Pełny opis systemu i propozycje usprawnień: `../docs/ERP_OMD_SYSTEM_OVERVIEW.md`
@@ -31,7 +31,8 @@ ERP_OMD V2 — wersja 0.10.3 rozwijająca FRONT-2D dla panelu pracownika.
 - Sprint 6 (historyczny): `./scripts/build-sprint-6-zip.sh`
 - Sprint 7 (historyczny): `./scripts/build-sprint-7-zip.sh`
 - Sprint 8 RC (historyczny): `./scripts/build-sprint-8-rc.sh`
-- Sprint 9 (aktualny): `./scripts/build-sprint-9.sh`
+- Sprint 9 (historyczny): `./scripts/build-sprint-9.sh`
+- Sprint 10 (aktualny): `./scripts/build-sprint-10.sh`
 
 ## Testy Sprintu 3
 - Automatyczne sanity checki: `./scripts/test-sprint-3.sh`
@@ -68,3 +69,8 @@ ERP_OMD V2 — wersja 0.10.3 rozwijająca FRONT-2D dla panelu pracownika.
 - Test walidacji klient/projekt: `php tests/client-project-service-test.php`
 - Test REST API / hardening: `php tests/rest-api-test.php`
 - Checklista odbiorowa Sprintu 9: `docs/SPRINT_9_CHECKLIST.md`
+
+## Testy Sprintu 10
+- Automatyczne sanity checki: `./scripts/test-sprint-10.sh`
+- Test workflow wniosków projektowych: `php tests/project-request-service-test.php`
+- Checklista odbiorowa Sprintu 10: `docs/SPRINT_10_CHECKLIST.md`

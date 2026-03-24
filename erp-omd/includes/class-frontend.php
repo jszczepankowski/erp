@@ -332,6 +332,10 @@ class ERP_OMD_Frontend
             $this->accept_manager_estimate($user);
             return;
         }
+        if ($action === 'export_estimate_csv') {
+            $this->export_manager_estimate_csv($user);
+            return;
+        }
         if ($action === 'create_project_request') {
             $this->create_manager_project_request($user);
             return;
@@ -749,7 +753,7 @@ class ERP_OMD_Frontend
             $this->redirect_to_login($this->front_url('manager'));
         }
 
-        $managed_projects = $this->load_managed_projects((int) $employee['id']);
+        $managed_projects = $this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator'));
         $managed_project_ids = array_map('intval', wp_list_pluck($managed_projects, 'id'));
         $selected_project_id = (int) ($_GET['project_id'] ?? 0);
         $selected_request_id = (int) ($_GET['request_id'] ?? 0);
@@ -762,7 +766,7 @@ class ERP_OMD_Frontend
 
         $selected_project = $selected_project_id > 0 ? $this->find_project_in_collection($managed_projects, $selected_project_id) : null;
         $linked_estimates = $this->load_estimates_for_projects($managed_projects);
-        $manager_estimates = $this->load_visible_manager_estimates((int) $employee['id'], $managed_projects);
+        $manager_estimates = $this->load_visible_manager_estimates((int) $employee['id'], $managed_projects, user_can($user, 'administrator'));
         $selected_estimate_id = (int) ($_GET['estimate_id'] ?? 0);
         $visible_estimate_ids = array_map('intval', wp_list_pluck($manager_estimates, 'id'));
         if ($selected_estimate_id > 0 && ! in_array($selected_estimate_id, $visible_estimate_ids, true)) {
@@ -784,7 +788,7 @@ class ERP_OMD_Frontend
             'estimate_id' => 0,
             'brief' => '',
         ];
-        $available_clients = $this->get_manager_available_clients((int) $employee['id']);
+        $available_clients = $this->get_manager_available_clients((int) $employee['id'], user_can($user, 'administrator'));
         $available_managers = array_values(
             array_filter(
                 $this->employees->all(),
@@ -870,22 +874,15 @@ class ERP_OMD_Frontend
             'accepted_at' => null,
         ];
 
-        $line_item_payload = [
-            'estimate_id' => 0,
-            'name' => sanitize_text_field(wp_unslash($_POST['item_name'] ?? '')),
-            'qty' => (float) ($_POST['item_qty'] ?? 0),
-            'price' => (float) ($_POST['item_price'] ?? 0),
-            'cost_internal' => (float) ($_POST['item_cost_internal'] ?? 0),
-            'comment' => sanitize_textarea_field(wp_unslash($_POST['item_comment'] ?? '')),
-        ];
+        $line_items = $this->collect_manager_estimate_line_items();
 
-        $visible_client_ids = array_map('intval', wp_list_pluck($this->get_manager_available_clients((int) $employee['id']), 'id'));
+        $visible_client_ids = array_map('intval', wp_list_pluck($this->get_manager_available_clients((int) $employee['id'], user_can($user, 'administrator')), 'id'));
         if (! in_array($client_id, $visible_client_ids, true)) {
             $this->redirect_manager_with_notice('error', __('Możesz tworzyć kosztorysy tylko dla aktywnych klientów przypisanych do Ciebie lub Twoich projektów.', 'erp-omd'));
         }
 
         $errors = $this->estimate_service->validate_estimate($payload);
-        $errors = array_merge($errors, $this->estimate_service->validate_item($line_item_payload, ['id' => 0, 'status' => $payload['status']]));
+        $errors = array_merge($errors, $this->validate_manager_estimate_line_items($line_items, $payload['status']));
         if ($errors) {
             $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)));
         }
@@ -895,10 +892,12 @@ class ERP_OMD_Frontend
             $this->redirect_manager_with_notice('error', __('Nie udało się utworzyć kosztorysu.', 'erp-omd'));
         }
 
-        $line_item_payload['estimate_id'] = $estimate_id;
-        $this->estimate_items->create($line_item_payload);
+        foreach ($line_items as $line_item_payload) {
+            $line_item_payload['estimate_id'] = $estimate_id;
+            $this->estimate_items->create($line_item_payload);
+        }
 
-        $this->redirect_manager_with_notice('success', __('Kosztorys został utworzony z pierwszą pozycją.', 'erp-omd'), ['estimate_id' => $estimate_id]);
+        $this->redirect_manager_with_notice('success', __('Kosztorys został utworzony.', 'erp-omd'), ['estimate_id' => $estimate_id]);
     }
 
     private function accept_manager_estimate(WP_User $user)
@@ -914,7 +913,7 @@ class ERP_OMD_Frontend
             $this->redirect_manager_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
         }
 
-        $visible_estimate_ids = array_map('intval', wp_list_pluck($this->load_visible_manager_estimates((int) $employee['id'], $this->load_managed_projects((int) $employee['id'])), 'id'));
+        $visible_estimate_ids = array_map('intval', wp_list_pluck($this->load_visible_manager_estimates((int) $employee['id'], $this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator')), user_can($user, 'administrator')), 'id'));
         if (! in_array($estimate_id, $visible_estimate_ids, true)) {
             $this->redirect_manager_with_notice('error', __('Nie możesz akceptować kosztorysów spoza własnego zakresu odpowiedzialności.', 'erp-omd'));
         }
@@ -958,6 +957,137 @@ class ERP_OMD_Frontend
 
         $this->project_requests->create($payload);
         $this->redirect_manager_with_notice('success', __('Wniosek projektowy został zapisany.', 'erp-omd'));
+    }
+
+    private function collect_manager_estimate_line_items()
+    {
+        $names = wp_unslash($_POST['item_name'] ?? []);
+        $qtys = wp_unslash($_POST['item_qty'] ?? []);
+        $prices = wp_unslash($_POST['item_price'] ?? []);
+        $costs = wp_unslash($_POST['item_cost_internal'] ?? []);
+        $comments = wp_unslash($_POST['item_comment'] ?? []);
+
+        if (! is_array($names)) {
+            $names = [$names];
+        }
+        if (! is_array($qtys)) {
+            $qtys = [$qtys];
+        }
+        if (! is_array($prices)) {
+            $prices = [$prices];
+        }
+        if (! is_array($costs)) {
+            $costs = [$costs];
+        }
+        if (! is_array($comments)) {
+            $comments = [$comments];
+        }
+
+        $max_count = max(count($names), count($qtys), count($prices), count($costs), count($comments));
+        $line_items = [];
+
+        for ($index = 0; $index < $max_count; $index++) {
+            $line_items[] = [
+                'estimate_id' => 0,
+                'name' => sanitize_text_field((string) ($names[$index] ?? '')),
+                'qty' => (float) ($qtys[$index] ?? 0),
+                'price' => (float) ($prices[$index] ?? 0),
+                'cost_internal' => (float) ($costs[$index] ?? 0),
+                'comment' => sanitize_textarea_field((string) ($comments[$index] ?? '')),
+            ];
+        }
+
+        return array_values(
+            array_filter(
+                $line_items,
+                static function ($item) {
+                    return trim((string) ($item['name'] ?? '')) !== ''
+                        || (float) ($item['qty'] ?? 0) > 0
+                        || (float) ($item['price'] ?? 0) > 0
+                        || (float) ($item['cost_internal'] ?? 0) > 0
+                        || trim((string) ($item['comment'] ?? '')) !== '';
+                }
+            )
+        );
+    }
+
+    private function validate_manager_estimate_line_items(array $line_items, $estimate_status)
+    {
+        if ($line_items === []) {
+            return [__('Dodaj co najmniej jedną pozycję kosztorysu.', 'erp-omd')];
+        }
+
+        $errors = [];
+        foreach ($line_items as $line_item) {
+            $errors = array_merge($errors, $this->estimate_service->validate_item($line_item, ['id' => 0, 'status' => $estimate_status]));
+        }
+
+        return array_values(array_unique($errors));
+    }
+
+    private function export_manager_estimate_csv(WP_User $user)
+    {
+        $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+        $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
+        if (! $estimate) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono kosztorysu do eksportu.', 'erp-omd'));
+        }
+
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+        }
+
+        $managed_projects = $this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator'));
+        $visible_estimate_ids = array_map('intval', wp_list_pluck($this->load_visible_manager_estimates((int) $employee['id'], $managed_projects, user_can($user, 'administrator')), 'id'));
+        if (! in_array($estimate_id, $visible_estimate_ids, true)) {
+            $this->redirect_manager_with_notice('error', __('Nie możesz eksportować kosztorysów spoza własnego zakresu widoczności.', 'erp-omd'));
+        }
+
+        $items = $this->estimate_items->for_estimate($estimate_id);
+        $totals = $this->estimate_service->calculate_totals($items);
+        $client = $this->clients->find((int) ($estimate['client_id'] ?? 0));
+        $estimate_name = trim((string) ($estimate['name'] ?? '')) !== '' ? (string) $estimate['name'] : sprintf('estimate-%d', $estimate_id);
+        $filename = sanitize_file_name(sprintf('%s-client.csv', $estimate_name));
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+        if (! $output) {
+            wp_die(esc_html__('Nie udało się przygotować pliku CSV.', 'erp-omd'));
+        }
+
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, [__('Nazwa kosztorysu', 'erp-omd'), $estimate_name], ';');
+        fputcsv($output, [__('Klient', 'erp-omd'), (string) ($client['name'] ?? ($estimate['client_name'] ?? '—'))], ';');
+        fputcsv($output, [__('Status', 'erp-omd'), (string) ($estimate['status'] ?? '—')], ';');
+        fputcsv($output, [], ';');
+        fputcsv($output, [__('Pozycja', 'erp-omd'), __('Ilość', 'erp-omd'), __('Cena jednostkowa netto', 'erp-omd'), __('Wartość netto', 'erp-omd'), __('Komentarz', 'erp-omd')], ';');
+
+        foreach ($items as $item) {
+            $qty = (float) ($item['qty'] ?? 0);
+            $price = (float) ($item['price'] ?? 0);
+            fputcsv(
+                $output,
+                [
+                    (string) ($item['name'] ?? ''),
+                    number_format($qty, 2, '.', ''),
+                    number_format($price, 2, '.', ''),
+                    number_format($qty * $price, 2, '.', ''),
+                    (string) ($item['comment'] ?? ''),
+                ],
+                ';'
+            );
+        }
+
+        fputcsv($output, [], ';');
+        fputcsv($output, [__('Suma netto', 'erp-omd'), number_format((float) $totals['net'], 2, '.', '')], ';');
+        fputcsv($output, [__('VAT 23%', 'erp-omd'), number_format((float) $totals['tax'], 2, '.', '')], ';');
+        fputcsv($output, [__('Suma brutto', 'erp-omd'), number_format((float) $totals['gross'], 2, '.', '')], ';');
+        fclose($output);
+        exit;
     }
 
     private function process_project_request_action(WP_User $user, $action)
@@ -1074,22 +1204,26 @@ class ERP_OMD_Frontend
         exit;
     }
 
-    private function load_managed_projects($employee_id)
+    private function load_managed_projects($employee_id, $include_all = false)
     {
         $projects = $this->projects->all();
         if ($employee_id <= 0) {
             return [];
         }
 
-        $managed_project_ids = $this->projects->ids_managed_by_employee($employee_id);
-        $managed_projects = array_values(
-            array_filter(
-                $projects,
-                function ($project) use ($managed_project_ids) {
-                    return in_array((int) ($project['id'] ?? 0), $managed_project_ids, true);
-                }
-            )
-        );
+        if ($include_all) {
+            $managed_projects = $projects;
+        } else {
+            $managed_project_ids = $this->projects->ids_managed_by_employee($employee_id);
+            $managed_projects = array_values(
+                array_filter(
+                    $projects,
+                    function ($project) use ($managed_project_ids) {
+                        return in_array((int) ($project['id'] ?? 0), $managed_project_ids, true);
+                    }
+                )
+            );
+        }
 
         if ($managed_projects === []) {
             return [];
@@ -1131,10 +1265,21 @@ class ERP_OMD_Frontend
         );
     }
 
-    private function get_manager_available_clients($employee_id)
+    private function get_manager_available_clients($employee_id, $include_all = false)
     {
         $clients = $this->clients->all();
-        $managed_projects = $this->load_managed_projects($employee_id);
+        if ($include_all) {
+            return array_values(
+                array_filter(
+                    $clients,
+                    function ($client) {
+                        return (string) ($client['status'] ?? '') === 'active';
+                    }
+                )
+            );
+        }
+
+        $managed_projects = $this->load_managed_projects($employee_id, false);
         $managed_client_ids = array_map('intval', wp_list_pluck($managed_projects, 'client_id'));
 
         return array_values(
@@ -1152,10 +1297,30 @@ class ERP_OMD_Frontend
         );
     }
 
-    private function load_visible_manager_estimates($employee_id, array $managed_projects)
+    private function load_visible_manager_estimates($employee_id, array $managed_projects, $include_all = false)
     {
+        if ($include_all) {
+            $estimates = $this->estimates->all();
+            foreach ($estimates as &$estimate) {
+                $items = $this->estimate_items->for_estimate((int) ($estimate['id'] ?? 0));
+                $estimate['items'] = $items;
+                $estimate['totals'] = $this->estimate_service->calculate_totals($items);
+                $estimate['items_count'] = count($items);
+            }
+            unset($estimate);
+
+            usort(
+                $estimates,
+                static function ($left, $right) {
+                    return [(string) ($right['created_at'] ?? ''), (int) ($right['id'] ?? 0)] <=> [(string) ($left['created_at'] ?? ''), (int) ($left['id'] ?? 0)];
+                }
+            );
+
+            return $estimates;
+        }
+
         $project_estimates = $this->load_estimates_for_projects($managed_projects);
-        $visible_client_ids = array_map('intval', wp_list_pluck($this->get_manager_available_clients($employee_id), 'id'));
+        $visible_client_ids = array_map('intval', wp_list_pluck($this->get_manager_available_clients($employee_id, false), 'id'));
         $estimates = $this->estimates->all();
 
         foreach ($estimates as &$estimate) {

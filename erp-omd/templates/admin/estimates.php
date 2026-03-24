@@ -58,6 +58,36 @@
                             </div>
                         </div>
                     </section>
+                    <?php if (! $estimate) : ?>
+                        <section class="erp-omd-form-section">
+                            <div class="erp-omd-form-section-header">
+                                <h3><?php esc_html_e('Pierwsza pozycja kosztorysu', 'erp-omd'); ?></h3>
+                                <p><?php esc_html_e('Kosztorys nie może zostać utworzony bez minimum jednej pozycji.', 'erp-omd'); ?></p>
+                            </div>
+                            <div class="erp-omd-form-grid">
+                                <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                    <label for="estimate-initial-item-name"><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
+                                    <input id="estimate-initial-item-name" name="initial_item_name" type="text" class="regular-text" required>
+                                </div>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="estimate-initial-item-qty"><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
+                                    <input id="estimate-initial-item-qty" name="initial_item_qty" type="number" step="0.01" min="0.01" value="1" required>
+                                </div>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="estimate-initial-item-price"><?php esc_html_e('Cena', 'erp-omd'); ?></label>
+                                    <input id="estimate-initial-item-price" name="initial_item_price" type="number" step="0.01" min="0" value="0" required>
+                                </div>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="estimate-initial-item-cost"><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
+                                    <input id="estimate-initial-item-cost" name="initial_item_cost_internal" type="number" step="0.01" min="0" value="0" required>
+                                </div>
+                                <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                    <label for="estimate-initial-item-comment"><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
+                                    <textarea id="estimate-initial-item-comment" name="initial_item_comment" rows="3" class="large-text"></textarea>
+                                </div>
+                            </div>
+                        </section>
+                    <?php endif; ?>
                 </div>
                 <div class="erp-omd-form-actions">
                     <?php submit_button($estimate ? __('Zapisz kosztorys', 'erp-omd') : __('Dodaj kosztorys', 'erp-omd')); ?>
@@ -114,6 +144,17 @@
                             <?php if ($editing_estimate_item) : ?>
                                 <a class="button" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-estimates', 'id' => (int) $selected_estimate['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Anuluj edycję pozycji', 'erp-omd'); ?></a>
                             <?php endif; ?>
+                        </div>
+                    </form>
+                    <form method="post" class="erp-omd-inline-form">
+                        <?php wp_nonce_field('erp_omd_save_estimate'); ?>
+                        <input type="hidden" name="erp_omd_action" value="save_estimate">
+                        <input type="hidden" name="id" value="<?php echo esc_attr((string) ($selected_estimate['id'] ?? 0)); ?>">
+                        <input type="hidden" name="name" value="<?php echo esc_attr((string) ($selected_estimate['name'] ?? '')); ?>">
+                        <input type="hidden" name="client_id" value="<?php echo esc_attr((string) ($selected_estimate['client_id'] ?? 0)); ?>">
+                        <input type="hidden" name="status" value="<?php echo esc_attr((string) ($selected_estimate['status'] ?? 'wstepny')); ?>">
+                        <div class="erp-omd-form-actions">
+                            <?php submit_button(__('Zapisz kosztorys', 'erp-omd'), 'primary'); ?>
                         </div>
                     </form>
                 <?php else : ?>
