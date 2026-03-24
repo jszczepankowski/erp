@@ -309,7 +309,6 @@
                         <div class="erp-omd-front-panel erp-omd-front-panel-subtle">
                             <div class="erp-omd-front-section-heading">
                                 <h3><?php esc_html_e('Pozycje kosztorysu', 'erp-omd'); ?></h3>
-                                <p><?php esc_html_e('Dodaj wiele pozycji jeszcze przed zapisaniem. Minimum jedna pozycja jest wymagana.', 'erp-omd'); ?></p>
                             </div>
 
                             <div id="erp-omd-front-estimate-items">
@@ -328,16 +327,11 @@
                                         </div>
                                     </div>
 
-                                    <div class="erp-omd-front-form-row">
-                                        <div>
-                                            <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
-                                            <input type="number" min="0" step="0.01" name="item_cost_internal[]" value="0" required>
-                                        </div>
-                                        <div>
-                                            <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
-                                            <textarea name="item_comment[]" rows="3"></textarea>
-                                        </div>
-                                    </div>
+                                    <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
+                                    <input type="number" min="0" step="0.01" name="item_cost_internal[]" value="0" required>
+
+                                    <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
+                                    <textarea name="item_comment[]" rows="3"></textarea>
                                 </div>
                             </div>
                             <div class="erp-omd-front-inline-actions">

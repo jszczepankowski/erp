@@ -303,70 +303,66 @@
                             </tbody>
                         </table>
                     </section>
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-section-header">
+                            <div>
+                                <h3><?php esc_html_e('Załączniki', 'erp-omd'); ?></h3>
+                                <p class="description"><?php esc_html_e('Dodaj plik z biblioteki mediów WordPress do projektu.', 'erp-omd'); ?></p>
+                            </div>
+                        </div>
+                        <form method="post" class="erp-omd-attachment-form">
+                            <?php wp_nonce_field('erp_omd_add_attachment_project_' . (int) $project['id']); ?>
+                            <input type="hidden" name="erp_omd_action" value="add_attachment" />
+                            <input type="hidden" name="entity_type" value="project" />
+                            <input type="hidden" name="entity_id" value="<?php echo esc_attr($project['id']); ?>" />
+                            <input type="hidden" name="attachment_id" value="" class="erp-omd-media-id" />
+                            <button type="button" class="button erp-omd-media-button"><?php esc_html_e('Wybierz z Media Library', 'erp-omd'); ?></button>
+                            <span class="erp-omd-media-name"><?php esc_html_e('Nie wybrano pliku.', 'erp-omd'); ?></span>
+                            <input type="text" name="label" class="regular-text" placeholder="<?php echo esc_attr__('Etykieta załącznika', 'erp-omd'); ?>" />
+                            <button type="submit" class="button button-secondary"><?php esc_html_e('Dodaj załącznik', 'erp-omd'); ?></button>
+                        </form>
+                        <table class="widefat striped">
+                            <thead><tr><th><?php esc_html_e('Etykieta', 'erp-omd'); ?></th><th><?php esc_html_e('Plik', 'erp-omd'); ?></th><th><?php esc_html_e('Dodano', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                            <tbody>
+                                <?php if (empty($project_attachments)) : ?>
+                                    <tr><td colspan="4"><?php esc_html_e('Brak załączników dla tego projektu.', 'erp-omd'); ?></td></tr>
+                                <?php else : ?>
+                                    <?php foreach ($project_attachments as $project_attachment) : ?>
+                                        <?php
+                                        $attachment_post = get_post((int) ($project_attachment['attachment_id'] ?? 0));
+                                        $attachment_title = get_the_title((int) ($project_attachment['attachment_id'] ?? 0));
+                                        $attachment_url = wp_get_attachment_url((int) ($project_attachment['attachment_id'] ?? 0));
+                                        $attachment_name = $attachment_title ?: ((is_object($attachment_post) && ! empty($attachment_post->post_name)) ? $attachment_post->post_name : ('#' . (int) $project_attachment['attachment_id']));
+                                        ?>
+                                        <tr>
+                                            <td><?php echo esc_html($project_attachment['label'] ?: '—'); ?></td>
+                                            <td>
+                                                <?php if ($attachment_url) : ?>
+                                                    <a href="<?php echo esc_url($attachment_url); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($attachment_name); ?></a>
+                                                <?php else : ?>
+                                                    <?php echo esc_html($attachment_name); ?>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo esc_html($project_attachment['created_at'] ?? '—'); ?></td>
+                                            <td>
+                                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć załącznik?', 'erp-omd')); ?>');">
+                                                    <?php wp_nonce_field('erp_omd_delete_attachment_' . (int) $project_attachment['id']); ?>
+                                                    <input type="hidden" name="erp_omd_action" value="delete_attachment" />
+                                                    <input type="hidden" name="attachment_relation_id" value="<?php echo esc_attr($project_attachment['id']); ?>" />
+                                                    <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </section>
                 </div>
             </div>
         <?php endif; ?>
     </div>
-
     <div class="erp-omd-card">
-        <?php if ($project) : ?>
-            <section class="erp-omd-form-section">
-                <div class="erp-omd-section-header">
-                    <div>
-                        <h2><?php esc_html_e('Załączniki', 'erp-omd'); ?></h2>
-                        <p class="description"><?php esc_html_e('Dodaj plik z biblioteki mediów WordPress do projektu.', 'erp-omd'); ?></p>
-                    </div>
-                </div>
-                <form method="post" class="erp-omd-attachment-form">
-                    <?php wp_nonce_field('erp_omd_add_attachment_project_' . (int) $project['id']); ?>
-                    <input type="hidden" name="erp_omd_action" value="add_attachment" />
-                    <input type="hidden" name="entity_type" value="project" />
-                    <input type="hidden" name="entity_id" value="<?php echo esc_attr($project['id']); ?>" />
-                    <input type="hidden" name="attachment_id" value="" class="erp-omd-media-id" />
-                    <button type="button" class="button erp-omd-media-button"><?php esc_html_e('Wybierz z Media Library', 'erp-omd'); ?></button>
-                    <span class="erp-omd-media-name"><?php esc_html_e('Nie wybrano pliku.', 'erp-omd'); ?></span>
-                    <input type="text" name="label" class="regular-text" placeholder="<?php echo esc_attr__('Etykieta załącznika', 'erp-omd'); ?>" />
-                    <button type="submit" class="button button-secondary"><?php esc_html_e('Dodaj załącznik', 'erp-omd'); ?></button>
-                </form>
-                <table class="widefat striped">
-                    <thead><tr><th><?php esc_html_e('Etykieta', 'erp-omd'); ?></th><th><?php esc_html_e('Plik', 'erp-omd'); ?></th><th><?php esc_html_e('Dodano', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
-                    <tbody>
-                        <?php if (empty($project_attachments)) : ?>
-                            <tr><td colspan="4"><?php esc_html_e('Brak załączników dla tego projektu.', 'erp-omd'); ?></td></tr>
-                        <?php else : ?>
-                            <?php foreach ($project_attachments as $project_attachment) : ?>
-                                <?php
-                                $attachment_post = get_post((int) ($project_attachment['attachment_id'] ?? 0));
-                                $attachment_title = get_the_title((int) ($project_attachment['attachment_id'] ?? 0));
-                                $attachment_url = wp_get_attachment_url((int) ($project_attachment['attachment_id'] ?? 0));
-                                $attachment_name = $attachment_title ?: ((is_object($attachment_post) && ! empty($attachment_post->post_name)) ? $attachment_post->post_name : ('#' . (int) $project_attachment['attachment_id']));
-                                ?>
-                                <tr>
-                                    <td><?php echo esc_html($project_attachment['label'] ?: '—'); ?></td>
-                                    <td>
-                                        <?php if ($attachment_url) : ?>
-                                            <a href="<?php echo esc_url($attachment_url); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($attachment_name); ?></a>
-                                        <?php else : ?>
-                                            <?php echo esc_html($attachment_name); ?>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?php echo esc_html($project_attachment['created_at'] ?? '—'); ?></td>
-                                    <td>
-                                        <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć załącznik?', 'erp-omd')); ?>');">
-                                            <?php wp_nonce_field('erp_omd_delete_attachment_' . (int) $project_attachment['id']); ?>
-                                            <input type="hidden" name="erp_omd_action" value="delete_attachment" />
-                                            <input type="hidden" name="attachment_relation_id" value="<?php echo esc_attr($project_attachment['id']); ?>" />
-                                            <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </section>
-            <hr />
-        <?php endif; ?>
 
         <h2><?php esc_html_e('Lista projektów', 'erp-omd'); ?></h2>
         <div class="erp-omd-section-header">

@@ -237,6 +237,8 @@ background-image: none !important;
 
 .erp-omd-front-panel-subtle {
     background: #fff;
+    margin-top: 24px;
+    margin-bottom: 24px;
 }
 
 .erp-omd-front-panel-form {
@@ -373,6 +375,16 @@ background-image: none !important;
     display: grid;
     gap: 12px;
     grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    margin-top: 24px;
+}
+
+#erp-omd-front-project-status {
+    background: #fff;
+    border: 1px solid var(--erp-omd-front-border);
+    border-radius: 14px;
+    font: inherit;
+    padding: 12px 14px;
+    width: 100%;
 }
 
 .erp-omd-front-metric {
