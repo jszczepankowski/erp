@@ -450,7 +450,6 @@ class ERP_OMD_Frontend
                 array_merge($entry_id ? ['entry_id' => $entry_id] : [], $client_id > 0 ? ['client_id' => $client_id] : [], $selected_day_args)
             );
         }
-
         if ($entry_id) {
             $this->time_entries->update($entry_id, $payload);
             $message = __('Wpis czasu został zaktualizowany.', 'erp-omd');
@@ -490,6 +489,7 @@ class ERP_OMD_Frontend
         }
 
         $worker_filters = [
+            'client_id' => (int) ($_GET['client_id'] ?? 0),
             'project_id' => (int) ($_GET['project_id'] ?? 0),
             'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
             'entry_date' => sanitize_text_field(wp_unslash($_GET['entry_date'] ?? '')),
@@ -499,6 +499,9 @@ class ERP_OMD_Frontend
         ];
         if ($worker_filters['project_id'] <= 0) {
             $worker_filters['project_id'] = 0;
+        }
+        if ($worker_filters['client_id'] <= 0) {
+            $worker_filters['client_id'] = 0;
         }
         if (! in_array($worker_filters['status'], ['', 'submitted', 'approved', 'rejected'], true)) {
             $worker_filters['status'] = '';
@@ -571,10 +574,21 @@ class ERP_OMD_Frontend
             'entry_date' => $worker_filters['entry_date'],
         ]));
         $time_entries = $this->time_entry_service->filter_visible_entries($time_entries, $user);
+        if ($worker_filters['client_id'] > 0) {
+            $time_entries = array_values(
+                array_filter(
+                    $time_entries,
+                    static function ($entry) use ($worker_filters) {
+                        return (int) ($entry['client_id'] ?? 0) === (int) $worker_filters['client_id'];
+                    }
+                )
+            );
+        }
         $time_entries = $this->filter_worker_entries_by_focus($time_entries, $worker_filters);
 
         $calendar_data = $this->reporting_service->build_calendar([
             'employee_id' => (int) $employee['id'],
+            'client_id' => $worker_filters['client_id'],
             'project_id' => $worker_filters['project_id'],
             'status' => $worker_filters['status'],
             'month' => $worker_filters['calendar_month'],
@@ -650,11 +664,10 @@ class ERP_OMD_Frontend
         $seen = [];
 
         foreach ($entries as $entry) {
-            $key = implode(':', [
-                (int) ($entry['project_id'] ?? 0),
-                (int) ($entry['role_id'] ?? 0),
-                trim((string) ($entry['description'] ?? '')),
-            ]);
+            $key = (int) ($entry['project_id'] ?? 0);
+            if ($key <= 0) {
+                continue;
+            }
 
             if (isset($seen[$key])) {
                 continue;
@@ -724,6 +737,7 @@ class ERP_OMD_Frontend
         $previous_month = $month->modify('-1 month')->format('Y-m');
         $next_month = $month->modify('+1 month')->format('Y-m');
         $base_args = [
+            'client_id' => $worker_filters['client_id'],
             'project_id' => $worker_filters['project_id'],
             'status' => $worker_filters['status'],
             'focus' => $worker_filters['focus'],
@@ -772,7 +786,19 @@ class ERP_OMD_Frontend
             'entry_date' => $selected_day,
         ]));
 
-        return $this->time_entry_service->filter_visible_entries($entries, $user);
+        $entries = $this->time_entry_service->filter_visible_entries($entries, $user);
+        if ($worker_filters['client_id'] <= 0) {
+            return $entries;
+        }
+
+        return array_values(
+            array_filter(
+                $entries,
+                static function ($entry) use ($worker_filters) {
+                    return (int) ($entry['client_id'] ?? 0) === (int) $worker_filters['client_id'];
+                }
+            )
+        );
     }
 
     private function summarize_selected_day_entries(array $entries)
