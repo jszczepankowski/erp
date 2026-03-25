@@ -350,13 +350,12 @@ class ERP_OMD_Reporting_Service
             case 'projects':
                 return [
                     'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
-                    'headers' => ['Projekt', 'Klient', 'Status', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %'],
-                    'rows' => array_map(static function ($row) {
+                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status'],
+                    'rows' => array_map(function ($row) {
                         return [
-                            $row['project_name'],
                             $row['client_name'],
-                            $row['status'],
-                            $row['billing_type'],
+                            $row['project_name'],
+                            $this->billing_type_label((string) ($row['billing_type'] ?? '')),
                             $row['manager_login'],
                             number_format((float) $row['budget'], 2, '.', ''),
                             number_format((float) $row['reported_hours'], 2, '.', ''),
@@ -369,6 +368,7 @@ class ERP_OMD_Reporting_Service
                             number_format((float) $row['profit'], 2, '.', ''),
                             number_format((float) $row['margin'], 2, '.', ''),
                             number_format((float) $row['budget_usage'], 2, '.', ''),
+                            $row['status'],
                         ];
                     }, $rows),
                 ];
@@ -539,5 +539,18 @@ class ERP_OMD_Reporting_Service
     private function isTimeEntryStatusFilter($status)
     {
         return in_array($status, ['submitted', 'approved', 'rejected'], true);
+    }
+
+    private function billing_type_label($billing_type)
+    {
+        switch ((string) $billing_type) {
+            case 'fixed_price':
+                return __('Ryczałt', 'erp-omd');
+            case 'retainer':
+                return __('Abonament', 'erp-omd');
+            case 'time_material':
+            default:
+                return __('Godzinowy', 'erp-omd');
+        }
     }
 }

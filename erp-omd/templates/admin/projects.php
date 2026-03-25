@@ -25,7 +25,7 @@
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="project-billing-type"><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></label>
                             <select id="project-billing-type" name="billing_type">
-                                <option value="time_material" <?php selected($project['billing_type'] ?? 'time_material', 'time_material'); ?>><?php esc_html_e('Time & Material', 'erp-omd'); ?></option>
+                                <option value="time_material" <?php selected($project['billing_type'] ?? 'time_material', 'time_material'); ?>><?php esc_html_e('Godzinowy', 'erp-omd'); ?></option>
                                 <option value="fixed_price" <?php selected($project['billing_type'] ?? '', 'fixed_price'); ?>><?php esc_html_e('Ryczałt', 'erp-omd'); ?></option>
                                 <option value="retainer" <?php selected($project['billing_type'] ?? '', 'retainer'); ?>><?php esc_html_e('Abonament', 'erp-omd'); ?></option>
                             </select>

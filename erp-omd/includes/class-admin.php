@@ -1955,7 +1955,7 @@ class ERP_OMD_Admin
                 return __('Abonament', 'erp-omd');
             case 'time_material':
             default:
-                return __('Time & Material', 'erp-omd');
+                return __('Godzinowy', 'erp-omd');
         }
     }
 
