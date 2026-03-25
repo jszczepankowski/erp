@@ -339,6 +339,10 @@ class ERP_OMD_Frontend
             $this->create_manager_estimate($user);
             return;
         }
+        if ($action === 'save_manager_time_entry') {
+            $this->save_manager_time_entry($user);
+            return;
+        }
         if ($action === 'update_estimate_status') {
             $this->update_manager_estimate_status($user);
             return;
@@ -910,6 +914,53 @@ class ERP_OMD_Frontend
             )
         );
         $available_estimates = $manager_estimates;
+        $manager_time_projects = array_values(
+            array_filter(
+                $managed_projects,
+                static function ($project_row) {
+                    return (string) ($project_row['status'] ?? '') === 'w_realizacji';
+                }
+            )
+        );
+        usort(
+            $manager_time_projects,
+            static function ($left, $right) {
+                return strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+            }
+        );
+        $manager_time_clients = [];
+        foreach ($manager_time_projects as $project_row) {
+            $client_id = (int) ($project_row['client_id'] ?? 0);
+            if ($client_id <= 0 || isset($manager_time_clients[$client_id])) {
+                continue;
+            }
+            $manager_time_clients[$client_id] = [
+                'id' => $client_id,
+                'name' => (string) ($project_row['client_name'] ?? ('#' . $client_id)),
+            ];
+        }
+        $manager_time_clients = array_values($manager_time_clients);
+        usort(
+            $manager_time_clients,
+            static function ($left, $right) {
+                return strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+            }
+        );
+        $manager_time_roles = $this->get_worker_roles($employee);
+        usort(
+            $manager_time_roles,
+            static function ($left, $right) {
+                return strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+            }
+        );
+        $manager_time_defaults = [
+            'client_id' => 0,
+            'project_id' => 0,
+            'role_id' => 0,
+            'hours' => '',
+            'entry_date' => current_time('Y-m-d'),
+            'description' => '',
+        ];
         $manager_notice_type = sanitize_key(wp_unslash($_GET['notice'] ?? ''));
         $manager_notice_message = sanitize_text_field(wp_unslash($_GET['message'] ?? ''));
         if (! in_array($manager_notice_type, ['', 'success', 'error', 'warning'], true)) {
@@ -967,6 +1018,62 @@ class ERP_OMD_Frontend
             : __('Wpis czasu został odrzucony.', 'erp-omd');
 
         $this->redirect_manager_with_notice('success', $message, ['project_id' => (int) $entry['project_id']]);
+    }
+
+    private function save_manager_time_entry(WP_User $user)
+    {
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+        }
+
+        $client_id = (int) ($_POST['client_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $role_id = (int) ($_POST['role_id'] ?? 0);
+        $payload = [
+            'employee_id' => (int) $employee['id'],
+            'project_id' => $project_id,
+            'role_id' => $role_id,
+            'hours' => (float) ($_POST['hours'] ?? 0),
+            'entry_date' => sanitize_text_field(wp_unslash($_POST['entry_date'] ?? '')),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'status' => 'submitted',
+            'created_by_user_id' => (int) $user->ID,
+            'approved_by_user_id' => 0,
+            'approved_at' => null,
+        ];
+
+        $managed_projects = $this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator'));
+        $managed_project_ids = array_map('intval', wp_list_pluck($managed_projects, 'id'));
+        if (! in_array($project_id, $managed_project_ids, true)) {
+            $this->redirect_manager_with_notice('error', __('Możesz raportować czas tylko do własnych projektów managerskich.', 'erp-omd'));
+        }
+
+        $selected_project = $this->projects->find($project_id);
+        if (! $selected_project || (string) ($selected_project['status'] ?? '') !== 'w_realizacji') {
+            $this->redirect_manager_with_notice('error', __('Możesz raportować czas tylko do aktywnych projektów w realizacji.', 'erp-omd'));
+        }
+        if ($client_id > 0 && (int) ($selected_project['client_id'] ?? 0) !== $client_id) {
+            $this->redirect_manager_with_notice('error', __('Wybrany projekt nie należy do wskazanego klienta.', 'erp-omd'));
+        }
+
+        $allowed_role_ids = array_map('intval', wp_list_pluck($this->get_worker_roles($employee), 'id'));
+        if (! in_array($role_id, $allowed_role_ids, true)) {
+            $this->redirect_manager_with_notice('error', __('Wybrana rola nie jest przypisana do Twojego profilu.', 'erp-omd'));
+        }
+
+        $errors = $this->time_entry_service->validate_time_entry($payload);
+        if ($errors) {
+            $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)));
+        }
+
+        $entry_id = $this->time_entries->create($payload);
+        if ($entry_id <= 0) {
+            $this->redirect_manager_with_notice('error', __('Nie udało się zapisać wpisu czasu.', 'erp-omd'));
+        }
+
+        $this->project_financial_service->rebuild_for_project((int) $payload['project_id']);
+        $this->redirect_manager_with_notice('success', __('Wpis czasu został zapisany.', 'erp-omd'), ['project_id' => (int) $payload['project_id']]);
     }
 
     private function create_manager_estimate(WP_User $user)

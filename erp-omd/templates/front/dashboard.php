@@ -90,13 +90,70 @@
                 <article class="erp-omd-front-panel">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Dodaj wpis czasu', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Dodawanie wpisu czasu odbywa się w panelu pracownika. Otwórz zakładkę „Dodaj wpis” i zapisz czas.', 'erp-omd'); ?></p>
+                        <p><?php esc_html_e('Dodaj nowy wpis czasu jako manager dla aktywnego projektu, którym zarządzasz.', 'erp-omd'); ?></p>
                     </div>
-                    <div class="erp-omd-front-inline-actions">
-                        <a class="erp-omd-front-button erp-omd-front-button-primary" href="<?php echo esc_url(add_query_arg(['tab' => 'dodaj-wpis'], $front_worker_url)); ?>">
-                            <?php esc_html_e('Przejdź do „Dodaj wpis”', 'erp-omd'); ?>
-                        </a>
-                    </div>
+                    <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-form">
+                        <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                        <input type="hidden" name="erp_omd_front_action" value="save_manager_time_entry">
+
+                        <div class="erp-omd-front-form-row erp-omd-front-form-row-time-context">
+                            <div>
+                                <label for="erp-omd-manager-time-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                                <select id="erp-omd-manager-time-client" name="client_id" required>
+                                    <option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
+                                    <?php foreach ($manager_time_clients as $manager_time_client) : ?>
+                                        <option value="<?php echo esc_attr((string) ($manager_time_client['id'] ?? 0)); ?>" <?php selected((int) ($manager_time_defaults['client_id'] ?? 0), (int) ($manager_time_client['id'] ?? 0)); ?>>
+                                            <?php echo esc_html($manager_time_client['name'] ?? '—'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="erp-omd-manager-time-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
+                                <select id="erp-omd-manager-time-project" name="project_id" required>
+                                    <option value=""><?php esc_html_e('Wybierz projekt klienta', 'erp-omd'); ?></option>
+                                    <?php foreach ($manager_time_projects as $manager_time_project) : ?>
+                                        <option
+                                            value="<?php echo esc_attr((string) ($manager_time_project['id'] ?? 0)); ?>"
+                                            data-client-id="<?php echo esc_attr((string) ($manager_time_project['client_id'] ?? 0)); ?>"
+                                            <?php selected((int) ($manager_time_defaults['project_id'] ?? 0), (int) ($manager_time_project['id'] ?? 0)); ?>
+                                        >
+                                            <?php echo esc_html($manager_time_project['name'] ?? '—'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="erp-omd-manager-time-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label>
+                                <select id="erp-omd-manager-time-role" name="role_id" required>
+                                    <option value=""><?php esc_html_e('Wybierz rolę', 'erp-omd'); ?></option>
+                                    <?php foreach ($manager_time_roles as $manager_time_role) : ?>
+                                        <option value="<?php echo esc_attr((string) ($manager_time_role['id'] ?? 0)); ?>" <?php selected((int) ($manager_time_defaults['role_id'] ?? 0), (int) ($manager_time_role['id'] ?? 0)); ?>>
+                                            <?php echo esc_html($manager_time_role['name'] ?? '—'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="erp-omd-front-form-row">
+                            <div>
+                                <label for="erp-omd-manager-time-hours"><?php esc_html_e('Godziny', 'erp-omd'); ?></label>
+                                <input id="erp-omd-manager-time-hours" name="hours" type="number" min="0.25" step="0.25" value="<?php echo esc_attr((string) ($manager_time_defaults['hours'] ?? '')); ?>" required>
+                            </div>
+                            <div>
+                                <label for="erp-omd-manager-time-entry-date"><?php esc_html_e('Data', 'erp-omd'); ?></label>
+                                <input id="erp-omd-manager-time-entry-date" name="entry_date" type="date" value="<?php echo esc_attr((string) ($manager_time_defaults['entry_date'] ?? current_time('Y-m-d'))); ?>" required>
+                            </div>
+                        </div>
+
+                        <label for="erp-omd-manager-time-description"><?php esc_html_e('Opis pracy', 'erp-omd'); ?></label>
+                        <textarea id="erp-omd-manager-time-description" name="description" rows="4" required><?php echo esc_textarea((string) ($manager_time_defaults['description'] ?? '')); ?></textarea>
+
+                        <div class="erp-omd-front-inline-actions">
+                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Dodaj wpis czasu', 'erp-omd'); ?></button>
+                        </div>
+                    </form>
                 </article>
             </div>
 
@@ -1120,9 +1177,45 @@
             applyFiltersAndSort();
         };
 
+        var setupManagerTimeEntryForm = function () {
+            var clientInput = document.getElementById('erp-omd-manager-time-client');
+            var projectInput = document.getElementById('erp-omd-manager-time-project');
+            if (!clientInput || !projectInput) {
+                return;
+            }
+
+            var syncProjectOptions = function () {
+                var selectedClientId = clientInput.value;
+                var hasVisibleSelectedOption = false;
+
+                Array.prototype.forEach.call(projectInput.options, function (option) {
+                    if (option.value === '') {
+                        option.hidden = false;
+                        return;
+                    }
+
+                    var optionClientId = option.getAttribute('data-client-id') || '';
+                    var visible = selectedClientId !== '' && optionClientId === selectedClientId;
+                    option.hidden = !visible;
+
+                    if (visible && option.selected) {
+                        hasVisibleSelectedOption = true;
+                    }
+                });
+
+                if (!hasVisibleSelectedOption) {
+                    projectInput.value = '';
+                }
+            };
+
+            clientInput.addEventListener('change', syncProjectOptions);
+            syncProjectOptions();
+        };
+
         setupManagerTabs();
         setupTableEnhancements();
         setupProjectsTableFilters();
+        setupManagerTimeEntryForm();
 
         var setupCollapsibleSections = function () {
             var storagePrefix = 'erp_omd_front_manager_section_';
