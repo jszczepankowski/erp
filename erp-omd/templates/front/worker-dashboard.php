@@ -295,6 +295,7 @@
                             <thead>
                                 <tr>
                                     <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Klient', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Rola', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Godz.', 'erp-omd'); ?></th>
@@ -308,6 +309,7 @@
                                     <?php foreach ($time_entries as $time_entry) : ?>
                                         <tr>
                                             <td><?php echo esc_html($time_entry['entry_date']); ?></td>
+                                            <td><?php echo esc_html($time_entry['client_name'] ?? '—'); ?></td>
                                             <td><?php echo esc_html($time_entry['project_name'] ?? '—'); ?></td>
                                             <td><?php echo esc_html($time_entry['role_name'] ?? '—'); ?></td>
                                             <td><?php echo esc_html(number_format_i18n((float) ($time_entry['hours'] ?? 0), 2)); ?></td>
@@ -341,7 +343,7 @@
                                     <?php endforeach; ?>
                                 <?php else : ?>
                                     <tr>
-                                        <td colspan="7"><?php esc_html_e('Brak wpisów spełniających aktualne filtry.', 'erp-omd'); ?></td>
+                                        <td colspan="8"><?php esc_html_e('Brak wpisów spełniających aktualne filtry.', 'erp-omd'); ?></td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
