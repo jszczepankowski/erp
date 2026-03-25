@@ -369,7 +369,7 @@
                                             <td>
                                                 <div class="erp-omd-front-inline-actions">
                                                     <?php if ($this->time_entry_service->can_edit_entry($time_entry, $user)) : ?>
-                                                        <a href="<?php echo esc_url(add_query_arg(['entry_id' => (int) $time_entry['id'], 'tab' => (string) ($worker_filters['tab'] ?? 'wpisy')], $front_worker_url)); ?>" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                                        <a href="<?php echo esc_url(add_query_arg(['entry_id' => (int) $time_entry['id'], 'tab' => 'dodaj-wpis'], $front_worker_url)); ?>" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                                     <?php endif; ?>
 
                                                     <?php if ($this->time_entry_service->can_delete_entry($user, $time_entry)) : ?>
