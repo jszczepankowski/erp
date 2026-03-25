@@ -244,6 +244,17 @@
                             <input id="erp-omd-front-filter-month" type="month" name="calendar_month" value="<?php echo esc_attr((string) ($worker_filters['calendar_month'] ?? '')); ?>">
                         </div>
                         <div>
+                            <label for="erp-omd-front-filter-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                            <select id="erp-omd-front-filter-client" name="client_id" data-project-target="#erp-omd-front-filter-project">
+                                <option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option>
+                                <?php foreach ($available_clients as $client_item) : ?>
+                                    <option value="<?php echo esc_attr((string) $client_item['id']); ?>" <?php selected((int) ($worker_filters['client_id'] ?? 0), (int) $client_item['id']); ?>>
+                                        <?php echo esc_html($client_item['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
                             <label for="erp-omd-front-filter-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
                             <select id="erp-omd-front-filter-project" name="project_id">
                                 <option value="0"><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option>

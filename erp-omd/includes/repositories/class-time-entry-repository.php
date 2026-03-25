@@ -162,12 +162,12 @@ class ERP_OMD_Time_Entry_Repository
         return $map;
     }
 
-    public function duplicate_exists($employee_id, $project_id, $role_id, $hours, $exclude_id = null)
+    public function duplicate_exists($employee_id, $project_id, $hours, $entry_date, $exclude_id = null)
     {
         global $wpdb;
 
-        $sql = "SELECT COUNT(*) FROM {$this->table_name()} WHERE employee_id = %d AND project_id = %d AND role_id = %d AND hours = %f";
-        $params = [(int) $employee_id, (int) $project_id, (int) $role_id, (float) $hours];
+        $sql = "SELECT COUNT(*) FROM {$this->table_name()} WHERE employee_id = %d AND project_id = %d AND hours = %f AND entry_date = %s";
+        $params = [(int) $employee_id, (int) $project_id, (float) $hours, (string) $entry_date];
         if ($exclude_id) {
             $sql .= ' AND id != %d';
             $params[] = (int) $exclude_id;
