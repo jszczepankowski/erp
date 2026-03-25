@@ -41,7 +41,7 @@
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="report-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
-                                <select id="report-client" name="client_id">
+                                <select id="report-client" name="client_id" data-project-target="#report-project">
                                     <option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option>
                                     <?php foreach ($clients as $client_item) : ?>
                                         <option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) $report_filters['client_id'], (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option>
@@ -51,9 +51,9 @@
                             <div class="erp-omd-form-field">
                                 <label for="report-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
                                 <select id="report-project" name="project_id">
-                                    <option value="0"><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option>
+                                    <option value=""><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option>
                                     <?php foreach ($projects as $project_item) : ?>
-                                        <option value="<?php echo esc_attr($project_item['id']); ?>" <?php selected((int) $report_filters['project_id'], (int) $project_item['id']); ?>><?php echo esc_html($project_item['name']); ?></option>
+                                        <option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr((string) ($project_item['client_id'] ?? 0)); ?>" <?php selected((int) $report_filters['project_id'], (int) $project_item['id']); ?>><?php echo esc_html($project_item['name']); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -146,14 +146,13 @@
                     </table>
                 <?php else : ?>
                     <table class="widefat striped">
-                        <thead><tr><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet %', 'erp-omd'); ?></th></tr></thead>
+                        <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet %', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th></tr></thead>
                         <tbody>
                         <?php if (empty($report_rows)) : ?><tr><td colspan="14"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
                         <?php foreach ($report_rows as $row) : ?>
                             <tr>
-                                <td><?php echo esc_html($row['project_name']); ?></td>
                                 <td><?php echo esc_html($row['client_name']); ?></td>
-                                <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($row['status'], 'project')); ?>"><?php echo esc_html($this->project_status_label($row['status'])); ?></span></td>
+                                <td><?php echo esc_html($row['project_name']); ?></td>
                                 <td><?php echo esc_html($this->billing_type_label($row['billing_type'])); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['budget'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['reported_hours'], 2)); ?></td>
@@ -165,6 +164,7 @@
                                 <td><?php echo esc_html(number_format_i18n((float) $row['profit'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['margin'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['budget_usage'], 2)); ?></td>
+                                <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($row['status'], 'project')); ?>"><?php echo esc_html($this->project_status_label($row['status'])); ?></span></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>

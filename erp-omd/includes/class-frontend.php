@@ -1960,12 +1960,12 @@ class ERP_OMD_Frontend
     {
         switch ((string) $billing_type) {
             case 'fixed_price':
-                return __('Fixed price', 'erp-omd');
+                return __('Ryczałt', 'erp-omd');
             case 'retainer':
-                return __('Retainer', 'erp-omd');
+                return __('Abonament', 'erp-omd');
             case 'time_material':
             default:
-                return __('Time & Material', 'erp-omd');
+                return __('Godzinowy', 'erp-omd');
         }
     }
 

@@ -319,7 +319,7 @@
                             </div>
                             <div class="erp-omd-front-detail-item">
                                 <strong><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></strong>
-                                <span><?php echo esc_html($selected_project['billing_type'] ?? '—'); ?></span>
+                                <span><?php echo esc_html($this->billing_type_label((string) ($selected_project['billing_type'] ?? ''))); ?></span>
                             </div>
                             <div class="erp-omd-front-detail-item">
                                 <strong><?php esc_html_e('Budżet', 'erp-omd'); ?></strong>
@@ -740,8 +740,55 @@
                     </div>
                 </div>
 
+                <?php
+                $approval_queue_employee_filters = [];
+                $approval_queue_project_filters = [];
+                $approval_queue_role_filters = [];
+                foreach ($approval_queue as $approval_queue_entry_filter) {
+                    $approval_queue_employee_value = (string) ($approval_queue_entry_filter['employee_login'] ?? '—');
+                    $approval_queue_project_value = (string) ($approval_queue_entry_filter['project_name'] ?? '—');
+                    $approval_queue_role_value = (string) ($approval_queue_entry_filter['role_name'] ?? '—');
+                    $approval_queue_employee_filters[$approval_queue_employee_value] = $approval_queue_employee_value;
+                    $approval_queue_project_filters[$approval_queue_project_value] = $approval_queue_project_value;
+                    $approval_queue_role_filters[$approval_queue_role_value] = $approval_queue_role_value;
+                }
+                asort($approval_queue_employee_filters);
+                asort($approval_queue_project_filters);
+                asort($approval_queue_role_filters);
+                ?>
+
+                <form class="erp-omd-front-filter-form" data-approval-queue-filters="1" onsubmit="return false;">
+                    <div>
+                        <label for="erp-omd-front-queue-filter-employee"><?php esc_html_e('Pracownik', 'erp-omd'); ?></label>
+                        <select id="erp-omd-front-queue-filter-employee" data-queue-filter="employee">
+                            <option value=""><?php esc_html_e('Wszyscy pracownicy', 'erp-omd'); ?></option>
+                            <?php foreach ($approval_queue_employee_filters as $approval_queue_employee_option) : ?>
+                                <option value="<?php echo esc_attr($approval_queue_employee_option); ?>"><?php echo esc_html($approval_queue_employee_option); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="erp-omd-front-queue-filter-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
+                        <select id="erp-omd-front-queue-filter-project" data-queue-filter="project">
+                            <option value=""><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option>
+                            <?php foreach ($approval_queue_project_filters as $approval_queue_project_option) : ?>
+                                <option value="<?php echo esc_attr($approval_queue_project_option); ?>"><?php echo esc_html($approval_queue_project_option); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="erp-omd-front-queue-filter-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label>
+                        <select id="erp-omd-front-queue-filter-role" data-queue-filter="role">
+                            <option value=""><?php esc_html_e('Wszystkie role', 'erp-omd'); ?></option>
+                            <?php foreach ($approval_queue_role_filters as $approval_queue_role_option) : ?>
+                                <option value="<?php echo esc_attr($approval_queue_role_option); ?>"><?php echo esc_html($approval_queue_role_option); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </form>
+
                 <div class="erp-omd-front-table-wrap">
-                    <table class="erp-omd-front-table erp-omd-front-table-sortable" data-table-enhanced="1" data-table-title="<?php esc_attr_e('Kolejka wpisów do akceptacji', 'erp-omd'); ?>">
+                    <table class="erp-omd-front-table erp-omd-front-table-sortable" data-approval-queue-table="1">
                         <thead>
                             <tr>
                                 <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
@@ -756,7 +803,11 @@
                         <tbody>
                             <?php if ($approval_queue) : ?>
                                 <?php foreach ($approval_queue as $queue_entry) : ?>
-                                    <tr>
+                                    <tr
+                                        data-queue-employee="<?php echo esc_attr((string) ($queue_entry['employee_login'] ?? '—')); ?>"
+                                        data-queue-project="<?php echo esc_attr((string) ($queue_entry['project_name'] ?? '—')); ?>"
+                                        data-queue-role="<?php echo esc_attr((string) ($queue_entry['role_name'] ?? '—')); ?>"
+                                    >
                                         <td><?php echo esc_html($queue_entry['entry_date'] ?? '—'); ?></td>
                                         <td><?php echo esc_html($queue_entry['employee_login'] ?? '—'); ?></td>
                                         <td><?php echo esc_html($queue_entry['project_name'] ?? '—'); ?></td>
@@ -822,9 +873,9 @@
                                 <label for="erp-omd-front-request-billing-type"><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></label>
                                 <select id="erp-omd-front-request-billing-type" name="billing_type">
                                     <?php foreach ([
-                                        'time_material' => __('Time & Material', 'erp-omd'),
-                                        'fixed_price' => __('Fixed price', 'erp-omd'),
-                                        'retainer' => __('Retainer', 'erp-omd'),
+                                        'time_material' => __('Godzinowy', 'erp-omd'),
+                                        'fixed_price' => __('Ryczałt', 'erp-omd'),
+                                        'retainer' => __('Abonament', 'erp-omd'),
                                     ] as $billing_type => $billing_label) : ?>
                                         <option value="<?php echo esc_attr($billing_type); ?>" <?php selected((string) ($request_form_defaults['billing_type'] ?? 'time_material'), $billing_type); ?>>
                                             <?php echo esc_html($billing_label); ?>
@@ -879,7 +930,7 @@
                                             <strong><?php echo esc_html($project_request['project_name'] ?? ('#' . (int) ($project_request['id'] ?? 0))); ?></strong>
                                             <p>
                                                 <?php echo esc_html($project_request['client_name'] ?? '—'); ?>
-                                                · <?php echo esc_html($project_request['billing_type'] ?? '—'); ?>
+                                                · <?php echo esc_html($this->billing_type_label((string) ($project_request['billing_type'] ?? ''))); ?>
                                                 · <?php echo esc_html($project_request['requester_login'] ?? '—'); ?>
                                             </p>
                                         </div>
@@ -1212,10 +1263,107 @@
             syncProjectOptions();
         };
 
+        var setupApprovalQueueFilters = function () {
+            var table = document.querySelector('table[data-approval-queue-table="1"]');
+            var form = document.querySelector('[data-approval-queue-filters="1"]');
+            if (!table || !form) {
+                return;
+            }
+
+            var tbody = table.querySelector('tbody');
+            if (!tbody) {
+                return;
+            }
+
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+            if (rows.length === 0) {
+                return;
+            }
+
+            var employeeFilter = form.querySelector('[data-queue-filter="employee"]');
+            var projectFilter = form.querySelector('[data-queue-filter="project"]');
+            var roleFilter = form.querySelector('[data-queue-filter="role"]');
+            var sortState = { index: -1, dir: 'asc' };
+
+            var parseComparableValue = function (value) {
+                var normalized = (value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+                var numeric = normalized.replace(',', '.').replace(/[^\d.-]/g, '');
+                if (numeric !== '' && !Number.isNaN(Number(numeric))) {
+                    return Number(numeric);
+                }
+                return normalized;
+            };
+
+            var applyFiltersAndSort = function () {
+                var selectedEmployee = employeeFilter ? employeeFilter.value : '';
+                var selectedProject = projectFilter ? projectFilter.value : '';
+                var selectedRole = roleFilter ? roleFilter.value : '';
+                var visibleRows = [];
+
+                rows.forEach(function (row) {
+                    var matchesEmployee = selectedEmployee === '' || row.getAttribute('data-queue-employee') === selectedEmployee;
+                    var matchesProject = selectedProject === '' || row.getAttribute('data-queue-project') === selectedProject;
+                    var matchesRole = selectedRole === '' || row.getAttribute('data-queue-role') === selectedRole;
+                    var isVisible = matchesEmployee && matchesProject && matchesRole;
+                    row.hidden = !isVisible;
+                    if (isVisible) {
+                        visibleRows.push(row);
+                    }
+                });
+
+                if (sortState.index >= 0) {
+                    visibleRows.sort(function (rowA, rowB) {
+                        var cellA = rowA.children[sortState.index];
+                        var cellB = rowB.children[sortState.index];
+                        var valueA = parseComparableValue(cellA ? cellA.textContent : '');
+                        var valueB = parseComparableValue(cellB ? cellB.textContent : '');
+                        if (valueA === valueB) {
+                            return 0;
+                        }
+                        var comparison = valueA > valueB ? 1 : -1;
+                        return sortState.dir === 'asc' ? comparison : -comparison;
+                    });
+                    visibleRows.forEach(function (row) {
+                        tbody.appendChild(row);
+                    });
+                }
+            };
+
+            table.querySelectorAll('thead th').forEach(function (header, index) {
+                if (header.textContent.trim() === '<?php echo esc_js(__('Akcje', 'erp-omd')); ?>') {
+                    return;
+                }
+                header.classList.add('erp-omd-front-table-th-sortable');
+                header.addEventListener('click', function () {
+                    if (sortState.index === index) {
+                        sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortState.index = index;
+                        sortState.dir = 'asc';
+                    }
+                    table.querySelectorAll('thead th').forEach(function (th) {
+                        th.removeAttribute('data-sort-dir');
+                    });
+                    header.setAttribute('data-sort-dir', sortState.dir);
+                    applyFiltersAndSort();
+                });
+            });
+
+            [employeeFilter, projectFilter, roleFilter].forEach(function (filterField) {
+                if (!filterField) {
+                    return;
+                }
+                filterField.addEventListener('change', applyFiltersAndSort);
+            });
+
+            applyFiltersAndSort();
+        };
+
         setupManagerTabs();
         setupTableEnhancements();
         setupProjectsTableFilters();
         setupManagerTimeEntryForm();
+        setupApprovalQueueFilters();
 
         var setupCollapsibleSections = function () {
             var storagePrefix = 'erp_omd_front_manager_section_';
