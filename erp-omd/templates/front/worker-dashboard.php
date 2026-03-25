@@ -38,7 +38,7 @@
                     </ul>
                 </article>
 
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="worker-time-list">
                     <h2><?php esc_html_e('Szybkie podsumowanie', 'erp-omd'); ?></h2>
                     <div class="erp-omd-front-metrics">
                         <div class="erp-omd-front-metric">
@@ -226,7 +226,7 @@
                     </form>
                 </article>
 
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="worker-time-list">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Twoje wpisy czasu', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Filtry są lokalne dla Twojego widoku i nie pokazują wpisów innych pracowników.', 'erp-omd'); ?></p>

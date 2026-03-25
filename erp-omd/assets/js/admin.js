@@ -260,6 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
     toggle.type = 'button';
     toggle.className = 'erp-omd-collapse-toggle';
     toggle.dataset.collapseTarget = `erp-omd-box-${index}`;
+    const pageKey = currentPage || 'global';
+    const headingKey = (titleNode.textContent || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 80);
+    const storageKey = `erp_omd_admin_box_${pageKey}_${index}_${headingKey}`;
 
     const renderState = () => {
       const isCollapsed = box.classList.contains('erp-omd-is-collapsed');
@@ -269,12 +272,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     toggle.addEventListener('click', () => {
       box.classList.toggle('erp-omd-is-collapsed');
+      localStorage.setItem(storageKey, box.classList.contains('erp-omd-is-collapsed') ? '1' : '0');
       renderState();
     });
 
     controls.appendChild(toggle);
     box.insertBefore(controls, box.firstChild);
     box.classList.add('erp-omd-collapsible-box');
+    if (localStorage.getItem(storageKey) === '1') {
+      box.classList.add('erp-omd-is-collapsed');
+    }
     renderState();
   });
 });
