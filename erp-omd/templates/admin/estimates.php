@@ -7,7 +7,6 @@
                 <?php wp_nonce_field('erp_omd_save_estimate'); ?>
                 <input type="hidden" name="erp_omd_action" value="save_estimate">
                 <input type="hidden" name="id" value="<?php echo esc_attr($estimate['id'] ?? 0); ?>">
-                <p class="erp-omd-form-intro"><?php esc_html_e('Kosztorys ma teraz krótsze sekcje z lepiej wykorzystaną szerokością ekranu, dzięki czemu łatwiej przejść od podstaw do lifecycle.', 'erp-omd'); ?></p>
                 <div class="erp-omd-form-sections">
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
@@ -18,7 +17,7 @@
                             <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                 <label for="estimate-name"><?php esc_html_e('Nazwa kosztorysu', 'erp-omd'); ?></label>
                                 <input id="estimate-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($estimate['name'] ?? ''); ?>" required>
-                                <p class="description"><?php esc_html_e('Np. Audyt SEO Q2 2026 albo Kampania launchowa.', 'erp-omd'); ?></p>
+                                <p class="description"><?php esc_html_e('Np. Kampania launchowa produktu.', 'erp-omd'); ?></p>
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="estimate-client-id"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
@@ -34,7 +33,6 @@
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Lifecycle', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Stan pracy nad kosztorysem oraz informacje o akceptacji.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid">
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
@@ -50,7 +48,7 @@
                                 <?php if (($estimate['status'] ?? '') === 'zaakceptowany') : ?>
                                     <p class="description"><?php esc_html_e('Zaakceptowany kosztorys zachowuje zablokowane pozycje i dane klienta, ale administrator nadal może zmienić jego status.', 'erp-omd'); ?></p>
                                 <?php else : ?>
-                                    <p class="description"><?php esc_html_e('Po akceptacji kosztorys pozostaje czytelny, ale jego pozycje przechodzą w tryb tylko do odczytu.', 'erp-omd'); ?></p>
+                                    <p class="description"><?php esc_html_e('Po akceptacji kosztorys pozostaje widoczny, ale jego pozycje są trybie tylko do odczytu.', 'erp-omd'); ?></p>
                                 <?php endif; ?>
                                 <?php if (! empty($estimate['accepted_at'])) : ?>
                                     <p class="description"><?php echo esc_html(sprintf(__('Zaakceptowano: %s', 'erp-omd'), $estimate['accepted_at'])); ?></p>
@@ -70,15 +68,15 @@
                                         <label><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
                                         <input name="initial_item_name[]" type="text" class="regular-text" required>
                                     </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
                                         <input name="initial_item_qty[]" type="number" step="0.01" min="0.01" value="1" required>
                                     </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
                                         <input name="initial_item_price[]" type="number" step="0.01" min="0" value="0" required>
                                     </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
                                         <input name="initial_item_cost_internal[]" type="number" step="0.01" min="0" value="0" required>
                                     </div>

@@ -8,12 +8,10 @@
                 <?php wp_nonce_field('erp_omd_save_time_entry'); ?>
                 <input type="hidden" name="erp_omd_action" value="save_time_entry" />
                 <input type="hidden" name="id" value="<?php echo esc_attr($entry['id'] ?? ''); ?>" />
-                <p class="erp-omd-form-intro"><?php esc_html_e('Układ czasu pracy został uporządkowany sekcjami, dzięki czemu szybciej przechodzimy od kontekstu wpisu do akceptacji.', 'erp-omd'); ?></p>
                 <div class="erp-omd-form-sections">
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Kontekst wpisu', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Pracownik, klient, projekt i rola raportowana w jednym bloku.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-time-context">
                             <div class="erp-omd-form-field">
@@ -63,8 +61,7 @@
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Czas i status', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Wartość wpisu, data wykonania i etap akceptacji.', 'erp-omd'); ?></p>
-                        </div>
+						</div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-time-status">
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
                                 <label for="time-hours"><?php esc_html_e('Godziny', 'erp-omd'); ?></label>
@@ -105,7 +102,6 @@
             <div class="erp-omd-section-header">
                 <div>
                     <h2><?php esc_html_e('Lista wpisów czasu', 'erp-omd'); ?></h2>
-                    <p class="description"><?php esc_html_e('Zapisane widoki zostały usunięte globalnie — zostawiamy prostsze, jednorazowe filtrowanie.', 'erp-omd'); ?></p>
                 </div>
             </div>
             <form method="get" class="erp-omd-filter-form">

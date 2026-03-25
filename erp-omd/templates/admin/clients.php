@@ -7,7 +7,6 @@
                 <?php wp_nonce_field('erp_omd_save_client'); ?>
                 <input type="hidden" name="erp_omd_action" value="save_client" />
                 <input type="hidden" name="id" value="<?php echo esc_attr($client['id'] ?? ''); ?>" />
-                <p class="erp-omd-form-intro"><?php esc_html_e('Podzieliliśmy formularz na krótsze sekcje, żeby szybciej skanować dane i wygodniej pracować na szerszych ekranach.', 'erp-omd'); ?></p>
                 <div class="erp-omd-form-sections">
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
@@ -33,7 +32,7 @@
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Adres i kontakt', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Pola o mniejszej szerokości układają się obok siebie, a dłuższe zajmują cały wiersz.', 'erp-omd'); ?></p>
+                            <p><?php esc_html_e('Pola adresowe i kontaktowe.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid">
                             <div class="erp-omd-form-grid erp-omd-form-grid-client-address-row erp-omd-form-field-span-full">

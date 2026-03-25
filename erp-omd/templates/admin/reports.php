@@ -11,8 +11,7 @@
             <div class="erp-omd-section-header">
                 <div>
                     <h2><?php esc_html_e('Filtry raportowe', 'erp-omd'); ?></h2>
-                    <p class="description"><?php esc_html_e('Widoki zapisane zostały usunięte globalnie, dlatego skupiamy się na szybkim filtrowaniu aktualnego zestawu danych.', 'erp-omd'); ?></p>
-                </div>
+               </div>
             </div>
             <form method="get">
                 <input type="hidden" name="page" value="erp-omd-reports" />
@@ -21,7 +20,7 @@
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Zakres raportu', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Wybierz typ raportu oraz okres, a następnie zawęź dane według encji.', 'erp-omd'); ?></p>
+                            <p><?php esc_html_e('Wybierz typ raportu oraz okres, a następnie zawęź dane według filtrów.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid">
                             <?php if ($report_filters['tab'] === 'reports') : ?>
@@ -174,7 +173,7 @@
         <?php else : ?>
             <section class="erp-omd-card">
                 <h2><?php echo esc_html(sprintf(__('Kalendarz miesiąca %s', 'erp-omd'), $calendar_data['month'])); ?></h2>
-                <p class="description"><?php echo esc_html(sprintf(__('Łącznie godzin: %1$s | wpisów: %2$s | approved: %3$s | submitted: %4$s | rejected: %5$s', 'erp-omd'), number_format_i18n((float) $calendar_data['totals']['hours'], 2), (int) $calendar_data['totals']['entries_count'], number_format_i18n((float) $calendar_data['totals']['approved_hours'], 2), number_format_i18n((float) $calendar_data['totals']['submitted_hours'], 2), number_format_i18n((float) $calendar_data['totals']['rejected_hours'], 2))); ?></p>
+                <p class="description"><?php echo esc_html(sprintf(__('Łącznie godzin: %1$s | wpisów: %2$s | Zaakceptowancyh: %3$s | Zgłoszonych: %4$s | Odrzuconych: %5$s', 'erp-omd'), number_format_i18n((float) $calendar_data['totals']['hours'], 2), (int) $calendar_data['totals']['entries_count'], number_format_i18n((float) $calendar_data['totals']['approved_hours'], 2), number_format_i18n((float) $calendar_data['totals']['submitted_hours'], 2), number_format_i18n((float) $calendar_data['totals']['rejected_hours'], 2))); ?></p>
                 <table class="widefat striped erp-omd-calendar-table">
                     <thead><tr><th><?php esc_html_e('Pon', 'erp-omd'); ?></th><th><?php esc_html_e('Wt', 'erp-omd'); ?></th><th><?php esc_html_e('Śr', 'erp-omd'); ?></th><th><?php esc_html_e('Czw', 'erp-omd'); ?></th><th><?php esc_html_e('Pt', 'erp-omd'); ?></th><th><?php esc_html_e('Sob', 'erp-omd'); ?></th><th><?php esc_html_e('Nd', 'erp-omd'); ?></th></tr></thead>
                     <tbody>
@@ -186,7 +185,7 @@
                                         <div class="erp-omd-calendar-day"><?php echo esc_html($day['day']); ?></div>
                                         <div><strong><?php esc_html_e('Godziny:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) $day['hours'], 2)); ?></div>
                                         <div><strong><?php esc_html_e('Wpisy:', 'erp-omd'); ?></strong> <?php echo esc_html($day['entries_count']); ?></div>
-                                        <div class="description"><?php echo esc_html(sprintf(__('A: %1$s | S: %2$s | R: %3$s', 'erp-omd'), number_format_i18n((float) $day['approved_hours'], 2), number_format_i18n((float) $day['submitted_hours'], 2), number_format_i18n((float) $day['rejected_hours'], 2))); ?></div>
+                                        <div class="description"><?php echo esc_html(sprintf(__('A: %1$s | Z: %2$s | O: %3$s', 'erp-omd'), number_format_i18n((float) $day['approved_hours'], 2), number_format_i18n((float) $day['submitted_hours'], 2), number_format_i18n((float) $day['rejected_hours'], 2))); ?></div>
                                     <?php else : ?>
                                         &nbsp;
                                     <?php endif; ?>

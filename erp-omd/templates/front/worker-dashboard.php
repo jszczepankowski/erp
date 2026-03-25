@@ -94,7 +94,6 @@
                 <article class="erp-omd-front-panel erp-omd-front-panel-form" data-worker-tab-pane="dodaj-wpis">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php echo ! empty($worker_form_defaults['id']) ? esc_html__('Edytuj wpis czasu', 'erp-omd') : esc_html__('Dodaj wpis czasu', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Pracownik może zapisywać i poprawiać wyłącznie własne wpisy w statusie oczekującym na akceptację.', 'erp-omd'); ?></p>
                     </div>
 
                     <?php if ($recent_entry_templates) : ?>
@@ -260,7 +259,6 @@
                 <article class="erp-omd-front-panel" data-collapsible-section="worker-time-list" data-worker-tab-pane="wpisy">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Twoje wpisy czasu', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Filtry są lokalne dla Twojego widoku i nie pokazują wpisów innych pracowników.', 'erp-omd'); ?></p>
                     </div>
 
                     <form method="get" action="<?php echo esc_url($front_worker_url); ?>" class="erp-omd-front-filter-form">
@@ -400,7 +398,6 @@
             <div class="erp-omd-front-panel erp-omd-front-panel-calendar" data-collapsible-section="worker-rhythm">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Rytm pracy', 'erp-omd'); ?></h2>
-                    <p><?php esc_html_e('Szybkie skróty pomagają przełączać zakres listy, a kalendarz pokazuje rozkład Twoich godzin w wybranym miesiącu.', 'erp-omd'); ?></p>
                 </div>
 
                 <div class="erp-omd-front-inline-actions erp-omd-front-focus-actions">
@@ -438,7 +435,7 @@
                         <input type="hidden" name="status" value="<?php echo esc_attr($worker_filters['status']); ?>">
                         <input type="hidden" name="tab" value="<?php echo esc_attr((string) ($worker_filters['tab'] ?? 'wpisy')); ?>">
                         <input type="hidden" name="selected_date" value="<?php echo esc_attr($selected_day); ?>">
-                        <input type="month" name="calendar_month" value="<?php echo esc_attr($worker_filters['calendar_month']); ?>">
+                        <input style="background: #fff;border: 1px solid var(--erp-omd-front-border);border-radius: 14px;font: inherit;padding: 12px 14px;height: 47px;" type="month" name="calendar_month" value="<?php echo esc_attr($worker_filters['calendar_month']); ?>">
                         <button type="submit" class="erp-omd-front-button"><?php esc_html_e('Pokaż miesiąc', 'erp-omd'); ?></button>
                     </form>
                 </div>
@@ -512,7 +509,6 @@
                             );
                             ?>
                         </h2>
-                        <p><?php esc_html_e('Kliknij dzień w kalendarzu, aby zobaczyć jego wpisy i od razu raportować czas na wybraną datę.', 'erp-omd'); ?></p>
                     </div>
 
                     <div class="erp-omd-front-metrics">

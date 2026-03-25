@@ -8,12 +8,10 @@
                 <?php wp_nonce_field('erp_omd_save_employee'); ?>
                 <input type="hidden" name="erp_omd_action" value="save_employee" />
                 <input type="hidden" name="id" value="<?php echo esc_attr($employee['id'] ?? ''); ?>" />
-                <p class="erp-omd-form-intro"><?php esc_html_e('Ten sam sekcyjny układ co na innych ekranach admina ułatwia szybkie skanowanie danych pracownika i ustawień raportowych.', 'erp-omd'); ?></p>
                 <div class="erp-omd-form-sections">
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Konto i dostęp', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Powiązanie z WordPressem, typ konta i status aktywności.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-employee-account">
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
@@ -48,7 +46,6 @@
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Role projektowe', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Role raportowe i domyślna rola wykorzystywana przy pracy operacyjnej.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid">
                             <div class="erp-omd-form-field erp-omd-form-field-span-2">

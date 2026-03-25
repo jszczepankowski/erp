@@ -90,7 +90,6 @@
                 <article class="erp-omd-front-panel">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Dodaj wpis czasu', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Dodaj nowy wpis czasu jako manager dla aktywnego projektu, którym zarządzasz.', 'erp-omd'); ?></p>
                     </div>
                     <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-form">
                         <?php wp_nonce_field('erp_omd_front_manager'); ?>
@@ -161,7 +160,6 @@
                 <article class="erp-omd-front-panel">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Twoje projekty', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Wybierz projekt, aby zobaczyć finanse, alerty, powiązane kosztorysy i kolejkę wpisów czasu.', 'erp-omd'); ?></p>
                     </div>
 
                     <?php if ($managed_projects) : ?>
@@ -270,7 +268,6 @@
                 <article id="project-detail" class="erp-omd-front-panel" data-collapsible-section="manager-project-card">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Karta projektu', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Podstawowe dane biznesowe, marża, alerty i powiązane kosztorysy dla wybranego projektu.', 'erp-omd'); ?></p>
                     </div>
 
                     <?php if ($selected_project) : ?>
@@ -384,9 +381,7 @@
                         <div class="erp-omd-front-grid erp-omd-front-grid-summary">
                             <div class="erp-omd-front-panel erp-omd-front-panel-subtle">
                                 <div class="erp-omd-front-section-heading">
-                                    <h3><?php esc_html_e('Alerty projektu', 'erp-omd'); ?></h3>
-                                    <p><?php esc_html_e('Sygnały wymagające uwagi managera dla bieżącego projektu.', 'erp-omd'); ?></p>
-                                </div>
+                                    <h3><?php esc_html_e('Alerty projektu', 'erp-omd'); ?></h3>                                </div>
                                 <?php if ($selected_project_alerts) : ?>
                                     <div class="erp-omd-front-stack">
                                         <?php foreach ($selected_project_alerts as $alert) : ?>
@@ -404,7 +399,6 @@
                             <div class="erp-omd-front-panel erp-omd-front-panel-subtle">
                                 <div class="erp-omd-front-section-heading">
                                     <h3><?php esc_html_e('Powiązane kosztorysy', 'erp-omd'); ?></h3>
-                                    <p><?php esc_html_e('Kosztorysy bezpośrednio spięte z projektem lub wskazane jako źródło projektu.', 'erp-omd'); ?></p>
                                 </div>
                                 <?php if ($selected_project_estimates) : ?>
                                     <div class="erp-omd-front-stack">
@@ -476,7 +470,7 @@
                                         </div>
                                     </div>
 
-                                    <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
+                                    <label><?php esc_html_e('Koszt wewnętrzny pozycji (całkowity)', 'erp-omd'); ?></label>
                                     <input type="number" min="0" step="0.01" name="item_cost_internal[]" value="0" required>
 
                                     <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
@@ -511,7 +505,6 @@
                 <article id="estimate-detail" class="erp-omd-front-panel" data-collapsible-section="manager-estimates">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Kosztorysy', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Wszystkie kosztorysy widoczne z perspektywy Twoich klientów i projektów. Możesz przełączać szczegóły bez opuszczania frontu.', 'erp-omd'); ?></p>
                     </div>
 
                     <?php if ($available_estimates) : ?>
@@ -553,7 +546,6 @@
                             <div class="erp-omd-front-panel erp-omd-front-panel-subtle erp-omd-front-estimate-summary">
                                 <div class="erp-omd-front-section-heading">
                                     <h3><?php echo esc_html($selected_estimate['name'] ?? ('#' . (int) ($selected_estimate['id'] ?? 0))); ?></h3>
-                                    <p><?php esc_html_e('Szczegóły kosztorysu, sumy i pierwsze pozycje. Jeśli kosztorys nie jest jeszcze zaakceptowany, możesz zaakceptować go z poziomu frontu managera.', 'erp-omd'); ?></p>
                                 </div>
 
                                 <div class="erp-omd-front-detail-grid">
@@ -695,7 +687,7 @@
 
                                         <?php if (($selected_estimate['status'] ?? '') !== 'zaakceptowany') : ?>
                                             <div class="erp-omd-front-inline-actions erp-omd-front-estimate-actions">
-                                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Zapisz pozycje', 'erp-omd'); ?></button>
+                                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-secondary"><?php esc_html_e('Zapisz pozycje', 'erp-omd'); ?></button>
                                             </div>
                                         <?php endif; ?>
                                     </form>
@@ -722,7 +714,6 @@
             <div class="erp-omd-front-panel" data-collapsible-section="manager-approval-queue" data-manager-tab-pane="akceptacje">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Kolejka wpisów czasu do akceptacji', 'erp-omd'); ?></h2>
-                    <p><?php esc_html_e('Szybkie decyzje operacyjne dla wpisów w statusie „submitted” przypisanych do Twoich projektów.', 'erp-omd'); ?></p>
                 </div>
 
                 <div class="erp-omd-front-metrics">
@@ -918,7 +909,6 @@
                 <article class="erp-omd-front-panel">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Wnioski projektowe', 'erp-omd'); ?></h2>
-                        <p><?php esc_html_e('Lista zgłoszeń widocznych dla Ciebie: własne wnioski oraz wnioski przypisane do Ciebie jako preferowanego managera.', 'erp-omd'); ?></p>
                     </div>
 
                     <?php if ($project_requests) : ?>

@@ -12,6 +12,27 @@
     color: var(--erp-omd-text);
 }
 
+
+#time-project {
+  background: none;
+}
+
+#time-role {
+  background: none;
+}
+
+.wp-core-ui select:disable {
+	background: none !important;
+}
+
+.tablenav {
+	height: 40px;
+}
+
+.tablenav .actions select {
+	border-radius: 40px;
+}
+
 .erp-omd-admin.wrap {
     background: linear-gradient(180deg, #fbfaf8 0%, #f5f1ea 100%);
     border-radius: 24px;
@@ -708,7 +729,7 @@
 
 .erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact input,
 .erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact select {
-    max-width: 260px;
+    max-width: 440px;
 }
 
 .erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact select {
@@ -977,8 +998,8 @@
 .erp-omd-admin .button-primary {
     border-radius: 999px;
     font-weight: 600;
-    min-height: 38px;
-    padding: 0 16px;
+    min-height: 46px;
+    padding: 0 26px;
     transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
@@ -1001,6 +1022,7 @@
     background: var(--erp-omd-text);
     border-color: var(--erp-omd-text);
     color: #fff;
+	padding: 8px 20px;
 }
 
 .erp-omd-admin .button-primary:hover,
@@ -1026,7 +1048,7 @@
     box-shadow: none;
     color: var(--erp-omd-text);
     min-height: 44px;
-    padding: 10px 14px;
+    padding: 8px 14px;
 }
 
 .erp-omd-admin textarea {
@@ -1063,9 +1085,7 @@
     border-bottom: 1px solid var(--erp-omd-border);
     color: var(--erp-omd-text-muted);
     font-size: 12px;
-    letter-spacing: 0.06em;
     padding: 14px 16px;
-    text-transform: uppercase;
 }
 
 .erp-omd-admin table.widefat td {
@@ -1113,6 +1133,7 @@
 .erp-omd-admin .nav-tab-wrapper,
 .erp-omd-admin .erp-omd-nav-tabs {
     border-bottom-color: var(--erp-omd-border);
+	padding-bottom: 24px;
 }
 
 .erp-omd-admin .nav-tab {

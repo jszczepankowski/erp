@@ -2,7 +2,7 @@
     <div class="erp-omd-dashboard-hero">
         <div class="erp-omd-dashboard-hero-copy">
             <h1><?php esc_html_e('ERP OMD — Dashboard', 'erp-omd'); ?></h1>
-            <p><?php esc_html_e('Premiumowy, spokojny cockpit operacyjny: najważniejsze liczby, skróty i alerty w jednej, czystej warstwie roboczej.', 'erp-omd'); ?></p>
+
         </div>
         <div class="erp-omd-kpi-grid">
             <div class="erp-omd-kpi">
@@ -96,7 +96,6 @@
     <section class="erp-omd-metric-section">
         <div class="erp-omd-section-header">
             <h2><?php printf(esc_html__('Puls operacyjny za %s', 'erp-omd'), esc_html($reporting_month_label)); ?></h2>
-            <p><?php esc_html_e('Najważniejsze liczniki operacyjne i finansowe w jednym, szerokim układzie.', 'erp-omd'); ?></p>
         </div>
         <div class="erp-omd-metric-strip">
             <?php foreach ($dashboard_metric_tiles as $tile) : ?>
@@ -152,7 +151,6 @@
             <div class="erp-omd-chart-header">
                 <div>
                     <h2><?php esc_html_e('Mapa alertów', 'erp-omd'); ?></h2>
-                    <p><?php esc_html_e('Rozkład aktywnych alertów pomaga szybciej ocenić, czy dominują błędy, ostrzeżenia czy informacje operacyjne.', 'erp-omd'); ?></p>
                 </div>
             </div>
             <div class="erp-omd-donut-chart">

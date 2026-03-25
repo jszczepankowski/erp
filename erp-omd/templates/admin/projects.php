@@ -6,7 +6,6 @@
             <?php wp_nonce_field('erp_omd_save_project'); ?>
             <input type="hidden" name="erp_omd_action" value="save_project" />
             <input type="hidden" name="id" value="<?php echo esc_attr($project['id'] ?? ''); ?>" />
-            <p class="erp-omd-form-intro"><?php esc_html_e('Formularz projektu jest podzielony na logiczne bloki, a krótsze pola korzystają z układu dwukolumnowego na szerszych ekranach.', 'erp-omd'); ?></p>
             <div class="erp-omd-form-sections">
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
@@ -36,7 +35,6 @@
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Finanse i lifecycle', 'erp-omd'); ?></h3>
-                        <p><?php esc_html_e('Budżet, daty, owner i progi ryzyka w jednym bloku.', 'erp-omd'); ?></p>
                     </div>
                     <div class="erp-omd-form-grid erp-omd-form-grid-project-lifecycle">
                         <div id="erp-omd-project-budget-row" class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-span-2">
@@ -88,7 +86,7 @@
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="project-alert-threshold"><?php esc_html_e('Próg marży projektu (%)', 'erp-omd'); ?></label>
                             <input id="project-alert-threshold" type="number" step="0.01" min="0" name="alert_margin_threshold" value="<?php echo esc_attr($project['alert_margin_threshold'] ?? ''); ?>" />
-                            <p class="description"><?php esc_html_e('Opcjonalnie nadpisuje próg klienta lub globalny próg alertów.', 'erp-omd'); ?></p>
+                            <p class="description"><?php esc_html_e('Nadpisuje próg klienta / globalny próg alertów.', 'erp-omd'); ?></p>
                         </div>
                     </div>
                 </section>

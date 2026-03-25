@@ -8,12 +8,10 @@
                 <?php wp_nonce_field('erp_omd_save_role'); ?>
                 <input type="hidden" name="erp_omd_action" value="save_role" />
                 <input type="hidden" name="id" value="<?php echo esc_attr($role['id'] ?? ''); ?>" />
-                <p class="erp-omd-form-intro"><?php esc_html_e('Role korzystają teraz z tego samego sekcyjnego układu co projekty i kosztorysy, więc edycja jest bardziej przewidywalna.', 'erp-omd'); ?></p>
                 <div class="erp-omd-form-sections">
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Definicja roli', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Nazwa, slug i status publikacji roli projektowej.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-role-definition">
                             <div class="erp-omd-form-field">
