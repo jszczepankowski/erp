@@ -470,6 +470,7 @@ class ERP_OMD_Installer
         add_option('erp_omd_alert_margin_threshold', 10);
         add_option('erp_omd_front_login_logo_id', 0);
         add_option('erp_omd_front_login_cover_id', 0);
+        add_option('erp_omd_notification_sender_email', '');
         self::maybe_cleanup_legacy_time_entry_indexes();
     }
 

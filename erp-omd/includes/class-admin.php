@@ -536,6 +536,7 @@ class ERP_OMD_Admin
         $notification_settings['mode'] = in_array($notification_settings['mode'], ['after_x_days', 'day_of_month'], true) ? $notification_settings['mode'] : 'after_x_days';
         $notification_settings['after_days'] = max(1, (int) $notification_settings['after_days']);
         $notification_settings['day_of_month'] = min(31, max(1, (int) $notification_settings['day_of_month']));
+        $notification_sender_email = sanitize_email((string) get_option('erp_omd_notification_sender_email', ''));
 
         $notification_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
         $employees = $this->employees->all();
@@ -1696,6 +1697,10 @@ class ERP_OMD_Admin
             'subject' => sanitize_text_field(wp_unslash($_POST['missing_hours_mail_subject'] ?? $defaults['subject'])),
             'body' => wp_kses_post(wp_unslash($_POST['missing_hours_mail_body'] ?? $defaults['body'])),
         ];
+        $notification_sender_email = sanitize_email(wp_unslash($_POST['notification_sender_email'] ?? ''));
+        if ($notification_sender_email !== '' && ! is_email($notification_sender_email)) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres nadawcy e-mail jest niepoprawny.', 'erp-omd'));
+        }
 
         $active_recipients = array_values(array_filter(array_map('intval', wp_unslash($_POST['missing_hours_recipients_active'] ?? []))));
         $existing_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
@@ -1720,6 +1725,7 @@ class ERP_OMD_Admin
         update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
         update_option('erp_omd_missing_hours_notification_settings', $notification_settings);
         update_option('erp_omd_missing_hours_notification_recipients', $recipient_state);
+        update_option('erp_omd_notification_sender_email', $notification_sender_email);
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
 
