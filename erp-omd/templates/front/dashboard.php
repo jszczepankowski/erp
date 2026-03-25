@@ -28,6 +28,27 @@
                 <div class="erp-omd-front-notice erp-omd-front-notice-<?php echo esc_attr($manager_notice_type); ?>"><?php echo esc_html($manager_notice_message); ?></div>
             <?php endif; ?>
 
+            <?php
+            $manager_tabs = [
+                'dodaj-wpis' => __('Dodaj wpis', 'erp-omd'),
+                'projekty' => __('Projekty', 'erp-omd'),
+                'kosztorysy' => __('Kosztorysy', 'erp-omd'),
+                'akceptacje' => __('Akceptacje', 'erp-omd'),
+                'wnioski' => __('Wnioski', 'erp-omd'),
+            ];
+            ?>
+            <nav class="erp-omd-front-inline-actions erp-omd-front-tabs" aria-label="<?php esc_attr_e('Nawigacja panelu managera', 'erp-omd'); ?>">
+                <?php foreach ($manager_tabs as $manager_tab_key => $manager_tab_label) : ?>
+                    <button
+                        type="button"
+                        class="erp-omd-front-button erp-omd-front-button-ghost"
+                        data-manager-tab-button="<?php echo esc_attr($manager_tab_key); ?>"
+                    >
+                        <?php echo esc_html($manager_tab_label); ?>
+                    </button>
+                <?php endforeach; ?>
+            </nav>
+
             <div class="erp-omd-front-grid erp-omd-front-grid-summary">
                 <article class="erp-omd-front-panel" data-collapsible-section="manager-projects">
                     <h2><?php esc_html_e('Twoje konto', 'erp-omd'); ?></h2>
@@ -65,7 +86,78 @@
                 </article>
             </div>
 
-            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-full">
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-full" data-manager-tab-pane="dodaj-wpis">
+                <article class="erp-omd-front-panel">
+                    <div class="erp-omd-front-section-heading">
+                        <h2><?php esc_html_e('Dodaj wpis czasu', 'erp-omd'); ?></h2>
+                        <p><?php esc_html_e('Dodaj nowy wpis czasu jako manager dla aktywnego projektu, którym zarządzasz.', 'erp-omd'); ?></p>
+                    </div>
+                    <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-form">
+                        <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                        <input type="hidden" name="erp_omd_front_action" value="save_manager_time_entry">
+
+                        <div class="erp-omd-front-form-row erp-omd-front-form-row-time-context">
+                            <div>
+                                <label for="erp-omd-manager-time-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                                <select id="erp-omd-manager-time-client" name="client_id" required>
+                                    <option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
+                                    <?php foreach ($manager_time_clients as $manager_time_client) : ?>
+                                        <option value="<?php echo esc_attr((string) ($manager_time_client['id'] ?? 0)); ?>" <?php selected((int) ($manager_time_defaults['client_id'] ?? 0), (int) ($manager_time_client['id'] ?? 0)); ?>>
+                                            <?php echo esc_html($manager_time_client['name'] ?? '—'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="erp-omd-manager-time-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
+                                <select id="erp-omd-manager-time-project" name="project_id" required>
+                                    <option value=""><?php esc_html_e('Wybierz projekt klienta', 'erp-omd'); ?></option>
+                                    <?php foreach ($manager_time_projects as $manager_time_project) : ?>
+                                        <option
+                                            value="<?php echo esc_attr((string) ($manager_time_project['id'] ?? 0)); ?>"
+                                            data-client-id="<?php echo esc_attr((string) ($manager_time_project['client_id'] ?? 0)); ?>"
+                                            <?php selected((int) ($manager_time_defaults['project_id'] ?? 0), (int) ($manager_time_project['id'] ?? 0)); ?>
+                                        >
+                                            <?php echo esc_html($manager_time_project['name'] ?? '—'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="erp-omd-manager-time-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label>
+                                <select id="erp-omd-manager-time-role" name="role_id" required>
+                                    <option value=""><?php esc_html_e('Wybierz rolę', 'erp-omd'); ?></option>
+                                    <?php foreach ($manager_time_roles as $manager_time_role) : ?>
+                                        <option value="<?php echo esc_attr((string) ($manager_time_role['id'] ?? 0)); ?>" <?php selected((int) ($manager_time_defaults['role_id'] ?? 0), (int) ($manager_time_role['id'] ?? 0)); ?>>
+                                            <?php echo esc_html($manager_time_role['name'] ?? '—'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="erp-omd-front-form-row">
+                            <div>
+                                <label for="erp-omd-manager-time-hours"><?php esc_html_e('Godziny', 'erp-omd'); ?></label>
+                                <input id="erp-omd-manager-time-hours" name="hours" type="number" min="0.25" step="0.25" value="<?php echo esc_attr((string) ($manager_time_defaults['hours'] ?? '')); ?>" required>
+                            </div>
+                            <div>
+                                <label for="erp-omd-manager-time-entry-date"><?php esc_html_e('Data', 'erp-omd'); ?></label>
+                                <input id="erp-omd-manager-time-entry-date" name="entry_date" type="date" value="<?php echo esc_attr((string) ($manager_time_defaults['entry_date'] ?? current_time('Y-m-d'))); ?>" required>
+                            </div>
+                        </div>
+
+                        <label for="erp-omd-manager-time-description"><?php esc_html_e('Opis pracy', 'erp-omd'); ?></label>
+                        <textarea id="erp-omd-manager-time-description" name="description" rows="4" required><?php echo esc_textarea((string) ($manager_time_defaults['description'] ?? '')); ?></textarea>
+
+                        <div class="erp-omd-front-inline-actions">
+                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Dodaj wpis czasu', 'erp-omd'); ?></button>
+                        </div>
+                    </form>
+                </article>
+            </div>
+
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-full" data-manager-tab-pane="projekty">
                 <article class="erp-omd-front-panel">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Twoje projekty', 'erp-omd'); ?></h2>
@@ -73,8 +165,50 @@
                     </div>
 
                     <?php if ($managed_projects) : ?>
+                        <?php
+                        $project_filter_clients = [];
+                        $project_filter_statuses = [];
+                        $project_filter_billing_types = [];
+                        foreach ($managed_projects as $managed_project_row) {
+                            $project_filter_clients[(string) ($managed_project_row['client_name'] ?? '—')] = (string) ($managed_project_row['client_name'] ?? '—');
+                            $project_filter_statuses[(string) ($managed_project_row['status'] ?? '')] = $this->project_status_label((string) ($managed_project_row['status'] ?? ''));
+                            $project_filter_billing_types[(string) ($managed_project_row['billing_type'] ?? '')] = $this->billing_type_label((string) ($managed_project_row['billing_type'] ?? ''));
+                        }
+                        asort($project_filter_clients);
+                        asort($project_filter_statuses);
+                        asort($project_filter_billing_types);
+                        ?>
+                        <form class="erp-omd-front-filter-form erp-omd-front-project-filter-form" data-project-table-filters="1" onsubmit="return false;">
+                            <div>
+                                <label for="erp-omd-front-projects-filter-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                                <select id="erp-omd-front-projects-filter-client" data-project-filter="client">
+                                    <option value=""><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option>
+                                    <?php foreach ($project_filter_clients as $project_filter_client_value => $project_filter_client_label) : ?>
+                                        <option value="<?php echo esc_attr($project_filter_client_value); ?>"><?php echo esc_html($project_filter_client_label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="erp-omd-front-projects-filter-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
+                                <select id="erp-omd-front-projects-filter-status" data-project-filter="status">
+                                    <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
+                                    <?php foreach ($project_filter_statuses as $project_filter_status_value => $project_filter_status_label) : ?>
+                                        <option value="<?php echo esc_attr($project_filter_status_value); ?>"><?php echo esc_html($project_filter_status_label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="erp-omd-front-projects-filter-billing"><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></label>
+                                <select id="erp-omd-front-projects-filter-billing" data-project-filter="billing-type">
+                                    <option value=""><?php esc_html_e('Wszystkie typy', 'erp-omd'); ?></option>
+                                    <?php foreach ($project_filter_billing_types as $project_filter_billing_value => $project_filter_billing_label) : ?>
+                                        <option value="<?php echo esc_attr($project_filter_billing_value); ?>"><?php echo esc_html($project_filter_billing_label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </form>
                         <div class="erp-omd-front-table-wrap">
-                            <table class="erp-omd-front-table">
+                            <table class="erp-omd-front-table erp-omd-front-table-sortable" data-projects-table="1">
                                 <thead>
                                     <tr>
                                         <th><?php esc_html_e('ID', 'erp-omd'); ?></th>
@@ -105,7 +239,12 @@
                                             $front_manager_url
                                         ) . '#project-detail';
                                         ?>
-                                        <tr class="<?php echo $selected_project && (int) ($selected_project['id'] ?? 0) === $project_id ? 'erp-omd-front-table-row-active' : ''; ?>">
+                                        <tr
+                                            class="<?php echo $selected_project && (int) ($selected_project['id'] ?? 0) === $project_id ? 'erp-omd-front-table-row-active' : ''; ?>"
+                                            data-client="<?php echo esc_attr((string) ($project['client_name'] ?? '—')); ?>"
+                                            data-status="<?php echo esc_attr((string) ($project['status'] ?? '')); ?>"
+                                            data-billing-type="<?php echo esc_attr((string) ($project['billing_type'] ?? '')); ?>"
+                                        >
                                             <td><?php echo esc_html((string) $project_id); ?></td>
                                             <td><?php echo esc_html($project['client_name'] ?? '—'); ?></td>
                                             <td><?php echo esc_html($project['name'] ?? ('#' . $project_id)); ?></td>
@@ -288,7 +427,7 @@
                 </article>
             </div>
 
-            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-thirty-seventy erp-omd-front-estimates-section">
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-thirty-seventy erp-omd-front-estimates-section" data-manager-tab-pane="kosztorysy">
                 <article class="erp-omd-front-panel erp-omd-front-panel-form" data-collapsible-section="manager-new-estimate">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy kosztorys', 'erp-omd'); ?></h2>
@@ -580,7 +719,7 @@
                 </article>
             </div>
 
-            <div class="erp-omd-front-panel" data-collapsible-section="manager-approval-queue">
+            <div class="erp-omd-front-panel" data-collapsible-section="manager-approval-queue" data-manager-tab-pane="akceptacje">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Kolejka wpisów czasu do akceptacji', 'erp-omd'); ?></h2>
                     <p><?php esc_html_e('Szybkie decyzje operacyjne dla wpisów w statusie „submitted” przypisanych do Twoich projektów.', 'erp-omd'); ?></p>
@@ -602,7 +741,7 @@
                 </div>
 
                 <div class="erp-omd-front-table-wrap">
-                    <table class="erp-omd-front-table">
+                    <table class="erp-omd-front-table erp-omd-front-table-sortable" data-table-enhanced="1" data-table-title="<?php esc_attr_e('Kolejka wpisów do akceptacji', 'erp-omd'); ?>">
                         <thead>
                             <tr>
                                 <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
@@ -655,7 +794,7 @@
                 </div>
             </div>
 
-            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-third">
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-third" data-manager-tab-pane="wnioski">
                 <article class="erp-omd-front-panel" data-collapsible-section="manager-new-request">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy wniosek projektowy', 'erp-omd'); ?></h2>
@@ -809,6 +948,275 @@
     </main>
     <script>
     (function () {
+        var setupManagerTabs = function () {
+            var storageKey = 'erp_omd_front_manager_active_tab';
+            var allowedTabs = ['dodaj-wpis', 'projekty', 'kosztorysy', 'akceptacje', 'wnioski'];
+            var params = new URLSearchParams(window.location.search);
+            var urlTab = params.get('manager_tab');
+            var storedTab = localStorage.getItem(storageKey);
+            var activeTab = allowedTabs.indexOf(urlTab) !== -1 ? urlTab : (allowedTabs.indexOf(storedTab) !== -1 ? storedTab : 'projekty');
+
+            localStorage.setItem(storageKey, activeTab);
+            if (allowedTabs.indexOf(urlTab) === -1) {
+                params.set('manager_tab', activeTab);
+                history.replaceState({}, '', window.location.pathname + '?' + params.toString() + window.location.hash);
+            }
+
+            document.querySelectorAll('[data-manager-tab-pane]').forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-manager-tab-pane') !== activeTab;
+            });
+
+            document.querySelectorAll('[data-manager-tab-button]').forEach(function (button) {
+                var isActive = button.getAttribute('data-manager-tab-button') === activeTab;
+                button.classList.toggle('erp-omd-front-button-primary', isActive);
+                button.classList.toggle('erp-omd-front-button-ghost', !isActive);
+                button.setAttribute('aria-current', isActive ? 'page' : 'false');
+                button.addEventListener('click', function () {
+                    var nextTab = button.getAttribute('data-manager-tab-button');
+                    if (allowedTabs.indexOf(nextTab) === -1) {
+                        return;
+                    }
+                    localStorage.setItem(storageKey, nextTab);
+                    params.set('manager_tab', nextTab);
+                    history.replaceState({}, '', window.location.pathname + '?' + params.toString() + window.location.hash);
+                    document.querySelectorAll('[data-manager-tab-pane]').forEach(function (panel) {
+                        panel.hidden = panel.getAttribute('data-manager-tab-pane') !== nextTab;
+                    });
+                    document.querySelectorAll('[data-manager-tab-button]').forEach(function (candidate) {
+                        var candidateActive = candidate.getAttribute('data-manager-tab-button') === nextTab;
+                        candidate.classList.toggle('erp-omd-front-button-primary', candidateActive);
+                        candidate.classList.toggle('erp-omd-front-button-ghost', !candidateActive);
+                        candidate.setAttribute('aria-current', candidateActive ? 'page' : 'false');
+                    });
+                });
+            });
+        };
+
+        var setupTableEnhancements = function () {
+            var parseSortableValue = function (value) {
+                var normalized = (value || '').replace(/\s+/g, ' ').trim();
+                var numeric = normalized.replace(',', '.').replace(/[^\d.-]/g, '');
+                return numeric !== '' && !Number.isNaN(Number(numeric)) ? Number(numeric) : normalized.toLowerCase();
+            };
+
+            document.querySelectorAll('table[data-table-enhanced="1"]').forEach(function (table) {
+                var tbody = table.querySelector('tbody');
+                if (!tbody) {
+                    return;
+                }
+
+                var allRows = Array.from(tbody.querySelectorAll('tr'));
+                if (allRows.length === 0) {
+                    return;
+                }
+
+                var wrap = table.closest('.erp-omd-front-table-wrap');
+                var controls = document.createElement('div');
+                controls.className = 'erp-omd-front-table-tools';
+                controls.innerHTML =
+                    '<label class="erp-omd-front-table-search">' +
+                        '<span><?php echo esc_js(__('Szukaj:', 'erp-omd')); ?></span>' +
+                        '<input type="search" class="erp-omd-front-table-search-input" placeholder="<?php echo esc_js(__('np. klient / projekt / status', 'erp-omd')); ?>">' +
+                    '</label>' +
+                    '<span class="erp-omd-front-table-results"></span>';
+                if (wrap) {
+                    wrap.parentNode.insertBefore(controls, wrap);
+                }
+
+                var searchInput = controls.querySelector('.erp-omd-front-table-search-input');
+                var resultsNode = controls.querySelector('.erp-omd-front-table-results');
+                var activeSort = { index: -1, dir: 'asc' };
+
+                var applyView = function () {
+                    var query = ((searchInput && searchInput.value) || '').toLowerCase().trim();
+                    var visibleRows = [];
+
+                    allRows.forEach(function (row) {
+                        var matches = query === '' || row.textContent.toLowerCase().indexOf(query) !== -1;
+                        row.hidden = !matches;
+                        if (matches) {
+                            visibleRows.push(row);
+                        }
+                    });
+
+                    if (activeSort.index >= 0) {
+                        visibleRows.sort(function (rowA, rowB) {
+                            var cellA = rowA.children[activeSort.index];
+                            var cellB = rowB.children[activeSort.index];
+                            var valueA = parseSortableValue(cellA ? cellA.textContent : '');
+                            var valueB = parseSortableValue(cellB ? cellB.textContent : '');
+                            if (valueA === valueB) {
+                                return 0;
+                            }
+                            var comparison = valueA > valueB ? 1 : -1;
+                            return activeSort.dir === 'asc' ? comparison : -comparison;
+                        });
+                        visibleRows.forEach(function (row) {
+                            tbody.appendChild(row);
+                        });
+                    }
+
+                    resultsNode.textContent = '<?php echo esc_js(__('Widoczne wiersze:', 'erp-omd')); ?> ' + visibleRows.length + '/' + allRows.length;
+                };
+
+                table.querySelectorAll('thead th').forEach(function (header, index) {
+                    if (header.textContent.trim() === '<?php echo esc_js(__('Akcja', 'erp-omd')); ?>' || header.textContent.trim() === '<?php echo esc_js(__('Akcje', 'erp-omd')); ?>') {
+                        return;
+                    }
+                    header.classList.add('erp-omd-front-table-th-sortable');
+                    header.addEventListener('click', function () {
+                        if (activeSort.index === index) {
+                            activeSort.dir = activeSort.dir === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            activeSort.index = index;
+                            activeSort.dir = 'asc';
+                        }
+                        table.querySelectorAll('thead th').forEach(function (th) {
+                            th.removeAttribute('data-sort-dir');
+                        });
+                        header.setAttribute('data-sort-dir', activeSort.dir);
+                        applyView();
+                    });
+                });
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyView);
+                }
+                applyView();
+            });
+        };
+
+        var setupProjectsTableFilters = function () {
+            var table = document.querySelector('table[data-projects-table="1"]');
+            if (!table) {
+                return;
+            }
+
+            var tbody = table.querySelector('tbody');
+            if (!tbody) {
+                return;
+            }
+
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+            var form = document.querySelector('[data-project-table-filters="1"]');
+            if (!form || rows.length === 0) {
+                return;
+            }
+
+            var clientFilter = form.querySelector('[data-project-filter="client"]');
+            var statusFilter = form.querySelector('[data-project-filter="status"]');
+            var billingTypeFilter = form.querySelector('[data-project-filter="billing-type"]');
+            var sortState = { index: -1, dir: 'asc' };
+
+            var applyFiltersAndSort = function () {
+                var selectedClient = clientFilter ? clientFilter.value : '';
+                var selectedStatus = statusFilter ? statusFilter.value : '';
+                var selectedBillingType = billingTypeFilter ? billingTypeFilter.value : '';
+                var visibleRows = [];
+
+                rows.forEach(function (row) {
+                    var matchesClient = selectedClient === '' || row.getAttribute('data-client') === selectedClient;
+                    var matchesStatus = selectedStatus === '' || row.getAttribute('data-status') === selectedStatus;
+                    var matchesBillingType = selectedBillingType === '' || row.getAttribute('data-billing-type') === selectedBillingType;
+                    var isVisible = matchesClient && matchesStatus && matchesBillingType;
+                    row.hidden = !isVisible;
+                    if (isVisible) {
+                        visibleRows.push(row);
+                    }
+                });
+
+                if (sortState.index >= 0) {
+                    visibleRows.sort(function (rowA, rowB) {
+                        var cellA = rowA.children[sortState.index];
+                        var cellB = rowB.children[sortState.index];
+                        var valueA = (cellA ? cellA.textContent : '').trim().toLowerCase();
+                        var valueB = (cellB ? cellB.textContent : '').trim().toLowerCase();
+                        var numericA = Number(valueA.replace(',', '.').replace(/[^\d.-]/g, ''));
+                        var numericB = Number(valueB.replace(',', '.').replace(/[^\d.-]/g, ''));
+                        var comparableA = Number.isNaN(numericA) ? valueA : numericA;
+                        var comparableB = Number.isNaN(numericB) ? valueB : numericB;
+                        if (comparableA === comparableB) {
+                            return 0;
+                        }
+                        var comparison = comparableA > comparableB ? 1 : -1;
+                        return sortState.dir === 'asc' ? comparison : -comparison;
+                    });
+                    visibleRows.forEach(function (row) {
+                        tbody.appendChild(row);
+                    });
+                }
+            };
+
+            table.querySelectorAll('thead th').forEach(function (header, index) {
+                if (header.textContent.trim() === '<?php echo esc_js(__('Akcja', 'erp-omd')); ?>') {
+                    return;
+                }
+                header.classList.add('erp-omd-front-table-th-sortable');
+                header.addEventListener('click', function () {
+                    if (sortState.index === index) {
+                        sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortState.index = index;
+                        sortState.dir = 'asc';
+                    }
+                    table.querySelectorAll('thead th').forEach(function (th) {
+                        th.removeAttribute('data-sort-dir');
+                    });
+                    header.setAttribute('data-sort-dir', sortState.dir);
+                    applyFiltersAndSort();
+                });
+            });
+
+            [clientFilter, statusFilter, billingTypeFilter].forEach(function (filterField) {
+                if (!filterField) {
+                    return;
+                }
+                filterField.addEventListener('change', applyFiltersAndSort);
+            });
+
+            applyFiltersAndSort();
+        };
+
+        var setupManagerTimeEntryForm = function () {
+            var clientInput = document.getElementById('erp-omd-manager-time-client');
+            var projectInput = document.getElementById('erp-omd-manager-time-project');
+            if (!clientInput || !projectInput) {
+                return;
+            }
+
+            var syncProjectOptions = function () {
+                var selectedClientId = clientInput.value;
+                var hasVisibleSelectedOption = false;
+
+                Array.prototype.forEach.call(projectInput.options, function (option) {
+                    if (option.value === '') {
+                        option.hidden = false;
+                        return;
+                    }
+
+                    var optionClientId = option.getAttribute('data-client-id') || '';
+                    var visible = selectedClientId !== '' && optionClientId === selectedClientId;
+                    option.hidden = !visible;
+
+                    if (visible && option.selected) {
+                        hasVisibleSelectedOption = true;
+                    }
+                });
+
+                if (!hasVisibleSelectedOption) {
+                    projectInput.value = '';
+                }
+            };
+
+            clientInput.addEventListener('change', syncProjectOptions);
+            syncProjectOptions();
+        };
+
+        setupManagerTabs();
+        setupTableEnhancements();
+        setupProjectsTableFilters();
+        setupManagerTimeEntryForm();
+
         var setupCollapsibleSections = function () {
             var storagePrefix = 'erp_omd_front_manager_section_';
             document.querySelectorAll('[data-collapsible-section]').forEach(function (panel) {
@@ -869,70 +1277,68 @@
         var netNode = document.getElementById('erp-omd-front-estimate-net');
         var taxNode = document.getElementById('erp-omd-front-estimate-tax');
         var grossNode = document.getElementById('erp-omd-front-estimate-gross');
-        if (!itemsContainer || !addButton || !netNode || !taxNode || !grossNode) {
-            return;
-        }
 
-        var formatAmount = function (value) { return Number(value || 0).toFixed(2); };
-        var updateTotals = function () {
-            var net = 0;
-            itemsContainer.querySelectorAll('.erp-omd-front-estimate-item-row').forEach(function (row) {
-                var qtyInput = row.querySelector('input[name="item_qty[]"]');
-                var priceInput = row.querySelector('input[name="item_price[]"]');
-                var qty = parseFloat(qtyInput ? qtyInput.value : '0');
-                var price = parseFloat(priceInput ? priceInput.value : '0');
-                net += qty * price;
-            });
-            var tax = net * 0.23;
-            var gross = net + tax;
-            netNode.textContent = formatAmount(net);
-            taxNode.textContent = formatAmount(tax);
-            grossNode.textContent = formatAmount(gross);
-        };
-
-        var bindRow = function (row) {
-            row.querySelectorAll('input').forEach(function (input) {
-                input.addEventListener('input', updateTotals);
-            });
-            var removeButton = row.querySelector('.erp-omd-front-remove-item');
-            if (removeButton) {
-                removeButton.addEventListener('click', function () {
-                    if (itemsContainer.querySelectorAll('.erp-omd-front-estimate-item-row').length <= 1) {
-                        return;
-                    }
-                    row.remove();
-                    updateTotals();
+        if (itemsContainer && addButton && netNode && taxNode && grossNode) {
+            var formatAmount = function (value) { return Number(value || 0).toFixed(2); };
+            var updateTotals = function () {
+                var net = 0;
+                itemsContainer.querySelectorAll('.erp-omd-front-estimate-item-row').forEach(function (row) {
+                    var qtyInput = row.querySelector('input[name="item_qty[]"]');
+                    var priceInput = row.querySelector('input[name="item_price[]"]');
+                    var qty = parseFloat(qtyInput ? qtyInput.value : '0');
+                    var price = parseFloat(priceInput ? priceInput.value : '0');
+                    net += qty * price;
                 });
-            }
-        };
+                var tax = net * 0.23;
+                var gross = net + tax;
+                netNode.textContent = formatAmount(net);
+                taxNode.textContent = formatAmount(tax);
+                grossNode.textContent = formatAmount(gross);
+            };
 
-        var firstRow = itemsContainer.querySelector('.erp-omd-front-estimate-item-row');
-        if (firstRow) {
-            bindRow(firstRow);
-        }
+            var bindRow = function (row) {
+                row.querySelectorAll('input').forEach(function (input) {
+                    input.addEventListener('input', updateTotals);
+                });
+                var removeButton = row.querySelector('.erp-omd-front-remove-item');
+                if (removeButton) {
+                    removeButton.addEventListener('click', function () {
+                        if (itemsContainer.querySelectorAll('.erp-omd-front-estimate-item-row').length <= 1) {
+                            return;
+                        }
+                        row.remove();
+                        updateTotals();
+                    });
+                }
+            };
 
-        addButton.addEventListener('click', function () {
-            var row = itemsContainer.querySelector('.erp-omd-front-estimate-item-row');
-            if (!row) {
-                return;
+            var firstRow = itemsContainer.querySelector('.erp-omd-front-estimate-item-row');
+            if (firstRow) {
+                bindRow(firstRow);
             }
-            var clone = row.cloneNode(true);
-            clone.querySelectorAll('input[type="text"], textarea').forEach(function (node) { node.value = ''; });
-            clone.querySelectorAll('input[type="number"]').forEach(function (node) {
-                node.value = node.name === 'item_qty[]' ? '1' : '0';
+
+            addButton.addEventListener('click', function () {
+                var row = itemsContainer.querySelector('.erp-omd-front-estimate-item-row');
+                if (!row) {
+                    return;
+                }
+                var clone = row.cloneNode(true);
+                clone.querySelectorAll('input[type="text"], textarea').forEach(function (node) { node.value = ''; });
+                clone.querySelectorAll('input[type="number"]').forEach(function (node) {
+                    node.value = node.name === 'item_qty[]' ? '1' : '0';
+                });
+                if (!clone.querySelector('.erp-omd-front-remove-item')) {
+                    var removeWrap = document.createElement('div');
+                    removeWrap.className = 'erp-omd-front-inline-actions';
+                    removeWrap.innerHTML = '<button type="button" class="erp-omd-front-button erp-omd-front-button-ghost erp-omd-front-remove-item"><?php echo esc_js(__('Usuń pozycję', 'erp-omd')); ?></button>';
+                    clone.appendChild(removeWrap);
+                }
+                itemsContainer.appendChild(clone);
+                bindRow(clone);
+                updateTotals();
             });
-            if (!clone.querySelector('.erp-omd-front-remove-item')) {
-                var removeWrap = document.createElement('div');
-                removeWrap.className = 'erp-omd-front-inline-actions';
-                removeWrap.innerHTML = '<button type="button" class="erp-omd-front-button erp-omd-front-button-ghost erp-omd-front-remove-item"><?php echo esc_js(__('Usuń pozycję', 'erp-omd')); ?></button>';
-                clone.appendChild(removeWrap);
-            }
-            itemsContainer.appendChild(clone);
-            bindRow(clone);
             updateTotals();
-        });
-
-        updateTotals();
+        }
     })();
     </script>
     <?php wp_footer(); ?>
