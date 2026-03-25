@@ -38,7 +38,7 @@
                     </ul>
                 </article>
 
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="worker-time-list">
                     <h2><?php esc_html_e('Szybkie podsumowanie', 'erp-omd'); ?></h2>
                     <div class="erp-omd-front-metrics">
                         <div class="erp-omd-front-metric">
@@ -226,7 +226,7 @@
                     </form>
                 </article>
 
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="worker-time-list">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Twoje wpisy czasu', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Filtry są lokalne dla Twojego widoku i nie pokazują wpisów innych pracowników.', 'erp-omd'); ?></p>
@@ -242,6 +242,17 @@
                         <div>
                             <label for="erp-omd-front-filter-month"><?php esc_html_e('Miesiąc kalendarza', 'erp-omd'); ?></label>
                             <input id="erp-omd-front-filter-month" type="month" name="calendar_month" value="<?php echo esc_attr((string) ($worker_filters['calendar_month'] ?? '')); ?>">
+                        </div>
+                        <div>
+                            <label for="erp-omd-front-filter-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                            <select id="erp-omd-front-filter-client" name="client_id" data-project-target="#erp-omd-front-filter-project">
+                                <option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option>
+                                <?php foreach ($available_clients as $client_item) : ?>
+                                    <option value="<?php echo esc_attr((string) $client_item['id']); ?>" <?php selected((int) ($worker_filters['client_id'] ?? 0), (int) $client_item['id']); ?>>
+                                        <?php echo esc_html($client_item['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div>
                             <label for="erp-omd-front-filter-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
@@ -295,6 +306,7 @@
                             <thead>
                                 <tr>
                                     <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Klient', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Rola', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Godz.', 'erp-omd'); ?></th>
@@ -308,6 +320,7 @@
                                     <?php foreach ($time_entries as $time_entry) : ?>
                                         <tr>
                                             <td><?php echo esc_html($time_entry['entry_date']); ?></td>
+                                            <td><?php echo esc_html($time_entry['client_name'] ?? '—'); ?></td>
                                             <td><?php echo esc_html($time_entry['project_name'] ?? '—'); ?></td>
                                             <td><?php echo esc_html($time_entry['role_name'] ?? '—'); ?></td>
                                             <td><?php echo esc_html(number_format_i18n((float) ($time_entry['hours'] ?? 0), 2)); ?></td>
@@ -341,7 +354,7 @@
                                     <?php endforeach; ?>
                                 <?php else : ?>
                                     <tr>
-                                        <td colspan="7"><?php esc_html_e('Brak wpisów spełniających aktualne filtry.', 'erp-omd'); ?></td>
+                                        <td colspan="8"><?php esc_html_e('Brak wpisów spełniających aktualne filtry.', 'erp-omd'); ?></td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>

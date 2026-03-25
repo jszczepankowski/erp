@@ -310,7 +310,14 @@ background-image: none !important;
 .erp-omd-front-template-list {
     display: grid;
     gap: 10px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     margin-top: 10px;
+}
+
+@media (max-width: 1200px) {
+    .erp-omd-front-template-list {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
 }
 
 .erp-omd-front-template-button {

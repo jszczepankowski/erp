@@ -3,6 +3,14 @@
 > Ten dokument jest „kotwicą” do dalszej pracy.  
 > Jeżeli w kolejnej rozmowie padnie hasło **FRONT**, wracamy do tego planu jako uzgodnionego backlogu i punktu startowego.
 
+## Hasła robocze
+
+### TABY
+
+- Kierunek UX: **hybryda nawigacji sekcji panelu frontowego**:
+  - desktop: side-menu + przewijanie do sekcji (anchor/scroll-spy),
+  - mobile: przełączane taby dla kluczowych obszarów.
+
 ## 1. Cel etapu FRONT
 
 Celem etapu **FRONT** jest dobudowanie do istniejącego systemu ERP OMD osobnej warstwy frontendowej dla:
