@@ -225,9 +225,9 @@
                                 <label for="erp-omd-worker-request-billing-type"><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></label>
                                 <select id="erp-omd-worker-request-billing-type" name="billing_type">
                                     <?php foreach ([
-                                        'time_material' => __('Time & Material', 'erp-omd'),
-                                        'fixed_price' => __('Fixed price', 'erp-omd'),
-                                        'retainer' => __('Retainer', 'erp-omd'),
+                                        'time_material' => __('Godzinowy', 'erp-omd'),
+                                        'fixed_price' => __('Ryczałt', 'erp-omd'),
+                                        'retainer' => __('Abonament', 'erp-omd'),
                                     ] as $billing_type => $billing_label) : ?>
                                         <option value="<?php echo esc_attr($billing_type); ?>" <?php selected((string) ($worker_request_defaults['billing_type'] ?? 'time_material'), $billing_type); ?>>
                                             <?php echo esc_html($billing_label); ?>
@@ -369,7 +369,7 @@
                                             <td>
                                                 <div class="erp-omd-front-inline-actions">
                                                     <?php if ($this->time_entry_service->can_edit_entry($time_entry, $user)) : ?>
-                                                        <a href="<?php echo esc_url(add_query_arg(['entry_id' => (int) $time_entry['id'], 'tab' => (string) ($worker_filters['tab'] ?? 'wpisy')], $front_worker_url)); ?>" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                                        <a href="<?php echo esc_url(add_query_arg(['entry_id' => (int) $time_entry['id'], 'tab' => 'dodaj-wpis'], $front_worker_url)); ?>" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                                     <?php endif; ?>
 
                                                     <?php if ($this->time_entry_service->can_delete_entry($user, $time_entry)) : ?>
