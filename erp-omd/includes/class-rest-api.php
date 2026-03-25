@@ -679,7 +679,7 @@ class ERP_OMD_REST_API
             'plugin_version' => ERP_OMD_VERSION,
             'db_version' => ERP_OMD_DB_VERSION,
             'billing_types' => [
-                ['value' => 'time_material', 'label' => __('Time & Material', 'erp-omd')],
+                ['value' => 'time_material', 'label' => __('Godzinowy', 'erp-omd')],
                 ['value' => 'fixed_price', 'label' => __('Ryczałt', 'erp-omd')],
                 ['value' => 'retainer', 'label' => __('Abonament', 'erp-omd')],
             ],

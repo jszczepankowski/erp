@@ -838,6 +838,57 @@ background-image: none !important;
     background: #fffdf9;
 }
 
+.erp-omd-front-table-tools {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+    margin: 0 0 10px;
+}
+
+.erp-omd-front-table-search {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.erp-omd-front-table-search-input {
+    background: #fff;
+    border: 1px solid var(--erp-omd-front-border);
+    border-radius: 999px;
+    min-width: 260px;
+    padding: 8px 12px;
+}
+
+.erp-omd-front-table-results {
+    color: var(--erp-omd-front-muted);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.erp-omd-front-table-th-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.erp-omd-front-table-th-sortable::after {
+    color: #b6afa7;
+    content: ' ↕';
+    font-size: 11px;
+}
+
+.erp-omd-front-table-th-sortable[data-sort-dir="asc"]::after {
+    color: var(--erp-omd-front-accent-strong);
+    content: ' ↑';
+}
+
+.erp-omd-front-table-th-sortable[data-sort-dir="desc"]::after {
+    color: var(--erp-omd-front-accent-strong);
+    content: ' ↓';
+}
+
 .erp-omd-front-project-card-active,
 .erp-omd-front-calendar-day-active {
     border-color: var(--erp-omd-front-accent);
