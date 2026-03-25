@@ -1438,7 +1438,16 @@ class ERP_OMD_Admin
         $payload = $this->time_entry_service->prepare($payload);
         $errors = $this->time_entry_service->validate($payload, $id ?: null);
         if ($errors) { $this->redirect_with_notice('erp-omd-time', 'error', implode(' ', $errors), $id ? ['id' => $id] : []); }
-        if ($id) { $this->time_entries->update($id, $payload); $message = __('Wpis czasu został zaktualizowany.', 'erp-omd'); } else { $id = $this->time_entries->create($payload); $message = __('Wpis czasu został dodany.', 'erp-omd'); }
+        if ($id) {
+            $this->time_entries->update($id, $payload);
+            $message = __('Wpis czasu został zaktualizowany.', 'erp-omd');
+        } else {
+            $id = $this->time_entries->create($payload);
+            if ($id <= 0) {
+                $this->redirect_with_notice('erp-omd-time', 'error', __('Nie udało się zapisać wpisu czasu. Sprawdź, czy podobny wpis nie istnieje już w systemie.', 'erp-omd'));
+            }
+            $message = __('Wpis czasu został dodany.', 'erp-omd');
+        }
         $this->project_financial_service->rebuild_for_project((int) $payload['project_id']);
         $this->redirect_with_notice('erp-omd-time', 'success', $message);
     }

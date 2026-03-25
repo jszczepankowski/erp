@@ -455,6 +455,13 @@ class ERP_OMD_Frontend
             $message = __('Wpis czasu został zaktualizowany.', 'erp-omd');
         } else {
             $entry_id = $this->time_entries->create($payload);
+            if ($entry_id <= 0) {
+                $this->redirect_worker_with_notice(
+                    'error',
+                    __('Nie udało się zapisać wpisu czasu. Sprawdź, czy podobny wpis nie istnieje już w systemie.', 'erp-omd'),
+                    array_merge($client_id > 0 ? ['client_id' => $client_id] : [], $selected_day_args)
+                );
+            }
             $message = __('Wpis czasu został dodany.', 'erp-omd');
         }
 

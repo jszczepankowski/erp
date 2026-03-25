@@ -23,7 +23,10 @@ class ERP_OMD_Installer
         $installed_version = get_option('erp_omd_db_version');
         if ($installed_version !== ERP_OMD_DB_VERSION) {
             self::migrate();
+            return;
         }
+
+        self::maybe_cleanup_legacy_time_entry_indexes();
     }
 
     public static function migrate()
@@ -467,6 +470,66 @@ class ERP_OMD_Installer
         add_option('erp_omd_alert_margin_threshold', 10);
         add_option('erp_omd_front_login_logo_id', 0);
         add_option('erp_omd_front_login_cover_id', 0);
+        self::maybe_cleanup_legacy_time_entry_indexes();
+    }
+
+    private static function maybe_cleanup_legacy_time_entry_indexes()
+    {
+        if (get_option('erp_omd_time_entries_index_cleanup_done') === '1') {
+            return;
+        }
+
+        global $wpdb;
+        $time_entries_table = $wpdb->prefix . 'erp_omd_time_entries';
+        self::drop_legacy_time_entry_unique_indexes($time_entries_table);
+        update_option('erp_omd_time_entries_index_cleanup_done', '1');
+    }
+
+    private static function drop_legacy_time_entry_unique_indexes($time_entries_table)
+    {
+        global $wpdb;
+
+        $indexes = $wpdb->get_results("SHOW INDEX FROM {$time_entries_table}", ARRAY_A);
+        if (! is_array($indexes) || $indexes === []) {
+            return;
+        }
+
+        $unique_indexes = [];
+        foreach ($indexes as $index_row) {
+            $index_name = (string) ($index_row['Key_name'] ?? '');
+            if ($index_name === '' || $index_name === 'PRIMARY') {
+                continue;
+            }
+            if ((int) ($index_row['Non_unique'] ?? 1) !== 0) {
+                continue;
+            }
+
+            $sequence = (int) ($index_row['Seq_in_index'] ?? 0);
+            $column_name = (string) ($index_row['Column_name'] ?? '');
+            if ($sequence <= 0 || $column_name === '') {
+                continue;
+            }
+
+            if (! isset($unique_indexes[$index_name])) {
+                $unique_indexes[$index_name] = [];
+            }
+
+            $unique_indexes[$index_name][$sequence] = $column_name;
+        }
+
+        foreach ($unique_indexes as $index_name => $index_columns_by_seq) {
+            ksort($index_columns_by_seq);
+            $index_columns = array_values($index_columns_by_seq);
+            $contains_legacy_columns = count(array_intersect($index_columns, ['employee_id', 'project_id', 'role_id', 'hours'])) === 4;
+            $contains_entry_date = in_array('entry_date', $index_columns, true);
+
+            if (! $contains_legacy_columns || $contains_entry_date) {
+                continue;
+            }
+
+            $safe_index_name = str_replace('`', '``', $index_name);
+            $wpdb->query("ALTER TABLE {$time_entries_table} DROP INDEX `{$safe_index_name}`");
+        }
     }
 
     private static function add_foreign_key_if_missing($referenced_table, $constraint_name, $sql)
