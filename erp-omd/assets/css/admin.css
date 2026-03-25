@@ -599,6 +599,10 @@
     margin-bottom: 20px;
 }
 
+.erp-omd-admin .erp-omd-form-sections.erp-omd-form-sections-half {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .erp-omd-admin .erp-omd-form-section {
     background: #f9fafb;
     border: 1px solid #e5e7eb;
@@ -833,6 +837,32 @@
     margin-top: 12px;
 }
 
+.erp-omd-admin .erp-omd-collapsible-box {
+    position: relative;
+}
+
+.erp-omd-admin .erp-omd-collapse-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.erp-omd-admin .erp-omd-collapse-toggle {
+    background: #fff;
+    border: 1px solid var(--erp-omd-border);
+    border-radius: 999px;
+    color: var(--erp-omd-text-muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 8px 12px;
+}
+
+.erp-omd-admin .erp-omd-collapsible-box.erp-omd-is-collapsed > :not(.erp-omd-collapse-controls):not(h1):not(h2):not(h3):not(h4):not(.erp-omd-section-header):not(.erp-omd-form-section-header) {
+    display: none;
+}
+
 @media (max-width: 782px) {
     .erp-omd-admin .erp-omd-form-grid {
         grid-template-columns: minmax(0, 1fr);
@@ -889,6 +919,10 @@
 @media (max-width: 960px) {
     .erp-omd-admin .erp-omd-grid.two-columns,
     .erp-omd-admin .erp-omd-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .erp-omd-admin .erp-omd-form-sections.erp-omd-form-sections-half {
         grid-template-columns: 1fr;
     }
 

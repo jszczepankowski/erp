@@ -14,6 +14,7 @@ class ERP_OMD_Time_Entry_Repository
 
         $employees_table = $wpdb->prefix . 'erp_omd_employees';
         $projects_table = $wpdb->prefix . 'erp_omd_projects';
+        $clients_table = $wpdb->prefix . 'erp_omd_clients';
         $roles_table = $wpdb->prefix . 'erp_omd_roles';
         $users_table = $wpdb->users;
 
@@ -37,12 +38,13 @@ class ERP_OMD_Time_Entry_Repository
             $params[] = $filters['entry_date'];
         }
 
-        $sql = "SELECT t.*, eu.user_login AS employee_login, p.client_id AS client_id, p.name AS project_name, r.name AS role_name,
+        $sql = "SELECT t.*, eu.user_login AS employee_login, p.client_id AS client_id, c.name AS client_name, p.name AS project_name, r.name AS role_name,
                 au.user_login AS approved_by_login
                 FROM {$this->table_name()} t
                 INNER JOIN {$employees_table} e ON e.id = t.employee_id
                 INNER JOIN {$users_table} eu ON eu.ID = e.user_id
                 INNER JOIN {$projects_table} p ON p.id = t.project_id
+                LEFT JOIN {$clients_table} c ON c.id = p.client_id
                 INNER JOIN {$roles_table} r ON r.id = t.role_id
                 LEFT JOIN {$users_table} au ON au.ID = t.approved_by_user_id
                 WHERE " . implode(' AND ', $where) . ' ORDER BY t.entry_date DESC, t.id DESC';

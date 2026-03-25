@@ -650,11 +650,10 @@ class ERP_OMD_Frontend
         $seen = [];
 
         foreach ($entries as $entry) {
-            $key = implode(':', [
-                (int) ($entry['project_id'] ?? 0),
-                (int) ($entry['role_id'] ?? 0),
-                trim((string) ($entry['description'] ?? '')),
-            ]);
+            $key = (int) ($entry['project_id'] ?? 0);
+            if ($key <= 0) {
+                continue;
+            }
 
             if (isset($seen[$key])) {
                 continue;

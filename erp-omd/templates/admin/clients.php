@@ -144,7 +144,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="erp-omd-form-sections">
+                <div class="erp-omd-form-sections erp-omd-form-sections-half">
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-section-header">
                             <div>
