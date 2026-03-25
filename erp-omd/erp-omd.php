@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ERP OMD
  * Plugin URI: https://example.com/erp-omd
- * Description: ERP_OMD V2 FRONT-5: frontend kosztorysów managera, wielu managerów projektu i reset hasła pracownika.
+ * Description: ERP_OMD V2
  * Version: 2.0.1
  * Author: OMD
  * Text Domain: erp-omd
