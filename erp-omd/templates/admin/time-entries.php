@@ -141,10 +141,10 @@
                 </div>
             </form>
             <table class="widefat striped">
-                <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-time-entry-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-time-entry-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                 <tbody>
                         <?php if (empty($time_entries)) : ?>
-                            <tr><td colspan="9"><?php esc_html_e('Brak wpisów czasu.', 'erp-omd'); ?></td></tr>
+                            <tr><td colspan="10"><?php esc_html_e('Brak wpisów czasu.', 'erp-omd'); ?></td></tr>
                         <?php else : ?>
                             <?php foreach ($time_entries as $time_row) : ?>
                                 <?php $inline_time_form_id = 'erp-omd-inline-time-' . (int) $time_row['id']; ?>
@@ -152,6 +152,7 @@
                                     <td><input class="erp-omd-time-entry-checkbox" type="checkbox" name="time_entry_ids[]" value="<?php echo esc_attr($time_row['id']); ?>" form="erp-omd-bulk-time-entries-form" /></td>
                                     <td><?php echo esc_html($time_row['entry_date']); ?></td>
                                     <td><?php echo esc_html($time_row['employee_login']); ?></td>
+                                    <td><?php echo esc_html($time_row['client_name'] ?? '—'); ?></td>
                                     <td><?php echo esc_html($time_row['project_name']); ?></td>
                                     <td><?php echo esc_html($time_row['role_name']); ?></td>
                                     <td><input type="number" min="0.01" step="0.01" name="hours" value="<?php echo esc_attr((string) $time_row['hours']); ?>" form="<?php echo esc_attr($inline_time_form_id); ?>" /></td>
