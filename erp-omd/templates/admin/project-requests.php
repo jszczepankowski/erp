@@ -37,7 +37,7 @@
                             <td>#<?php echo esc_html((string) ($request_row['id'] ?? 0)); ?></td>
                             <td><?php echo esc_html((string) ($request_row['project_name'] ?? '—')); ?></td>
                             <td><?php echo esc_html((string) ($request_row['client_name'] ?? '—')); ?></td>
-                            <td><?php echo esc_html((string) ($request_row['billing_type'] ?? '—')); ?></td>
+                            <td><?php echo esc_html($this->billing_type_label((string) ($request_row['billing_type'] ?? ''))); ?></td>
                             <td><?php echo esc_html((string) ($request_row['requester_login'] ?? '—')); ?></td>
                             <td><?php echo esc_html((string) ($request_row['preferred_manager_login'] ?? '—')); ?></td>
                             <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class((string) ($request_row['status'] ?? 'new'), 'estimate')); ?>"><?php echo esc_html((string) ($request_row['status'] ?? 'new')); ?></span></td>
