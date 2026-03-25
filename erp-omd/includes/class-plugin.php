@@ -187,6 +187,7 @@ class ERP_OMD_Plugin
         $this->frontend->register_hooks();
         $this->rest_api->register_hooks();
         add_action('wp_login', [$this, 'track_user_login'], 10, 2);
+        add_filter('wp_mail_from', [$this, 'filter_wp_mail_from']);
         ERP_OMD_Cron_Manager::register_hooks();
     }
 
@@ -197,5 +198,15 @@ class ERP_OMD_Plugin
         }
 
         update_user_meta($user->ID, 'erp_omd_last_login_at', current_time('mysql'));
+    }
+
+    public function filter_wp_mail_from($from_email)
+    {
+        $configured_sender = sanitize_email((string) get_option('erp_omd_notification_sender_email', ''));
+        if ($configured_sender !== '' && is_email($configured_sender)) {
+            return $configured_sender;
+        }
+
+        return $from_email;
     }
 }

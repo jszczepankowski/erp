@@ -237,4 +237,51 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  const currentPage = new URLSearchParams(window.location.search).get('page') || '';
+  if (currentPage === 'erp-omd-dashboard') {
+    return;
+  }
+
+  const collapsibleBoxes = document.querySelectorAll(
+    '.erp-omd-admin .erp-omd-card, .erp-omd-admin .erp-omd-form-section, .erp-omd-admin .erp-omd-detail-card'
+  );
+
+  collapsibleBoxes.forEach((box, index) => {
+    const titleNode = box.querySelector(':scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > .erp-omd-section-header, :scope > .erp-omd-form-section-header');
+    if (!titleNode) {
+      return;
+    }
+
+    const controls = document.createElement('div');
+    controls.className = 'erp-omd-collapse-controls';
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'erp-omd-collapse-toggle';
+    toggle.dataset.collapseTarget = `erp-omd-box-${index}`;
+    const pageKey = currentPage || 'global';
+    const headingKey = (titleNode.textContent || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 80);
+    const storageKey = `erp_omd_admin_box_${pageKey}_${index}_${headingKey}`;
+
+    const renderState = () => {
+      const isCollapsed = box.classList.contains('erp-omd-is-collapsed');
+      toggle.textContent = isCollapsed ? 'Rozwiń' : 'Zwiń';
+      toggle.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    };
+
+    toggle.addEventListener('click', () => {
+      box.classList.toggle('erp-omd-is-collapsed');
+      localStorage.setItem(storageKey, box.classList.contains('erp-omd-is-collapsed') ? '1' : '0');
+      renderState();
+    });
+
+    controls.appendChild(toggle);
+    box.insertBefore(controls, box.firstChild);
+    box.classList.add('erp-omd-collapsible-box');
+    if (localStorage.getItem(storageKey) === '1') {
+      box.classList.add('erp-omd-is-collapsed');
+    }
+    renderState();
+  });
 });

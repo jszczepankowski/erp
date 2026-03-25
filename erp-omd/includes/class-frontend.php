@@ -347,6 +347,10 @@ class ERP_OMD_Frontend
             $this->update_manager_estimate_item_inline($user);
             return;
         }
+        if ($action === 'save_estimate_items') {
+            $this->save_manager_estimate_items($user);
+            return;
+        }
         if ($action === 'update_project_status') {
             $this->update_manager_project_status($user);
             return;
@@ -450,12 +454,18 @@ class ERP_OMD_Frontend
                 array_merge($entry_id ? ['entry_id' => $entry_id] : [], $client_id > 0 ? ['client_id' => $client_id] : [], $selected_day_args)
             );
         }
-
         if ($entry_id) {
             $this->time_entries->update($entry_id, $payload);
             $message = __('Wpis czasu został zaktualizowany.', 'erp-omd');
         } else {
             $entry_id = $this->time_entries->create($payload);
+            if ($entry_id <= 0) {
+                $this->redirect_worker_with_notice(
+                    'error',
+                    __('Nie udało się zapisać wpisu czasu. Sprawdź, czy podobny wpis nie istnieje już w systemie.', 'erp-omd'),
+                    array_merge($client_id > 0 ? ['client_id' => $client_id] : [], $selected_day_args)
+                );
+            }
             $message = __('Wpis czasu został dodany.', 'erp-omd');
         }
 
@@ -490,21 +500,29 @@ class ERP_OMD_Frontend
         }
 
         $worker_filters = [
+            'client_id' => (int) ($_GET['client_id'] ?? 0),
             'project_id' => (int) ($_GET['project_id'] ?? 0),
             'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
             'entry_date' => sanitize_text_field(wp_unslash($_GET['entry_date'] ?? '')),
             'focus' => sanitize_key(wp_unslash($_GET['focus'] ?? 'month')),
+            'tab' => sanitize_key(wp_unslash($_GET['tab'] ?? 'wpisy')),
             'calendar_month' => sanitize_text_field(wp_unslash($_GET['calendar_month'] ?? gmdate('Y-m'))),
             'selected_date' => sanitize_text_field(wp_unslash($_GET['selected_date'] ?? '')),
         ];
         if ($worker_filters['project_id'] <= 0) {
             $worker_filters['project_id'] = 0;
         }
+        if ($worker_filters['client_id'] <= 0) {
+            $worker_filters['client_id'] = 0;
+        }
         if (! in_array($worker_filters['status'], ['', 'submitted', 'approved', 'rejected'], true)) {
             $worker_filters['status'] = '';
         }
         if (! in_array($worker_filters['focus'], ['all', 'today', 'week', 'month'], true)) {
             $worker_filters['focus'] = 'month';
+        }
+        if (! in_array($worker_filters['tab'], ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski'], true)) {
+            $worker_filters['tab'] = 'wpisy';
         }
         if (! preg_match('/^\d{4}-\d{2}$/', $worker_filters['calendar_month'])) {
             $worker_filters['calendar_month'] = gmdate('Y-m');
@@ -525,6 +543,12 @@ class ERP_OMD_Frontend
                 }
             )
         );
+        usort(
+            $available_projects,
+            static function ($left, $right) {
+                return strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+            }
+        );
         $available_clients = [];
         foreach ($available_projects as $project) {
             $client_id = (int) ($project['client_id'] ?? 0);
@@ -538,7 +562,19 @@ class ERP_OMD_Frontend
             ];
         }
         $available_clients = array_values($available_clients);
+        usort(
+            $available_clients,
+            static function ($left, $right) {
+                return strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+            }
+        );
         $available_roles = $this->get_worker_roles($employee);
+        usort(
+            $available_roles,
+            static function ($left, $right) {
+                return strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+            }
+        );
         $worker_request_available_clients = array_values(
             array_filter(
                 $this->clients->all(),
@@ -571,10 +607,21 @@ class ERP_OMD_Frontend
             'entry_date' => $worker_filters['entry_date'],
         ]));
         $time_entries = $this->time_entry_service->filter_visible_entries($time_entries, $user);
+        if ($worker_filters['client_id'] > 0) {
+            $time_entries = array_values(
+                array_filter(
+                    $time_entries,
+                    static function ($entry) use ($worker_filters) {
+                        return (int) ($entry['client_id'] ?? 0) === (int) $worker_filters['client_id'];
+                    }
+                )
+            );
+        }
         $time_entries = $this->filter_worker_entries_by_focus($time_entries, $worker_filters);
 
         $calendar_data = $this->reporting_service->build_calendar([
             'employee_id' => (int) $employee['id'],
+            'client_id' => $worker_filters['client_id'],
             'project_id' => $worker_filters['project_id'],
             'status' => $worker_filters['status'],
             'month' => $worker_filters['calendar_month'],
@@ -650,11 +697,10 @@ class ERP_OMD_Frontend
         $seen = [];
 
         foreach ($entries as $entry) {
-            $key = implode(':', [
-                (int) ($entry['project_id'] ?? 0),
-                (int) ($entry['role_id'] ?? 0),
-                trim((string) ($entry['description'] ?? '')),
-            ]);
+            $key = (int) ($entry['project_id'] ?? 0);
+            if ($key <= 0) {
+                continue;
+            }
 
             if (isset($seen[$key])) {
                 continue;
@@ -724,9 +770,11 @@ class ERP_OMD_Frontend
         $previous_month = $month->modify('-1 month')->format('Y-m');
         $next_month = $month->modify('+1 month')->format('Y-m');
         $base_args = [
+            'client_id' => $worker_filters['client_id'],
             'project_id' => $worker_filters['project_id'],
             'status' => $worker_filters['status'],
             'focus' => $worker_filters['focus'],
+            'tab' => $worker_filters['tab'],
             'selected_date' => $worker_filters['selected_date'],
         ];
 
@@ -772,7 +820,19 @@ class ERP_OMD_Frontend
             'entry_date' => $selected_day,
         ]));
 
-        return $this->time_entry_service->filter_visible_entries($entries, $user);
+        $entries = $this->time_entry_service->filter_visible_entries($entries, $user);
+        if ($worker_filters['client_id'] <= 0) {
+            return $entries;
+        }
+
+        return array_values(
+            array_filter(
+                $entries,
+                static function ($entry) use ($worker_filters) {
+                    return (int) ($entry['client_id'] ?? 0) === (int) $worker_filters['client_id'];
+                }
+            )
+        );
     }
 
     private function summarize_selected_day_entries(array $entries)
@@ -1023,6 +1083,110 @@ class ERP_OMD_Frontend
 
         $this->estimate_items->update($item_id, $payload);
         $this->redirect_manager_with_notice('success', __('Pozycja kosztorysu została zaktualizowana.', 'erp-omd'), ['estimate_id' => $estimate_id]);
+    }
+
+    private function save_manager_estimate_items(WP_User $user)
+    {
+        $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+        $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
+        if (! $estimate) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono kosztorysu.', 'erp-omd'));
+        }
+
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+        }
+
+        $managed_projects = $this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator'));
+        $visible_estimate_ids = array_map('intval', wp_list_pluck($this->load_visible_manager_estimates((int) $employee['id'], $managed_projects, user_can($user, 'administrator')), 'id'));
+        if (! in_array($estimate_id, $visible_estimate_ids, true)) {
+            $this->redirect_manager_with_notice('error', __('Nie możesz edytować pozycji kosztorysów spoza własnego zakresu odpowiedzialności.', 'erp-omd'), ['estimate_id' => $estimate_id]);
+        }
+
+        $posted_ids = array_map('intval', (array) wp_unslash($_POST['item_id'] ?? []));
+        $posted_names = array_map('sanitize_text_field', (array) wp_unslash($_POST['item_name'] ?? []));
+        $posted_qty = array_map('floatval', (array) wp_unslash($_POST['item_qty'] ?? []));
+        $posted_price = array_map('floatval', (array) wp_unslash($_POST['item_price'] ?? []));
+        $posted_cost = array_map('floatval', (array) wp_unslash($_POST['item_cost_internal'] ?? []));
+        $posted_comment = array_map('sanitize_textarea_field', (array) wp_unslash($_POST['item_comment'] ?? []));
+
+        $row_count = max(
+            count($posted_ids),
+            count($posted_names),
+            count($posted_qty),
+            count($posted_price),
+            count($posted_cost),
+            count($posted_comment)
+        );
+
+        $prepared_rows = [];
+        $errors = [];
+
+        for ($index = 0; $index < $row_count; $index++) {
+            $item_id = (int) ($posted_ids[$index] ?? 0);
+            $payload = [
+                'estimate_id' => $estimate_id,
+                'name' => trim((string) ($posted_names[$index] ?? '')),
+                'qty' => (float) ($posted_qty[$index] ?? 0),
+                'price' => (float) ($posted_price[$index] ?? 0),
+                'cost_internal' => (float) ($posted_cost[$index] ?? 0),
+                'comment' => (string) ($posted_comment[$index] ?? ''),
+            ];
+
+            if ($item_id <= 0 && $payload['name'] === '' && $payload['qty'] <= 0 && $payload['price'] <= 0 && $payload['cost_internal'] <= 0 && trim($payload['comment']) === '') {
+                continue;
+            }
+
+            $existing_item = null;
+            if ($item_id > 0) {
+                $existing_item = $this->estimate_items->find($item_id);
+                if (! $existing_item || (int) ($existing_item['estimate_id'] ?? 0) !== $estimate_id) {
+                    $errors[] = __('Wykryto niepoprawną pozycję kosztorysu do zapisu.', 'erp-omd');
+                    continue;
+                }
+            }
+
+            $row_errors = $this->estimate_service->validate_item($payload, $estimate, $existing_item);
+            if ($row_errors) {
+                $errors = array_merge($errors, $row_errors);
+                continue;
+            }
+
+            $prepared_rows[] = [
+                'id' => $item_id,
+                'payload' => $payload,
+            ];
+        }
+
+        if ($errors) {
+            $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)), ['estimate_id' => $estimate_id]);
+        }
+
+        if ($prepared_rows === []) {
+            $this->redirect_manager_with_notice('warning', __('Brak zmian do zapisania w pozycjach kosztorysu.', 'erp-omd'), ['estimate_id' => $estimate_id]);
+        }
+
+        $updated = 0;
+        $created = 0;
+        foreach ($prepared_rows as $row) {
+            if ((int) $row['id'] > 0) {
+                $this->estimate_items->update((int) $row['id'], $row['payload']);
+                $updated++;
+                continue;
+            }
+
+            $this->estimate_items->create($row['payload']);
+            $created++;
+        }
+
+        $message = sprintf(
+            /* translators: 1: updated rows, 2: created rows */
+            __('Pozycje kosztorysu zapisane (zaktualizowano: %1$d, dodano: %2$d).', 'erp-omd'),
+            $updated,
+            $created
+        );
+        $this->redirect_manager_with_notice('success', $message, ['estimate_id' => $estimate_id]);
     }
 
     private function update_manager_project_status(WP_User $user)
@@ -1387,6 +1551,11 @@ class ERP_OMD_Frontend
 
     private function redirect_worker_with_notice($type, $message, array $extra_args = [])
     {
+        $request_tab = sanitize_key(wp_unslash($_REQUEST['tab'] ?? ''));
+        if ($request_tab !== '' && ! isset($extra_args['tab']) && in_array($request_tab, ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski'], true)) {
+            $extra_args['tab'] = $request_tab;
+        }
+
         $args = array_merge(
             [
                 'notice' => $type,
@@ -1677,6 +1846,19 @@ class ERP_OMD_Frontend
                 return __('Nieaktywny', 'erp-omd');
             default:
                 return $status ?: '—';
+        }
+    }
+
+    private function billing_type_label($billing_type)
+    {
+        switch ((string) $billing_type) {
+            case 'fixed_price':
+                return __('Fixed price', 'erp-omd');
+            case 'retainer':
+                return __('Retainer', 'erp-omd');
+            case 'time_material':
+            default:
+                return __('Time & Material', 'erp-omd');
         }
     }
 

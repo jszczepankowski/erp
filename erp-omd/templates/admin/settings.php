@@ -74,6 +74,11 @@
                             <input id="erp-omd-missing-hours-mail-subject" type="text" name="missing_hours_mail_subject" value="<?php echo esc_attr((string) $notification_settings['subject']); ?>" />
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-notification-sender-email"><?php esc_html_e('Nadawca e-mail powiadomień (wp_mail)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-notification-sender-email" type="email" name="notification_sender_email" value="<?php echo esc_attr((string) $notification_sender_email); ?>" placeholder="<?php echo esc_attr(get_option('admin_email', '')); ?>" />
+                            <p class="description"><?php esc_html_e('Pozostaw puste, aby używać domyślnego adresu WordPress.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-missing-hours-mail-body"><?php esc_html_e('Treść maila', 'erp-omd'); ?></label>
                             <?php wp_editor((string) ($notification_settings['body'] ?? ''), 'erp-omd-missing-hours-mail-body-editor', [
                                 'textarea_name' => 'missing_hours_mail_body',

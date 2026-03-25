@@ -28,6 +28,35 @@
                 <div class="erp-omd-front-notice erp-omd-front-notice-<?php echo esc_attr($worker_notice_type); ?>"><?php echo esc_html($worker_notice_message); ?></div>
             <?php endif; ?>
 
+            <?php
+            $worker_tabs = [
+                'dodaj-wpis' => __('Dodaj wpis', 'erp-omd'),
+                'wpisy' => __('Wpisy', 'erp-omd'),
+                'kalendarz' => __('Kalendarz', 'erp-omd'),
+                'wnioski' => __('Wnioski', 'erp-omd'),
+            ];
+            $worker_tab_base_args = [
+                'client_id' => (int) ($worker_filters['client_id'] ?? 0),
+                'project_id' => (int) ($worker_filters['project_id'] ?? 0),
+                'status' => (string) ($worker_filters['status'] ?? ''),
+                'entry_date' => (string) ($worker_filters['entry_date'] ?? ''),
+                'focus' => (string) ($worker_filters['focus'] ?? 'month'),
+                'calendar_month' => (string) ($worker_filters['calendar_month'] ?? gmdate('Y-m')),
+                'selected_date' => (string) $selected_day,
+            ];
+            ?>
+            <nav class="erp-omd-front-inline-actions erp-omd-front-tabs" aria-label="<?php esc_attr_e('Nawigacja panelu pracownika', 'erp-omd'); ?>">
+                <?php foreach ($worker_tabs as $worker_tab_key => $worker_tab_label) : ?>
+                    <a
+                        class="erp-omd-front-button <?php echo ($worker_filters['tab'] ?? 'wpisy') === $worker_tab_key ? 'erp-omd-front-button-primary' : 'erp-omd-front-button-ghost'; ?>"
+                        data-worker-tab-button="<?php echo esc_attr($worker_tab_key); ?>"
+                        href="<?php echo esc_url(add_query_arg(array_merge($worker_tab_base_args, ['tab' => $worker_tab_key]), $front_worker_url)); ?>"
+                    >
+                        <?php echo esc_html($worker_tab_label); ?>
+                    </a>
+                <?php endforeach; ?>
+            </nav>
+
             <div class="erp-omd-front-grid erp-omd-front-grid-summary">
                 <article class="erp-omd-front-panel" data-collapsible-section="worker-time-entries">
                     <h2><?php esc_html_e('Twoje konto', 'erp-omd'); ?></h2>
@@ -38,7 +67,7 @@
                     </ul>
                 </article>
 
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="worker-summary">
                     <h2><?php esc_html_e('Szybkie podsumowanie', 'erp-omd'); ?></h2>
                     <div class="erp-omd-front-metrics">
                         <div class="erp-omd-front-metric">
@@ -62,7 +91,7 @@
             </div>
 
             <div class="erp-omd-front-grid erp-omd-front-grid-worker">
-                <article class="erp-omd-front-panel erp-omd-front-panel-form">
+                <article class="erp-omd-front-panel erp-omd-front-panel-form" data-worker-tab-pane="dodaj-wpis">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php echo ! empty($worker_form_defaults['id']) ? esc_html__('Edytuj wpis czasu', 'erp-omd') : esc_html__('Dodaj wpis czasu', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Pracownik może zapisywać i poprawiać wyłącznie własne wpisy w statusie oczekującym na akceptację.', 'erp-omd'); ?></p>
@@ -95,6 +124,7 @@
                         <input type="hidden" name="erp_omd_front_action" value="save_time_entry">
                         <input type="hidden" name="id" value="<?php echo esc_attr((string) ($worker_form_defaults['id'] ?? 0)); ?>">
                         <input type="hidden" name="selected_date" value="<?php echo esc_attr($selected_day); ?>">
+                        <input type="hidden" name="tab" value="<?php echo esc_attr((string) ($worker_filters['tab'] ?? 'wpisy')); ?>">
 
                         <div class="erp-omd-front-form-row erp-omd-front-form-row-time-context">
                             <div>
@@ -167,7 +197,7 @@
                     </form>
                 </article>
 
-                <article class="erp-omd-front-panel erp-omd-front-panel-form" data-collapsible-section="worker-new-project-request">
+                <article class="erp-omd-front-panel erp-omd-front-panel-form" data-collapsible-section="worker-new-project-request" data-worker-tab-pane="wnioski">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Nowy wniosek projektowy', 'erp-omd'); ?></h2>
                     </div>
@@ -175,6 +205,7 @@
                     <form method="post" action="<?php echo esc_url($worker_form_action); ?>" class="erp-omd-front-form">
                         <?php wp_nonce_field('erp_omd_front_worker'); ?>
                         <input type="hidden" name="erp_omd_front_action" value="create_project_request">
+                        <input type="hidden" name="tab" value="<?php echo esc_attr((string) ($worker_filters['tab'] ?? 'wpisy')); ?>">
 
                         <label for="erp-omd-worker-request-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
                         <select id="erp-omd-worker-request-client" name="client_id" required>
@@ -226,7 +257,7 @@
                     </form>
                 </article>
 
-                <article class="erp-omd-front-panel">
+                <article class="erp-omd-front-panel" data-collapsible-section="worker-time-list" data-worker-tab-pane="wpisy">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Twoje wpisy czasu', 'erp-omd'); ?></h2>
                         <p><?php esc_html_e('Filtry są lokalne dla Twojego widoku i nie pokazują wpisów innych pracowników.', 'erp-omd'); ?></p>
@@ -235,6 +266,7 @@
                     <form method="get" action="<?php echo esc_url($front_worker_url); ?>" class="erp-omd-front-filter-form">
                         <input type="hidden" name="erp_omd_front" value="worker">
                         <input type="hidden" name="selected_date" value="<?php echo esc_attr($selected_day); ?>">
+                        <input type="hidden" name="tab" value="<?php echo esc_attr((string) ($worker_filters['tab'] ?? 'wpisy')); ?>">
                         <div>
                             <label for="erp-omd-front-filter-date"><?php esc_html_e('Data', 'erp-omd'); ?></label>
                             <input id="erp-omd-front-filter-date" type="date" name="entry_date" value="<?php echo esc_attr((string) ($worker_filters['entry_date'] ?? '')); ?>">
@@ -242,6 +274,17 @@
                         <div>
                             <label for="erp-omd-front-filter-month"><?php esc_html_e('Miesiąc kalendarza', 'erp-omd'); ?></label>
                             <input id="erp-omd-front-filter-month" type="month" name="calendar_month" value="<?php echo esc_attr((string) ($worker_filters['calendar_month'] ?? '')); ?>">
+                        </div>
+                        <div>
+                            <label for="erp-omd-front-filter-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                            <select id="erp-omd-front-filter-client" name="client_id" data-project-target="#erp-omd-front-filter-project">
+                                <option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option>
+                                <?php foreach ($available_clients as $client_item) : ?>
+                                    <option value="<?php echo esc_attr((string) $client_item['id']); ?>" <?php selected((int) ($worker_filters['client_id'] ?? 0), (int) $client_item['id']); ?>>
+                                        <?php echo esc_html($client_item['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div>
                             <label for="erp-omd-front-filter-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
@@ -295,6 +338,7 @@
                             <thead>
                                 <tr>
                                     <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Klient', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Rola', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Godz.', 'erp-omd'); ?></th>
@@ -308,6 +352,7 @@
                                     <?php foreach ($time_entries as $time_entry) : ?>
                                         <tr>
                                             <td><?php echo esc_html($time_entry['entry_date']); ?></td>
+                                            <td><?php echo esc_html($time_entry['client_name'] ?? '—'); ?></td>
                                             <td><?php echo esc_html($time_entry['project_name'] ?? '—'); ?></td>
                                             <td><?php echo esc_html($time_entry['role_name'] ?? '—'); ?></td>
                                             <td><?php echo esc_html(number_format_i18n((float) ($time_entry['hours'] ?? 0), 2)); ?></td>
@@ -324,7 +369,7 @@
                                             <td>
                                                 <div class="erp-omd-front-inline-actions">
                                                     <?php if ($this->time_entry_service->can_edit_entry($time_entry, $user)) : ?>
-                                                        <a href="<?php echo esc_url($front_worker_url . '?entry_id=' . (int) $time_entry['id']); ?>" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                                        <a href="<?php echo esc_url(add_query_arg(['entry_id' => (int) $time_entry['id'], 'tab' => (string) ($worker_filters['tab'] ?? 'wpisy')], $front_worker_url)); ?>" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                                     <?php endif; ?>
 
                                                     <?php if ($this->time_entry_service->can_delete_entry($user, $time_entry)) : ?>
@@ -332,6 +377,7 @@
                                                             <?php wp_nonce_field('erp_omd_front_worker'); ?>
                                                             <input type="hidden" name="erp_omd_front_action" value="delete_time_entry">
                                                             <input type="hidden" name="id" value="<?php echo esc_attr((string) $time_entry['id']); ?>">
+                                                            <input type="hidden" name="tab" value="<?php echo esc_attr((string) ($worker_filters['tab'] ?? 'wpisy')); ?>">
                                                             <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
                                                         </form>
                                                     <?php endif; ?>
@@ -341,7 +387,7 @@
                                     <?php endforeach; ?>
                                 <?php else : ?>
                                     <tr>
-                                        <td colspan="7"><?php esc_html_e('Brak wpisów spełniających aktualne filtry.', 'erp-omd'); ?></td>
+                                        <td colspan="8"><?php esc_html_e('Brak wpisów spełniających aktualne filtry.', 'erp-omd'); ?></td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -350,6 +396,7 @@
                 </article>
             </div>
 
+            <div data-worker-tab-pane="kalendarz">
             <div class="erp-omd-front-panel erp-omd-front-panel-calendar" data-collapsible-section="worker-rhythm">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Rytm pracy', 'erp-omd'); ?></h2>
@@ -369,6 +416,7 @@
                                 'focus' => $focus_key,
                                 'project_id' => $worker_filters['project_id'],
                                 'status' => $worker_filters['status'],
+                                'tab' => $worker_filters['tab'],
                                 'calendar_month' => $worker_filters['calendar_month'],
                                 'selected_date' => $selected_day,
                             ])); ?>"
@@ -388,6 +436,7 @@
                         <input type="hidden" name="focus" value="<?php echo esc_attr($worker_filters['focus']); ?>">
                         <input type="hidden" name="project_id" value="<?php echo esc_attr((string) $worker_filters['project_id']); ?>">
                         <input type="hidden" name="status" value="<?php echo esc_attr($worker_filters['status']); ?>">
+                        <input type="hidden" name="tab" value="<?php echo esc_attr((string) ($worker_filters['tab'] ?? 'wpisy')); ?>">
                         <input type="hidden" name="selected_date" value="<?php echo esc_attr($selected_day); ?>">
                         <input type="month" name="calendar_month" value="<?php echo esc_attr($worker_filters['calendar_month']); ?>">
                         <button type="submit" class="erp-omd-front-button"><?php esc_html_e('Pokaż miesiąc', 'erp-omd'); ?></button>
@@ -432,6 +481,7 @@
                                             'focus' => $worker_filters['focus'],
                                             'project_id' => $worker_filters['project_id'],
                                             'status' => $worker_filters['status'],
+                                            'tab' => $worker_filters['tab'],
                                             'calendar_month' => $worker_filters['calendar_month'],
                                             'selected_date' => $day['date'],
                                         ])); ?>"
@@ -507,11 +557,44 @@
                     </div>
                 </article>
             </div>
+            </div>
         </section>
     </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            var setupWorkerTabs = function () {
+                var storageKey = 'erp_omd_front_worker_active_tab';
+                var allowedTabs = ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski'];
+                var defaultTab = 'wpisy';
+                var params = new URLSearchParams(window.location.search);
+                var urlTab = params.get('tab');
+                var storedTab = localStorage.getItem(storageKey);
+                var activeTab = allowedTabs.indexOf(urlTab) !== -1
+                    ? urlTab
+                    : (allowedTabs.indexOf(storedTab) !== -1 ? storedTab : defaultTab);
+
+                localStorage.setItem(storageKey, activeTab);
+
+                if (allowedTabs.indexOf(urlTab) === -1) {
+                    params.set('tab', activeTab);
+                    history.replaceState({}, '', window.location.pathname + '?' + params.toString());
+                }
+
+                document.querySelectorAll('[data-worker-tab-pane]').forEach(function (panel) {
+                    panel.hidden = panel.getAttribute('data-worker-tab-pane') !== activeTab;
+                });
+
+                document.querySelectorAll('[data-worker-tab-button]').forEach(function (button) {
+                    var isActive = button.getAttribute('data-worker-tab-button') === activeTab;
+                    button.classList.toggle('erp-omd-front-button-primary', isActive);
+                    button.classList.toggle('erp-omd-front-button-ghost', !isActive);
+                    button.setAttribute('aria-current', isActive ? 'page' : 'false');
+                });
+            };
+
+            setupWorkerTabs();
+
             var setupCollapsibleSections = function () {
                 var storagePrefix = 'erp_omd_front_worker_section_';
                 document.querySelectorAll('[data-collapsible-section]').forEach(function (panel) {

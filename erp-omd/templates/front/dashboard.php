@@ -77,10 +77,15 @@
                             <table class="erp-omd-front-table">
                                 <thead>
                                     <tr>
-                                        <th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('ID', 'erp-omd'); ?></th>
                                         <th><?php esc_html_e('Klient', 'erp-omd'); ?></th>
-                                        <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Koszt', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Przychód', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Zysk', 'erp-omd'); ?></th>
                                         <th><?php esc_html_e('Marża %', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
                                         <th><?php esc_html_e('Zgłoszone wpisy', 'erp-omd'); ?></th>
                                         <th><?php esc_html_e('Alerty', 'erp-omd'); ?></th>
                                         <th><?php esc_html_e('Akcja', 'erp-omd'); ?></th>
@@ -101,10 +106,15 @@
                                         ) . '#project-detail';
                                         ?>
                                         <tr class="<?php echo $selected_project && (int) ($selected_project['id'] ?? 0) === $project_id ? 'erp-omd-front-table-row-active' : ''; ?>">
-                                            <td><?php echo esc_html($project['name'] ?? ('#' . $project_id)); ?></td>
+                                            <td><?php echo esc_html((string) $project_id); ?></td>
                                             <td><?php echo esc_html($project['client_name'] ?? '—'); ?></td>
-                                            <td><?php echo esc_html($this->project_status_label($project['status'] ?? '')); ?></td>
+                                            <td><?php echo esc_html($project['name'] ?? ('#' . $project_id)); ?></td>
+                                            <td><?php echo esc_html($this->billing_type_label($project['billing_type'] ?? '')); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($project_financial['cost'] ?? 0), 2)); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($project_financial['revenue'] ?? 0), 2)); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($project_financial['profit'] ?? 0), 2)); ?></td>
                                             <td><?php echo esc_html(number_format_i18n((float) ($project_financial['margin'] ?? 0), 2)); ?></td>
+                                            <td><?php echo esc_html($this->project_status_label($project['status'] ?? '')); ?></td>
                                             <td><?php echo esc_html((string) ((int) ($project['pending_entries_count'] ?? 0))); ?></td>
                                             <td><?php echo esc_html((string) count($project_alerts)); ?></td>
                                             <td><a class="erp-omd-front-button erp-omd-front-button-small" href="<?php echo esc_url($project_url); ?>"><?php esc_html_e('Otwórz kartę', 'erp-omd'); ?></a></td>
@@ -397,7 +407,10 @@
                         </div>
 
                         <?php if ($selected_estimate) : ?>
-                            <?php $selected_estimate_totals = (array) ($selected_estimate['totals'] ?? []); ?>
+                            <?php
+                            $selected_estimate_totals = (array) ($selected_estimate['totals'] ?? []);
+                            $selected_estimate_profit = (float) ($selected_estimate_totals['net'] ?? 0) - (float) ($selected_estimate_totals['internal_cost'] ?? 0);
+                            ?>
                             <div class="erp-omd-front-panel erp-omd-front-panel-subtle erp-omd-front-estimate-summary">
                                 <div class="erp-omd-front-section-heading">
                                     <h3><?php echo esc_html($selected_estimate['name'] ?? ('#' . (int) ($selected_estimate['id'] ?? 0))); ?></h3>
@@ -440,6 +453,10 @@
                                         <span class="erp-omd-front-metric-label"><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></span>
                                         <strong><?php echo esc_html(number_format_i18n((float) ($selected_estimate_totals['internal_cost'] ?? 0), 2)); ?></strong>
                                     </div>
+                                    <div class="erp-omd-front-metric">
+                                        <span class="erp-omd-front-metric-label"><?php esc_html_e('Zysk', 'erp-omd'); ?></span>
+                                        <strong><?php echo esc_html(number_format_i18n($selected_estimate_profit, 2)); ?></strong>
+                                    </div>
                                 </div>
 
                                 <div class="erp-omd-front-inline-actions">
@@ -478,6 +495,73 @@
                                     </form>
                                 </div>
 
+                                <div class="erp-omd-front-table-wrap">
+                                    <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-form">
+                                        <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                        <input type="hidden" name="erp_omd_front_action" value="save_estimate_items">
+                                        <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ($selected_estimate['id'] ?? 0)); ?>">
+                                        <table class="erp-omd-front-table">
+                                            <thead>
+                                                <tr>
+                                                    <th><?php esc_html_e('Pozycja', 'erp-omd'); ?></th>
+                                                    <th><?php esc_html_e('Ilość', 'erp-omd'); ?></th>
+                                                    <th><?php esc_html_e('Cena', 'erp-omd'); ?></th>
+                                                    <th><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></th>
+                                                    <th><?php esc_html_e('Zysk', 'erp-omd'); ?></th>
+                                                    <th><?php esc_html_e('Komentarz', 'erp-omd'); ?></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ((array) ($selected_estimate['items'] ?? []) as $estimate_item) : ?>
+                                                    <?php
+                                                    $item_qty = (float) ($estimate_item['qty'] ?? 0);
+                                                    $item_price = (float) ($estimate_item['price'] ?? 0);
+                                                    $item_cost_internal = (float) ($estimate_item['cost_internal'] ?? 0);
+                                                    $item_profit = ($item_qty * $item_price) - $item_cost_internal;
+                                                    ?>
+                                                    <tr>
+                                                        <td>
+                                                            <input type="hidden" name="item_id[]" value="<?php echo esc_attr((string) ($estimate_item['id'] ?? 0)); ?>">
+                                                            <input type="text" name="item_name[]" value="<?php echo esc_attr((string) ($estimate_item['name'] ?? '')); ?>" <?php echo (string) ($selected_estimate['status'] ?? '') === 'zaakceptowany' ? 'readonly' : ''; ?> required>
+                                                        </td>
+                                                        <td><input type="number" min="0.01" step="0.01" name="item_qty[]" value="<?php echo esc_attr((string) $item_qty); ?>" <?php echo (string) ($selected_estimate['status'] ?? '') === 'zaakceptowany' ? 'readonly' : ''; ?> required></td>
+                                                        <td><input type="number" min="0" step="0.01" name="item_price[]" value="<?php echo esc_attr((string) $item_price); ?>" <?php echo (string) ($selected_estimate['status'] ?? '') === 'zaakceptowany' ? 'readonly' : ''; ?> required></td>
+                                                        <td><input type="number" min="0" step="0.01" name="item_cost_internal[]" value="<?php echo esc_attr((string) $item_cost_internal); ?>" <?php echo (string) ($selected_estimate['status'] ?? '') === 'zaakceptowany' ? 'readonly' : ''; ?> required></td>
+                                                        <td><?php echo esc_html(number_format_i18n($item_profit, 2)); ?></td>
+                                                        <td><textarea name="item_comment[]" rows="2" <?php echo (string) ($selected_estimate['status'] ?? '') === 'zaakceptowany' ? 'readonly' : ''; ?>><?php echo esc_textarea((string) ($estimate_item['comment'] ?? '')); ?></textarea></td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+
+                                                <?php if (($selected_estimate['status'] ?? '') !== 'zaakceptowany') : ?>
+                                                    <tr>
+                                                        <td>
+                                                            <input type="hidden" name="item_id[]" value="0">
+                                                            <input type="text" name="item_name[]" value="" placeholder="<?php esc_attr_e('Nowa pozycja', 'erp-omd'); ?>">
+                                                        </td>
+                                                        <td><input type="number" min="0.01" step="0.01" name="item_qty[]" value=""></td>
+                                                        <td><input type="number" min="0" step="0.01" name="item_price[]" value=""></td>
+                                                        <td><input type="number" min="0" step="0.01" name="item_cost_internal[]" value=""></td>
+                                                        <td>—</td>
+                                                        <td><textarea name="item_comment[]" rows="2"></textarea></td>
+                                                    </tr>
+                                                <?php endif; ?>
+
+                                                <?php if (empty($selected_estimate['items']) && (string) ($selected_estimate['status'] ?? '') === 'zaakceptowany') : ?>
+                                                    <tr>
+                                                        <td colspan="6"><?php esc_html_e('Ten kosztorys nie ma jeszcze pozycji.', 'erp-omd'); ?></td>
+                                                    </tr>
+                                                <?php endif; ?>
+                                            </tbody>
+                                        </table>
+
+                                        <?php if (($selected_estimate['status'] ?? '') !== 'zaakceptowany') : ?>
+                                            <div class="erp-omd-front-inline-actions erp-omd-front-estimate-actions">
+                                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Zapisz pozycje', 'erp-omd'); ?></button>
+                                            </div>
+                                        <?php endif; ?>
+                                    </form>
+                                </div>
+
                                 <?php if (($selected_estimate['status'] ?? '') !== 'zaakceptowany') : ?>
                                     <div class="erp-omd-front-inline-actions erp-omd-front-estimate-actions">
                                         <form method="post" action="<?php echo esc_url($manager_form_action); ?>">
@@ -488,64 +572,6 @@
                                         </form>
                                     </div>
                                 <?php endif; ?>
-
-                                <div class="erp-omd-front-table-wrap">
-                                    <table class="erp-omd-front-table">
-                                        <thead>
-                                            <tr>
-                                                <th><?php esc_html_e('Pozycja', 'erp-omd'); ?></th>
-                                                <th><?php esc_html_e('Ilość', 'erp-omd'); ?></th>
-                                                <th><?php esc_html_e('Cena', 'erp-omd'); ?></th>
-                                                <th><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></th>
-                                                <th><?php esc_html_e('Komentarz', 'erp-omd'); ?></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php if (! empty($selected_estimate['items'])) : ?>
-                                                <?php foreach ((array) $selected_estimate['items'] as $estimate_item) : ?>
-                                                    <tr>
-                                                        <td colspan="5">
-                                                            <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-form">
-                                                                <?php wp_nonce_field('erp_omd_front_manager'); ?>
-                                                                <input type="hidden" name="erp_omd_front_action" value="update_estimate_item_inline">
-                                                                <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ($selected_estimate['id'] ?? 0)); ?>">
-                                                                <input type="hidden" name="item_id" value="<?php echo esc_attr((string) ($estimate_item['id'] ?? 0)); ?>">
-
-                                                                <div class="erp-omd-front-form-row">
-                                                                    <div>
-                                                                        <label><?php esc_html_e('Pozycja', 'erp-omd'); ?></label>
-                                                                        <input type="text" name="name" value="<?php echo esc_attr((string) ($estimate_item['name'] ?? '')); ?>" required>
-                                                                    </div>
-                                                                    <div>
-                                                                        <label><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
-                                                                        <input type="number" min="0.01" step="0.01" name="qty" value="<?php echo esc_attr((string) ($estimate_item['qty'] ?? 0)); ?>" required>
-                                                                    </div>
-                                                                    <div>
-                                                                        <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
-                                                                        <input type="number" min="0" step="0.01" name="price" value="<?php echo esc_attr((string) ($estimate_item['price'] ?? 0)); ?>" required>
-                                                                    </div>
-                                                                    <div>
-                                                                        <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
-                                                                        <input type="number" min="0" step="0.01" name="cost_internal" value="<?php echo esc_attr((string) ($estimate_item['cost_internal'] ?? 0)); ?>" required>
-                                                                    </div>
-                                                                </div>
-                                                                <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
-                                                                <textarea name="comment" rows="2"><?php echo esc_textarea((string) ($estimate_item['comment'] ?? '')); ?></textarea>
-                                                                <div class="erp-omd-front-inline-actions">
-                                                                    <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Zapisz pozycję', 'erp-omd'); ?></button>
-                                                                </div>
-                                                            </form>
-                                                        </td>
-                                                    </tr>
-                                                <?php endforeach; ?>
-                                            <?php else : ?>
-                                                <tr>
-                                                    <td colspan="5"><?php esc_html_e('Ten kosztorys nie ma jeszcze pozycji.', 'erp-omd'); ?></td>
-                                                </tr>
-                                            <?php endif; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
                             </div>
                         <?php endif; ?>
                     <?php else : ?>
