@@ -355,7 +355,19 @@ class ERP_OMD_REST_API
         if ($errors) {
             return new WP_Error('erp_omd_estimate_invalid', implode(' ', $errors), ['status' => 422]);
         }
-        $this->estimates->update($id, $payload);
+
+        $should_accept_via_status = ($existing['status'] ?? '') !== 'zaakceptowany' && $payload['status'] === 'zaakceptowany';
+        if ($should_accept_via_status) {
+            $update_payload = $payload;
+            $update_payload['status'] = (string) ($existing['status'] ?? 'wstepny');
+            $this->estimates->update($id, $update_payload);
+            $accept_result = $this->estimate_service->accept($id);
+            if ($accept_result instanceof WP_Error) {
+                return $accept_result;
+            }
+        } else {
+            $this->estimates->update($id, $payload);
+        }
 
         return rest_ensure_response($this->estimates->find($id));
     }
