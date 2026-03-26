@@ -202,7 +202,7 @@ final class ReportingServiceTestRunner
         $this->assertSame(1, count($monthlyReport), 'Monthly report should group entries by month.');
         $this->assertSame(6.0, $monthlyReport[0]['hours'], 'Monthly report should sum hours for the month.');
 
-        $omdSettlement = $service->build_omd_settlement_report($filters);
+        $omdSettlement = $service->build_report('omd_rozliczenia', $filters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
         $this->assertSame('2026-03', $omdSettlement[11]['month'], 'OMD settlement report should end with selected month.');
         $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
