@@ -400,6 +400,10 @@ background-image: none !important;
 	margin-bottom: 24px;
 }
 
+.erp-omd-front-metrics-estimate-totals {
+    grid-template-columns: 1fr;
+}
+
 #erp-omd-front-project-status {
     background: #fff;
     border: 1px solid var(--erp-omd-front-border);
