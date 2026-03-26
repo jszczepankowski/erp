@@ -1145,7 +1145,18 @@ class ERP_OMD_Frontend
             $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)), ['estimate_id' => $estimate_id]);
         }
 
-        $this->estimates->update($estimate_id, $payload);
+        $should_accept_via_status = ($estimate['status'] ?? '') !== 'zaakceptowany' && $payload['status'] === 'zaakceptowany';
+        if ($should_accept_via_status) {
+            $update_payload = $payload;
+            $update_payload['status'] = (string) ($estimate['status'] ?? 'wstepny');
+            $this->estimates->update($estimate_id, $update_payload);
+            $result = $this->estimate_service->accept($estimate_id);
+            if ($result instanceof WP_Error) {
+                $this->redirect_manager_with_notice('error', $result->get_error_message(), ['estimate_id' => $estimate_id]);
+            }
+        } else {
+            $this->estimates->update($estimate_id, $payload);
+        }
         $this->redirect_manager_with_notice('success', __('Kosztorys został zaktualizowany.', 'erp-omd'), ['estimate_id' => $estimate_id]);
     }
 

@@ -950,13 +950,30 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-estimates', 'error', implode(' ', $errors), $id ? ['id' => $id, 'edit' => 1] : []);
         }
         if ($id) {
-            $this->estimates->update($id, $payload);
+            $should_accept_via_status = ($existing['status'] ?? '') !== 'zaakceptowany' && $payload['status'] === 'zaakceptowany';
+            if ($should_accept_via_status) {
+                $update_payload = $payload;
+                $update_payload['status'] = (string) ($existing['status'] ?? 'wstepny');
+                $this->estimates->update($id, $update_payload);
+                $result = $this->estimate_service->accept($id);
+                if ($result instanceof WP_Error) {
+                    $this->redirect_with_notice('erp-omd-estimates', 'error', $result->get_error_message(), ['id' => $id, 'edit' => 1]);
+                }
+            } else {
+                $this->estimates->update($id, $payload);
+            }
             $message = __('Kosztorys został zaktualizowany.', 'erp-omd');
         } else {
             $id = $this->estimates->create($payload);
             foreach ($initial_items_payload as $initial_item_payload) {
                 $initial_item_payload['estimate_id'] = $id;
                 $this->estimate_items->create($initial_item_payload);
+            }
+            if ($payload['status'] === 'zaakceptowany') {
+                $result = $this->estimate_service->accept($id);
+                if ($result instanceof WP_Error) {
+                    $this->redirect_with_notice('erp-omd-estimates', 'error', $result->get_error_message(), ['id' => $id, 'edit' => 1]);
+                }
             }
             $message = __('Kosztorys został utworzony.', 'erp-omd');
         }
