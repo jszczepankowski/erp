@@ -165,6 +165,8 @@ final class ProjectFinancialServiceTestRunner
 
         $fixedInProgressFinancials = $service->rebuild_for_project(13);
         $this->assertSame(3200.0, $fixedInProgressFinancials['revenue'], 'Fixed price revenue should also use the project budget after changing billing type on an in-progress project.');
+        $this->assertSame(160.0, $fixedInProgressFinancials['time_cost'], 'Fixed price project should expose time-based labor cost from reported hours.');
+        $this->assertSame(160.0, $fixedInProgressFinancials['cost'], 'Fixed price project total cost should include labor time cost even without direct costs.');
 
         $retainerFinancials = $service->rebuild_for_project(12);
         $this->assertSame(4500.0, $retainerFinancials['revenue'], 'Retainer revenue should count inclusive active months.');

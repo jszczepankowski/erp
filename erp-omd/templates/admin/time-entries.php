@@ -128,10 +128,24 @@
                                 <option value="approved"><?php esc_html_e('Ustaw status: Zaakceptowany', 'erp-omd'); ?></option>
                                 <option value="rejected"><?php esc_html_e('Ustaw status: Odrzucony', 'erp-omd'); ?></option>
                             <?php endif; ?>
+                            <?php if (current_user_can('administrator')) : ?>
+                                <option value="change_project"><?php esc_html_e('Zmień projekt przypięcia', 'erp-omd'); ?></option>
+                            <?php endif; ?>
                             <?php if ($can_delete_entries) : ?>
                                 <option value="delete"><?php esc_html_e('Usuń wpisy', 'erp-omd'); ?></option>
                             <?php endif; ?>
                         </select>
+                        <?php if (current_user_can('administrator')) : ?>
+                            <label class="screen-reader-text" for="bulk-time-target-project"><?php esc_html_e('Nowy projekt', 'erp-omd'); ?></label>
+                            <select id="bulk-time-target-project" name="target_project_id">
+                                <option value="0"><?php esc_html_e('Wybierz projekt docelowy', 'erp-omd'); ?></option>
+                                <?php foreach ($projects_for_time as $project_item) : ?>
+                                    <option value="<?php echo esc_attr($project_item['id']); ?>">
+                                        <?php echo esc_html(($project_item['client_name'] ?? '—') . ' — ' . ($project_item['name'] ?? ('#' . (int) $project_item['id']))); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        <?php endif; ?>
                         <button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
                     </div>
                 </div>
