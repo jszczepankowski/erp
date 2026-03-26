@@ -380,7 +380,7 @@ class ERP_OMD_Frontend
                 $this->redirect_manager_with_notice('error', __('Wybrana rola nie jest przypisana do Twojego profilu.', 'erp-omd'));
             }
 
-            $errors = $this->time_entry_service->validate_time_entry($payload);
+            $errors = $this->time_entry_service->validate($payload);
             if ($errors) {
                 $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)));
             }
@@ -937,13 +937,23 @@ class ERP_OMD_Frontend
         $selected_project = $selected_project_id > 0 ? $this->find_project_in_collection($managed_projects, $selected_project_id) : null;
         $linked_estimates = $this->load_estimates_for_projects($managed_projects);
         $manager_estimates = $this->load_visible_manager_estimates((int) $employee['id'], $managed_projects, user_can($user, 'administrator'));
+        $estimate_status_filter = sanitize_text_field(wp_unslash($_GET['estimate_status'] ?? ''));
+        if (! in_array($estimate_status_filter, ['', 'wstepny', 'do_akceptacji', 'zaakceptowany'], true)) {
+            $estimate_status_filter = '';
+        }
+        $filtered_estimates = $manager_estimates;
+        if ($estimate_status_filter !== '') {
+            $filtered_estimates = array_values(array_filter($manager_estimates, static function ($estimate_row) use ($estimate_status_filter) {
+                return (string) ($estimate_row['status'] ?? '') === $estimate_status_filter;
+            }));
+        }
         $selected_estimate_id = (int) ($_GET['estimate_id'] ?? 0);
         $visible_estimate_ids = array_map('intval', wp_list_pluck($manager_estimates, 'id'));
         if ($selected_estimate_id > 0 && ! in_array($selected_estimate_id, $visible_estimate_ids, true)) {
             $selected_estimate_id = 0;
         }
         if ($selected_estimate_id <= 0) {
-            $selected_estimate_id = (int) ($linked_estimates[0]['id'] ?? $manager_estimates[0]['id'] ?? 0);
+            $selected_estimate_id = (int) ($filtered_estimates[0]['id'] ?? $linked_estimates[0]['id'] ?? $manager_estimates[0]['id'] ?? 0);
         }
         $selected_estimate = $selected_estimate_id > 0 ? $this->find_estimate_in_collection($manager_estimates, $selected_estimate_id) : null;
         $approval_queue = $this->load_manager_approval_queue($managed_project_ids, $selected_project_id);
@@ -968,7 +978,7 @@ class ERP_OMD_Frontend
                 }
             )
         );
-        $available_estimates = $manager_estimates;
+        $available_estimates = $filtered_estimates;
         $manager_time_projects = array_values(
             array_filter(
                 $managed_projects,

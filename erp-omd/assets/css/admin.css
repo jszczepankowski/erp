@@ -907,6 +907,10 @@
         min-width: 100%;
         right: auto;
     }
+
+    .erp-omd-admin .erp-omd-detail-list-horizontal {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
 }
 
 .erp-omd-admin .erp-omd-table-tools .regular-text[type="search"] {
@@ -972,6 +976,10 @@
     .erp-omd-admin .erp-omd-form-field.erp-omd-form-field-compact select {
         max-width: 100%;
     }
+
+    .erp-omd-admin .erp-omd-detail-list-horizontal {
+        grid-template-columns: repeat(4, minmax(120px, 1fr));
+    }
 }
 
 .erp-omd-admin .erp-omd-section-header h2,
@@ -997,20 +1005,12 @@
     color: var(--erp-omd-text);
 }
 
-.erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item {
-    align-items: center;
-    display: flex;
-    gap: 14px;
-    justify-content: space-between;
+.erp-omd-admin .erp-omd-detail-list-horizontal {
+    grid-template-columns: repeat(8, minmax(120px, 1fr));
 }
 
 .erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item strong {
-    margin-bottom: 0;
-    min-width: 180px;
-}
-
-.erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item span {
-    text-align: right;
+    margin-bottom: 6px;
 }
 
 .erp-omd-admin .button,

@@ -392,6 +392,12 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        <tr>
+                                            <td><?php echo esc_html(current_time('Y-m-d')); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['time_cost'] ?? 0), 2)); ?></td>
+                                            <td><?php esc_html_e('Koszt pracy', 'erp-omd'); ?></td>
+                                            <td>&mdash;</td>
+                                        </tr>
                                         <?php if (empty($selected_project_cost_rows)) : ?>
                                             <tr>
                                                 <td colspan="4"><?php esc_html_e('Brak kosztów projektu.', 'erp-omd'); ?></td>
@@ -547,6 +553,19 @@
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Kosztorysy', 'erp-omd'); ?></h2>
                     </div>
+                    <form method="get" action="<?php echo esc_url($front_manager_url); ?>" class="erp-omd-front-inline-actions">
+                        <input type="hidden" name="project_id" value="<?php echo esc_attr((string) ($selected_project['id'] ?? 0)); ?>">
+                        <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ($selected_estimate['id'] ?? 0)); ?>">
+                        <input type="hidden" name="tab" value="kosztorysy">
+                        <label for="erp-omd-front-estimate-status-filter"><?php esc_html_e('Filtr statusu', 'erp-omd'); ?></label>
+                        <select id="erp-omd-front-estimate-status-filter" name="estimate_status">
+                            <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
+                            <?php foreach (['wstepny', 'do_akceptacji', 'zaakceptowany'] as $status_option) : ?>
+                                <option value="<?php echo esc_attr($status_option); ?>" <?php selected((string) ($estimate_status_filter ?? ''), $status_option); ?>><?php echo esc_html($status_option); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
+                    </form>
 
                     <?php if ($available_estimates) : ?>
                         <div class="erp-omd-front-estimate-list">
@@ -558,6 +577,7 @@
                                     [
                                         'project_id' => (int) ($selected_project['id'] ?? 0),
                                         'estimate_id' => $estimate_id,
+                                        'estimate_status' => (string) ($estimate_status_filter ?? ''),
                                     ],
                                     $front_manager_url
                                 ) . '#estimate-detail';
