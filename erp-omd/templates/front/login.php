@@ -32,7 +32,7 @@
                     <?php endif; ?>
 
                     <?php if ($error instanceof WP_Error) : ?>
-                        <div class="erp-omd-front-notice erp-omd-front-notice-error"><?php echo esc_html($error->get_error_message()); ?></div>
+                        <div class="erp-omd-front-notice erp-omd-front-notice-error"><?php echo wp_kses_post($error->get_error_message()); ?></div>
                     <?php endif; ?>
 
                     <form method="post" action="<?php echo esc_url($front_login_url); ?>" class="erp-omd-front-form erp-omd-front-login-form">
