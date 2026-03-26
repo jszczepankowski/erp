@@ -380,6 +380,7 @@ class ERP_OMD_Frontend
                 $this->redirect_manager_with_notice('error', __('Wybrana rola nie jest przypisana do Twojego profilu.', 'erp-omd'));
             }
 
+            $payload = $this->time_entry_service->prepare($payload);
             $errors = $this->time_entry_service->validate($payload);
             if ($errors) {
                 $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)));
