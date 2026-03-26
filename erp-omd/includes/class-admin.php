@@ -536,6 +536,17 @@ class ERP_OMD_Admin
         $notification_settings['mode'] = in_array($notification_settings['mode'], ['after_x_days', 'day_of_month'], true) ? $notification_settings['mode'] : 'after_x_days';
         $notification_settings['after_days'] = max(1, (int) $notification_settings['after_days']);
         $notification_settings['day_of_month'] = min(31, max(1, (int) $notification_settings['day_of_month']));
+        $fixed_monthly_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
+        $fixed_monthly_cost_items = $this->normalize_fixed_monthly_cost_items((array) get_option('erp_omd_fixed_monthly_cost_items', []));
+        if (empty($fixed_monthly_cost_items) && $fixed_monthly_cost > 0) {
+            $fixed_monthly_cost_items[] = [
+                'name' => __('Koszt stały (legacy)', 'erp-omd'),
+                'amount' => $fixed_monthly_cost,
+                'valid_from' => '',
+                'valid_to' => '',
+                'active' => 1,
+            ];
+        }
         $notification_sender_email = sanitize_email((string) get_option('erp_omd_notification_sender_email', ''));
 
         $notification_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
@@ -586,6 +597,7 @@ class ERP_OMD_Admin
             'clients' => __('Raport klientów', 'erp-omd'),
             'invoice' => __('Raport do faktury', 'erp-omd'),
             'monthly' => __('Raport miesięczny', 'erp-omd'),
+            'omd_rozliczenia' => __('Raport OMD rozliczenia', 'erp-omd'),
         ];
         $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');
         include ERP_OMD_PATH . 'templates/admin/reports.php';
@@ -950,13 +962,30 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-estimates', 'error', implode(' ', $errors), $id ? ['id' => $id, 'edit' => 1] : []);
         }
         if ($id) {
-            $this->estimates->update($id, $payload);
+            $should_accept_via_status = ($existing['status'] ?? '') !== 'zaakceptowany' && $payload['status'] === 'zaakceptowany';
+            if ($should_accept_via_status) {
+                $update_payload = $payload;
+                $update_payload['status'] = (string) ($existing['status'] ?? 'wstepny');
+                $this->estimates->update($id, $update_payload);
+                $result = $this->estimate_service->accept($id);
+                if ($result instanceof WP_Error) {
+                    $this->redirect_with_notice('erp-omd-estimates', 'error', $result->get_error_message(), ['id' => $id, 'edit' => 1]);
+                }
+            } else {
+                $this->estimates->update($id, $payload);
+            }
             $message = __('Kosztorys został zaktualizowany.', 'erp-omd');
         } else {
             $id = $this->estimates->create($payload);
             foreach ($initial_items_payload as $initial_item_payload) {
                 $initial_item_payload['estimate_id'] = $id;
                 $this->estimate_items->create($initial_item_payload);
+            }
+            if ($payload['status'] === 'zaakceptowany') {
+                $result = $this->estimate_service->accept($id);
+                if ($result instanceof WP_Error) {
+                    $this->redirect_with_notice('erp-omd-estimates', 'error', $result->get_error_message(), ['id' => $id, 'edit' => 1]);
+                }
             }
             $message = __('Kosztorys został utworzony.', 'erp-omd');
         }
@@ -1566,6 +1595,41 @@ class ERP_OMD_Admin
             }
 
             $message = __('Wybrane wpisy czasu zostały usunięte.', 'erp-omd');
+        } elseif ($bulk_action === 'change_project') {
+            if (! current_user_can('administrator')) {
+                wp_die(esc_html__('Zmiana projektu wpisów czasu jest dostępna tylko dla administratora.', 'erp-omd'));
+            }
+
+            $target_project_id = (int) ($_POST['target_project_id'] ?? 0);
+            $target_project = $this->projects->find($target_project_id);
+            if (! $target_project) {
+                $this->redirect_with_notice('erp-omd-time', 'error', __('Wybierz poprawny projekt docelowy dla akcji masowej.', 'erp-omd'));
+            }
+
+            foreach ($time_entry_ids as $time_entry_id) {
+                $entry = $this->time_entries->find($time_entry_id);
+                if (! $entry) {
+                    continue;
+                }
+
+                $payload = $entry;
+                $payload['project_id'] = $target_project_id;
+                $payload['rate_snapshot'] = $this->time_entry_service->resolve_rate_snapshot(
+                    $target_project_id,
+                    (int) ($entry['role_id'] ?? 0),
+                    (string) ($entry['entry_date'] ?? '')
+                );
+                $payload['cost_snapshot'] = $this->time_entry_service->resolve_cost_snapshot(
+                    (int) ($entry['employee_id'] ?? 0),
+                    (string) ($entry['entry_date'] ?? '')
+                );
+                $this->time_entries->update($time_entry_id, $payload);
+                $affected_project_ids[] = (int) ($entry['project_id'] ?? 0);
+                $affected_project_ids[] = $target_project_id;
+                $processed_count++;
+            }
+
+            $message = __('Projekt dla wybranych wpisów czasu został zmieniony.', 'erp-omd');
         } else {
             if (! in_array($bulk_action, ['submitted', 'approved', 'rejected'], true)) {
                 $this->redirect_with_notice('erp-omd-time', 'error', __('Niepoprawna akcja masowa dla wpisów czasu.', 'erp-omd'));
@@ -1726,7 +1790,51 @@ class ERP_OMD_Admin
         update_option('erp_omd_missing_hours_notification_settings', $notification_settings);
         update_option('erp_omd_missing_hours_notification_recipients', $recipient_state);
         update_option('erp_omd_notification_sender_email', $notification_sender_email);
+        $fixed_items = $this->normalize_fixed_monthly_cost_items(wp_unslash($_POST['fixed_cost_items'] ?? []));
+        update_option('erp_omd_fixed_monthly_cost_items', $fixed_items);
+        update_option('erp_omd_fixed_monthly_cost', array_sum(wp_list_pluck($fixed_items, 'amount')));
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
+    }
+
+    private function normalize_fixed_monthly_cost_items(array $raw_items)
+    {
+        $items = [];
+
+        foreach ($raw_items as $raw_item) {
+            if (! is_array($raw_item)) {
+                continue;
+            }
+
+            $name = sanitize_text_field((string) ($raw_item['name'] ?? ''));
+            $amount = max(0.0, (float) ($raw_item['amount'] ?? 0));
+            $valid_from = sanitize_text_field((string) ($raw_item['valid_from'] ?? ''));
+            $valid_to = sanitize_text_field((string) ($raw_item['valid_to'] ?? ''));
+            $active = ! empty($raw_item['active']) ? 1 : 0;
+
+            if ($name === '' && $amount <= 0) {
+                continue;
+            }
+
+            if ($valid_from !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $valid_from)) {
+                $valid_from = '';
+            }
+            if ($valid_to !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $valid_to)) {
+                $valid_to = '';
+            }
+            if ($valid_to !== '' && $valid_from !== '' && $valid_to < $valid_from) {
+                $valid_to = $valid_from;
+            }
+
+            $items[] = [
+                'name' => $name !== '' ? $name : __('Koszt stały', 'erp-omd'),
+                'amount' => round($amount, 2),
+                'valid_from' => $valid_from,
+                'valid_to' => $valid_to,
+                'active' => $active,
+            ];
+        }
+
+        return array_slice($items, 0, 50);
     }
 
     private function handle_attachment_add()

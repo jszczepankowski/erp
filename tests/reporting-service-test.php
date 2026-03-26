@@ -9,6 +9,24 @@ if (! function_exists('sanitize_text_field')) {
     }
 }
 
+if (! function_exists('__')) {
+    function __($text, $domain = null)
+    {
+        return $text;
+    }
+}
+
+if (! function_exists('get_option')) {
+    function get_option($name, $default = false)
+    {
+        global $erp_omd_test_options;
+        if (is_array($erp_omd_test_options) && array_key_exists($name, $erp_omd_test_options)) {
+            return $erp_omd_test_options[$name];
+        }
+        return $default;
+    }
+}
+
 if (! function_exists('sanitize_key')) {
     function sanitize_key($value)
     {
@@ -56,6 +74,15 @@ if (! class_exists('ERP_OMD_Employee_Repository')) {
     }
 }
 
+if (! class_exists('ERP_OMD_Salary_History_Repository')) {
+    class ERP_OMD_Salary_History_Repository
+    {
+        private $rows;
+        public function __construct(array $rows) { $this->rows = $rows; }
+        public function for_employee($employee_id) { return $this->rows[(int) $employee_id] ?? []; }
+    }
+}
+
 if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
     class ERP_OMD_Project_Cost_Repository
     {
@@ -100,6 +127,15 @@ final class ReportingServiceTestRunner
 
     public function run(): void
     {
+        global $erp_omd_test_options;
+        $erp_omd_test_options = [
+            'erp_omd_fixed_monthly_cost_items' => [
+                ['name' => 'Biuro', 'amount' => 1000.0, 'valid_from' => '2026-01-01', 'valid_to' => '', 'active' => 1],
+                ['name' => 'Nieaktywne', 'amount' => 999.0, 'valid_from' => '2026-01-01', 'valid_to' => '', 'active' => 0],
+            ],
+            'erp_omd_fixed_monthly_cost' => 500.0,
+        ];
+
         $service = new ERP_OMD_Reporting_Service(
             new ERP_OMD_Project_Repository([
                 ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000],
@@ -112,6 +148,10 @@ final class ReportingServiceTestRunner
             new ERP_OMD_Employee_Repository([
                 ['id' => 1, 'user_login' => 'anna'],
                 ['id' => 2, 'user_login' => 'jan'],
+            ]),
+            new ERP_OMD_Salary_History_Repository([
+                1 => [['monthly_salary' => 10000.0, 'valid_from' => '2026-01-01', 'valid_to' => null]],
+                2 => [['monthly_salary' => 9000.0, 'valid_from' => '2026-01-01', 'valid_to' => null]],
             ]),
             new ERP_OMD_Project_Cost_Repository([
                 10 => [
@@ -162,6 +202,12 @@ final class ReportingServiceTestRunner
         $this->assertSame(1, count($monthlyReport), 'Monthly report should group entries by month.');
         $this->assertSame(6.0, $monthlyReport[0]['hours'], 'Monthly report should sum hours for the month.');
 
+        $omdSettlement = $service->build_omd_settlement_report($filters);
+        $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
+        $this->assertSame('2026-03', $omdSettlement[11]['month'], 'OMD settlement report should end with selected month.');
+        $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
+        $this->assertSame(1000.0, $omdSettlement[11]['fixed_cost'], 'OMD settlement report should sum active fixed-cost items for selected month.');
+
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame('2026-03', $calendar['month'], 'Calendar should be built for requested month.');
         $this->assertSame(6.0, $calendar['totals']['hours'], 'Calendar totals should aggregate daily hours.');
@@ -170,7 +216,7 @@ final class ReportingServiceTestRunner
         $this->assertSame(5.0, $approvedCalendar['totals']['hours'], 'Calendar approved filter should keep approved entry hours.');
 
         $export = $service->export_definition('projects', $filters);
-        $this->assertSame('Projekt', $export['headers'][0], 'Project export should expose column headers.');
+        $this->assertSame('Klient', $export['headers'][0], 'Project export should expose column headers.');
         $this->assertSame(2, count($export['rows']), 'Project export should include report rows.');
 
         echo "Assertions: {$this->assertions}\n";
