@@ -60,6 +60,7 @@ class ERP_OMD_Plugin
             $this->estimate_item_repository,
             $this->client_repository,
             $this->project_repository,
+            $this->project_cost_repository,
             $this->estimate_audit_repository
         );
         $this->time_entry_service = new ERP_OMD_Time_Entry_Service(

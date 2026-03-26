@@ -609,6 +609,10 @@
     margin-bottom: 16px;
 }
 
+.erp-omd-admin .erp-omd-detail-grid-vertical {
+    grid-template-columns: 1fr;
+}
+
 .erp-omd-admin .erp-omd-form-intro {
     color: #50575e;
     margin: 0 0 16px;
@@ -991,6 +995,22 @@
 
 .erp-omd-admin .erp-omd-detail-item span {
     color: var(--erp-omd-text);
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item {
+    align-items: center;
+    display: flex;
+    gap: 14px;
+    justify-content: space-between;
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item strong {
+    margin-bottom: 0;
+    min-width: 180px;
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item span {
+    text-align: right;
 }
 
 .erp-omd-admin .button,

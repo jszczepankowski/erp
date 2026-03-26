@@ -950,13 +950,30 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-estimates', 'error', implode(' ', $errors), $id ? ['id' => $id, 'edit' => 1] : []);
         }
         if ($id) {
-            $this->estimates->update($id, $payload);
+            $should_accept_via_status = ($existing['status'] ?? '') !== 'zaakceptowany' && $payload['status'] === 'zaakceptowany';
+            if ($should_accept_via_status) {
+                $update_payload = $payload;
+                $update_payload['status'] = (string) ($existing['status'] ?? 'wstepny');
+                $this->estimates->update($id, $update_payload);
+                $result = $this->estimate_service->accept($id);
+                if ($result instanceof WP_Error) {
+                    $this->redirect_with_notice('erp-omd-estimates', 'error', $result->get_error_message(), ['id' => $id, 'edit' => 1]);
+                }
+            } else {
+                $this->estimates->update($id, $payload);
+            }
             $message = __('Kosztorys został zaktualizowany.', 'erp-omd');
         } else {
             $id = $this->estimates->create($payload);
             foreach ($initial_items_payload as $initial_item_payload) {
                 $initial_item_payload['estimate_id'] = $id;
                 $this->estimate_items->create($initial_item_payload);
+            }
+            if ($payload['status'] === 'zaakceptowany') {
+                $result = $this->estimate_service->accept($id);
+                if ($result instanceof WP_Error) {
+                    $this->redirect_with_notice('erp-omd-estimates', 'error', $result->get_error_message(), ['id' => $id, 'edit' => 1]);
+                }
             }
             $message = __('Kosztorys został utworzony.', 'erp-omd');
         }
@@ -1566,6 +1583,41 @@ class ERP_OMD_Admin
             }
 
             $message = __('Wybrane wpisy czasu zostały usunięte.', 'erp-omd');
+        } elseif ($bulk_action === 'change_project') {
+            if (! current_user_can('administrator')) {
+                wp_die(esc_html__('Zmiana projektu wpisów czasu jest dostępna tylko dla administratora.', 'erp-omd'));
+            }
+
+            $target_project_id = (int) ($_POST['target_project_id'] ?? 0);
+            $target_project = $this->projects->find($target_project_id);
+            if (! $target_project) {
+                $this->redirect_with_notice('erp-omd-time', 'error', __('Wybierz poprawny projekt docelowy dla akcji masowej.', 'erp-omd'));
+            }
+
+            foreach ($time_entry_ids as $time_entry_id) {
+                $entry = $this->time_entries->find($time_entry_id);
+                if (! $entry) {
+                    continue;
+                }
+
+                $payload = $entry;
+                $payload['project_id'] = $target_project_id;
+                $payload['rate_snapshot'] = $this->time_entry_service->resolve_rate_snapshot(
+                    $target_project_id,
+                    (int) ($entry['role_id'] ?? 0),
+                    (string) ($entry['entry_date'] ?? '')
+                );
+                $payload['cost_snapshot'] = $this->time_entry_service->resolve_cost_snapshot(
+                    (int) ($entry['employee_id'] ?? 0),
+                    (string) ($entry['entry_date'] ?? '')
+                );
+                $this->time_entries->update($time_entry_id, $payload);
+                $affected_project_ids[] = (int) ($entry['project_id'] ?? 0);
+                $affected_project_ids[] = $target_project_id;
+                $processed_count++;
+            }
+
+            $message = __('Projekt dla wybranych wpisów czasu został zmieniony.', 'erp-omd');
         } else {
             if (! in_array($bulk_action, ['submitted', 'approved', 'rejected'], true)) {
                 $this->redirect_with_notice('erp-omd-time', 'error', __('Niepoprawna akcja masowa dla wpisów czasu.', 'erp-omd'));
