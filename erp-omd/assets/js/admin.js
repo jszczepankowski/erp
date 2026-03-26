@@ -2,6 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const tables = document.querySelectorAll('.erp-omd-admin table.widefat');
 
   tables.forEach((table, tableIndex) => {
+    if (table.dataset.disableTableTools === '1') {
+      return;
+    }
     const body = table.tBodies[0];
     const rows = Array.from(body ? body.rows : []);
     if (!body || rows.length === 0) {
@@ -72,6 +75,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
     table.dataset.tableIndex = String(tableIndex);
   });
+
+
+  const fixedCostBody = document.querySelector('tbody[data-fixed-cost-body="1"]');
+  const addFixedCostButton = document.getElementById('erp-omd-add-fixed-cost-row');
+
+  const buildFixedCostRow = (index) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><input type="text" name="fixed_cost_items[${index}][name]" value="" /></td>
+      <td><input type="number" min="0" step="0.01" name="fixed_cost_items[${index}][amount]" value="0.00" /></td>
+      <td><input type="date" name="fixed_cost_items[${index}][valid_from]" value="" /></td>
+      <td><input type="date" name="fixed_cost_items[${index}][valid_to]" value="" /></td>
+      <td>
+        <label>
+          <input type="checkbox" name="fixed_cost_items[${index}][active]" value="1" checked />
+          Tak
+        </label>
+      </td>
+      <td>
+        <button type="button" class="button button-secondary erp-omd-remove-fixed-cost-row">Usuń</button>
+      </td>
+    `;
+    return row;
+  };
+
+  const appendFixedCostRow = () => {
+    if (!(fixedCostBody instanceof HTMLTableSectionElement)) {
+      return;
+    }
+
+    const nextIndex = Number.parseInt(fixedCostBody.dataset.nextIndex || '0', 10) || 0;
+    fixedCostBody.dataset.nextIndex = String(nextIndex + 1);
+    fixedCostBody.appendChild(buildFixedCostRow(nextIndex));
+  };
+
+  if (addFixedCostButton && fixedCostBody instanceof HTMLTableSectionElement) {
+    addFixedCostButton.addEventListener('click', appendFixedCostRow);
+
+    fixedCostBody.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement) || !target.classList.contains('erp-omd-remove-fixed-cost-row')) {
+        return;
+      }
+
+      const row = target.closest('tr');
+      if (row) {
+        row.remove();
+      }
+
+      if (fixedCostBody.rows.length === 0) {
+        appendFixedCostRow();
+      }
+    });
+  }
 
   document.querySelectorAll('.erp-omd-quick-hours-button').forEach((button) => {
     button.addEventListener('click', () => {
