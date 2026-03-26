@@ -122,7 +122,7 @@
                             <h3><?php esc_html_e('Widok 360° projektu', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Najważniejsze informacje o projekcie i jego bieżącym kontekście operacyjnym.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-detail-grid">
+                        <div class="erp-omd-detail-grid erp-omd-detail-grid-vertical">
                             <div class="erp-omd-detail-card">
                                 <h3><?php esc_html_e('Podsumowanie', 'erp-omd'); ?></h3>
                                 <div class="erp-omd-detail-list">
