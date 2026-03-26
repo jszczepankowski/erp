@@ -613,6 +613,26 @@
     grid-template-columns: 1fr;
 }
 
+.erp-omd-admin .erp-omd-detail-grid-vertical {
+    grid-template-columns: 1fr;
+}
+
+.erp-omd-admin .erp-omd-detail-grid-vertical {
+    grid-template-columns: 1fr;
+}
+
+.erp-omd-admin .erp-omd-detail-grid-vertical {
+    grid-template-columns: 1fr;
+}
+
+.erp-omd-admin .erp-omd-detail-grid-vertical {
+    grid-template-columns: 1fr;
+}
+
+.erp-omd-admin .erp-omd-detail-grid-vertical {
+    grid-template-columns: 1fr;
+}
+
 .erp-omd-admin .erp-omd-form-intro {
     color: #50575e;
     margin: 0 0 16px;
@@ -1003,6 +1023,46 @@
 
 .erp-omd-admin .erp-omd-detail-item span {
     color: var(--erp-omd-text);
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal {
+    grid-template-columns: repeat(8, minmax(120px, 1fr));
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item strong {
+    margin-bottom: 6px;
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal {
+    grid-template-columns: repeat(8, minmax(120px, 1fr));
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item strong {
+    margin-bottom: 6px;
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal {
+    grid-template-columns: repeat(8, minmax(120px, 1fr));
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item strong {
+    margin-bottom: 6px;
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal {
+    grid-template-columns: repeat(8, minmax(120px, 1fr));
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item strong {
+    margin-bottom: 6px;
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal {
+    grid-template-columns: repeat(8, minmax(120px, 1fr));
+}
+
+.erp-omd-admin .erp-omd-detail-list-horizontal .erp-omd-detail-item strong {
+    margin-bottom: 6px;
 }
 
 .erp-omd-admin .erp-omd-detail-list-horizontal {
