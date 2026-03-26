@@ -6,6 +6,7 @@ class ERP_OMD_Estimate_Service
     private $estimate_items;
     private $clients;
     private $projects;
+    private $project_costs;
     private $estimate_audit;
 
     public function __construct(
@@ -13,12 +14,14 @@ class ERP_OMD_Estimate_Service
         ERP_OMD_Estimate_Item_Repository $estimate_items,
         ERP_OMD_Client_Repository $clients,
         ERP_OMD_Project_Repository $projects,
+        $project_costs = null,
         $estimate_audit = null
     ) {
         $this->estimates = $estimates;
         $this->estimate_items = $estimate_items;
         $this->clients = $clients;
         $this->projects = $projects;
+        $this->project_costs = $project_costs;
         $this->estimate_audit = $estimate_audit;
     }
 
@@ -190,6 +193,7 @@ class ERP_OMD_Estimate_Service
             return new WP_Error('erp_omd_project_create_failed', __('Nie udało się utworzyć projektu z kosztorysu.', 'erp-omd'), ['status' => 500]);
         }
 
+        $this->copy_internal_costs_to_project((int) $project_id, $items);
         $this->estimates->mark_accepted((int) $estimate_id, get_current_user_id());
         $this->log_audit((int) $estimate_id, 'accepted', [
             'project_id' => $project_id,
@@ -203,6 +207,36 @@ class ERP_OMD_Estimate_Service
             'project' => $this->projects->find($project_id),
             'totals' => $totals,
         ];
+    }
+
+    private function copy_internal_costs_to_project($project_id, array $items)
+    {
+        if (! $project_id || ! $this->project_costs || ! method_exists($this->project_costs, 'create')) {
+            return;
+        }
+
+        $user_id = function_exists('get_current_user_id') ? (int) get_current_user_id() : 0;
+        $cost_date = function_exists('current_time') ? (string) current_time('Y-m-d') : gmdate('Y-m-d');
+
+        foreach ($items as $item) {
+            $amount = round((float) ($item['cost_internal'] ?? 0), 2);
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $item_name = trim((string) ($item['name'] ?? ''));
+            $description = $item_name !== ''
+                ? sprintf(__('Koszt wewnętrzny z kosztorysu: %s', 'erp-omd'), $item_name)
+                : __('Koszt wewnętrzny z kosztorysu', 'erp-omd');
+
+            $this->project_costs->create([
+                'project_id' => (int) $project_id,
+                'amount' => $amount,
+                'description' => $description,
+                'cost_date' => $cost_date,
+                'created_by_user_id' => $user_id,
+            ]);
+        }
     }
 
     private function log_audit($estimate_id, $action, array $details)
