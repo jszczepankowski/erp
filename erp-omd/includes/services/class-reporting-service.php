@@ -5,6 +5,7 @@ class ERP_OMD_Reporting_Service
     private $projects;
     private $clients;
     private $employees;
+    private $salary_history;
     private $project_costs;
     private $time_entries;
     private $project_financial_service;
@@ -13,6 +14,7 @@ class ERP_OMD_Reporting_Service
         ERP_OMD_Project_Repository $projects,
         ERP_OMD_Client_Repository $clients,
         ERP_OMD_Employee_Repository $employees,
+        ERP_OMD_Salary_History_Repository $salary_history,
         ERP_OMD_Project_Cost_Repository $project_costs,
         ERP_OMD_Time_Entry_Repository $time_entries,
         ERP_OMD_Project_Financial_Service $project_financial_service
@@ -20,6 +22,7 @@ class ERP_OMD_Reporting_Service
         $this->projects = $projects;
         $this->clients = $clients;
         $this->employees = $employees;
+        $this->salary_history = $salary_history;
         $this->project_costs = $project_costs;
         $this->time_entries = $time_entries;
         $this->project_financial_service = $project_financial_service;
@@ -33,7 +36,7 @@ class ERP_OMD_Reporting_Service
         }
 
         $report_type = isset($raw_filters['report_type']) ? sanitize_key((string) $raw_filters['report_type']) : 'projects';
-        if (! in_array($report_type, ['projects', 'clients', 'invoice', 'monthly'], true)) {
+        if (! in_array($report_type, ['projects', 'clients', 'invoice', 'monthly', 'omd_rozliczenia'], true)) {
             $report_type = 'projects';
         }
 
@@ -69,6 +72,8 @@ class ERP_OMD_Reporting_Service
                 return $this->build_invoice_report($filters);
             case 'monthly':
                 return $this->build_monthly_report($filters);
+            case 'omd_rozliczenia':
+                return $this->build_omd_settlement_report($filters);
             case 'projects':
             default:
                 return $this->build_project_report($filters);
@@ -238,6 +243,57 @@ class ERP_OMD_Reporting_Service
         return array_reverse($report_rows);
     }
 
+    public function build_omd_settlement_report(array $filters)
+    {
+        $filters = $this->sanitize_filters($filters);
+        $rows = [];
+        foreach ($this->build_month_sequence((string) $filters['month'], 12) as $month) {
+            $month_filters = $filters;
+            $month_filters['month'] = $month;
+            $projects = $this->get_filtered_projects($month_filters);
+            $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
+            $entries = $this->get_filtered_entries($project_ids, $month_filters);
+            $salary_cost = $this->get_salary_cost_for_month($month);
+            $direct_cost = 0.0;
+            $active_budgets = 0.0;
+            $time_revenue = 0.0;
+            $time_cost = 0.0;
+
+            foreach ($projects as $project) {
+                if ((string) ($project['status'] ?? '') !== 'inactive') {
+                    $active_budgets += (float) ($project['budget'] ?? 0);
+                }
+            }
+
+            foreach ($entries as $entry) {
+                $hours = (float) ($entry['hours'] ?? 0);
+                $time_revenue += $hours * (float) ($entry['rate_snapshot'] ?? 0);
+                $time_cost += $hours * (float) ($entry['cost_snapshot'] ?? 0);
+            }
+
+            foreach ($this->get_direct_cost_metrics_by_project($project_ids, $month) as $project_cost) {
+                $direct_cost += (float) $project_cost;
+            }
+
+            $fixed_cost = $this->get_fixed_monthly_cost();
+            $operating_result = $time_revenue - ($salary_cost + $fixed_cost + $direct_cost);
+            $hourly_profit = $time_revenue - $time_cost;
+            $rows[] = [
+                'month' => $month,
+                'salary_cost' => round($salary_cost, 2),
+                'project_direct_cost' => round($direct_cost, 2),
+                'active_project_budgets' => round($active_budgets, 2),
+                'hourly_profit' => round($hourly_profit, 2),
+                'fixed_cost' => round($fixed_cost, 2),
+                'operating_result' => round($operating_result, 2),
+                'time_revenue' => round($time_revenue, 2),
+                'time_cost' => round($time_cost, 2),
+            ];
+        }
+
+        return $rows;
+    }
+
     public function build_calendar(array $filters)
     {
         $filters = $this->sanitize_filters($filters);
@@ -390,9 +446,82 @@ class ERP_OMD_Reporting_Service
                         ];
                     }, $rows),
                 ];
+            case 'omd_rozliczenia':
+                return [
+                    'filename' => sprintf('erp-omd-rozliczenie-omd-%s.csv', $month),
+                    'headers' => ['Miesiąc', 'Koszt pensji', 'Koszt projektów', 'Budżety aktywnych projektów', 'Zysk godzinowy', 'Koszty stałe', 'Wynik operacyjny', 'Przychód czasu', 'Koszt czasu'],
+                    'rows' => array_map(static function ($row) {
+                        return [
+                            $row['month'],
+                            number_format((float) $row['salary_cost'], 2, '.', ''),
+                            number_format((float) $row['project_direct_cost'], 2, '.', ''),
+                            number_format((float) $row['active_project_budgets'], 2, '.', ''),
+                            number_format((float) $row['hourly_profit'], 2, '.', ''),
+                            number_format((float) $row['fixed_cost'], 2, '.', ''),
+                            number_format((float) $row['operating_result'], 2, '.', ''),
+                            number_format((float) $row['time_revenue'], 2, '.', ''),
+                            number_format((float) $row['time_cost'], 2, '.', ''),
+                        ];
+                    }, $rows),
+                ];
             default:
                 return ['filename' => 'erp-omd-report.csv', 'headers' => [], 'rows' => []];
         }
+    }
+
+    private function get_salary_cost_for_month($month)
+    {
+        $month_date = DateTimeImmutable::createFromFormat('Y-m-d', $month . '-01');
+        if (! $month_date) {
+            return 0.0;
+        }
+
+        $salary_cost = 0.0;
+        $month_start = $month_date->format('Y-m-01');
+        $month_end = $month_date->format('Y-m-t');
+        foreach ($this->employees->all() as $employee) {
+            $employee_id = (int) ($employee['id'] ?? 0);
+            if ($employee_id <= 0) {
+                continue;
+            }
+
+            foreach ($this->salary_history->for_employee($employee_id) as $salary_row) {
+                $valid_from = (string) ($salary_row['valid_from'] ?? '');
+                $valid_to = (string) ($salary_row['valid_to'] ?? '');
+                $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
+                if ($valid_from === '') {
+                    continue;
+                }
+
+                if ($valid_from <= $month_end && $effective_to >= $month_start) {
+                    $salary_cost += (float) ($salary_row['monthly_salary'] ?? 0.0);
+                    break;
+                }
+            }
+        }
+
+        return $salary_cost;
+    }
+
+    private function get_fixed_monthly_cost()
+    {
+        return max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
+    }
+
+    private function build_month_sequence($anchor_month, $count)
+    {
+        $count = max(1, (int) $count);
+        $anchor = DateTimeImmutable::createFromFormat('Y-m-d', $anchor_month . '-01');
+        if (! $anchor) {
+            $anchor = new DateTimeImmutable(gmdate('Y-m-01'));
+        }
+
+        $months = [];
+        for ($offset = $count - 1; $offset >= 0; $offset--) {
+            $months[] = $anchor->modify('-' . $offset . ' month')->format('Y-m');
+        }
+
+        return $months;
     }
 
     private function get_filtered_projects(array $filters)
