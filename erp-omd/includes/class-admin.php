@@ -537,6 +537,16 @@ class ERP_OMD_Admin
         $notification_settings['after_days'] = max(1, (int) $notification_settings['after_days']);
         $notification_settings['day_of_month'] = min(31, max(1, (int) $notification_settings['day_of_month']));
         $fixed_monthly_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
+        $fixed_monthly_cost_items = $this->normalize_fixed_monthly_cost_items((array) get_option('erp_omd_fixed_monthly_cost_items', []));
+        if (empty($fixed_monthly_cost_items) && $fixed_monthly_cost > 0) {
+            $fixed_monthly_cost_items[] = [
+                'name' => __('Koszt stały (legacy)', 'erp-omd'),
+                'amount' => $fixed_monthly_cost,
+                'valid_from' => '',
+                'valid_to' => '',
+                'active' => 1,
+            ];
+        }
         $notification_sender_email = sanitize_email((string) get_option('erp_omd_notification_sender_email', ''));
 
         $notification_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
@@ -1780,8 +1790,51 @@ class ERP_OMD_Admin
         update_option('erp_omd_missing_hours_notification_settings', $notification_settings);
         update_option('erp_omd_missing_hours_notification_recipients', $recipient_state);
         update_option('erp_omd_notification_sender_email', $notification_sender_email);
-        update_option('erp_omd_fixed_monthly_cost', max(0.0, (float) ($_POST['fixed_monthly_cost'] ?? 0)));
+        $fixed_items = $this->normalize_fixed_monthly_cost_items(wp_unslash($_POST['fixed_cost_items'] ?? []));
+        update_option('erp_omd_fixed_monthly_cost_items', $fixed_items);
+        update_option('erp_omd_fixed_monthly_cost', array_sum(wp_list_pluck($fixed_items, 'amount')));
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
+    }
+
+    private function normalize_fixed_monthly_cost_items(array $raw_items)
+    {
+        $items = [];
+
+        foreach ($raw_items as $raw_item) {
+            if (! is_array($raw_item)) {
+                continue;
+            }
+
+            $name = sanitize_text_field((string) ($raw_item['name'] ?? ''));
+            $amount = max(0.0, (float) ($raw_item['amount'] ?? 0));
+            $valid_from = sanitize_text_field((string) ($raw_item['valid_from'] ?? ''));
+            $valid_to = sanitize_text_field((string) ($raw_item['valid_to'] ?? ''));
+            $active = ! empty($raw_item['active']) ? 1 : 0;
+
+            if ($name === '' && $amount <= 0) {
+                continue;
+            }
+
+            if ($valid_from !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $valid_from)) {
+                $valid_from = '';
+            }
+            if ($valid_to !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $valid_to)) {
+                $valid_to = '';
+            }
+            if ($valid_to !== '' && $valid_from !== '' && $valid_to < $valid_from) {
+                $valid_to = $valid_from;
+            }
+
+            $items[] = [
+                'name' => $name !== '' ? $name : __('Koszt stały', 'erp-omd'),
+                'amount' => round($amount, 2),
+                'valid_from' => $valid_from,
+                'valid_to' => $valid_to,
+                'active' => $active,
+            ];
+        }
+
+        return array_slice($items, 0, 50);
     }
 
     private function handle_attachment_add()
