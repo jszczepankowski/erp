@@ -1583,6 +1583,41 @@ class ERP_OMD_Admin
             }
 
             $message = __('Wybrane wpisy czasu zostały usunięte.', 'erp-omd');
+        } elseif ($bulk_action === 'change_project') {
+            if (! current_user_can('administrator')) {
+                wp_die(esc_html__('Zmiana projektu wpisów czasu jest dostępna tylko dla administratora.', 'erp-omd'));
+            }
+
+            $target_project_id = (int) ($_POST['target_project_id'] ?? 0);
+            $target_project = $this->projects->find($target_project_id);
+            if (! $target_project) {
+                $this->redirect_with_notice('erp-omd-time', 'error', __('Wybierz poprawny projekt docelowy dla akcji masowej.', 'erp-omd'));
+            }
+
+            foreach ($time_entry_ids as $time_entry_id) {
+                $entry = $this->time_entries->find($time_entry_id);
+                if (! $entry) {
+                    continue;
+                }
+
+                $payload = $entry;
+                $payload['project_id'] = $target_project_id;
+                $payload['rate_snapshot'] = $this->time_entry_service->resolve_rate_snapshot(
+                    $target_project_id,
+                    (int) ($entry['role_id'] ?? 0),
+                    (string) ($entry['entry_date'] ?? '')
+                );
+                $payload['cost_snapshot'] = $this->time_entry_service->resolve_cost_snapshot(
+                    (int) ($entry['employee_id'] ?? 0),
+                    (string) ($entry['entry_date'] ?? '')
+                );
+                $this->time_entries->update($time_entry_id, $payload);
+                $affected_project_ids[] = (int) ($entry['project_id'] ?? 0);
+                $affected_project_ids[] = $target_project_id;
+                $processed_count++;
+            }
+
+            $message = __('Projekt dla wybranych wpisów czasu został zmieniony.', 'erp-omd');
         } else {
             if (! in_array($bulk_action, ['submitted', 'approved', 'rejected'], true)) {
                 $this->redirect_with_notice('erp-omd-time', 'error', __('Niepoprawna akcja masowa dla wpisów czasu.', 'erp-omd'));
