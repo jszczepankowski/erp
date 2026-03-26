@@ -480,7 +480,7 @@
                             <div class="erp-omd-front-inline-actions">
                                 <button type="button" class="erp-omd-front-button erp-omd-front-button-ghost" id="erp-omd-front-add-item"><?php esc_html_e('Dodaj pozycję', 'erp-omd'); ?></button>
                             </div>
-                            <div class="erp-omd-front-metrics">
+                            <div class="erp-omd-front-metrics erp-omd-front-metrics-estimate-totals">
                                 <div class="erp-omd-front-metric">
                                     <span class="erp-omd-front-metric-label"><?php esc_html_e('Suma netto', 'erp-omd'); ?></span>
                                     <strong id="erp-omd-front-estimate-net">0.00</strong>
