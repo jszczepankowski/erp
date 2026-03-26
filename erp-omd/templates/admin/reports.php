@@ -31,6 +31,7 @@
                                         <option value="clients" <?php selected($report_filters['report_type'], 'clients'); ?>><?php esc_html_e('Raport klientów', 'erp-omd'); ?></option>
                                         <option value="invoice" <?php selected($report_filters['report_type'], 'invoice'); ?>><?php esc_html_e('Do faktury', 'erp-omd'); ?></option>
                                         <option value="monthly" <?php selected($report_filters['report_type'], 'monthly'); ?>><?php esc_html_e('Raport miesięczny', 'erp-omd'); ?></option>
+                                        <option value="omd_rozliczenia" <?php selected($report_filters['report_type'], 'omd_rozliczenia'); ?>><?php esc_html_e('Raport OMD rozliczenia', 'erp-omd'); ?></option>
                                     </select>
                                 </div>
                             <?php endif; ?>
@@ -139,6 +140,24 @@
                                 <td><?php echo esc_html(number_format_i18n((float) $row['time_cost'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['direct_cost'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['profit'], 2)); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php elseif ($report_filters['report_type'] === 'omd_rozliczenia') : ?>
+                    <table class="widefat striped">
+                        <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt pensji', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Budżety aktywnych projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk godzinowy', 'erp-omd'); ?></th><th><?php esc_html_e('Stałe koszty', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></th></tr></thead>
+                        <tbody>
+                        <?php if (empty($report_rows)) : ?><tr><td colspan="7"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
+                        <?php foreach ($report_rows as $row) : ?>
+                            <tr>
+                                <td><?php echo esc_html($row['month']); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['salary_cost'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['project_direct_cost'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['active_project_budgets'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['hourly_profit'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['fixed_cost'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['operating_result'], 2)); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>

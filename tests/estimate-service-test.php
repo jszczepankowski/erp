@@ -16,6 +16,17 @@ if (! function_exists('get_current_user_id')) {
     }
 }
 
+if (! function_exists('current_time')) {
+    function current_time($format)
+    {
+        if ($format === 'Y-m-d') {
+            return '2026-03-20';
+        }
+
+        return '2026-03-20 12:00:00';
+    }
+}
+
 if (! class_exists('WP_Error')) {
     class WP_Error
     {
@@ -118,6 +129,20 @@ if (! class_exists('ERP_OMD_Project_Repository')) {
     }
 }
 
+if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
+    class ERP_OMD_Project_Cost_Repository
+    {
+        public $created = [];
+
+        public function create(array $data)
+        {
+            $this->created[] = $data;
+
+            return count($this->created);
+        }
+    }
+}
+
 $GLOBALS['wpdb'] = new class {
     public $queries = [];
 
@@ -136,6 +161,7 @@ final class EstimateServiceTestRunner
 
     public function run(): void
     {
+        $projectCostRepository = new ERP_OMD_Project_Cost_Repository();
         $service = new ERP_OMD_Estimate_Service(
             new ERP_OMD_Estimate_Repository([
                 1 => ['id' => 1, 'client_id' => 10, 'name' => 'Sprint launch', 'status' => 'do_akceptacji'],
@@ -150,7 +176,8 @@ final class EstimateServiceTestRunner
             new ERP_OMD_Client_Repository([
                 10 => ['id' => 10, 'name' => 'ACME', 'account_manager_id' => 5],
             ]),
-            new ERP_OMD_Project_Repository()
+            new ERP_OMD_Project_Repository(),
+            $projectCostRepository
         );
 
         $totals = $service->calculate_totals([
@@ -168,6 +195,9 @@ final class EstimateServiceTestRunner
         $this->assertSame(400.0, $acceptResult['project']['budget'], 'Accepted estimate project should use net total as project budget.');
         $this->assertSame(1, $acceptResult['project']['estimate_id'], 'Accepted estimate should bind created project to estimate.');
         $this->assertSame('Sprint launch', $acceptResult['project']['name'], 'Accepted estimate should use estimate name as project name.');
+        $this->assertSame(2, count($projectCostRepository->created), 'Accepted estimate should copy each internal estimate cost to project costs.');
+        $this->assertSame(50.0, $projectCostRepository->created[0]['amount'], 'First copied project cost should match estimate internal cost.');
+        $this->assertSame(80.0, $projectCostRepository->created[1]['amount'], 'Second copied project cost should match estimate internal cost.');
 
         $estimateValidationErrors = $service->validate_estimate(
             ['client_id' => 0, 'name' => '', 'status' => 'bledny'],

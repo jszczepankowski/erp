@@ -471,6 +471,7 @@ class ERP_OMD_Installer
         add_option('erp_omd_front_login_logo_id', 0);
         add_option('erp_omd_front_login_cover_id', 0);
         add_option('erp_omd_notification_sender_email', '');
+        add_option('erp_omd_fixed_monthly_cost', 0);
         self::maybe_cleanup_legacy_time_entry_indexes();
     }
 
