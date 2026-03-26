@@ -16,10 +16,6 @@
                             <label for="erp-omd-alert-margin-threshold"><?php esc_html_e('Próg alertu niskiej marży (%)', 'erp-omd'); ?></label>
                             <input id="erp-omd-alert-margin-threshold" type="number" min="0" step="0.01" name="alert_margin_threshold" value="<?php echo esc_attr($margin_threshold); ?>" />
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="erp-omd-fixed-monthly-cost-total"><?php esc_html_e('Suma aktywnych kosztów stałych (miesięcznie)', 'erp-omd'); ?></label>
-                            <input id="erp-omd-fixed-monthly-cost-total" type="text" readonly value="<?php echo esc_attr(number_format((float) $fixed_monthly_cost, 2, '.', '')); ?>" />
-                        </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label class="erp-omd-form-label">
                                 <input type="checkbox" name="delete_data_on_uninstall" value="1" <?php checked($delete_data); ?> />
@@ -46,6 +42,12 @@
                         $fixed_cost_rows[] = ['name' => '', 'amount' => 0, 'valid_from' => '', 'valid_to' => '', 'active' => 1];
                     }
                     ?>
+                    <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-fixed-monthly-cost-total"><?php esc_html_e('Suma aktywnych kosztów stałych (miesięcznie)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-fixed-monthly-cost-total" type="text" readonly value="<?php echo esc_attr(number_format((float) $fixed_monthly_cost, 2, '.', '')); ?>" />
+                        </div>
+                    </div>
                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
                         <table class="widefat striped erp-omd-fixed-cost-table" data-disable-table-tools="1">
                             <thead>
@@ -82,6 +84,9 @@
                             <button type="button" class="button button-secondary" id="erp-omd-add-fixed-cost-row"><?php esc_html_e('Dodaj pozycję', 'erp-omd'); ?></button>
                         </p>
                         <p class="description"><?php esc_html_e('Pozycje bez nazwy i kwoty są pomijane przy zapisie.', 'erp-omd'); ?></p>
+                        <p>
+                            <button type="submit" class="button button-primary"><?php esc_html_e('Zapisz koszty', 'erp-omd'); ?></button>
+                        </p>
                     </div>
                 </section>
 
