@@ -1,6 +1,8 @@
 <div class="wrap erp-omd-admin">
     <h1><?php esc_html_e('Kosztorysy', 'erp-omd'); ?></h1>
 
+    <?php $show_estimate_editor = ! $selected_estimate || $estimate; ?>
+    <?php if ($show_estimate_editor) : ?>
     <section class="erp-omd-card">
             <h2><?php echo $estimate ? esc_html__('Edytuj kosztorys', 'erp-omd') : esc_html__('Nowy kosztorys', 'erp-omd'); ?></h2>
             <form method="post">
@@ -104,6 +106,7 @@
             </form>
 
     </section>
+    <?php endif; ?>
 
     <?php if (! $estimate) : ?>
         <script>
@@ -269,6 +272,40 @@
                                 <div class="erp-omd-form-actions">
                                     <?php submit_button(__('Zapisz pozycję', 'erp-omd'), 'secondary'); ?>
                                     <a class="button" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-estimates', 'id' => (int) $selected_estimate['id'], 'edit' => 1], admin_url('admin.php'))); ?>"><?php esc_html_e('Anuluj edycję pozycji', 'erp-omd'); ?></a>
+                                </div>
+                            </form>
+                        <?php endif; ?>
+
+                        <?php if ($estimate && ($selected_estimate['status'] ?? '') !== 'zaakceptowany') : ?>
+                            <form method="post">
+                                <?php wp_nonce_field('erp_omd_save_estimate_item'); ?>
+                                <input type="hidden" name="erp_omd_action" value="save_estimate_item">
+                                <input type="hidden" name="estimate_id" value="<?php echo esc_attr($selected_estimate['id']); ?>">
+                                <input type="hidden" name="item_id" value="0">
+                                <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-pricing">
+                                    <div class="erp-omd-form-field">
+                                        <label><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
+                                        <input name="name" type="text" class="regular-text" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
+                                        <input name="qty" type="number" step="0.01" min="0.01" value="1" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
+                                        <input name="price" type="number" step="0.01" min="0" value="0" required>
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
+                                        <input name="cost_internal" type="number" step="0.01" min="0" value="0" required>
+                                    </div>
+                                    <div class="erp-omd-form-field">
+                                        <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
+                                        <input name="comment" type="text" class="regular-text">
+                                    </div>
+                                </div>
+                                <div class="erp-omd-form-actions">
+                                    <?php submit_button(__('Dodaj pozycję', 'erp-omd'), 'secondary'); ?>
                                 </div>
                             </form>
                         <?php endif; ?>

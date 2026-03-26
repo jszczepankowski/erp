@@ -125,7 +125,7 @@
                         <div class="erp-omd-detail-grid erp-omd-detail-grid-vertical">
                             <div class="erp-omd-detail-card">
                                 <h3><?php esc_html_e('Podsumowanie', 'erp-omd'); ?></h3>
-                                <div class="erp-omd-detail-list">
+                                <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Klient', 'erp-omd'); ?></strong><span><?php echo esc_html($project['client_name'] ?? '—'); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($project['status'] ?? 'do_rozpoczecia', 'project')); ?>"><?php echo esc_html($this->project_status_label($project['status'] ?? 'do_rozpoczecia')); ?></span></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Typ', 'erp-omd'); ?></strong><span><?php echo esc_html($this->billing_type_label($project['billing_type'] ?? 'time_material')); ?></span></div>
@@ -134,7 +134,7 @@
                             </div>
                             <div class="erp-omd-detail-card">
                                 <h3><?php esc_html_e('Kontekst operacyjny', 'erp-omd'); ?></h3>
-                                <div class="erp-omd-detail-list">
+                                <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Budżet', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project['budget'] ?? 0), 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Abonament', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project['retainer_monthly_fee'] ?? 0), 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Start', 'erp-omd'); ?></strong><span><?php echo esc_html($project['start_date'] ?? '—'); ?></span></div>
@@ -144,7 +144,7 @@
                             </div>
                             <div class="erp-omd-detail-card">
                                 <h3><?php esc_html_e('Finanse projektu', 'erp-omd'); ?></h3>
-                                <div class="erp-omd-detail-list">
+                                <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Przychód', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['revenue'] ?? 0), 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koszt', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['cost'] ?? 0), 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zysk', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['profit'] ?? 0), 2)); ?></span></div>
