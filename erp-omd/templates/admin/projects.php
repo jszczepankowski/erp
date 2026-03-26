@@ -122,7 +122,7 @@
                             <h3><?php esc_html_e('Widok 360° projektu', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Najważniejsze informacje o projekcie i jego bieżącym kontekście operacyjnym.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-detail-grid">
+                        <div class="erp-omd-detail-grid erp-omd-detail-grid-vertical">
                             <div class="erp-omd-detail-card">
                                 <h3><?php esc_html_e('Podsumowanie', 'erp-omd'); ?></h3>
                                 <div class="erp-omd-detail-list">
@@ -142,23 +142,19 @@
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Próg marży', 'erp-omd'); ?></strong><span><?php echo esc_html(($project['alert_margin_threshold'] ?? '') !== '' && $project['alert_margin_threshold'] !== null ? number_format_i18n((float) $project['alert_margin_threshold'], 2) . '%' : '—'); ?></span></div>
                                 </div>
                             </div>
-                        </div>
-                    </section>
-
-                    <section class="erp-omd-form-section">
-                        <div class="erp-omd-form-section-header">
-                            <h3><?php esc_html_e('Finanse projektu', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Przychód, koszt i metryki rentowności w bardziej czytelnym, kafelkowym układzie.', 'erp-omd'); ?></p>
-                        </div>
-                        <div class="erp-omd-detail-grid">
-                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Przychód', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['revenue'] ?? 0), 2)); ?></span></div>
-                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koszt', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['cost'] ?? 0), 2)); ?></span></div>
-                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zysk', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['profit'] ?? 0), 2)); ?></span></div>
-                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Marża %', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['margin'] ?? 0), 2)); ?></span></div>
-                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Wykorzystanie budżetu %', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['budget_usage'] ?? 0), 2)); ?></span></div>
-                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Przychód z czasu pracy', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['time_revenue'] ?? 0), 2)); ?></span></div>
-                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koszt czasu pracy', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['time_cost'] ?? 0), 2)); ?></span></div>
-                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['direct_cost'] ?? 0), 2)); ?></span></div>
+                            <div class="erp-omd-detail-card">
+                                <h3><?php esc_html_e('Finanse projektu', 'erp-omd'); ?></h3>
+                                <div class="erp-omd-detail-list">
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Przychód', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['revenue'] ?? 0), 2)); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koszt', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['cost'] ?? 0), 2)); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zysk', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['profit'] ?? 0), 2)); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Marża %', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['margin'] ?? 0), 2)); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Wykorzystanie budżetu %', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['budget_usage'] ?? 0), 2)); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Przychód z czasu pracy', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['time_revenue'] ?? 0), 2)); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koszt czasu pracy', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['time_cost'] ?? 0), 2)); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project_financial['direct_cost'] ?? 0), 2)); ?></span></div>
+                                </div>
+                            </div>
                         </div>
                     </section>
 

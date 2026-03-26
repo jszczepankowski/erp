@@ -414,6 +414,10 @@ class ERP_OMD_Frontend
             $this->add_manager_project_cost($user);
             return;
         }
+        if ($action === 'delete_project_cost') {
+            $this->delete_manager_project_cost($user);
+            return;
+        }
         if ($action === 'accept_estimate') {
             $this->accept_manager_estimate($user);
             return;
@@ -1145,7 +1149,18 @@ class ERP_OMD_Frontend
             $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)), ['estimate_id' => $estimate_id]);
         }
 
-        $this->estimates->update($estimate_id, $payload);
+        $should_accept_via_status = ($estimate['status'] ?? '') !== 'zaakceptowany' && $payload['status'] === 'zaakceptowany';
+        if ($should_accept_via_status) {
+            $update_payload = $payload;
+            $update_payload['status'] = (string) ($estimate['status'] ?? 'wstepny');
+            $this->estimates->update($estimate_id, $update_payload);
+            $result = $this->estimate_service->accept($estimate_id);
+            if ($result instanceof WP_Error) {
+                $this->redirect_manager_with_notice('error', $result->get_error_message(), ['estimate_id' => $estimate_id]);
+            }
+        } else {
+            $this->estimates->update($estimate_id, $payload);
+        }
         $this->redirect_manager_with_notice('success', __('Kosztorys został zaktualizowany.', 'erp-omd'), ['estimate_id' => $estimate_id]);
     }
 
@@ -1342,6 +1357,31 @@ class ERP_OMD_Frontend
         $this->project_costs->create($payload);
         $this->project_financial_service->rebuild_for_project($project_id);
         $this->redirect_manager_with_notice('success', __('Koszt projektu został dodany.', 'erp-omd'), ['project_id' => $project_id]);
+    }
+
+    private function delete_manager_project_cost(WP_User $user)
+    {
+        $cost_id = (int) ($_POST['project_cost_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $cost = $cost_id > 0 ? $this->project_costs->find($cost_id) : null;
+        if (! $cost) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono kosztu projektu do usunięcia.', 'erp-omd'), $project_id > 0 ? ['project_id' => $project_id] : []);
+        }
+
+        $project_id = (int) ($cost['project_id'] ?? $project_id);
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+        }
+
+        $managed_project_ids = array_map('intval', wp_list_pluck($this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator')), 'id'));
+        if (! in_array($project_id, $managed_project_ids, true)) {
+            $this->redirect_manager_with_notice('error', __('Nie możesz usuwać kosztów projektu spoza własnego zakresu odpowiedzialności.', 'erp-omd'));
+        }
+
+        $this->project_costs->delete($cost_id);
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_manager_with_notice('success', __('Koszt projektu został usunięty.', 'erp-omd'), ['project_id' => $project_id]);
     }
 
     private function accept_manager_estimate(WP_User $user)

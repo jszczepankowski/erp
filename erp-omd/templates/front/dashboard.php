@@ -274,6 +274,7 @@
                         <?php
                         $selected_project_financial = (array) ($selected_project['financial'] ?? []);
                         $selected_project_alerts = (array) ($selected_project['alerts'] ?? []);
+                        $selected_project_cost_rows = $this->project_costs->for_project((int) ($selected_project['id'] ?? 0));
                         $selected_project_estimates = array_values(
                             array_filter(
                                 $available_estimates,
@@ -333,6 +334,29 @@
                             </div>
                         </form>
 
+                        <div class="erp-omd-front-metrics">
+                            <div class="erp-omd-front-metric erp-omd-front-metric-revenue">
+                                <span class="erp-omd-front-metric-label"><?php esc_html_e('Przychód', 'erp-omd'); ?></span>
+                                <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['revenue'] ?? 0), 2)); ?></strong>
+                            </div>
+                            <div class="erp-omd-front-metric erp-omd-front-metric-cost">
+                                <span class="erp-omd-front-metric-label"><?php esc_html_e('Koszt', 'erp-omd'); ?></span>
+                                <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['cost'] ?? 0), 2)); ?></strong>
+                            </div>
+                            <div class="erp-omd-front-metric">
+                                <span class="erp-omd-front-metric-label"><?php esc_html_e('Koszt czasu pracy', 'erp-omd'); ?></span>
+                                <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['time_cost'] ?? 0), 2)); ?></strong>
+                            </div>
+                            <div class="erp-omd-front-metric erp-omd-front-metric-profit">
+                                <span class="erp-omd-front-metric-label"><?php esc_html_e('Zysk', 'erp-omd'); ?></span>
+                                <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['profit'] ?? 0), 2)); ?></strong>
+                            </div>
+                            <div class="erp-omd-front-metric">
+                                <span class="erp-omd-front-metric-label"><?php esc_html_e('Marża %', 'erp-omd'); ?></span>
+                                <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['margin'] ?? 0), 2)); ?></strong>
+                            </div>
+                        </div>
+
                         <div class="erp-omd-front-panel erp-omd-front-panel-subtle">
                             <div class="erp-omd-front-section-heading">
                                 <h3><?php esc_html_e('Dodaj koszt projektu', 'erp-omd'); ?></h3>
@@ -356,26 +380,43 @@
                                 <div class="erp-omd-front-inline-actions">
                                     <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Dodaj koszt', 'erp-omd'); ?></button>
                                 </div>
+                                <div class="erp-omd-front-table-wrap">
+                                    <table class="erp-omd-front-table">
+                                        <thead>
+                                            <tr>
+                                                <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                                <th><?php esc_html_e('Kwota', 'erp-omd'); ?></th>
+                                                <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                                <th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if (empty($selected_project_cost_rows)) : ?>
+                                                <tr>
+                                                    <td colspan="4"><?php esc_html_e('Brak kosztów projektu.', 'erp-omd'); ?></td>
+                                                </tr>
+                                            <?php else : ?>
+                                                <?php foreach ($selected_project_cost_rows as $project_cost_row) : ?>
+                                                    <tr>
+                                                        <td><?php echo esc_html($project_cost_row['cost_date'] ?? '—'); ?></td>
+                                                        <td><?php echo esc_html(number_format_i18n((float) ($project_cost_row['amount'] ?? 0), 2)); ?></td>
+                                                        <td><?php echo esc_html($project_cost_row['description'] ?? ''); ?></td>
+                                                        <td>
+                                                            <form method="post" action="<?php echo esc_url($manager_form_action); ?>" onsubmit="return window.confirm('<?php echo esc_js(__('Usunąć koszt projektu?', 'erp-omd')); ?>');">
+                                                                <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                                                <input type="hidden" name="erp_omd_front_action" value="delete_project_cost">
+                                                                <input type="hidden" name="project_id" value="<?php echo esc_attr((string) ($selected_project['id'] ?? 0)); ?>">
+                                                                <input type="hidden" name="project_cost_id" value="<?php echo esc_attr((string) ($project_cost_row['id'] ?? 0)); ?>">
+                                                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </form>
-                        </div>
-
-                        <div class="erp-omd-front-metrics">
-                            <div class="erp-omd-front-metric erp-omd-front-metric-revenue">
-                                <span class="erp-omd-front-metric-label"><?php esc_html_e('Przychód', 'erp-omd'); ?></span>
-                                <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['revenue'] ?? 0), 2)); ?></strong>
-                            </div>
-                            <div class="erp-omd-front-metric erp-omd-front-metric-cost">
-                                <span class="erp-omd-front-metric-label"><?php esc_html_e('Koszt', 'erp-omd'); ?></span>
-                                <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['cost'] ?? 0), 2)); ?></strong>
-                            </div>
-                            <div class="erp-omd-front-metric erp-omd-front-metric-profit">
-                                <span class="erp-omd-front-metric-label"><?php esc_html_e('Zysk', 'erp-omd'); ?></span>
-                                <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['profit'] ?? 0), 2)); ?></strong>
-                            </div>
-                            <div class="erp-omd-front-metric">
-                                <span class="erp-omd-front-metric-label"><?php esc_html_e('Marża %', 'erp-omd'); ?></span>
-                                <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_financial['margin'] ?? 0), 2)); ?></strong>
-                            </div>
                         </div>
 
                         <div class="erp-omd-front-grid erp-omd-front-grid-summary">
@@ -480,7 +521,7 @@
                             <div class="erp-omd-front-inline-actions">
                                 <button type="button" class="erp-omd-front-button erp-omd-front-button-ghost" id="erp-omd-front-add-item"><?php esc_html_e('Dodaj pozycję', 'erp-omd'); ?></button>
                             </div>
-                            <div class="erp-omd-front-metrics">
+                            <div class="erp-omd-front-metrics erp-omd-front-metrics-estimate-totals">
                                 <div class="erp-omd-front-metric">
                                     <span class="erp-omd-front-metric-label"><?php esc_html_e('Suma netto', 'erp-omd'); ?></span>
                                     <strong id="erp-omd-front-estimate-net">0.00</strong>
