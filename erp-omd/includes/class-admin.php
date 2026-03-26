@@ -536,6 +536,7 @@ class ERP_OMD_Admin
         $notification_settings['mode'] = in_array($notification_settings['mode'], ['after_x_days', 'day_of_month'], true) ? $notification_settings['mode'] : 'after_x_days';
         $notification_settings['after_days'] = max(1, (int) $notification_settings['after_days']);
         $notification_settings['day_of_month'] = min(31, max(1, (int) $notification_settings['day_of_month']));
+        $fixed_monthly_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
         $notification_sender_email = sanitize_email((string) get_option('erp_omd_notification_sender_email', ''));
 
         $notification_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
@@ -586,6 +587,7 @@ class ERP_OMD_Admin
             'clients' => __('Raport klientów', 'erp-omd'),
             'invoice' => __('Raport do faktury', 'erp-omd'),
             'monthly' => __('Raport miesięczny', 'erp-omd'),
+            'omd_rozliczenia' => __('Raport OMD rozliczenia', 'erp-omd'),
         ];
         $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');
         include ERP_OMD_PATH . 'templates/admin/reports.php';
@@ -1778,6 +1780,7 @@ class ERP_OMD_Admin
         update_option('erp_omd_missing_hours_notification_settings', $notification_settings);
         update_option('erp_omd_missing_hours_notification_recipients', $recipient_state);
         update_option('erp_omd_notification_sender_email', $notification_sender_email);
+        update_option('erp_omd_fixed_monthly_cost', max(0.0, (float) ($_POST['fixed_monthly_cost'] ?? 0)));
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
 
