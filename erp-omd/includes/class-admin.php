@@ -182,6 +182,54 @@ class ERP_OMD_Admin
             'employee_profit' => 0.0,
             'active_employees' => 0,
         ];
+        $omd_report_rows = $this->reporting_service->build_report('omd_rozliczenia', [
+            'month' => $reporting_month,
+            'report_type' => 'omd_rozliczenia',
+        ]);
+        $omd_month_row = null;
+        foreach ((array) $omd_report_rows as $report_row) {
+            if ((string) ($report_row['month'] ?? '') === $reporting_month) {
+                $omd_month_row = $report_row;
+                break;
+            }
+        }
+        if (! is_array($omd_month_row)) {
+            $omd_month_row = [];
+        }
+        $dashboard_project_monthly_cost = round((float) ($omd_month_row['project_direct_cost'] ?? 0.0), 2);
+        $dashboard_employee_time_cost = round((float) ($omd_month_row['time_cost'] ?? 0.0), 2);
+        $dashboard_employee_hourly_profit = round((float) ($omd_month_row['hourly_profit'] ?? 0.0), 2);
+        $dashboard_project_profit = round(((float) ($omd_month_row['active_project_budgets'] ?? 0.0) + $dashboard_employee_hourly_profit) - $dashboard_project_monthly_cost, 2);
+        $dashboard_monthly_finance_metrics = [
+            [
+                'key' => 'project_cost',
+                'label' => __('Koszty miesięczne projektów', 'erp-omd'),
+                'value' => $dashboard_project_monthly_cost,
+                'tone' => 'cost',
+            ],
+            [
+                'key' => 'employee_time_cost',
+                'label' => __('Koszty pracy pracowników', 'erp-omd'),
+                'value' => $dashboard_employee_time_cost,
+                'tone' => 'cost',
+            ],
+            [
+                'key' => 'employee_hourly_profit',
+                'label' => __('Zysk z pracy pracowników', 'erp-omd'),
+                'value' => $dashboard_employee_hourly_profit,
+                'tone' => 'profit',
+            ],
+            [
+                'key' => 'project_profit',
+                'label' => __('Zysk z projektów', 'erp-omd'),
+                'value' => $dashboard_project_profit,
+                'tone' => $dashboard_project_profit >= 0 ? 'profit' : 'loss',
+            ],
+        ];
+        $dashboard_monthly_finance_max = 1.0;
+        foreach ($dashboard_monthly_finance_metrics as $metric_row) {
+            $dashboard_monthly_finance_max = max($dashboard_monthly_finance_max, abs((float) ($metric_row['value'] ?? 0.0)));
+        }
         $alert_summary = [
             'error' => 0,
             'warning' => 0,

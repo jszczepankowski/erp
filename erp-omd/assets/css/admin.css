@@ -234,7 +234,7 @@
 .erp-omd-admin .erp-omd-dashboard-visuals {
     display: grid;
     gap: 20px;
-    grid-template-columns: minmax(320px, 1.3fr) minmax(280px, 0.9fr);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     margin-bottom: 24px;
 }
 
@@ -396,6 +396,59 @@
     margin-top: 54px;
     text-transform: uppercase;
     z-index: 1;
+}
+
+.erp-omd-admin .erp-omd-monthly-bars {
+    display: grid;
+    gap: 12px;
+}
+
+.erp-omd-admin .erp-omd-monthly-bars-row {
+    align-items: center;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: minmax(160px, 1.3fr) minmax(120px, 2fr) minmax(90px, auto);
+}
+
+.erp-omd-admin .erp-omd-monthly-bars-label {
+    color: var(--erp-omd-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.erp-omd-admin .erp-omd-monthly-bars-track {
+    background: #f3eee7;
+    border-radius: 999px;
+    min-height: 10px;
+    overflow: hidden;
+}
+
+.erp-omd-admin .erp-omd-monthly-bars-fill {
+    display: block;
+    height: 10px;
+}
+
+.erp-omd-admin .erp-omd-monthly-bars-fill-cost {
+    background: #b9b3ac;
+}
+
+.erp-omd-admin .erp-omd-monthly-bars-fill-profit {
+    background: linear-gradient(90deg, #ddb178 0%, #c89a5a 100%);
+}
+
+.erp-omd-admin .erp-omd-monthly-bars-fill-loss {
+    background: #c86b5f;
+}
+
+.erp-omd-admin .erp-omd-monthly-bars-value {
+    color: var(--erp-omd-text);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: right;
+}
+
+.erp-omd-admin .erp-omd-monthly-bars-value-loss {
+    color: #c86b5f;
 }
 
 @media (max-width: 960px) {
