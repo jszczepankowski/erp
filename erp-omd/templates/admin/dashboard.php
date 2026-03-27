@@ -150,6 +150,33 @@
         <div class="erp-omd-card erp-omd-chart-card">
             <div class="erp-omd-chart-header">
                 <div>
+                    <h2><?php esc_html_e('Miesięczny bilans operacyjny', 'erp-omd'); ?></h2>
+                    <p><?php esc_html_e('Ujęcie bieżącego miesiąca: koszty projektowe, koszty czasu, zysk godzinowy i zysk projektów.', 'erp-omd'); ?></p>
+                </div>
+                <span class="erp-omd-chart-period"><?php echo esc_html($reporting_month_label); ?></span>
+            </div>
+            <div class="erp-omd-monthly-bars">
+                <?php foreach ($dashboard_monthly_finance_metrics as $metric_row) : ?>
+                    <?php
+                    $metric_value = (float) ($metric_row['value'] ?? 0.0);
+                    $metric_width = max(4, (int) round((abs($metric_value) / $dashboard_monthly_finance_max) * 100));
+                    $metric_tone = (string) ($metric_row['tone'] ?? 'cost');
+                    ?>
+                    <div class="erp-omd-monthly-bars-row">
+                        <div class="erp-omd-monthly-bars-label"><?php echo esc_html((string) ($metric_row['label'] ?? '')); ?></div>
+                        <div class="erp-omd-monthly-bars-track">
+                            <span class="erp-omd-monthly-bars-fill erp-omd-monthly-bars-fill-<?php echo esc_attr($metric_tone); ?>" style="width: <?php echo esc_attr((string) $metric_width); ?>%"></span>
+                        </div>
+                        <div class="erp-omd-monthly-bars-value <?php echo $metric_value < 0 ? 'erp-omd-monthly-bars-value-loss' : ''; ?>">
+                            <?php echo esc_html(number_format_i18n($metric_value, 2)); ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <div class="erp-omd-card erp-omd-chart-card">
+            <div class="erp-omd-chart-header">
+                <div>
                     <h2><?php esc_html_e('Mapa alertów', 'erp-omd'); ?></h2>
                 </div>
             </div>
