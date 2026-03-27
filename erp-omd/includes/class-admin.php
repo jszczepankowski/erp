@@ -536,12 +536,19 @@ class ERP_OMD_Admin
         $can_edit_any_entry = current_user_can('administrator');
         $can_delete_entries = $this->time_entry_service->can_delete_entry($current_user);
         $filters = [
-            'employee_id' => $_GET['employee_id'] ?? '',
-            'client_id' => $_GET['client_id'] ?? '',
-            'project_id' => $_GET['project_id'] ?? '',
-            'status' => $_GET['status'] ?? '',
-            'entry_date' => $_GET['entry_date'] ?? '',
+            'employee_id' => (string) ($_GET['employee_id'] ?? ''),
+            'client_id' => (string) ($_GET['client_id'] ?? ''),
+            'project_id' => (string) ($_GET['project_id'] ?? ''),
+            'status' => sanitize_text_field((string) ($_GET['status'] ?? '')),
+            'entry_date' => sanitize_text_field((string) ($_GET['entry_date'] ?? '')),
+            'per_page' => (int) ($_GET['per_page'] ?? 25),
+            'paged' => (int) ($_GET['paged'] ?? 1),
         ];
+        $allowed_per_page = [25, 50, 100, 200];
+        if (! in_array((int) $filters['per_page'], $allowed_per_page, true)) {
+            $filters['per_page'] = 25;
+        }
+        $filters['paged'] = max(1, (int) $filters['paged']);
         if (! $can_select_any_employee && $current_employee) {
             $filters['employee_id'] = (string) $current_employee['id'];
         }
@@ -556,18 +563,47 @@ class ERP_OMD_Admin
         $projects_for_time = $this->projects->all();
         $clients_for_time = $this->clients->all();
         $roles = $this->roles->all();
-        $time_entries = $this->time_entry_service->filter_visible_entries($this->time_entries->all(array_diff_key($filters, ['client_id' => ''])), $current_user);
-        if (! empty($filters['client_id'])) {
-            $time_entries = array_values(array_filter($time_entries, function ($time_row) use ($filters, $projects_for_time) {
-                foreach ($projects_for_time as $project_row) {
-                    if ((int) ($project_row['id'] ?? 0) === (int) ($time_row['project_id'] ?? 0)) {
-                        return (int) ($project_row['client_id'] ?? 0) === (int) $filters['client_id'];
-                    }
-                }
-
-                return false;
-            }));
+        $visible_filters = (array) $this->time_entry_service->get_visible_filters_for_user($current_user, []);
+        $repo_filters = [
+            'employee_id' => (int) $filters['employee_id'],
+            'project_id' => (int) $filters['project_id'],
+            'client_id' => (int) $filters['client_id'],
+            'status' => $filters['status'],
+            'entry_date' => $filters['entry_date'],
+        ];
+        if (isset($visible_filters['employee_id'])) {
+            $repo_filters['employee_id'] = (int) $visible_filters['employee_id'];
         }
+        if (! empty($visible_filters['__managed_project_ids']) && is_array($visible_filters['__managed_project_ids'])) {
+            $repo_filters['project_ids'] = array_map('intval', (array) $visible_filters['__managed_project_ids']);
+        }
+        if (! empty($repo_filters['project_ids']) && $repo_filters['project_id'] > 0 && ! in_array((int) $repo_filters['project_id'], $repo_filters['project_ids'], true)) {
+            $repo_filters['project_id'] = 0;
+        }
+        if (! empty($repo_filters['project_ids']) && $repo_filters['project_id'] > 0) {
+            unset($repo_filters['project_ids']);
+        }
+        if ((int) $repo_filters['employee_id'] === -1) {
+            $time_entries = [];
+            $time_entries_total = 0;
+        } else {
+            $offset = ((int) $filters['paged'] - 1) * (int) $filters['per_page'];
+            $time_entries_total = $this->time_entries->count($repo_filters);
+            $time_entries = $this->time_entries->paged($repo_filters, (int) $filters['per_page'], $offset);
+        }
+        $time_entries_total_pages = max(1, (int) ceil($time_entries_total / max(1, (int) $filters['per_page'])));
+        if ((int) $filters['paged'] > $time_entries_total_pages) {
+            $filters['paged'] = $time_entries_total_pages;
+            $offset = ((int) $filters['paged'] - 1) * (int) $filters['per_page'];
+            $time_entries = $this->time_entries->paged($repo_filters, (int) $filters['per_page'], $offset);
+        }
+        $time_entries_pagination = [
+            'total_items' => (int) $time_entries_total,
+            'total_pages' => (int) $time_entries_total_pages,
+            'current_page' => (int) $filters['paged'],
+            'per_page' => (int) $filters['per_page'],
+            'allowed_per_page' => $allowed_per_page,
+        ];
         $selected_employee_id = $entry['employee_id'] ?? ($current_employee['id'] ?? 0);
         $selected_time_client_id = 0;
         if ($entry) {
