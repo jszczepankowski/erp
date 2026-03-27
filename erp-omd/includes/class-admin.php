@@ -90,15 +90,19 @@ class ERP_OMD_Admin
     {
         add_menu_page(__('ERP OMD', 'erp-omd'), __('ERP OMD', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard'], 'dashicons-chart-pie', 56);
         add_submenu_page('erp-omd', __('Dashboard', 'erp-omd'), __('Dashboard', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard']);
+        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-team');
         add_submenu_page('erp-omd', __('Pracownicy', 'erp-omd'), __('Pracownicy', 'erp-omd'), 'erp_omd_manage_employees', 'erp-omd-employees', [$this, 'render_employees']);
         add_submenu_page('erp-omd', __('Role', 'erp-omd'), __('Role', 'erp-omd'), 'erp_omd_manage_roles', 'erp-omd-roles', [$this, 'render_roles']);
+        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-commercial');
         add_submenu_page('erp-omd', __('Klienci', 'erp-omd'), __('Klienci', 'erp-omd'), 'erp_omd_manage_clients', 'erp-omd-clients', [$this, 'render_clients']);
         add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
         add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
         add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
+        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
         add_submenu_page('erp-omd', __('Czas pracy', 'erp-omd'), __('Czas pracy', 'erp-omd'), 'erp_omd_manage_time', 'erp-omd-time', [$this, 'render_time_entries']);
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
         add_submenu_page('erp-omd', __('Alerty', 'erp-omd'), __('Alerty', 'erp-omd'), 'erp_omd_access', 'erp-omd-alerts', [$this, 'render_alerts']);
+        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-settings');
         add_submenu_page('erp-omd', __('Ustawienia', 'erp-omd'), __('Ustawienia', 'erp-omd'), 'erp_omd_manage_settings', 'erp-omd-settings', [$this, 'render_settings']);
     }
 
@@ -108,8 +112,21 @@ class ERP_OMD_Admin
             return;
         }
         wp_enqueue_style('erp-omd-admin', ERP_OMD_URL . 'assets/css/admin.css', [], ERP_OMD_VERSION);
+        wp_add_inline_style('erp-omd-admin', '#toplevel_page_erp-omd .wp-submenu a[href*="page=erp-omd-separator-"]{pointer-events:none;opacity:.5;cursor:default;border-top:1px solid rgba(255,255,255,.18);margin-top:4px;padding-top:8px;padding-bottom:8px;}');
         wp_enqueue_script('erp-omd-admin', ERP_OMD_URL . 'assets/js/admin.js', [], ERP_OMD_VERSION, true);
         wp_enqueue_media();
+    }
+
+    private function add_submenu_separator($parent_slug, $menu_slug)
+    {
+        add_submenu_page(
+            $parent_slug,
+            '',
+            '────────',
+            'erp_omd_access',
+            $menu_slug,
+            '__return_null'
+        );
     }
 
     public function handle_forms()
@@ -182,6 +199,54 @@ class ERP_OMD_Admin
             'employee_profit' => 0.0,
             'active_employees' => 0,
         ];
+        $omd_report_rows = $this->reporting_service->build_report('omd_rozliczenia', [
+            'month' => $reporting_month,
+            'report_type' => 'omd_rozliczenia',
+        ]);
+        $omd_month_row = null;
+        foreach ((array) $omd_report_rows as $report_row) {
+            if ((string) ($report_row['month'] ?? '') === $reporting_month) {
+                $omd_month_row = $report_row;
+                break;
+            }
+        }
+        if (! is_array($omd_month_row)) {
+            $omd_month_row = [];
+        }
+        $dashboard_project_monthly_cost = round((float) ($omd_month_row['project_direct_cost'] ?? 0.0), 2);
+        $dashboard_employee_time_cost = round((float) ($omd_month_row['time_cost'] ?? 0.0), 2);
+        $dashboard_employee_hourly_profit = round((float) ($omd_month_row['hourly_profit'] ?? 0.0), 2);
+        $dashboard_project_profit = round(((float) ($omd_month_row['active_project_budgets'] ?? 0.0) + $dashboard_employee_hourly_profit) - $dashboard_project_monthly_cost, 2);
+        $dashboard_monthly_finance_metrics = [
+            [
+                'key' => 'project_cost',
+                'label' => __('Koszty miesięczne projektów', 'erp-omd'),
+                'value' => $dashboard_project_monthly_cost,
+                'tone' => 'cost',
+            ],
+            [
+                'key' => 'employee_time_cost',
+                'label' => __('Koszty pracy pracowników', 'erp-omd'),
+                'value' => $dashboard_employee_time_cost,
+                'tone' => 'cost',
+            ],
+            [
+                'key' => 'employee_hourly_profit',
+                'label' => __('Zysk z pracy pracowników', 'erp-omd'),
+                'value' => $dashboard_employee_hourly_profit,
+                'tone' => 'profit',
+            ],
+            [
+                'key' => 'project_profit',
+                'label' => __('Zysk z projektów', 'erp-omd'),
+                'value' => $dashboard_project_profit,
+                'tone' => $dashboard_project_profit >= 0 ? 'profit' : 'loss',
+            ],
+        ];
+        $dashboard_monthly_finance_max = 1.0;
+        foreach ($dashboard_monthly_finance_metrics as $metric_row) {
+            $dashboard_monthly_finance_max = max($dashboard_monthly_finance_max, abs((float) ($metric_row['value'] ?? 0.0)));
+        }
         $alert_summary = [
             'error' => 0,
             'warning' => 0,
