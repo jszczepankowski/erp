@@ -206,7 +206,7 @@
                             </div>
                         </form>
                         <div class="erp-omd-front-table-wrap">
-                            <table class="erp-omd-front-table erp-omd-front-table-sortable" data-projects-table="1">
+                            <table class="erp-omd-front-table erp-omd-front-table-sortable" data-projects-table="1" data-table-enhanced="1">
                                 <thead>
                                     <tr>
                                         <th><?php esc_html_e('ID', 'erp-omd'); ?></th>
@@ -382,7 +382,7 @@
                                 </div>
                             </form>
                             <div class="erp-omd-front-table-wrap">
-                                <table class="erp-omd-front-table">
+                                <table class="erp-omd-front-table" data-table-enhanced="1">
                                     <thead>
                                         <tr>
                                             <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
@@ -692,7 +692,7 @@
                                         <?php wp_nonce_field('erp_omd_front_manager'); ?>
                                         <input type="hidden" name="erp_omd_front_action" value="save_estimate_items">
                                         <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ($selected_estimate['id'] ?? 0)); ?>">
-                                        <table class="erp-omd-front-table">
+                                        <table class="erp-omd-front-table" data-table-enhanced="1">
                                             <thead>
                                                 <tr>
                                                     <th><?php esc_html_e('Pozycja', 'erp-omd'); ?></th>
@@ -840,7 +840,7 @@
                 </form>
 
                 <div class="erp-omd-front-table-wrap">
-                    <table class="erp-omd-front-table erp-omd-front-table-sortable" data-approval-queue-table="1">
+                    <table class="erp-omd-front-table erp-omd-front-table-sortable" data-approval-queue-table="1" data-table-enhanced="1">
                         <thead>
                             <tr>
                                 <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
@@ -1120,6 +1120,20 @@
                         '<span><?php echo esc_js(__('Szukaj:', 'erp-omd')); ?></span>' +
                         '<input type="search" class="erp-omd-front-table-search-input" placeholder="<?php echo esc_js(__('np. klient / projekt / status', 'erp-omd')); ?>">' +
                     '</label>' +
+                    '<label class="erp-omd-front-table-size">' +
+                        '<span><?php echo esc_js(__('Widok:', 'erp-omd')); ?></span>' +
+                        '<select class="erp-omd-front-table-size-select">' +
+                            '<option value="25">25</option>' +
+                            '<option value="50">50</option>' +
+                            '<option value="100">100</option>' +
+                            '<option value="200">200</option>' +
+                        '</select>' +
+                    '</label>' +
+                    '<div class="erp-omd-front-table-pagination">' +
+                        '<button type="button" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-table-prev">←</button>' +
+                        '<span class="erp-omd-front-table-page-meta">1/1</span>' +
+                        '<button type="button" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-table-next">→</button>' +
+                    '</div>' +
                     '<span class="erp-omd-front-table-results"></span>';
                 if (wrap) {
                     wrap.parentNode.insertBefore(controls, wrap);
@@ -1127,7 +1141,13 @@
 
                 var searchInput = controls.querySelector('.erp-omd-front-table-search-input');
                 var resultsNode = controls.querySelector('.erp-omd-front-table-results');
+                var pageSizeSelect = controls.querySelector('.erp-omd-front-table-size-select');
+                var paginationMeta = controls.querySelector('.erp-omd-front-table-page-meta');
+                var paginationPrev = controls.querySelector('.erp-omd-front-table-prev');
+                var paginationNext = controls.querySelector('.erp-omd-front-table-next');
                 var activeSort = { index: -1, dir: 'asc' };
+                var currentPage = 1;
+                var pageSize = 25;
 
                 var applyView = function () {
                     var query = ((searchInput && searchInput.value) || '').toLowerCase().trim();
@@ -1158,6 +1178,26 @@
                         });
                     }
 
+                    var pagesCount = Math.max(1, Math.ceil(visibleRows.length / pageSize));
+                    currentPage = Math.min(currentPage, pagesCount);
+                    currentPage = Math.max(1, currentPage);
+                    var start = (currentPage - 1) * pageSize;
+                    var end = start + pageSize;
+
+                    visibleRows.forEach(function (row, index) {
+                        row.hidden = index < start || index >= end;
+                    });
+
+                    if (paginationMeta) {
+                        paginationMeta.textContent = currentPage + '/' + pagesCount;
+                    }
+                    if (paginationPrev) {
+                        paginationPrev.disabled = currentPage <= 1;
+                    }
+                    if (paginationNext) {
+                        paginationNext.disabled = currentPage >= pagesCount;
+                    }
+
                     resultsNode.textContent = '<?php echo esc_js(__('Widoczne wiersze:', 'erp-omd')); ?> ' + visibleRows.length + '/' + allRows.length;
                 };
 
@@ -1182,7 +1222,29 @@
                 });
 
                 if (searchInput) {
-                    searchInput.addEventListener('input', applyView);
+                    searchInput.addEventListener('input', function () {
+                        currentPage = 1;
+                        applyView();
+                    });
+                }
+                if (pageSizeSelect) {
+                    pageSizeSelect.addEventListener('change', function () {
+                        pageSize = Number(pageSizeSelect.value) || 25;
+                        currentPage = 1;
+                        applyView();
+                    });
+                }
+                if (paginationPrev) {
+                    paginationPrev.addEventListener('click', function () {
+                        currentPage -= 1;
+                        applyView();
+                    });
+                }
+                if (paginationNext) {
+                    paginationNext.addEventListener('click', function () {
+                        currentPage += 1;
+                        applyView();
+                    });
                 }
                 applyView();
             });

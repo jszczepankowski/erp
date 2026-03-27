@@ -1,4 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const currentPage = new URLSearchParams(window.location.search).get('page') || '';
+  const paginatedPages = new Set([
+    'erp-omd-clients',
+    'erp-omd-estimates',
+    'erp-omd-projects',
+    'erp-omd-requests',
+    'erp-omd-time',
+    'erp-omd-reports',
+  ]);
   const tables = document.querySelectorAll('.erp-omd-admin table.widefat');
 
   tables.forEach((table, tableIndex) => {
@@ -20,6 +29,52 @@ document.addEventListener('DOMContentLoaded', () => {
     search.placeholder = 'Filtruj tabelę…';
     search.setAttribute('aria-label', 'Filtruj tabelę');
     controls.appendChild(search);
+
+    const shouldPaginate =
+      paginatedPages.has(currentPage) &&
+      !table.classList.contains('erp-omd-calendar-table');
+
+    let pageSize = 25;
+    let currentPaginationPage = 1;
+    let pageSizeSelect = null;
+    let paginationMeta = null;
+    let paginationPrev = null;
+    let paginationNext = null;
+
+    if (shouldPaginate) {
+      pageSizeSelect = document.createElement('select');
+      pageSizeSelect.className = 'erp-omd-table-page-size';
+      pageSizeSelect.setAttribute('aria-label', 'Liczba wierszy na stronę');
+      [25, 50, 100, 200].forEach((size) => {
+        const option = document.createElement('option');
+        option.value = String(size);
+        option.textContent = `${size} / strona`;
+        pageSizeSelect.appendChild(option);
+      });
+      controls.appendChild(pageSizeSelect);
+
+      const pager = document.createElement('div');
+      pager.className = 'erp-omd-table-pagination';
+
+      paginationPrev = document.createElement('button');
+      paginationPrev.type = 'button';
+      paginationPrev.className = 'button button-secondary';
+      paginationPrev.textContent = '←';
+      pager.appendChild(paginationPrev);
+
+      paginationMeta = document.createElement('span');
+      paginationMeta.className = 'erp-omd-table-pagination-meta';
+      pager.appendChild(paginationMeta);
+
+      paginationNext = document.createElement('button');
+      paginationNext.type = 'button';
+      paginationNext.className = 'button button-secondary';
+      paginationNext.textContent = '→';
+      pager.appendChild(paginationNext);
+
+      controls.appendChild(pager);
+    }
+
     table.parentNode.insertBefore(controls, table);
 
     const headers = Array.from(table.querySelectorAll('thead th'));
@@ -44,6 +99,46 @@ document.addEventListener('DOMContentLoaded', () => {
         : b.localeCompare(a, 'pl', { numeric: true, sensitivity: 'base' });
     };
 
+    const applyTableView = () => {
+      const phrase = search.value.trim().toLowerCase();
+      const filteredRows = Array.from(body.rows).filter((row) => {
+        const haystack = row.textContent.toLowerCase();
+        return phrase === '' || haystack.includes(phrase);
+      });
+
+      if (!shouldPaginate) {
+        Array.from(body.rows).forEach((row) => {
+          row.hidden = !filteredRows.includes(row);
+        });
+        return;
+      }
+
+      const pagesCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+      currentPaginationPage = Math.min(currentPaginationPage, pagesCount);
+      currentPaginationPage = Math.max(1, currentPaginationPage);
+      const start = (currentPaginationPage - 1) * pageSize;
+      const end = start + pageSize;
+
+      filteredRows.forEach((row, index) => {
+        row.hidden = index < start || index >= end;
+      });
+      Array.from(body.rows).forEach((row) => {
+        if (!filteredRows.includes(row)) {
+          row.hidden = true;
+        }
+      });
+
+      if (paginationMeta) {
+        paginationMeta.textContent = `${currentPaginationPage}/${pagesCount} · ${filteredRows.length}`;
+      }
+      if (paginationPrev) {
+        paginationPrev.disabled = currentPaginationPage <= 1;
+      }
+      if (paginationNext) {
+        paginationNext.disabled = currentPaginationPage >= pagesCount;
+      }
+    };
+
     headers.forEach((header, headerIndex) => {
       header.style.cursor = 'pointer';
       header.dataset.sortIndex = String(headerIndex);
@@ -62,18 +157,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         sortedRows.forEach((row) => body.appendChild(row));
+        currentPaginationPage = 1;
+        applyTableView();
       });
     });
 
     search.addEventListener('input', () => {
-      const phrase = search.value.trim().toLowerCase();
-      Array.from(body.rows).forEach((row) => {
-        const haystack = row.textContent.toLowerCase();
-        row.hidden = phrase !== '' && !haystack.includes(phrase);
-      });
+      currentPaginationPage = 1;
+      applyTableView();
     });
 
+    if (shouldPaginate && pageSizeSelect && paginationPrev && paginationNext) {
+      pageSizeSelect.addEventListener('change', () => {
+        pageSize = Number.parseInt(pageSizeSelect.value, 10) || 25;
+        currentPaginationPage = 1;
+        applyTableView();
+      });
+      paginationPrev.addEventListener('click', () => {
+        currentPaginationPage -= 1;
+        applyTableView();
+      });
+      paginationNext.addEventListener('click', () => {
+        currentPaginationPage += 1;
+        applyTableView();
+      });
+    }
+
     table.dataset.tableIndex = String(tableIndex);
+    applyTableView();
   });
 
 
@@ -295,7 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  const currentPage = new URLSearchParams(window.location.search).get('page') || '';
   if (currentPage === 'erp-omd-dashboard') {
     return;
   }

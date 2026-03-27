@@ -955,8 +955,11 @@
 
 .erp-omd-admin .erp-omd-table-tools {
     display: flex;
+    gap: 10px;
     justify-content: flex-end;
     margin: 16px 0 12px;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 .erp-omd-admin .erp-omd-table-tools + .erp-omd-section-header {
@@ -1017,6 +1020,23 @@
 .erp-omd-admin .erp-omd-table-tools .regular-text[type="search"] {
     max-width: 320px;
     width: 100%;
+}
+
+.erp-omd-admin .erp-omd-table-page-size {
+    max-width: 140px;
+}
+
+.erp-omd-admin .erp-omd-table-pagination {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.erp-omd-admin .erp-omd-table-pagination-meta {
+    color: var(--erp-omd-text-muted);
+    font-size: 12px;
+    min-width: 82px;
+    text-align: center;
 }
 
 .erp-omd-admin table.widefat thead th[data-sort-index] {

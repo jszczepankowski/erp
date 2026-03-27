@@ -888,6 +888,33 @@ background-image: none !important;
     text-transform: uppercase;
 }
 
+.erp-omd-front-table-size {
+    align-items: center;
+    display: inline-flex;
+    gap: 8px;
+}
+
+.erp-omd-front-table-size-select {
+    background: #fff;
+    border: 1px solid var(--erp-omd-front-border);
+    border-radius: 999px;
+    min-width: 86px;
+    padding: 6px 10px;
+}
+
+.erp-omd-front-table-pagination {
+    align-items: center;
+    display: inline-flex;
+    gap: 8px;
+}
+
+.erp-omd-front-table-page-meta {
+    color: var(--erp-omd-front-muted);
+    font-size: 12px;
+    min-width: 56px;
+    text-align: center;
+}
+
 .erp-omd-front-table-th-sortable {
     cursor: pointer;
     user-select: none;
