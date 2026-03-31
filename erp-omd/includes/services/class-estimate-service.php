@@ -255,6 +255,71 @@ class ERP_OMD_Estimate_Service
         ];
     }
 
+    private function resolve_request_manager_context_for_estimate($estimate_id)
+    {
+        if (! $estimate_id || ! $this->project_requests || ! method_exists($this->project_requests, 'all')) {
+            return ['primary_manager_id' => 0, 'requester_employee_id' => 0];
+        }
+
+        $requests = array_values(
+            array_filter(
+                (array) $this->project_requests->all(),
+                static function ($request) use ($estimate_id) {
+                    return (int) ($request['estimate_id'] ?? 0) === (int) $estimate_id;
+                }
+            )
+        );
+
+        if ($requests === []) {
+            return ['primary_manager_id' => 0, 'requester_employee_id' => 0];
+        }
+
+        usort(
+            $requests,
+            static function ($left, $right) {
+                return [(string) ($right['created_at'] ?? ''), (int) ($right['id'] ?? 0)] <=> [(string) ($left['created_at'] ?? ''), (int) ($left['id'] ?? 0)];
+            }
+        );
+
+        $request = $requests[0];
+        $requester_employee_id = (int) ($request['requester_employee_id'] ?? 0);
+        $preferred_manager_id = (int) ($request['preferred_manager_id'] ?? 0);
+
+        return [
+            'primary_manager_id' => $preferred_manager_id > 0 ? $preferred_manager_id : $requester_employee_id,
+            'requester_employee_id' => $requester_employee_id,
+        ];
+    }
+
+    private function resolve_requester_manager_for_estimate($estimate_id)
+    {
+        if (! $estimate_id || ! $this->project_requests || ! method_exists($this->project_requests, 'all')) {
+            return 0;
+        }
+
+        $requests = array_values(
+            array_filter(
+                (array) $this->project_requests->all(),
+                static function ($request) use ($estimate_id) {
+                    return (int) ($request['estimate_id'] ?? 0) === (int) $estimate_id;
+                }
+            )
+        );
+
+        if ($requests === []) {
+            return 0;
+        }
+
+        usort(
+            $requests,
+            static function ($left, $right) {
+                return [(string) ($right['created_at'] ?? ''), (int) ($right['id'] ?? 0)] <=> [(string) ($left['created_at'] ?? ''), (int) ($left['id'] ?? 0)];
+            }
+        );
+
+        return (int) ($requests[0]['requester_employee_id'] ?? 0);
+    }
+
     private function copy_internal_costs_to_project($project_id, array $items)
     {
         if (! $project_id || ! $this->project_costs || ! method_exists($this->project_costs, 'create')) {
