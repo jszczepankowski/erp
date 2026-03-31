@@ -292,6 +292,18 @@ class ERP_OMD_Reporting_Service
                     }, $invoice_lines));
                 }
 
+                if ($invoice_items === [] && $billing_type === 'retainer') {
+                    $retainer_amount = round((float) ($project['budget'] ?? 0), 2);
+                    $invoice_items[] = [
+                        'label' => sprintf(
+                            '%s | kwota ryczałtu: %s',
+                            (string) ($project['name'] ?? 'Ryczałt'),
+                            number_format($retainer_amount, 2, '.', '')
+                        ),
+                        'amount' => $retainer_amount,
+                    ];
+                }
+
                 $rows[count($rows) - 1]['invoice_items'] = $invoice_items;
                 $rows[count($rows) - 1]['invoice_items_count'] = count($invoice_items);
             }

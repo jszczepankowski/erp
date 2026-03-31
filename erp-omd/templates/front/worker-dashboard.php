@@ -250,6 +250,17 @@
                         <label for="erp-omd-worker-request-brief"><?php esc_html_e('Brief / uzasadnienie', 'erp-omd'); ?></label>
                         <textarea id="erp-omd-worker-request-brief" name="brief" rows="5" required><?php echo esc_textarea((string) ($worker_request_defaults['brief'] ?? '')); ?></textarea>
 
+                        <div class="erp-omd-front-form-row">
+                            <div>
+                                <label for="erp-omd-worker-request-start-date"><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></label>
+                                <input id="erp-omd-worker-request-start-date" type="date" name="start_date" value="<?php echo esc_attr((string) ($worker_request_defaults['start_date'] ?? '')); ?>">
+                            </div>
+                            <div>
+                                <label for="erp-omd-worker-request-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label>
+                                <input id="erp-omd-worker-request-end-date" type="date" name="end_date" value="<?php echo esc_attr((string) ($worker_request_defaults['end_date'] ?? '')); ?>">
+                            </div>
+                        </div>
+
                         <div class="erp-omd-front-inline-actions">
                             <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Wyślij wniosek', 'erp-omd'); ?></button>
                         </div>
@@ -671,7 +682,7 @@
                             '<select class="erp-omd-front-table-size-select">' +
                                 '<option value="25">25</option>' +
                                 '<option value="50">50</option>' +
-                                '<option value="100">100</option>' +
+                                '<option value="100" selected>100</option>' +
                                 '<option value="200">200</option>' +
                             '</select>' +
                         '</label>' +
@@ -689,7 +700,7 @@
                     var paginationNext = controls.querySelector('.erp-omd-front-table-next');
                     var resultsNode = controls.querySelector('.erp-omd-front-table-results');
                     var currentPage = 1;
-                    var pageSize = 25;
+                    var pageSize = 100;
 
                     var applyPagination = function () {
                         var pagesCount = Math.max(1, Math.ceil(allRows.length / pageSize));
@@ -717,7 +728,7 @@
 
                     if (pageSizeSelect) {
                         pageSizeSelect.addEventListener('change', function () {
-                            pageSize = Number(pageSizeSelect.value) || 25;
+                            pageSize = Number(pageSizeSelect.value) || 100;
                             currentPage = 1;
                             applyPagination();
                         });

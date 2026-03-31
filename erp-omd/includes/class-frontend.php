@@ -667,7 +667,8 @@ class ERP_OMD_Frontend
             array_filter(
                 $this->employees->all(),
                 static function ($employee_row) {
-                    return (string) ($employee_row['account_type'] ?? '') === 'manager'
+                    $user_id = (int) ($employee_row['user_id'] ?? 0);
+                    return ((string) ($employee_row['account_type'] ?? '') === 'manager' || ($user_id > 0 && user_can($user_id, 'administrator')))
                         && (string) ($employee_row['status'] ?? '') === 'active';
                 }
             )
@@ -756,6 +757,8 @@ class ERP_OMD_Frontend
             'billing_type' => 'time_material',
             'preferred_manager_id' => 0,
             'brief' => '',
+            'start_date' => '',
+            'end_date' => '',
         ];
 
         $dashboard_title = __('Panel pracownika', 'erp-omd');
@@ -969,6 +972,19 @@ class ERP_OMD_Frontend
                 return (string) ($estimate_row['status'] ?? '') === $estimate_status_filter;
             }));
         }
+        usort(
+            $filtered_estimates,
+            static function ($left, $right) {
+                $order = ['wstepny' => 0, 'do_akceptacji' => 1, 'zaakceptowany' => 2];
+                $left_status_weight = $order[(string) ($left['status'] ?? '')] ?? 99;
+                $right_status_weight = $order[(string) ($right['status'] ?? '')] ?? 99;
+                if ($left_status_weight !== $right_status_weight) {
+                    return $left_status_weight <=> $right_status_weight;
+                }
+
+                return [(string) ($right['created_at'] ?? ''), (int) ($right['id'] ?? 0)] <=> [(string) ($left['created_at'] ?? ''), (int) ($left['id'] ?? 0)];
+            }
+        );
         $selected_estimate_id = (int) ($_GET['estimate_id'] ?? 0);
         $visible_estimate_ids = array_map('intval', wp_list_pluck($manager_estimates, 'id'));
         if ($selected_estimate_id > 0 && ! in_array($selected_estimate_id, $visible_estimate_ids, true)) {
@@ -997,13 +1013,16 @@ class ERP_OMD_Frontend
             'preferred_manager_id' => (int) $employee['id'],
             'estimate_id' => 0,
             'brief' => '',
+            'start_date' => '',
+            'end_date' => '',
         ];
         $available_clients = $this->get_manager_available_clients((int) $employee['id'], user_can($user, 'administrator'));
         $available_managers = array_values(
             array_filter(
                 $this->employees->all(),
                 function ($employee_row) {
-                    return (string) ($employee_row['account_type'] ?? '') === 'manager'
+                    $user_id = (int) ($employee_row['user_id'] ?? 0);
+                    return ((string) ($employee_row['account_type'] ?? '') === 'manager' || ($user_id > 0 && user_can($user_id, 'administrator')))
                         && (string) ($employee_row['status'] ?? '') === 'active';
                 }
             )
@@ -1446,6 +1465,8 @@ class ERP_OMD_Frontend
             'preferred_manager_id' => (int) ($_POST['preferred_manager_id'] ?? (int) $employee['id']),
             'estimate_id' => (int) ($_POST['estimate_id'] ?? 0),
             'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')),
+            'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')),
+            'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')),
             'status' => 'new',
         ]);
 
@@ -1474,6 +1495,8 @@ class ERP_OMD_Frontend
             'preferred_manager_id' => (int) ($_POST['preferred_manager_id'] ?? 0),
             'estimate_id' => 0,
             'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')),
+            'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')),
+            'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')),
             'status' => 'new',
             'reviewed_by_user_id' => 0,
             'reviewed_at' => null,
