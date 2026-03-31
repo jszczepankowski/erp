@@ -661,6 +661,7 @@ class ERP_OMD_Admin
             'projects' => __('Raport projektów', 'erp-omd'),
             'clients' => __('Raport klientów', 'erp-omd'),
             'invoice' => __('Raport do faktury', 'erp-omd'),
+            'time_entries' => __('Raport czasu pracy', 'erp-omd'),
             'monthly' => __('Raport miesięczny', 'erp-omd'),
             'omd_rozliczenia' => __('Raport OMD rozliczenia', 'erp-omd'),
         ];

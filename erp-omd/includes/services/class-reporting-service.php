@@ -40,7 +40,7 @@ class ERP_OMD_Reporting_Service
         }
 
         $report_type = isset($raw_filters['report_type']) ? sanitize_key((string) $raw_filters['report_type']) : 'projects';
-        if (! in_array($report_type, ['projects', 'clients', 'invoice', 'monthly', 'omd_rozliczenia'], true)) {
+        if (! in_array($report_type, ['projects', 'clients', 'invoice', 'monthly', 'omd_rozliczenia', 'time_entries'], true)) {
             $report_type = 'projects';
         }
 
@@ -76,6 +76,8 @@ class ERP_OMD_Reporting_Service
                 return $this->build_invoice_report($filters);
             case 'monthly':
                 return $this->build_monthly_report($filters);
+            case 'time_entries':
+                return $this->build_time_entries_report($filters);
             case 'omd_rozliczenia':
                 $rows = [];
                 $anchor = DateTimeImmutable::createFromFormat('Y-m-d', (string) $filters['month'] . '-01');
@@ -293,7 +295,7 @@ class ERP_OMD_Reporting_Service
                 }
 
                 if ($invoice_items === [] && $billing_type === 'retainer') {
-                    $retainer_amount = round((float) ($project['budget'] ?? 0), 2);
+                    $retainer_amount = round((float) ($project['retainer_monthly_fee'] ?? ($project['budget'] ?? 0)), 2);
                     $invoice_items[] = [
                         'label' => sprintf(
                             '%s | kwota ryczałtu: %s',
@@ -429,6 +431,43 @@ class ERP_OMD_Reporting_Service
         }
 
         return array_reverse($report_rows);
+    }
+
+    public function build_time_entries_report(array $filters)
+    {
+        $filters = $this->sanitize_filters($filters);
+        $projects = $this->get_filtered_projects($filters);
+        $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
+        $entries = $this->get_filtered_entries($project_ids, $filters);
+
+        $rows = array_map(
+            static function ($entry) {
+                $hours = (float) ($entry['hours'] ?? 0);
+                $rate = (float) ($entry['rate_snapshot'] ?? 0);
+                return [
+                    'entry_date' => (string) ($entry['entry_date'] ?? ''),
+                    'employee_login' => (string) ($entry['employee_login'] ?? '—'),
+                    'client_name' => (string) ($entry['client_name'] ?? '—'),
+                    'project_name' => (string) ($entry['project_name'] ?? '—'),
+                    'role_name' => (string) ($entry['role_name'] ?? '—'),
+                    'hours' => round($hours, 2),
+                    'rate_snapshot' => round($rate, 2),
+                    'amount' => round($hours * $rate, 2),
+                    'status' => (string) ($entry['status'] ?? ''),
+                    'description' => (string) ($entry['description'] ?? ''),
+                ];
+            },
+            $entries
+        );
+
+        usort(
+            $rows,
+            static function ($left, $right) {
+                return [(string) ($right['entry_date'] ?? ''), (string) ($left['employee_login'] ?? '')] <=> [(string) ($left['entry_date'] ?? ''), (string) ($right['employee_login'] ?? '')];
+            }
+        );
+
+        return $rows;
     }
 
     public function build_calendar(array $filters)
@@ -615,6 +654,25 @@ class ERP_OMD_Reporting_Service
                             number_format((float) $row['time_cost'], 2, '.', ''),
                             number_format((float) $row['direct_cost'], 2, '.', ''),
                             number_format((float) $row['profit'], 2, '.', ''),
+                        ];
+                    }, $rows),
+                ];
+            case 'time_entries':
+                return [
+                    'filename' => sprintf('erp-omd-raport-czas-pracy-%s.csv', $month),
+                    'headers' => ['Data', 'Pracownik', 'Klient', 'Projekt', 'Rola', 'Godziny', 'Stawka klienta', 'Kwota', 'Status', 'Opis'],
+                    'rows' => array_map(static function ($row) {
+                        return [
+                            $row['entry_date'],
+                            $row['employee_login'],
+                            $row['client_name'],
+                            $row['project_name'],
+                            $row['role_name'],
+                            number_format((float) $row['hours'], 2, '.', ''),
+                            number_format((float) $row['rate_snapshot'], 2, '.', ''),
+                            number_format((float) $row['amount'], 2, '.', ''),
+                            $row['status'],
+                            $row['description'],
                         ];
                     }, $rows),
                 ];

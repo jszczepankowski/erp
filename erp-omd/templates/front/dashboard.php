@@ -1010,6 +1010,17 @@
                             <?php endforeach; ?>
                         </select>
 
+                        <div class="erp-omd-front-form-row">
+                            <div>
+                                <label for="erp-omd-front-request-start-date"><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></label>
+                                <input id="erp-omd-front-request-start-date" type="date" name="start_date" value="<?php echo esc_attr((string) ($request_form_defaults['start_date'] ?? '')); ?>">
+                            </div>
+                            <div>
+                                <label for="erp-omd-front-request-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label>
+                                <input id="erp-omd-front-request-end-date" type="date" name="end_date" value="<?php echo esc_attr((string) ($request_form_defaults['end_date'] ?? '')); ?>">
+                            </div>
+                        </div>
+
                         <label for="erp-omd-front-request-brief"><?php esc_html_e('Brief / uzasadnienie', 'erp-omd'); ?></label>
                         <textarea id="erp-omd-front-request-brief" name="brief" rows="6" required><?php echo esc_textarea((string) ($request_form_defaults['brief'] ?? '')); ?></textarea>
 
