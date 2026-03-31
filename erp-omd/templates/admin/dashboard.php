@@ -14,8 +14,8 @@
                 <strong><?php echo esc_html(count($projects)); ?></strong>
             </div>
             <div class="erp-omd-kpi erp-omd-kpi-accent erp-omd-kpi-profit">
-                <span class="erp-omd-kpi-label"><?php esc_html_e('Zysk miesięczny', 'erp-omd'); ?></span>
-                <strong><?php echo esc_html(number_format_i18n((float) $monthly_totals['employee_profit'], 2)); ?></strong>
+                <span class="erp-omd-kpi-label"><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></span>
+                <strong><?php echo esc_html(number_format_i18n((float) ($omd_month_row['operating_result'] ?? 0), 2)); ?></strong>
             </div>
         </div>
     </div>
@@ -57,13 +57,13 @@
         [
             'icon' => 'money-alt',
             'value' => number_format_i18n((float) $monthly_totals['hourly_cost_total'], 2),
-            'label' => sprintf(__('Koszt · %s', 'erp-omd'), $reporting_month_label),
+            'label' => sprintf(__('Koszt pracy · %s', 'erp-omd'), $reporting_month_label),
             'variant' => 'erp-omd-metric-tile-muted',
         ],
         [
             'icon' => 'chart-line',
             'value' => number_format_i18n((float) $monthly_totals['employee_profit'], 2),
-            'label' => sprintf(__('Zysk · %s', 'erp-omd'), $reporting_month_label),
+            'label' => sprintf(__('Zysk z pracy · %s', 'erp-omd'), $reporting_month_label),
             'variant' => 'erp-omd-metric-tile-accent',
         ],
         [
