@@ -118,7 +118,7 @@
                                             data-client-id="<?php echo esc_attr((string) ($manager_time_project['client_id'] ?? 0)); ?>"
                                             <?php selected((int) ($manager_time_defaults['project_id'] ?? 0), (int) ($manager_time_project['id'] ?? 0)); ?>
                                         >
-                                            <?php echo esc_html(trim((string) ($manager_time_project['client_name'] ?? '—')) . ' — ' . ($manager_time_project['name'] ?? '—')); ?>
+                                            <?php echo esc_html($manager_time_project['name'] ?? '—'); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>

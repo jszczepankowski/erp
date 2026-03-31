@@ -110,7 +110,7 @@
                                         data-hours="<?php echo esc_attr((string) $template['hours']); ?>"
                                         data-description="<?php echo esc_attr($template['description']); ?>"
                                     >
-                                        <span><?php echo esc_html($template['project_name']); ?></span>
+                                        <span><?php echo esc_html(($template['client_name'] ?? '—') . ' — ' . ($template['project_name'] ?? '—')); ?></span>
                                         <small><?php echo esc_html($template['role_name']); ?> · <?php echo esc_html(number_format_i18n((float) $template['hours'], 2)); ?>h</small>
                                     </button>
                                 <?php endforeach; ?>
@@ -144,7 +144,7 @@
                                     <option value=""><?php esc_html_e('Wybierz projekt klienta', 'erp-omd'); ?></option>
                                     <?php foreach ($available_projects as $project_item) : ?>
                                         <option value="<?php echo esc_attr((string) $project_item['id']); ?>" data-client-id="<?php echo esc_attr((string) $project_item['client_id']); ?>" <?php selected((int) ($worker_form_defaults['project_id'] ?? 0), (int) $project_item['id']); ?>>
-                                            <?php echo esc_html(trim((string) ($project_item['client_name'] ?? '—')) . ' — ' . ($project_item['name'] ?? '—')); ?>
+                                            <?php echo esc_html($project_item['name']); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>

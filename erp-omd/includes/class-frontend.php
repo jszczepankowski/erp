@@ -789,6 +789,7 @@ class ERP_OMD_Frontend
             $seen[$key] = true;
             $templates[] = [
                 'client_id' => (int) ($entry['client_id'] ?? 0),
+                'client_name' => (string) ($entry['client_name'] ?? '—'),
                 'project_id' => (int) ($entry['project_id'] ?? 0),
                 'project_name' => (string) ($entry['project_name'] ?? '—'),
                 'role_id' => (int) ($entry['role_id'] ?? 0),
