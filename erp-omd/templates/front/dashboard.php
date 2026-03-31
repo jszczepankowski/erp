@@ -31,6 +31,7 @@
             <?php
             $manager_tabs = [
                 'dodaj-wpis' => __('Dodaj wpis', 'erp-omd'),
+                'wpisy-godzin' => __('Wpisy godzin', 'erp-omd'),
                 'projekty' => __('Projekty', 'erp-omd'),
                 'kosztorysy' => __('Kosztorysy', 'erp-omd'),
                 'akceptacje' => __('Akceptacje', 'erp-omd'),
@@ -153,6 +154,57 @@
                             <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Dodaj wpis czasu', 'erp-omd'); ?></button>
                         </div>
                     </form>
+                </article>
+            </div>
+
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-full" data-manager-tab-pane="wpisy-godzin">
+                <article class="erp-omd-front-panel">
+                    <div class="erp-omd-front-section-heading">
+                        <h2><?php esc_html_e('Twoje wpisy czasu', 'erp-omd'); ?></h2>
+                    </div>
+
+                    <div class="erp-omd-front-table-wrap">
+                        <table class="erp-omd-front-table" data-table-enhanced="1">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Klient', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Rola', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Godz.', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if ($manager_time_entries) : ?>
+                                    <?php foreach ($manager_time_entries as $time_entry) : ?>
+                                        <tr>
+                                            <td><?php echo esc_html($time_entry['entry_date'] ?? '—'); ?></td>
+                                            <td><?php echo esc_html($time_entry['client_name'] ?? '—'); ?></td>
+                                            <td><?php echo esc_html($time_entry['project_name'] ?? '—'); ?></td>
+                                            <td><?php echo esc_html($time_entry['role_name'] ?? '—'); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($time_entry['hours'] ?? 0), 2)); ?></td>
+                                            <td>
+                                                <span class="erp-omd-front-status erp-omd-front-status-<?php echo esc_attr((string) ($time_entry['status'] ?? '')); ?>">
+                                                    <?php echo esc_html([
+                                                        'submitted' => __('Oczekuje', 'erp-omd'),
+                                                        'approved' => __('Zaakceptowany', 'erp-omd'),
+                                                        'rejected' => __('Odrzucony', 'erp-omd'),
+                                                    ][(string) ($time_entry['status'] ?? '')] ?? (string) ($time_entry['status'] ?? '—')); ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo esc_html(wp_trim_words((string) ($time_entry['description'] ?? ''), 14)); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else : ?>
+                                    <tr>
+                                        <td colspan="7"><?php esc_html_e('Brak wpisów czasu dla bieżącego managera.', 'erp-omd'); ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </article>
             </div>
 
@@ -958,6 +1010,17 @@
                             <?php endforeach; ?>
                         </select>
 
+                        <div class="erp-omd-front-form-row">
+                            <div>
+                                <label for="erp-omd-front-request-start-date"><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></label>
+                                <input id="erp-omd-front-request-start-date" type="date" name="start_date" value="<?php echo esc_attr((string) ($request_form_defaults['start_date'] ?? '')); ?>">
+                            </div>
+                            <div>
+                                <label for="erp-omd-front-request-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label>
+                                <input id="erp-omd-front-request-end-date" type="date" name="end_date" value="<?php echo esc_attr((string) ($request_form_defaults['end_date'] ?? '')); ?>">
+                            </div>
+                        </div>
+
                         <label for="erp-omd-front-request-brief"><?php esc_html_e('Brief / uzasadnienie', 'erp-omd'); ?></label>
                         <textarea id="erp-omd-front-request-brief" name="brief" rows="6" required><?php echo esc_textarea((string) ($request_form_defaults['brief'] ?? '')); ?></textarea>
 
@@ -1052,7 +1115,7 @@
     (function () {
         var setupManagerTabs = function () {
             var storageKey = 'erp_omd_front_manager_active_tab';
-            var allowedTabs = ['dodaj-wpis', 'projekty', 'kosztorysy', 'akceptacje', 'wnioski'];
+            var allowedTabs = ['dodaj-wpis', 'wpisy-godzin', 'projekty', 'kosztorysy', 'akceptacje', 'wnioski'];
             var params = new URLSearchParams(window.location.search);
             var urlTab = params.get('manager_tab');
             var storedTab = localStorage.getItem(storageKey);
@@ -1125,7 +1188,7 @@
                         '<select class="erp-omd-front-table-size-select">' +
                             '<option value="25">25</option>' +
                             '<option value="50">50</option>' +
-                            '<option value="100">100</option>' +
+                            '<option value="100" selected>100</option>' +
                             '<option value="200">200</option>' +
                         '</select>' +
                     '</label>' +
@@ -1147,7 +1210,7 @@
                 var paginationNext = controls.querySelector('.erp-omd-front-table-next');
                 var activeSort = { index: -1, dir: 'asc' };
                 var currentPage = 1;
-                var pageSize = 25;
+                var pageSize = 100;
 
                 var applyView = function () {
                     var query = ((searchInput && searchInput.value) || '').toLowerCase().trim();
@@ -1227,13 +1290,13 @@
                         applyView();
                     });
                 }
-                if (pageSizeSelect) {
-                    pageSizeSelect.addEventListener('change', function () {
-                        pageSize = Number(pageSizeSelect.value) || 25;
-                        currentPage = 1;
-                        applyView();
-                    });
-                }
+                    if (pageSizeSelect) {
+                        pageSizeSelect.addEventListener('change', function () {
+                            pageSize = Number(pageSizeSelect.value) || 100;
+                            currentPage = 1;
+                            applyView();
+                        });
+                    }
                 if (paginationPrev) {
                     paginationPrev.addEventListener('click', function () {
                         currentPage -= 1;
