@@ -106,7 +106,6 @@
             </div>
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-time" />
-                <input type="hidden" name="paged" value="1" />
                 <input type="date" name="entry_date" value="<?php echo esc_attr($filters['entry_date'] ?? ''); ?>" />
                 <?php if ($can_select_any_employee) : ?>
                     <select name="employee_id"><option value=""><?php esc_html_e('Wszyscy pracownicy', 'erp-omd'); ?></option><?php foreach ($employees_for_select as $employee_item) : ?><option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((string) ($filters['employee_id'] ?? ''), (string) $employee_item['id']); ?>><?php echo esc_html($employee_item['user_login']); ?></option><?php endforeach; ?></select>
@@ -114,11 +113,6 @@
                 <select id="time-filter-client" name="client_id" data-project-target="#time-filter-project"><option value=""><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option><?php foreach ($clients_for_time as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((string) ($filters['client_id'] ?? ''), (string) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select>
                 <select id="time-filter-project" name="project_id"><option value=""><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option><?php foreach ($projects_for_time as $project_item) : ?><option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr($project_item['client_id']); ?>" <?php selected((string) ($filters['project_id'] ?? ''), (string) $project_item['id']); ?>><?php echo esc_html($project_item['name']); ?></option><?php endforeach; ?></select>
                 <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['submitted', 'approved', 'rejected'] as $time_status) : ?><option value="<?php echo esc_attr($time_status); ?>" <?php selected((string) ($filters['status'] ?? ''), $time_status); ?>><?php echo esc_html($this->time_status_label($time_status)); ?></option><?php endforeach; ?></select>
-                <select name="per_page">
-                    <?php foreach ((array) ($time_entries_pagination['allowed_per_page'] ?? [25, 50, 100, 200]) as $size) : ?>
-                        <option value="<?php echo esc_attr((string) $size); ?>" <?php selected((int) ($filters['per_page'] ?? 25), (int) $size); ?>><?php echo esc_html(sprintf(__('%d / strona', 'erp-omd'), (int) $size)); ?></option>
-                    <?php endforeach; ?>
-                </select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
             <form method="post" id="erp-omd-bulk-time-entries-form">
@@ -227,43 +221,6 @@
                         <?php endif; ?>
                 </tbody>
             </table>
-            <?php if (($time_entries_pagination['total_pages'] ?? 1) > 1) : ?>
-                <div class="tablenav bottom">
-                    <div class="tablenav-pages">
-                        <?php
-                        $base_args = [
-                            'page' => 'erp-omd-time',
-                            'entry_date' => $filters['entry_date'] ?? '',
-                            'employee_id' => $filters['employee_id'] ?? '',
-                            'client_id' => $filters['client_id'] ?? '',
-                            'project_id' => $filters['project_id'] ?? '',
-                            'status' => $filters['status'] ?? '',
-                            'per_page' => $filters['per_page'] ?? 25,
-                        ];
-                        $current_page = (int) ($time_entries_pagination['current_page'] ?? 1);
-                        $total_pages = (int) ($time_entries_pagination['total_pages'] ?? 1);
-                        ?>
-                        <?php if ($current_page > 1) : ?>
-                            <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['paged' => $current_page - 1]), admin_url('admin.php'))); ?>">&laquo; <?php esc_html_e('Poprzednia', 'erp-omd'); ?></a>
-                        <?php endif; ?>
-                        <span class="displaying-num">
-                            <?php
-                            echo esc_html(
-                                sprintf(
-                                    __('Strona %1$d z %2$d · rekordów: %3$d', 'erp-omd'),
-                                    $current_page,
-                                    $total_pages,
-                                    (int) ($time_entries_pagination['total_items'] ?? 0)
-                                )
-                            );
-                            ?>
-                        </span>
-                        <?php if ($current_page < $total_pages) : ?>
-                            <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['paged' => $current_page + 1]), admin_url('admin.php'))); ?>"><?php esc_html_e('Następna', 'erp-omd'); ?> &raquo;</a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
         </section>
     </div>
 </div>

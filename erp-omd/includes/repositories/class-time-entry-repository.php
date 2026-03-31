@@ -10,38 +10,6 @@ class ERP_OMD_Time_Entry_Repository
 
     public function all(array $filters = [])
     {
-        return $this->query_entries($filters);
-    }
-
-    public function paged(array $filters = [], $limit = 25, $offset = 0)
-    {
-        $limit = max(1, (int) $limit);
-        $offset = max(0, (int) $offset);
-
-        return $this->query_entries($filters, $limit, $offset);
-    }
-
-    public function count(array $filters = [])
-    {
-        global $wpdb;
-
-        $where_data = $this->build_where($filters);
-        $where_sql = implode(' AND ', $where_data['where']);
-        $params = $where_data['params'];
-
-        $sql = "SELECT COUNT(*) FROM {$this->table_name()} t
-                INNER JOIN {$wpdb->prefix}erp_omd_projects p ON p.id = t.project_id
-                WHERE {$where_sql}";
-
-        if ($params) {
-            return (int) $wpdb->get_var($wpdb->prepare($sql, ...$params));
-        }
-
-        return (int) $wpdb->get_var($sql);
-    }
-
-    private function query_entries(array $filters = [], $limit = null, $offset = null)
-    {
         global $wpdb;
 
         $employees_table = $wpdb->prefix . 'erp_omd_employees';
@@ -50,9 +18,25 @@ class ERP_OMD_Time_Entry_Repository
         $roles_table = $wpdb->prefix . 'erp_omd_roles';
         $users_table = $wpdb->users;
 
-        $where_data = $this->build_where($filters);
-        $where = $where_data['where'];
-        $params = $where_data['params'];
+        $where = ['1=1'];
+        $params = [];
+
+        if (! empty($filters['employee_id'])) {
+            $where[] = 't.employee_id = %d';
+            $params[] = (int) $filters['employee_id'];
+        }
+        if (! empty($filters['project_id'])) {
+            $where[] = 't.project_id = %d';
+            $params[] = (int) $filters['project_id'];
+        }
+        if (! empty($filters['status'])) {
+            $where[] = 't.status = %s';
+            $params[] = $filters['status'];
+        }
+        if (! empty($filters['entry_date'])) {
+            $where[] = 't.entry_date = %s';
+            $params[] = $filters['entry_date'];
+        }
 
         $sql = "SELECT t.*, eu.user_login AS employee_login, p.client_id AS client_id, c.name AS client_name, p.name AS project_name, r.name AS role_name,
                 au.user_login AS approved_by_login
@@ -65,62 +49,11 @@ class ERP_OMD_Time_Entry_Repository
                 LEFT JOIN {$users_table} au ON au.ID = t.approved_by_user_id
                 WHERE " . implode(' AND ', $where) . ' ORDER BY t.entry_date DESC, t.id DESC';
 
-        if ($limit !== null) {
-            $sql .= ' LIMIT %d';
-            $params[] = (int) $limit;
-            if ($offset !== null) {
-                $sql .= ' OFFSET %d';
-                $params[] = (int) $offset;
-            }
-        }
-
         if ($params) {
             return $wpdb->get_results($wpdb->prepare($sql, ...$params), ARRAY_A);
         }
 
         return $wpdb->get_results($sql, ARRAY_A);
-    }
-
-    private function build_where(array $filters = [])
-    {
-        $where = ['1=1'];
-        $params = [];
-
-        if (! empty($filters['employee_id'])) {
-            $where[] = 't.employee_id = %d';
-            $params[] = (int) $filters['employee_id'];
-        }
-        if (! empty($filters['project_id'])) {
-            $where[] = 't.project_id = %d';
-            $params[] = (int) $filters['project_id'];
-        }
-        if (! empty($filters['project_ids']) && is_array($filters['project_ids'])) {
-            $project_ids = array_values(array_filter(array_map('intval', $filters['project_ids']), static function ($id) {
-                return $id > 0;
-            }));
-            if ($project_ids !== []) {
-                $placeholders = implode(', ', array_fill(0, count($project_ids), '%d'));
-                $where[] = "t.project_id IN ({$placeholders})";
-                $params = array_merge($params, $project_ids);
-            }
-        }
-        if (! empty($filters['client_id'])) {
-            $where[] = 'p.client_id = %d';
-            $params[] = (int) $filters['client_id'];
-        }
-        if (! empty($filters['status'])) {
-            $where[] = 't.status = %s';
-            $params[] = $filters['status'];
-        }
-        if (! empty($filters['entry_date'])) {
-            $where[] = 't.entry_date = %s';
-            $params[] = $filters['entry_date'];
-        }
-
-        return [
-            'where' => $where,
-            'params' => $params,
-        ];
     }
 
     public function find($id)

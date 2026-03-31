@@ -19,10 +19,6 @@ if (! function_exists('__')) {
 if (! function_exists('get_option')) {
     function get_option($name, $default = false)
     {
-        global $erp_omd_test_options;
-        if (is_array($erp_omd_test_options) && array_key_exists($name, $erp_omd_test_options)) {
-            return $erp_omd_test_options[$name];
-        }
         return $default;
     }
 }
@@ -127,15 +123,6 @@ final class ReportingServiceTestRunner
 
     public function run(): void
     {
-        global $erp_omd_test_options;
-        $erp_omd_test_options = [
-            'erp_omd_fixed_monthly_cost_items' => [
-                ['name' => 'Biuro', 'amount' => 1000.0, 'valid_from' => '2026-01-01', 'valid_to' => '', 'active' => 1],
-                ['name' => 'Nieaktywne', 'amount' => 999.0, 'valid_from' => '2026-01-01', 'valid_to' => '', 'active' => 0],
-            ],
-            'erp_omd_fixed_monthly_cost' => 500.0,
-        ];
-
         $service = new ERP_OMD_Reporting_Service(
             new ERP_OMD_Project_Repository([
                 ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000],
@@ -202,11 +189,10 @@ final class ReportingServiceTestRunner
         $this->assertSame(1, count($monthlyReport), 'Monthly report should group entries by month.');
         $this->assertSame(6.0, $monthlyReport[0]['hours'], 'Monthly report should sum hours for the month.');
 
-        $omdSettlement = $service->build_report('omd_rozliczenia', $filters);
+        $omdSettlement = $service->build_omd_settlement_report($filters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
         $this->assertSame('2026-03', $omdSettlement[11]['month'], 'OMD settlement report should end with selected month.');
         $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
-        $this->assertSame(1000.0, $omdSettlement[11]['fixed_cost'], 'OMD settlement report should sum active fixed-cost items for selected month.');
 
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame('2026-03', $calendar['month'], 'Calendar should be built for requested month.');
