@@ -66,12 +66,6 @@
             'label' => sprintf(__('Zysk z pracy · %s', 'erp-omd'), $reporting_month_label),
             'variant' => 'erp-omd-metric-tile-accent',
         ],
-        [
-            'icon' => 'warning',
-            'value' => count($alerts),
-            'label' => __('Aktywne alerty', 'erp-omd'),
-            'variant' => '',
-        ],
     ];
     $dashboard_shortcut_icons = [
         __('Dodaj klienta', 'erp-omd') => 'plus-alt2',
