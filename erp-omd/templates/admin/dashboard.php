@@ -5,17 +5,9 @@
 
         </div>
         <div class="erp-omd-kpi-grid">
-            <div class="erp-omd-kpi">
-                <span class="erp-omd-kpi-label"><?php esc_html_e('Pracownicy', 'erp-omd'); ?></span>
-                <strong><?php echo esc_html(count($employees)); ?></strong>
-            </div>
-            <div class="erp-omd-kpi">
-                <span class="erp-omd-kpi-label"><?php esc_html_e('Projekty', 'erp-omd'); ?></span>
-                <strong><?php echo esc_html(count($projects)); ?></strong>
-            </div>
             <div class="erp-omd-kpi erp-omd-kpi-accent erp-omd-kpi-profit">
-                <span class="erp-omd-kpi-label"><?php esc_html_e('Zysk miesięczny', 'erp-omd'); ?></span>
-                <strong><?php echo esc_html(number_format_i18n((float) $monthly_totals['employee_profit'], 2)); ?></strong>
+                <span class="erp-omd-kpi-label"><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></span>
+                <strong><?php echo esc_html(number_format_i18n((float) ($omd_month_row['operating_result'] ?? 0), 2)); ?></strong>
             </div>
         </div>
     </div>
@@ -57,20 +49,14 @@
         [
             'icon' => 'money-alt',
             'value' => number_format_i18n((float) $monthly_totals['hourly_cost_total'], 2),
-            'label' => sprintf(__('Koszt · %s', 'erp-omd'), $reporting_month_label),
+            'label' => sprintf(__('Koszt pracy · %s', 'erp-omd'), $reporting_month_label),
             'variant' => 'erp-omd-metric-tile-muted',
         ],
         [
             'icon' => 'chart-line',
             'value' => number_format_i18n((float) $monthly_totals['employee_profit'], 2),
-            'label' => sprintf(__('Zysk · %s', 'erp-omd'), $reporting_month_label),
+            'label' => sprintf(__('Zysk z pracy · %s', 'erp-omd'), $reporting_month_label),
             'variant' => 'erp-omd-metric-tile-accent',
-        ],
-        [
-            'icon' => 'warning',
-            'value' => count($alerts),
-            'label' => __('Aktywne alerty', 'erp-omd'),
-            'variant' => '',
         ],
     ];
     $dashboard_shortcut_icons = [
@@ -151,7 +137,7 @@
             <div class="erp-omd-chart-header">
                 <div>
                     <h2><?php esc_html_e('Miesięczny bilans operacyjny', 'erp-omd'); ?></h2>
-                    <p><?php esc_html_e('Ujęcie bieżącego miesiąca: koszty projektowe, koszty czasu, zysk godzinowy i zysk projektów.', 'erp-omd'); ?></p>
+                    <p><?php esc_html_e('Ujęcie bieżącego miesiąca: koszty projektowe, koszty czasu, zysk godzinowy i wynik operacyjny.', 'erp-omd'); ?></p>
                 </div>
                 <span class="erp-omd-chart-period"><?php echo esc_html($reporting_month_label); ?></span>
             </div>
