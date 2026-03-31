@@ -261,6 +261,17 @@
                         <label for="erp-omd-worker-request-brief"><?php esc_html_e('Brief / uzasadnienie', 'erp-omd'); ?></label>
                         <textarea id="erp-omd-worker-request-brief" name="brief" rows="5" required><?php echo esc_textarea((string) ($worker_request_defaults['brief'] ?? '')); ?></textarea>
 
+                        <div class="erp-omd-front-form-row">
+                            <div>
+                                <label for="erp-omd-worker-request-start-date"><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></label>
+                                <input id="erp-omd-worker-request-start-date" type="date" name="start_date" value="<?php echo esc_attr((string) ($worker_request_defaults['start_date'] ?? '')); ?>">
+                            </div>
+                            <div>
+                                <label for="erp-omd-worker-request-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label>
+                                <input id="erp-omd-worker-request-end-date" type="date" name="end_date" value="<?php echo esc_attr((string) ($worker_request_defaults['end_date'] ?? '')); ?>">
+                            </div>
+                        </div>
+
                         <div class="erp-omd-front-inline-actions">
                             <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Wyślij wniosek', 'erp-omd'); ?></button>
                         </div>
