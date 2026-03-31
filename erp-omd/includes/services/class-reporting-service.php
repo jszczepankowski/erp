@@ -10,6 +10,7 @@ class ERP_OMD_Reporting_Service
     private $project_costs;
     private $time_entries;
     private $project_financial_service;
+    private $estimate_items;
 
     public function __construct(
         ERP_OMD_Project_Repository $projects,
@@ -18,7 +19,8 @@ class ERP_OMD_Reporting_Service
         ERP_OMD_Salary_History_Repository $salary_history,
         ERP_OMD_Project_Cost_Repository $project_costs,
         ERP_OMD_Time_Entry_Repository $time_entries,
-        ERP_OMD_Project_Financial_Service $project_financial_service
+        ERP_OMD_Project_Financial_Service $project_financial_service,
+        $estimate_items = null
     ) {
         $this->projects = $projects;
         $this->clients = $clients;
@@ -27,6 +29,7 @@ class ERP_OMD_Reporting_Service
         $this->project_costs = $project_costs;
         $this->time_entries = $time_entries;
         $this->project_financial_service = $project_financial_service;
+        $this->estimate_items = $estimate_items;
     }
 
     public function sanitize_filters(array $raw_filters = [])
@@ -37,7 +40,7 @@ class ERP_OMD_Reporting_Service
         }
 
         $report_type = isset($raw_filters['report_type']) ? sanitize_key((string) $raw_filters['report_type']) : 'projects';
-        if (! in_array($report_type, ['projects', 'clients', 'invoice', 'monthly', 'omd_rozliczenia'], true)) {
+        if (! in_array($report_type, ['projects', 'clients', 'invoice', 'monthly', 'omd_rozliczenia', 'time_entries'], true)) {
             $report_type = 'projects';
         }
 
@@ -73,6 +76,39 @@ class ERP_OMD_Reporting_Service
                 return $this->build_invoice_report($filters);
             case 'monthly':
                 return $this->build_monthly_report($filters);
+            case 'time_entries':
+                $projects = $this->get_filtered_projects($filters);
+                $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
+                $entries = $this->get_filtered_entries($project_ids, $filters);
+
+                $rows = array_map(
+                    static function ($entry) {
+                        $hours = (float) ($entry['hours'] ?? 0);
+                        $rate = (float) ($entry['rate_snapshot'] ?? 0);
+                        return [
+                            'entry_date' => (string) ($entry['entry_date'] ?? ''),
+                            'employee_login' => (string) ($entry['employee_login'] ?? '—'),
+                            'client_name' => (string) ($entry['client_name'] ?? '—'),
+                            'project_name' => (string) ($entry['project_name'] ?? '—'),
+                            'role_name' => (string) ($entry['role_name'] ?? '—'),
+                            'hours' => round($hours, 2),
+                            'rate_snapshot' => round($rate, 2),
+                            'amount' => round($hours * $rate, 2),
+                            'status' => (string) ($entry['status'] ?? ''),
+                            'description' => (string) ($entry['description'] ?? ''),
+                        ];
+                    },
+                    $entries
+                );
+
+                usort(
+                    $rows,
+                    static function ($left, $right) {
+                        return [(string) ($right['entry_date'] ?? ''), (string) ($left['employee_login'] ?? '')] <=> [(string) ($left['entry_date'] ?? ''), (string) ($right['employee_login'] ?? '')];
+                    }
+                );
+
+                return $rows;
             case 'omd_rozliczenia':
                 $rows = [];
                 $anchor = DateTimeImmutable::createFromFormat('Y-m-d', (string) $filters['month'] . '-01');
@@ -222,6 +258,88 @@ class ERP_OMD_Reporting_Service
                 'margin' => (float) ($financial['margin'] ?? 0),
                 'budget_usage' => (float) ($financial['budget_usage'] ?? 0),
             ];
+
+            if (($filters['report_type'] ?? '') === 'invoice') {
+                $invoice_items = [];
+                $billing_type = (string) ($project['billing_type'] ?? '');
+                $project_id_for_invoice = (int) ($project['id'] ?? 0);
+
+                if (
+                    $project_id_for_invoice > 0
+                    && $billing_type === 'fixed_price'
+                    && (int) ($project['estimate_id'] ?? 0) > 0
+                    && $this->estimate_items
+                    && method_exists($this->estimate_items, 'for_estimate')
+                ) {
+                    $estimate_items = (array) $this->estimate_items->for_estimate((int) $project['estimate_id']);
+                    $invoice_items = array_values(array_map(static function ($item) {
+                        $description = trim((string) ($item['name'] ?? ''));
+                        $comment = trim((string) ($item['comment'] ?? ''));
+                        if ($comment !== '') {
+                            $description .= ' — ' . $comment;
+                        }
+
+                        $qty = (float) ($item['qty'] ?? 0);
+                        $price = (float) ($item['price'] ?? 0);
+                        $line_total = round($qty * $price, 2);
+
+                        return [
+                            'label' => sprintf('%s | cena: %s | ilość: %s | kwota: %s', $description !== '' ? $description : '—', number_format($price, 2, '.', ''), number_format($qty, 2, '.', ''), number_format($line_total, 2, '.', '')),
+                            'amount' => $line_total,
+                        ];
+                    }, $estimate_items));
+                } elseif ($project_id_for_invoice > 0) {
+                    $invoice_entries = $this->get_filtered_entries([$project_id_for_invoice], $filters);
+                    $invoice_lines = [];
+
+                    foreach ($invoice_entries as $invoice_entry) {
+                        $role_name = (string) ($invoice_entry['role_name'] ?? '—');
+                        $rate = (float) ($invoice_entry['rate_snapshot'] ?? 0);
+                        $key = $role_name . '|' . number_format($rate, 4, '.', '');
+                        if (! isset($invoice_lines[$key])) {
+                            $invoice_lines[$key] = [
+                                'role_name' => $role_name,
+                                'hours' => 0.0,
+                                'rate' => $rate,
+                            ];
+                        }
+
+                        $invoice_lines[$key]['hours'] += (float) ($invoice_entry['hours'] ?? 0);
+                    }
+
+                    $invoice_items = array_values(array_map(static function ($line) {
+                        $hours = round((float) ($line['hours'] ?? 0), 2);
+                        $rate = (float) ($line['rate'] ?? 0);
+                        $total = round($hours * $rate, 2);
+
+                        return [
+                            'label' => sprintf(
+                                'Czas pracy (%s) | godziny: %s | stawka klienta: %s | kwota: %s',
+                                (string) ($line['role_name'] ?? '—'),
+                                number_format($hours, 2, '.', ''),
+                                number_format($rate, 2, '.', ''),
+                                number_format($total, 2, '.', '')
+                            ),
+                            'amount' => $total,
+                        ];
+                    }, $invoice_lines));
+                }
+
+                if ($invoice_items === [] && $billing_type === 'retainer') {
+                    $retainer_amount = round((float) ($project['retainer_monthly_fee'] ?? ($project['budget'] ?? 0)), 2);
+                    $invoice_items[] = [
+                        'label' => sprintf(
+                            '%s | kwota ryczałtu: %s',
+                            (string) ($project['name'] ?? 'Ryczałt'),
+                            number_format($retainer_amount, 2, '.', '')
+                        ),
+                        'amount' => $retainer_amount,
+                    ];
+                }
+
+                $rows[count($rows) - 1]['invoice_items'] = $invoice_items;
+                $rows[count($rows) - 1]['invoice_items_count'] = count($invoice_items);
+            }
         }
 
         return $rows;
@@ -455,6 +573,41 @@ class ERP_OMD_Reporting_Service
                     }, $rows),
                 ];
             case 'invoice':
+                $invoice_rows = [];
+                foreach ($rows as $row) {
+                    $invoice_rows[] = [
+                        $row['client_name'],
+                        $row['project_name'],
+                        $this->billing_type_label((string) ($row['billing_type'] ?? '')),
+                        $row['manager_login'],
+                        number_format((float) $row['budget'], 2, '.', ''),
+                        number_format((float) $row['reported_hours'], 2, '.', ''),
+                        $row['entries_count'],
+                        number_format((float) $row['filtered_time_revenue'], 2, '.', ''),
+                        number_format((float) $row['filtered_time_cost'], 2, '.', ''),
+                        number_format((float) $row['filtered_direct_cost'], 2, '.', ''),
+                        number_format((float) $row['revenue'], 2, '.', ''),
+                        number_format((float) $row['cost'], 2, '.', ''),
+                        number_format((float) $row['profit'], 2, '.', ''),
+                        number_format((float) $row['margin'], 2, '.', ''),
+                        number_format((float) $row['budget_usage'], 2, '.', ''),
+                        $row['status'],
+                    ];
+
+                    $invoice_rows[] = ['Pozycje do faktury'];
+                    $invoice_items_total = 0.0;
+                    foreach ((array) ($row['invoice_items'] ?? []) as $item) {
+                        $invoice_rows[] = [(string) ($item['label'] ?? '—')];
+                        $invoice_items_total += (float) ($item['amount'] ?? 0);
+                    }
+                    $invoice_rows[] = [sprintf('Suma pozycji: %s', number_format($invoice_items_total, 2, '.', ''))];
+                }
+
+                return [
+                    'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
+                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status'],
+                    'rows' => $invoice_rows,
+                ];
             case 'projects':
                 return [
                     'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
@@ -495,6 +648,25 @@ class ERP_OMD_Reporting_Service
                             number_format((float) $row['time_cost'], 2, '.', ''),
                             number_format((float) $row['direct_cost'], 2, '.', ''),
                             number_format((float) $row['profit'], 2, '.', ''),
+                        ];
+                    }, $rows),
+                ];
+            case 'time_entries':
+                return [
+                    'filename' => sprintf('erp-omd-raport-czas-pracy-%s.csv', $month),
+                    'headers' => ['Data', 'Pracownik', 'Klient', 'Projekt', 'Rola', 'Godziny', 'Stawka klienta', 'Kwota', 'Status', 'Opis'],
+                    'rows' => array_map(static function ($row) {
+                        return [
+                            $row['entry_date'],
+                            $row['employee_login'],
+                            $row['client_name'],
+                            $row['project_name'],
+                            $row['role_name'],
+                            number_format((float) $row['hours'], 2, '.', ''),
+                            number_format((float) $row['rate_snapshot'], 2, '.', ''),
+                            number_format((float) $row['amount'], 2, '.', ''),
+                            $row['status'],
+                            $row['description'],
                         ];
                     }, $rows),
                 ];

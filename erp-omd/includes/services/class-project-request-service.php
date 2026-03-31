@@ -33,6 +33,8 @@ class ERP_OMD_Project_Request_Service
             'preferred_manager_id' => (int) ($data['preferred_manager_id'] ?? ($existing['preferred_manager_id'] ?? 0)),
             'estimate_id' => (int) ($data['estimate_id'] ?? ($existing['estimate_id'] ?? 0)),
             'brief' => trim((string) ($data['brief'] ?? ($existing['brief'] ?? ''))),
+            'start_date' => trim((string) ($data['start_date'] ?? ($existing['start_date'] ?? ''))),
+            'end_date' => trim((string) ($data['end_date'] ?? ($existing['end_date'] ?? ''))),
             'status' => trim((string) ($data['status'] ?? ($existing['status'] ?? 'new'))) ?: 'new',
             'reviewed_by_user_id' => (int) ($data['reviewed_by_user_id'] ?? ($existing['reviewed_by_user_id'] ?? 0)),
             'reviewed_at' => $data['reviewed_at'] ?? ($existing['reviewed_at'] ?? null),
@@ -71,6 +73,18 @@ class ERP_OMD_Project_Request_Service
 
         if ($data['estimate_id'] > 0 && ! $this->estimates->find((int) $data['estimate_id'])) {
             $errors[] = __('Powiązany kosztorys nie istnieje.', 'erp-omd');
+        }
+
+        if ($data['start_date'] !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $data['start_date'])) {
+            $errors[] = __('Data rozpoczęcia wniosku jest niepoprawna.', 'erp-omd');
+        }
+
+        if ($data['end_date'] !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $data['end_date'])) {
+            $errors[] = __('Data zakończenia wniosku jest niepoprawna.', 'erp-omd');
+        }
+
+        if ($data['start_date'] !== '' && $data['end_date'] !== '' && $data['start_date'] > $data['end_date']) {
+            $errors[] = __('Data zakończenia nie może być wcześniejsza niż data rozpoczęcia.', 'erp-omd');
         }
 
         if (! in_array($data['status'], ['new', 'under_review', 'approved', 'rejected', 'converted'], true)) {
@@ -118,6 +132,8 @@ class ERP_OMD_Project_Request_Service
             'manager_ids' => array_values(array_filter([(int) ($request['preferred_manager_id'] ?? 0)])),
             'estimate_id' => (int) ($request['estimate_id'] ?? 0),
             'brief' => (string) ($request['brief'] ?? ''),
+            'start_date' => (string) ($request['start_date'] ?? ''),
+            'end_date' => (string) ($request['end_date'] ?? ''),
         ]);
     }
 
