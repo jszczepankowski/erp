@@ -10,6 +10,7 @@ class ERP_OMD_Reporting_Service
     private $project_costs;
     private $time_entries;
     private $project_financial_service;
+    private $estimate_items;
 
     public function __construct(
         ERP_OMD_Project_Repository $projects,
@@ -18,7 +19,8 @@ class ERP_OMD_Reporting_Service
         ERP_OMD_Salary_History_Repository $salary_history,
         ERP_OMD_Project_Cost_Repository $project_costs,
         ERP_OMD_Time_Entry_Repository $time_entries,
-        ERP_OMD_Project_Financial_Service $project_financial_service
+        ERP_OMD_Project_Financial_Service $project_financial_service,
+        $estimate_items = null
     ) {
         $this->projects = $projects;
         $this->clients = $clients;
@@ -27,6 +29,7 @@ class ERP_OMD_Reporting_Service
         $this->project_costs = $project_costs;
         $this->time_entries = $time_entries;
         $this->project_financial_service = $project_financial_service;
+        $this->estimate_items = $estimate_items;
     }
 
     public function sanitize_filters(array $raw_filters = [])
@@ -222,6 +225,12 @@ class ERP_OMD_Reporting_Service
                 'margin' => (float) ($financial['margin'] ?? 0),
                 'budget_usage' => (float) ($financial['budget_usage'] ?? 0),
             ];
+
+            if (($filters['report_type'] ?? '') === 'invoice') {
+                $invoice_items = $this->build_invoice_items_for_project($project, $filters);
+                $rows[count($rows) - 1]['invoice_items'] = $invoice_items;
+                $rows[count($rows) - 1]['invoice_items_count'] = count($invoice_items);
+            }
         }
 
         return $rows;
@@ -455,6 +464,41 @@ class ERP_OMD_Reporting_Service
                     }, $rows),
                 ];
             case 'invoice':
+                $invoice_rows = [];
+                foreach ($rows as $row) {
+                    $invoice_rows[] = [
+                        $row['client_name'],
+                        $row['project_name'],
+                        $this->billing_type_label((string) ($row['billing_type'] ?? '')),
+                        $row['manager_login'],
+                        number_format((float) $row['budget'], 2, '.', ''),
+                        number_format((float) $row['reported_hours'], 2, '.', ''),
+                        $row['entries_count'],
+                        number_format((float) $row['filtered_time_revenue'], 2, '.', ''),
+                        number_format((float) $row['filtered_time_cost'], 2, '.', ''),
+                        number_format((float) $row['filtered_direct_cost'], 2, '.', ''),
+                        number_format((float) $row['revenue'], 2, '.', ''),
+                        number_format((float) $row['cost'], 2, '.', ''),
+                        number_format((float) $row['profit'], 2, '.', ''),
+                        number_format((float) $row['margin'], 2, '.', ''),
+                        number_format((float) $row['budget_usage'], 2, '.', ''),
+                        $row['status'],
+                    ];
+
+                    $invoice_rows[] = ['Pozycje do faktury'];
+                    $invoice_items_total = 0.0;
+                    foreach ((array) ($row['invoice_items'] ?? []) as $item) {
+                        $invoice_rows[] = [(string) ($item['label'] ?? '—')];
+                        $invoice_items_total += (float) ($item['amount'] ?? 0);
+                    }
+                    $invoice_rows[] = [sprintf('Suma pozycji: %s', number_format($invoice_items_total, 2, '.', ''))];
+                }
+
+                return [
+                    'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
+                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status'],
+                    'rows' => $invoice_rows,
+                ];
             case 'projects':
                 return [
                     'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
@@ -569,6 +613,72 @@ class ERP_OMD_Reporting_Service
             }
             return true;
         }));
+    }
+
+    private function build_invoice_items_for_project(array $project, array $filters)
+    {
+        $billing_type = (string) ($project['billing_type'] ?? '');
+        $project_id = (int) ($project['id'] ?? 0);
+
+        if ($project_id <= 0) {
+            return [];
+        }
+
+        if ($billing_type === 'fixed_price' && (int) ($project['estimate_id'] ?? 0) > 0 && $this->estimate_items && method_exists($this->estimate_items, 'for_estimate')) {
+            $items = (array) $this->estimate_items->for_estimate((int) $project['estimate_id']);
+
+            return array_values(array_map(static function ($item) {
+                $description = trim((string) ($item['name'] ?? ''));
+                $comment = trim((string) ($item['comment'] ?? ''));
+                if ($comment !== '') {
+                    $description .= ' — ' . $comment;
+                }
+
+                $qty = (float) ($item['qty'] ?? 0);
+                $price = (float) ($item['price'] ?? 0);
+                $line_total = round($qty * $price, 2);
+
+                return [
+                    'label' => sprintf('%s | cena: %s | ilość: %s | kwota: %s', $description !== '' ? $description : '—', number_format($price, 2, '.', ''), number_format($qty, 2, '.', ''), number_format($line_total, 2, '.', '')),
+                    'amount' => $line_total,
+                ];
+            }, $items));
+        }
+
+        $entries = $this->get_filtered_entries([$project_id], $filters);
+        $lines = [];
+
+        foreach ($entries as $entry) {
+            $role_name = (string) ($entry['role_name'] ?? '—');
+            $rate = (float) ($entry['rate_snapshot'] ?? 0);
+            $key = $role_name . '|' . number_format($rate, 4, '.', '');
+            if (! isset($lines[$key])) {
+                $lines[$key] = [
+                    'role_name' => $role_name,
+                    'hours' => 0.0,
+                    'rate' => $rate,
+                ];
+            }
+
+            $lines[$key]['hours'] += (float) ($entry['hours'] ?? 0);
+        }
+
+        return array_values(array_map(static function ($line) {
+            $hours = round((float) ($line['hours'] ?? 0), 2);
+            $rate = (float) ($line['rate'] ?? 0);
+            $total = round($hours * $rate, 2);
+
+            return [
+                'label' => sprintf(
+                    'Czas pracy (%s) | godziny: %s | stawka klienta: %s | kwota: %s',
+                    (string) ($line['role_name'] ?? '—'),
+                    number_format($hours, 2, '.', ''),
+                    number_format($rate, 2, '.', ''),
+                    number_format($total, 2, '.', '')
+                ),
+                'amount' => $total,
+            ];
+        }, $lines));
     }
 
     private function get_entry_metrics_by_project(array $project_ids, array $filters)

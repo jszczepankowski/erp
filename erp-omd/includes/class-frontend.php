@@ -789,6 +789,7 @@ class ERP_OMD_Frontend
             $seen[$key] = true;
             $templates[] = [
                 'client_id' => (int) ($entry['client_id'] ?? 0),
+                'client_name' => (string) ($entry['client_name'] ?? '—'),
                 'project_id' => (int) ($entry['project_id'] ?? 0),
                 'project_name' => (string) ($entry['project_name'] ?? '—'),
                 'role_id' => (int) ($entry['role_id'] ?? 0),
@@ -977,8 +978,16 @@ class ERP_OMD_Frontend
             $selected_estimate_id = (int) ($filtered_estimates[0]['id'] ?? $linked_estimates[0]['id'] ?? $manager_estimates[0]['id'] ?? 0);
         }
         $selected_estimate = $selected_estimate_id > 0 ? $this->find_estimate_in_collection($manager_estimates, $selected_estimate_id) : null;
-        $approval_queue = $this->load_manager_approval_queue($managed_project_ids, $selected_project_id);
+        $approval_queue = $this->load_manager_approval_queue($managed_project_ids);
         $queue_summary = $this->summarize_queue_entries($approval_queue);
+        $manager_time_entries = $this->time_entries->all(['employee_id' => (int) $employee['id']]);
+        $manager_time_entries = $this->time_entry_service->filter_visible_entries($manager_time_entries, $user);
+        usort(
+            $manager_time_entries,
+            static function ($left, $right) {
+                return [(string) ($right['entry_date'] ?? ''), (int) ($right['id'] ?? 0)] <=> [(string) ($left['entry_date'] ?? ''), (int) ($left['id'] ?? 0)];
+            }
+        );
         $project_requests = $this->load_visible_project_requests((int) $employee['id'], $user);
         $selected_request = $selected_request_id > 0 ? $this->find_request_in_collection($project_requests, $selected_request_id) : null;
         $request_form_defaults = $selected_request ?: [

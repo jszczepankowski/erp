@@ -110,7 +110,7 @@
                                         data-hours="<?php echo esc_attr((string) $template['hours']); ?>"
                                         data-description="<?php echo esc_attr($template['description']); ?>"
                                     >
-                                        <span><?php echo esc_html($template['project_name']); ?></span>
+                                        <span><?php echo esc_html(($template['client_name'] ?? '—') . ' — ' . ($template['project_name'] ?? '—')); ?></span>
                                         <small><?php echo esc_html($template['role_name']); ?> · <?php echo esc_html(number_format_i18n((float) $template['hours'], 2)); ?>h</small>
                                     </button>
                                 <?php endforeach; ?>
