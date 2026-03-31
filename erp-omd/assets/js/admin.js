@@ -244,6 +244,82 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const inlineAutoSaveConfig = {
+    debounceMs: 700,
+    inputSelectors:
+      'input[type="text"], input[type="number"], input[type="date"], textarea',
+    immediateSelectors:
+      'select, input[type="checkbox"], input[type="radio"]',
+  };
+
+  const inlineAutoSaveForms = Array.from(
+    document.querySelectorAll('form[id^="erp-omd-inline-"]')
+  );
+
+  inlineAutoSaveForms.forEach((form) => {
+    if (!(form instanceof HTMLFormElement)) {
+      return;
+    }
+
+    const actionInput = form.querySelector('input[name="erp_omd_action"]');
+    const allowedActions = new Set([
+      'inline_update_employee',
+      'inline_update_project',
+      'inline_update_time_entry',
+    ]);
+
+    if (
+      !(actionInput instanceof HTMLInputElement) ||
+      !allowedActions.has(actionInput.value)
+    ) {
+      return;
+    }
+
+    let debounceTimer = null;
+
+    const submitInlineForm = () => {
+      if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+        return;
+      }
+
+      form.submit();
+    };
+
+    const scheduleSubmit = () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      debounceTimer = setTimeout(() => {
+        submitInlineForm();
+      }, inlineAutoSaveConfig.debounceMs);
+    };
+
+    const linkedElements = Array.from(
+      document.querySelectorAll(`[form="${form.id}"]`)
+    );
+
+    linkedElements.forEach((element) => {
+      if (
+        !(element instanceof HTMLInputElement) &&
+        !(element instanceof HTMLSelectElement) &&
+        !(element instanceof HTMLTextAreaElement)
+      ) {
+        return;
+      }
+
+      if (element.matches(inlineAutoSaveConfig.immediateSelectors)) {
+        element.addEventListener('change', submitInlineForm);
+        return;
+      }
+
+      if (element.matches(inlineAutoSaveConfig.inputSelectors)) {
+        element.addEventListener('change', scheduleSubmit);
+        element.addEventListener('blur', scheduleSubmit);
+      }
+    });
+  });
+
   document.querySelectorAll('.erp-omd-quick-hours-button').forEach((button) => {
     button.addEventListener('click', () => {
       const selector = button.dataset.target;
