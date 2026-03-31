@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
       paginatedPages.has(currentPage) &&
       !table.classList.contains('erp-omd-calendar-table');
 
-    let pageSize = 25;
+    let pageSize = 100;
     let currentPaginationPage = 1;
     let pageSizeSelect = null;
     let paginationMeta = null;
@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const option = document.createElement('option');
         option.value = String(size);
         option.textContent = `${size} / strona`;
+        if (size === 100) {
+          option.selected = true;
+        }
         pageSizeSelect.appendChild(option);
       });
       controls.appendChild(pageSizeSelect);
@@ -169,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (shouldPaginate && pageSizeSelect && paginationPrev && paginationNext) {
       pageSizeSelect.addEventListener('change', () => {
-        pageSize = Number.parseInt(pageSizeSelect.value, 10) || 25;
+        pageSize = Number.parseInt(pageSizeSelect.value, 10) || 100;
         currentPaginationPage = 1;
         applyTableView();
       });

@@ -661,6 +661,7 @@ class ERP_OMD_Admin
             'projects' => __('Raport projektów', 'erp-omd'),
             'clients' => __('Raport klientów', 'erp-omd'),
             'invoice' => __('Raport do faktury', 'erp-omd'),
+            'time_entries' => __('Raport czasu pracy', 'erp-omd'),
             'monthly' => __('Raport miesięczny', 'erp-omd'),
             'omd_rozliczenia' => __('Raport OMD rozliczenia', 'erp-omd'),
         ];
@@ -1765,11 +1766,24 @@ class ERP_OMD_Admin
         if ($bulk_action === '' || empty($project_ids)) {
             $this->redirect_with_notice('erp-omd-projects', 'error', __('Wybierz akcję masową i co najmniej jeden projekt.', 'erp-omd'));
         }
+
+        $target_status = '';
+        if (strpos($bulk_action, 'set_status_') === 0) {
+            $target_status = substr($bulk_action, strlen('set_status_'));
+        }
+
+        $allowed_statuses = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'];
+        if ($target_status !== '' && ! in_array($target_status, $allowed_statuses, true)) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Niepoprawna akcja masowa dla projektów.', 'erp-omd'));
+        }
+
         foreach ($project_ids as $project_id) {
             if ($bulk_action === 'activate') {
                 $this->projects->set_status($project_id, 'do_rozpoczecia');
             } elseif ($bulk_action === 'deactivate') {
                 $this->projects->set_status($project_id, 'inactive');
+            } elseif ($target_status !== '') {
+                $this->projects->set_status($project_id, $target_status);
             }
         }
         $this->redirect_with_notice('erp-omd-projects', 'success', __('Akcja masowa dla projektów została wykonana.', 'erp-omd'));

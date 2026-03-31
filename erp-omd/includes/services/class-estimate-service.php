@@ -8,6 +8,7 @@ class ERP_OMD_Estimate_Service
     private $projects;
     private $project_costs;
     private $estimate_audit;
+    private $project_requests;
 
     public function __construct(
         ERP_OMD_Estimate_Repository $estimates,
@@ -15,7 +16,8 @@ class ERP_OMD_Estimate_Service
         ERP_OMD_Client_Repository $clients,
         ERP_OMD_Project_Repository $projects,
         $project_costs = null,
-        $estimate_audit = null
+        $estimate_audit = null,
+        $project_requests = null
     ) {
         $this->estimates = $estimates;
         $this->estimate_items = $estimate_items;
@@ -23,6 +25,7 @@ class ERP_OMD_Estimate_Service
         $this->projects = $projects;
         $this->project_costs = $project_costs;
         $this->estimate_audit = $estimate_audit;
+        $this->project_requests = $project_requests;
     }
 
     public function validate_estimate(array $data, array $existing = null)
@@ -172,17 +175,51 @@ class ERP_OMD_Estimate_Service
 
         $wpdb->query('START TRANSACTION');
 
+        $default_manager_id = (int) ($client['account_manager_id'] ?? 0);
+        $request_context = ['primary_manager_id' => 0, 'requester_employee_id' => 0];
+        if ($estimate_id && $this->project_requests && method_exists($this->project_requests, 'all')) {
+            $requests = array_values(
+                array_filter(
+                    (array) $this->project_requests->all(),
+                    static function ($request) use ($estimate_id) {
+                        return (int) ($request['estimate_id'] ?? 0) === (int) $estimate_id;
+                    }
+                )
+            );
+
+            if ($requests !== []) {
+                usort(
+                    $requests,
+                    static function ($left, $right) {
+                        return [(string) ($right['created_at'] ?? ''), (int) ($right['id'] ?? 0)] <=> [(string) ($left['created_at'] ?? ''), (int) ($left['id'] ?? 0)];
+                    }
+                );
+
+                $request = $requests[0];
+                $requester_employee_id = (int) ($request['requester_employee_id'] ?? 0);
+                $preferred_manager_id = (int) ($request['preferred_manager_id'] ?? 0);
+                $request_context = [
+                    'primary_manager_id' => $preferred_manager_id > 0 ? $preferred_manager_id : $requester_employee_id,
+                    'requester_employee_id' => $requester_employee_id,
+                ];
+            }
+        }
+        $request_primary_manager_id = (int) ($request_context['primary_manager_id'] ?? 0);
+        $requester_employee_id = (int) ($request_context['requester_employee_id'] ?? 0);
+        $manager_id = $request_primary_manager_id > 0 ? $request_primary_manager_id : $default_manager_id;
+        $manager_ids = array_values(array_unique(array_filter([$manager_id, $requester_employee_id])));
+
         $project_id = $this->projects->create([
             'client_id' => (int) $estimate['client_id'],
             'name' => $project_name,
             'billing_type' => 'fixed_price',
             'budget' => (float) $totals['net'],
             'retainer_monthly_fee' => 0,
-            'status' => 'do_rozpoczecia',
+            'status' => 'w_realizacji',
             'start_date' => '',
             'end_date' => '',
-            'manager_id' => (int) ($client['account_manager_id'] ?? 0),
-            'manager_ids' => array_values(array_filter([(int) ($client['account_manager_id'] ?? 0)])),
+            'manager_id' => $manager_id,
+            'manager_ids' => $manager_ids,
             'estimate_id' => (int) $estimate_id,
             'brief' => implode("\n", $brief_lines),
             'alert_margin_threshold' => null,
@@ -220,7 +257,7 @@ class ERP_OMD_Estimate_Service
 
         foreach ($items as $item) {
             $amount = round((float) ($item['cost_internal'] ?? 0), 2);
-            if ($amount <= 0) {
+            if ($amount < 0) {
                 continue;
             }
 
