@@ -176,9 +176,11 @@ class ERP_OMD_Estimate_Service
         $wpdb->query('START TRANSACTION');
 
         $default_manager_id = (int) ($client['account_manager_id'] ?? 0);
-        $requester_manager_id = $this->resolve_requester_manager_for_estimate((int) $estimate_id);
-        $manager_id = $requester_manager_id > 0 ? $requester_manager_id : $default_manager_id;
-        $manager_ids = array_values(array_unique(array_filter([$manager_id, $requester_manager_id])));
+        $request_context = $this->resolve_request_manager_context_for_estimate((int) $estimate_id);
+        $request_primary_manager_id = (int) ($request_context['primary_manager_id'] ?? 0);
+        $requester_employee_id = (int) ($request_context['requester_employee_id'] ?? 0);
+        $manager_id = $request_primary_manager_id > 0 ? $request_primary_manager_id : $default_manager_id;
+        $manager_ids = array_values(array_unique(array_filter([$manager_id, $requester_employee_id])));
 
         $project_id = $this->projects->create([
             'client_id' => (int) $estimate['client_id'],
@@ -214,6 +216,42 @@ class ERP_OMD_Estimate_Service
             'estimate' => $this->estimates->find((int) $estimate_id),
             'project' => $this->projects->find($project_id),
             'totals' => $totals,
+        ];
+    }
+
+    private function resolve_request_manager_context_for_estimate($estimate_id)
+    {
+        if (! $estimate_id || ! $this->project_requests || ! method_exists($this->project_requests, 'all')) {
+            return ['primary_manager_id' => 0, 'requester_employee_id' => 0];
+        }
+
+        $requests = array_values(
+            array_filter(
+                (array) $this->project_requests->all(),
+                static function ($request) use ($estimate_id) {
+                    return (int) ($request['estimate_id'] ?? 0) === (int) $estimate_id;
+                }
+            )
+        );
+
+        if ($requests === []) {
+            return ['primary_manager_id' => 0, 'requester_employee_id' => 0];
+        }
+
+        usort(
+            $requests,
+            static function ($left, $right) {
+                return [(string) ($right['created_at'] ?? ''), (int) ($right['id'] ?? 0)] <=> [(string) ($left['created_at'] ?? ''), (int) ($left['id'] ?? 0)];
+            }
+        );
+
+        $request = $requests[0];
+        $requester_employee_id = (int) ($request['requester_employee_id'] ?? 0);
+        $preferred_manager_id = (int) ($request['preferred_manager_id'] ?? 0);
+
+        return [
+            'primary_manager_id' => $preferred_manager_id > 0 ? $preferred_manager_id : $requester_employee_id,
+            'requester_employee_id' => $requester_employee_id,
         ];
     }
 

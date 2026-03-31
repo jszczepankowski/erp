@@ -86,7 +86,8 @@ class ERP_OMD_Plugin
             $this->salary_repository,
             $this->project_cost_repository,
             $this->time_entry_repository,
-            $this->project_financial_service
+            $this->project_financial_service,
+            $this->estimate_item_repository
         );
         $this->alert_service = new ERP_OMD_Alert_Service(
             $this->employee_repository,
