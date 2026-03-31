@@ -324,6 +324,189 @@
 
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Zaraportowany czas pracy', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Szybkie podsumowanie wpisów czasu dla bieżącego projektu.', 'erp-omd'); ?></p>
+                        </div>
+                        <?php
+                        $project_time_entries = $this->time_entries->all(['project_id' => (int) $project['id']]);
+                        $project_reported_hours = 0.0;
+                        $project_reported_entries = count($project_time_entries);
+                        $project_reported_approved = 0;
+                        $project_reported_submitted = 0;
+                        $project_reported_rejected = 0;
+                        foreach ($project_time_entries as $project_time_entry_row) {
+                            $project_reported_hours += (float) ($project_time_entry_row['hours'] ?? 0);
+                            $project_time_status = (string) ($project_time_entry_row['status'] ?? '');
+                            if ($project_time_status === 'approved') {
+                                $project_reported_approved++;
+                            } elseif ($project_time_status === 'submitted') {
+                                $project_reported_submitted++;
+                            } elseif ($project_time_status === 'rejected') {
+                                $project_reported_rejected++;
+                            }
+                        }
+                        ?>
+                        <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Łączne godziny', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n($project_reported_hours, 2)); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Wpisy', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_entries); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zaakceptowane', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_approved); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zgłoszone', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_submitted); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Odrzucone', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_rejected); ?></span></div>
+                        </div>
+                        <table class="widefat striped">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Rola', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Godziny', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($project_time_entries)) : ?>
+                                    <tr><td colspan="6"><?php esc_html_e('Brak wpisów czasu dla tego projektu.', 'erp-omd'); ?></td></tr>
+                                <?php else : ?>
+                                    <?php foreach (array_slice($project_time_entries, 0, 12) as $project_time_entry_row) : ?>
+                                        <tr>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['entry_date'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['employee_login'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['role_name'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($project_time_entry_row['hours'] ?? 0), 2)); ?></td>
+                                            <td><?php echo esc_html($this->time_status_label((string) ($project_time_entry_row['status'] ?? 'submitted'))); ?></td>
+                                            <td><?php echo esc_html((string) (($project_time_entry_row['description'] ?? '') !== '' ? $project_time_entry_row['description'] : '—')); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </section>
+
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Zaraportowany czas pracy', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Szybkie podsumowanie wpisów czasu dla bieżącego projektu.', 'erp-omd'); ?></p>
+                        </div>
+                        <?php
+                        $project_time_entries = $this->time_entries->all(['project_id' => (int) $project['id']]);
+                        $project_reported_hours = 0.0;
+                        $project_reported_entries = count($project_time_entries);
+                        $project_reported_approved = 0;
+                        $project_reported_submitted = 0;
+                        $project_reported_rejected = 0;
+                        foreach ($project_time_entries as $project_time_entry_row) {
+                            $project_reported_hours += (float) ($project_time_entry_row['hours'] ?? 0);
+                            $project_time_status = (string) ($project_time_entry_row['status'] ?? '');
+                            if ($project_time_status === 'approved') {
+                                $project_reported_approved++;
+                            } elseif ($project_time_status === 'submitted') {
+                                $project_reported_submitted++;
+                            } elseif ($project_time_status === 'rejected') {
+                                $project_reported_rejected++;
+                            }
+                        }
+                        ?>
+                        <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Łączne godziny', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n($project_reported_hours, 2)); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Wpisy', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_entries); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zaakceptowane', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_approved); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zgłoszone', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_submitted); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Odrzucone', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_rejected); ?></span></div>
+                        </div>
+                        <table class="widefat striped">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Rola', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Godziny', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($project_time_entries)) : ?>
+                                    <tr><td colspan="6"><?php esc_html_e('Brak wpisów czasu dla tego projektu.', 'erp-omd'); ?></td></tr>
+                                <?php else : ?>
+                                    <?php foreach (array_slice($project_time_entries, 0, 12) as $project_time_entry_row) : ?>
+                                        <tr>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['entry_date'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['employee_login'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['role_name'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($project_time_entry_row['hours'] ?? 0), 2)); ?></td>
+                                            <td><?php echo esc_html($this->time_status_label((string) ($project_time_entry_row['status'] ?? 'submitted'))); ?></td>
+                                            <td><?php echo esc_html((string) (($project_time_entry_row['description'] ?? '') !== '' ? $project_time_entry_row['description'] : '—')); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </section>
+
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Zaraportowany czas pracy', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Szybkie podsumowanie wpisów czasu dla bieżącego projektu.', 'erp-omd'); ?></p>
+                        </div>
+                        <?php
+                        $project_time_entries = $this->time_entries->all(['project_id' => (int) $project['id']]);
+                        $project_reported_hours = 0.0;
+                        $project_reported_entries = count($project_time_entries);
+                        $project_reported_approved = 0;
+                        $project_reported_submitted = 0;
+                        $project_reported_rejected = 0;
+                        foreach ($project_time_entries as $project_time_entry_row) {
+                            $project_reported_hours += (float) ($project_time_entry_row['hours'] ?? 0);
+                            $project_time_status = (string) ($project_time_entry_row['status'] ?? '');
+                            if ($project_time_status === 'approved') {
+                                $project_reported_approved++;
+                            } elseif ($project_time_status === 'submitted') {
+                                $project_reported_submitted++;
+                            } elseif ($project_time_status === 'rejected') {
+                                $project_reported_rejected++;
+                            }
+                        }
+                        ?>
+                        <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Łączne godziny', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n($project_reported_hours, 2)); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Wpisy', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_entries); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zaakceptowane', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_approved); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zgłoszone', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_submitted); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Odrzucone', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_rejected); ?></span></div>
+                        </div>
+                        <table class="widefat striped">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Rola', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Godziny', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($project_time_entries)) : ?>
+                                    <tr><td colspan="6"><?php esc_html_e('Brak wpisów czasu dla tego projektu.', 'erp-omd'); ?></td></tr>
+                                <?php else : ?>
+                                    <?php foreach (array_slice($project_time_entries, 0, 12) as $project_time_entry_row) : ?>
+                                        <tr>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['entry_date'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['employee_login'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['role_name'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($project_time_entry_row['hours'] ?? 0), 2)); ?></td>
+                                            <td><?php echo esc_html($this->time_status_label((string) ($project_time_entry_row['status'] ?? 'submitted'))); ?></td>
+                                            <td><?php echo esc_html((string) (($project_time_entry_row['description'] ?? '') !== '' ? $project_time_entry_row['description'] : '—')); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </section>
+
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Historia uwag klienta', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Zbieranie komunikacji projektowej w tej samej sekcji co historia wpisów.', 'erp-omd'); ?></p>
                         </div>
