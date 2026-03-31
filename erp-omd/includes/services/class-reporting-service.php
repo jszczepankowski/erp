@@ -77,7 +77,38 @@ class ERP_OMD_Reporting_Service
             case 'monthly':
                 return $this->build_monthly_report($filters);
             case 'time_entries':
-                return $this->build_time_entries_rows($filters);
+                $projects = $this->get_filtered_projects($filters);
+                $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
+                $entries = $this->get_filtered_entries($project_ids, $filters);
+
+                $rows = array_map(
+                    static function ($entry) {
+                        $hours = (float) ($entry['hours'] ?? 0);
+                        $rate = (float) ($entry['rate_snapshot'] ?? 0);
+                        return [
+                            'entry_date' => (string) ($entry['entry_date'] ?? ''),
+                            'employee_login' => (string) ($entry['employee_login'] ?? '—'),
+                            'client_name' => (string) ($entry['client_name'] ?? '—'),
+                            'project_name' => (string) ($entry['project_name'] ?? '—'),
+                            'role_name' => (string) ($entry['role_name'] ?? '—'),
+                            'hours' => round($hours, 2),
+                            'rate_snapshot' => round($rate, 2),
+                            'amount' => round($hours * $rate, 2),
+                            'status' => (string) ($entry['status'] ?? ''),
+                            'description' => (string) ($entry['description'] ?? ''),
+                        ];
+                    },
+                    $entries
+                );
+
+                usort(
+                    $rows,
+                    static function ($left, $right) {
+                        return [(string) ($right['entry_date'] ?? ''), (string) ($left['employee_login'] ?? '')] <=> [(string) ($left['entry_date'] ?? ''), (string) ($right['employee_login'] ?? '')];
+                    }
+                );
+
+                return $rows;
             case 'omd_rozliczenia':
                 $rows = [];
                 $anchor = DateTimeImmutable::createFromFormat('Y-m-d', (string) $filters['month'] . '-01');
@@ -431,154 +462,6 @@ class ERP_OMD_Reporting_Service
         }
 
         return array_reverse($report_rows);
-    }
-
-    private function build_time_entries_rows(array $filters)
-    {
-        $filters = $this->sanitize_filters($filters);
-        $projects = $this->get_filtered_projects($filters);
-        $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
-        $entries = $this->get_filtered_entries($project_ids, $filters);
-
-        $rows = array_map(
-            static function ($entry) {
-                $hours = (float) ($entry['hours'] ?? 0);
-                $rate = (float) ($entry['rate_snapshot'] ?? 0);
-                return [
-                    'entry_date' => (string) ($entry['entry_date'] ?? ''),
-                    'employee_login' => (string) ($entry['employee_login'] ?? '—'),
-                    'client_name' => (string) ($entry['client_name'] ?? '—'),
-                    'project_name' => (string) ($entry['project_name'] ?? '—'),
-                    'role_name' => (string) ($entry['role_name'] ?? '—'),
-                    'hours' => round($hours, 2),
-                    'rate_snapshot' => round($rate, 2),
-                    'amount' => round($hours * $rate, 2),
-                    'status' => (string) ($entry['status'] ?? ''),
-                    'description' => (string) ($entry['description'] ?? ''),
-                ];
-            },
-            $entries
-        );
-
-        usort(
-            $rows,
-            static function ($left, $right) {
-                return [(string) ($right['entry_date'] ?? ''), (string) ($left['employee_login'] ?? '')] <=> [(string) ($left['entry_date'] ?? ''), (string) ($right['employee_login'] ?? '')];
-            }
-        );
-
-        return $rows;
-    }
-
-    private function build_time_entries_rows(array $filters)
-    {
-        $filters = $this->sanitize_filters($filters);
-        $projects = $this->get_filtered_projects($filters);
-        $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
-        $entries = $this->get_filtered_entries($project_ids, $filters);
-
-        $rows = array_map(
-            static function ($entry) {
-                $hours = (float) ($entry['hours'] ?? 0);
-                $rate = (float) ($entry['rate_snapshot'] ?? 0);
-                return [
-                    'entry_date' => (string) ($entry['entry_date'] ?? ''),
-                    'employee_login' => (string) ($entry['employee_login'] ?? '—'),
-                    'client_name' => (string) ($entry['client_name'] ?? '—'),
-                    'project_name' => (string) ($entry['project_name'] ?? '—'),
-                    'role_name' => (string) ($entry['role_name'] ?? '—'),
-                    'hours' => round($hours, 2),
-                    'rate_snapshot' => round($rate, 2),
-                    'amount' => round($hours * $rate, 2),
-                    'status' => (string) ($entry['status'] ?? ''),
-                    'description' => (string) ($entry['description'] ?? ''),
-                ];
-            },
-            $entries
-        );
-
-        usort(
-            $rows,
-            static function ($left, $right) {
-                return [(string) ($right['entry_date'] ?? ''), (string) ($left['employee_login'] ?? '')] <=> [(string) ($left['entry_date'] ?? ''), (string) ($right['employee_login'] ?? '')];
-            }
-        );
-
-        return $rows;
-    }
-
-    public function build_time_entries_report(array $filters)
-    {
-        $filters = $this->sanitize_filters($filters);
-        $projects = $this->get_filtered_projects($filters);
-        $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
-        $entries = $this->get_filtered_entries($project_ids, $filters);
-
-        $rows = array_map(
-            static function ($entry) {
-                $hours = (float) ($entry['hours'] ?? 0);
-                $rate = (float) ($entry['rate_snapshot'] ?? 0);
-                return [
-                    'entry_date' => (string) ($entry['entry_date'] ?? ''),
-                    'employee_login' => (string) ($entry['employee_login'] ?? '—'),
-                    'client_name' => (string) ($entry['client_name'] ?? '—'),
-                    'project_name' => (string) ($entry['project_name'] ?? '—'),
-                    'role_name' => (string) ($entry['role_name'] ?? '—'),
-                    'hours' => round($hours, 2),
-                    'rate_snapshot' => round($rate, 2),
-                    'amount' => round($hours * $rate, 2),
-                    'status' => (string) ($entry['status'] ?? ''),
-                    'description' => (string) ($entry['description'] ?? ''),
-                ];
-            },
-            $entries
-        );
-
-        usort(
-            $rows,
-            static function ($left, $right) {
-                return [(string) ($right['entry_date'] ?? ''), (string) ($left['employee_login'] ?? '')] <=> [(string) ($left['entry_date'] ?? ''), (string) ($right['employee_login'] ?? '')];
-            }
-        );
-
-        return $rows;
-    }
-
-    public function build_time_entries_report(array $filters)
-    {
-        $filters = $this->sanitize_filters($filters);
-        $projects = $this->get_filtered_projects($filters);
-        $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
-        $entries = $this->get_filtered_entries($project_ids, $filters);
-
-        $rows = array_map(
-            static function ($entry) {
-                $hours = (float) ($entry['hours'] ?? 0);
-                $rate = (float) ($entry['rate_snapshot'] ?? 0);
-                return [
-                    'entry_date' => (string) ($entry['entry_date'] ?? ''),
-                    'employee_login' => (string) ($entry['employee_login'] ?? '—'),
-                    'client_name' => (string) ($entry['client_name'] ?? '—'),
-                    'project_name' => (string) ($entry['project_name'] ?? '—'),
-                    'role_name' => (string) ($entry['role_name'] ?? '—'),
-                    'hours' => round($hours, 2),
-                    'rate_snapshot' => round($rate, 2),
-                    'amount' => round($hours * $rate, 2),
-                    'status' => (string) ($entry['status'] ?? ''),
-                    'description' => (string) ($entry['description'] ?? ''),
-                ];
-            },
-            $entries
-        );
-
-        usort(
-            $rows,
-            static function ($left, $right) {
-                return [(string) ($right['entry_date'] ?? ''), (string) ($left['employee_login'] ?? '')] <=> [(string) ($left['entry_date'] ?? ''), (string) ($right['employee_login'] ?? '')];
-            }
-        );
-
-        return $rows;
     }
 
     public function build_calendar(array $filters)
