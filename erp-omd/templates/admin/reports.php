@@ -128,9 +128,9 @@
                     </table>
                 <?php elseif ($report_filters['report_type'] === 'monthly') : ?>
                     <table class="widefat striped">
-                        <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Projekty', 'erp-omd'); ?></th><th><?php esc_html_e('Klienci', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik', 'erp-omd'); ?></th></tr></thead>
+                        <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Projekty', 'erp-omd'); ?></th><th><?php esc_html_e('Klienci', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk projektowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik', 'erp-omd'); ?></th></tr></thead>
                         <tbody>
-                        <?php if (empty($report_rows)) : ?><tr><td colspan="8"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
+                        <?php if (empty($report_rows)) : ?><tr><td colspan="9"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
                         <?php foreach ($report_rows as $row) : ?>
                             <tr>
                                 <td><?php echo esc_html($row['month']); ?></td>
@@ -140,6 +140,7 @@
                                 <td><?php echo esc_html(number_format_i18n((float) $row['time_revenue'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['time_cost'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['direct_cost'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) ($row['project_budget_profit'] ?? 0), 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['profit'], 2)); ?></td>
                             </tr>
                         <?php endforeach; ?>
