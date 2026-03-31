@@ -151,7 +151,7 @@
             <div class="erp-omd-chart-header">
                 <div>
                     <h2><?php esc_html_e('Miesięczny bilans operacyjny', 'erp-omd'); ?></h2>
-                    <p><?php esc_html_e('Ujęcie bieżącego miesiąca: koszty projektowe, koszty czasu, zysk godzinowy i zysk projektów.', 'erp-omd'); ?></p>
+                    <p><?php esc_html_e('Ujęcie bieżącego miesiąca: koszty projektowe, koszty czasu, zysk godzinowy i wynik operacyjny.', 'erp-omd'); ?></p>
                 </div>
                 <span class="erp-omd-chart-period"><?php echo esc_html($reporting_month_label); ?></span>
             </div>

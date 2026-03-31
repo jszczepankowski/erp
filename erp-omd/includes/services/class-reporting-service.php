@@ -158,7 +158,7 @@ class ERP_OMD_Reporting_Service
                     }
 
                     foreach ($projects as $project) {
-                        if ((string) ($project['status'] ?? '') !== 'inactive') {
+                        if (in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony'], true)) {
                             $active_budgets += (float) ($project['budget'] ?? 0);
                         }
                     }
@@ -198,8 +198,8 @@ class ERP_OMD_Reporting_Service
                     if ($fixed_cost <= 0) {
                         $fixed_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
                     }
-                    $operating_result = $time_revenue - ($salary_cost + $fixed_cost + $direct_cost);
                     $hourly_profit = $time_revenue - $time_cost;
+                    $operating_result = ($active_budgets + $hourly_profit) - ($salary_cost + $fixed_cost + $direct_cost);
                     $rows[] = [
                         'month' => $month,
                         'salary_cost' => round($salary_cost, 2),
@@ -401,6 +401,7 @@ class ERP_OMD_Reporting_Service
         $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
         $entries = $this->get_filtered_entries($project_ids, $filters);
         $direct_costs_by_month = $this->get_direct_cost_metrics_by_month($project_ids);
+        $project_budget_profit_by_month = $this->get_project_budget_profit_by_month($projects);
         $rows = [];
 
         foreach ($entries as $entry) {
@@ -442,12 +443,27 @@ class ERP_OMD_Reporting_Service
             }
         }
 
+        foreach ($project_budget_profit_by_month as $month => $amount) {
+            if (! isset($rows[$month])) {
+                $rows[$month] = [
+                    'month' => $month,
+                    'entries_count' => 0,
+                    'projects' => [],
+                    'clients' => [],
+                    'hours' => 0.0,
+                    'time_revenue' => 0.0,
+                    'time_cost' => 0.0,
+                ];
+            }
+        }
+
         ksort($rows);
         $report_rows = [];
 
         foreach ($rows as $month => $row) {
             $direct_cost = (float) ($direct_costs_by_month[$month] ?? 0.0);
-            $profit = (float) $row['time_revenue'] - (float) $row['time_cost'] - $direct_cost;
+            $project_budget_profit = (float) ($project_budget_profit_by_month[$month] ?? 0.0);
+            $profit = (float) $row['time_revenue'] - (float) $row['time_cost'] - $direct_cost + $project_budget_profit;
             $report_rows[] = [
                 'month' => $month,
                 'entries_count' => (int) $row['entries_count'],
@@ -457,6 +473,7 @@ class ERP_OMD_Reporting_Service
                 'time_revenue' => round((float) $row['time_revenue'], 2),
                 'time_cost' => round((float) $row['time_cost'], 2),
                 'direct_cost' => round($direct_cost, 2),
+                'project_budget_profit' => round($project_budget_profit, 2),
                 'profit' => round($profit, 2),
             ];
         }
@@ -636,7 +653,7 @@ class ERP_OMD_Reporting_Service
             case 'monthly':
                 return [
                     'filename' => sprintf('erp-omd-raport-miesieczny-%s.csv', $month),
-                    'headers' => ['Miesiąc', 'Wpisy', 'Projekty', 'Klienci', 'Godziny', 'Przychód czasu', 'Koszt czasu', 'Koszt bezpośredni', 'Wynik'],
+                    'headers' => ['Miesiąc', 'Wpisy', 'Projekty', 'Klienci', 'Godziny', 'Przychód czasu', 'Koszt czasu', 'Koszt bezpośredni', 'Zysk projektowy', 'Wynik'],
                     'rows' => array_map(static function ($row) {
                         return [
                             $row['month'],
@@ -647,6 +664,7 @@ class ERP_OMD_Reporting_Service
                             number_format((float) $row['time_revenue'], 2, '.', ''),
                             number_format((float) $row['time_cost'], 2, '.', ''),
                             number_format((float) $row['direct_cost'], 2, '.', ''),
+                            number_format((float) ($row['project_budget_profit'] ?? 0), 2, '.', ''),
                             number_format((float) $row['profit'], 2, '.', ''),
                         ];
                     }, $rows),
@@ -798,6 +816,32 @@ class ERP_OMD_Reporting_Service
                 }
                 $metrics[$month] += (float) ($cost_row['amount'] ?? 0);
             }
+        }
+
+        return $metrics;
+    }
+
+    private function get_project_budget_profit_by_month(array $projects)
+    {
+        $metrics = [];
+
+        foreach ($projects as $project) {
+            $status = (string) ($project['status'] ?? '');
+            if (! in_array($status, ['do_faktury', 'zakonczony'], true)) {
+                continue;
+            }
+
+            $end_date = (string) ($project['end_date'] ?? '');
+            $month = substr($end_date, 0, 7);
+            if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
+                continue;
+            }
+
+            if (! isset($metrics[$month])) {
+                $metrics[$month] = 0.0;
+            }
+
+            $metrics[$month] += (float) ($project['budget'] ?? 0);
         }
 
         return $metrics;
