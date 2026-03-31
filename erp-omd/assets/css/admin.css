@@ -21,6 +21,12 @@
   background: none;
 }
 
+
+.widefat.striped.erp-omd-fixed-cost-table {
+  margin-top: 24px;
+}
+
+
 .wp-core-ui select:disable {
 	background: none !important;
 }

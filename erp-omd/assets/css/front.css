@@ -22,6 +22,15 @@ background-image: none !important;
 }
 */
 
+#erp-omd-front-estimate-status-filter {
+  background: #fff;
+  border: 1px solid var(--erp-omd-front-border);
+  border-radius: 14px;
+  font: inherit;
+  padding: 12px 14px;
+  height: 47px;
+}
+
 .erp-omd-front-card h1 {
 	font-size: 32px !important;
 }
@@ -367,6 +376,7 @@ background-image: none !important;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+	margin-bottom: 24px;
 }
 
 .erp-omd-front-stack {
@@ -684,6 +694,7 @@ background-image: none !important;
     display: grid;
     gap: 12px;
     margin-bottom: 18px;
+	margin-top: 24px;
 }
 
 .erp-omd-front-estimate-summary {
@@ -865,6 +876,7 @@ background-image: none !important;
     gap: 10px;
     justify-content: space-between;
     margin: 0 0 10px;
+	margin-bottom: 24px;
 }
 
 .erp-omd-front-table-search {
