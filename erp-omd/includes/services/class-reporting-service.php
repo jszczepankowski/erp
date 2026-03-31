@@ -227,7 +227,9 @@ class ERP_OMD_Reporting_Service
             ];
 
             if (($filters['report_type'] ?? '') === 'invoice') {
-                $rows[count($rows) - 1]['invoice_items'] = $this->build_invoice_items_for_project($project, $filters);
+                $invoice_items = $this->build_invoice_items_for_project($project, $filters);
+                $rows[count($rows) - 1]['invoice_items'] = $invoice_items;
+                $rows[count($rows) - 1]['invoice_items_count'] = count($invoice_items);
             }
         }
 
@@ -462,32 +464,40 @@ class ERP_OMD_Reporting_Service
                     }, $rows),
                 ];
             case 'invoice':
+                $invoice_rows = [];
+                foreach ($rows as $row) {
+                    $invoice_rows[] = [
+                        $row['client_name'],
+                        $row['project_name'],
+                        $this->billing_type_label((string) ($row['billing_type'] ?? '')),
+                        $row['manager_login'],
+                        number_format((float) $row['budget'], 2, '.', ''),
+                        number_format((float) $row['reported_hours'], 2, '.', ''),
+                        $row['entries_count'],
+                        number_format((float) $row['filtered_time_revenue'], 2, '.', ''),
+                        number_format((float) $row['filtered_time_cost'], 2, '.', ''),
+                        number_format((float) $row['filtered_direct_cost'], 2, '.', ''),
+                        number_format((float) $row['revenue'], 2, '.', ''),
+                        number_format((float) $row['cost'], 2, '.', ''),
+                        number_format((float) $row['profit'], 2, '.', ''),
+                        number_format((float) $row['margin'], 2, '.', ''),
+                        number_format((float) $row['budget_usage'], 2, '.', ''),
+                        $row['status'],
+                    ];
+
+                    $invoice_rows[] = ['Pozycje do faktury'];
+                    $invoice_items_total = 0.0;
+                    foreach ((array) ($row['invoice_items'] ?? []) as $item) {
+                        $invoice_rows[] = [(string) ($item['label'] ?? '—')];
+                        $invoice_items_total += (float) ($item['amount'] ?? 0);
+                    }
+                    $invoice_rows[] = [sprintf('Suma pozycji: %s', number_format($invoice_items_total, 2, '.', ''))];
+                }
+
                 return [
                     'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
-                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status', 'Pozycje do faktury'],
-                    'rows' => array_map(function ($row) {
-                        return [
-                            $row['client_name'],
-                            $row['project_name'],
-                            $this->billing_type_label((string) ($row['billing_type'] ?? '')),
-                            $row['manager_login'],
-                            number_format((float) $row['budget'], 2, '.', ''),
-                            number_format((float) $row['reported_hours'], 2, '.', ''),
-                            $row['entries_count'],
-                            number_format((float) $row['filtered_time_revenue'], 2, '.', ''),
-                            number_format((float) $row['filtered_time_cost'], 2, '.', ''),
-                            number_format((float) $row['filtered_direct_cost'], 2, '.', ''),
-                            number_format((float) $row['revenue'], 2, '.', ''),
-                            number_format((float) $row['cost'], 2, '.', ''),
-                            number_format((float) $row['profit'], 2, '.', ''),
-                            number_format((float) $row['margin'], 2, '.', ''),
-                            number_format((float) $row['budget_usage'], 2, '.', ''),
-                            $row['status'],
-                            implode(' | ', array_map(static function ($item) {
-                                return (string) ($item['label'] ?? '');
-                            }, (array) ($row['invoice_items'] ?? []))),
-                        ];
-                    }, $rows),
+                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status'],
+                    'rows' => $invoice_rows,
                 ];
             case 'projects':
                 return [
@@ -630,6 +640,7 @@ class ERP_OMD_Reporting_Service
 
                 return [
                     'label' => sprintf('%s | cena: %s | ilość: %s | kwota: %s', $description !== '' ? $description : '—', number_format($price, 2, '.', ''), number_format($qty, 2, '.', ''), number_format($line_total, 2, '.', '')),
+                    'amount' => $line_total,
                 ];
             }, $items));
         }
@@ -665,6 +676,7 @@ class ERP_OMD_Reporting_Service
                     number_format($rate, 2, '.', ''),
                     number_format($total, 2, '.', '')
                 ),
+                'amount' => $total,
             ];
         }, $lines));
     }

@@ -184,17 +184,7 @@
                                 <td><?php echo esc_html(number_format_i18n((float) $row['budget_usage'], 2)); ?></td>
                                 <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($row['status'], 'project')); ?>"><?php echo esc_html($this->project_status_label($row['status'])); ?></span></td>
                                 <?php if ($report_filters['report_type'] === 'invoice') : ?>
-                                    <td>
-                                        <?php if (! empty($row['invoice_items'])) : ?>
-                                            <ul>
-                                                <?php foreach ((array) $row['invoice_items'] as $invoice_item) : ?>
-                                                    <li><?php echo esc_html((string) ($invoice_item['label'] ?? '—')); ?></li>
-                                                <?php endforeach; ?>
-                                            </ul>
-                                        <?php else : ?>
-                                            —
-                                        <?php endif; ?>
-                                    </td>
+                                    <td><?php echo esc_html((string) ((int) ($row['invoice_items_count'] ?? 0))); ?></td>
                                 <?php endif; ?>
                             </tr>
                         <?php endforeach; ?>
