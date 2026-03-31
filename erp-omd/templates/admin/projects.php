@@ -292,6 +292,34 @@
                             <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zgłoszone', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_submitted); ?></span></div>
                             <div class="erp-omd-detail-item"><strong><?php esc_html_e('Odrzucone', 'erp-omd'); ?></strong><span><?php echo esc_html((string) $project_reported_rejected); ?></span></div>
                         </div>
+                        <table class="widefat striped">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Rola', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Godziny', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($project_time_entries)) : ?>
+                                    <tr><td colspan="6"><?php esc_html_e('Brak wpisów czasu dla tego projektu.', 'erp-omd'); ?></td></tr>
+                                <?php else : ?>
+                                    <?php foreach (array_slice($project_time_entries, 0, 12) as $project_time_entry_row) : ?>
+                                        <tr>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['entry_date'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['employee_login'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($project_time_entry_row['role_name'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($project_time_entry_row['hours'] ?? 0), 2)); ?></td>
+                                            <td><?php echo esc_html($this->time_status_label((string) ($project_time_entry_row['status'] ?? 'submitted'))); ?></td>
+                                            <td><?php echo esc_html((string) (($project_time_entry_row['description'] ?? '') !== '' ? $project_time_entry_row['description'] : '—')); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
                     </section>
 
                     <section class="erp-omd-form-section">
