@@ -2,8 +2,8 @@
 /**
  * Plugin Name: ERP OMD
  * Plugin URI: https://example.com/erp-omd
- * Description: ERP_OMD V2
- * Version: 2.6.0
+ * Description: ERP System OMD
+ * Version: 2.8.0
  * Author: OMD
  * Text Domain: erp-omd
  */
@@ -12,7 +12,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('ERP_OMD_VERSION', '2.6.0');
+define('ERP_OMD_VERSION', '2.8.0');
 define('ERP_OMD_DB_VERSION', '6.4.0');
 define('ERP_OMD_FILE', __FILE__);
 define('ERP_OMD_PATH', plugin_dir_path(__FILE__));
