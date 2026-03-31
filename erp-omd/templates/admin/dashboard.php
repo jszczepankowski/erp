@@ -5,14 +5,6 @@
 
         </div>
         <div class="erp-omd-kpi-grid">
-            <div class="erp-omd-kpi">
-                <span class="erp-omd-kpi-label"><?php esc_html_e('Pracownicy', 'erp-omd'); ?></span>
-                <strong><?php echo esc_html(count($employees)); ?></strong>
-            </div>
-            <div class="erp-omd-kpi">
-                <span class="erp-omd-kpi-label"><?php esc_html_e('Projekty', 'erp-omd'); ?></span>
-                <strong><?php echo esc_html(count($projects)); ?></strong>
-            </div>
             <div class="erp-omd-kpi erp-omd-kpi-accent erp-omd-kpi-profit">
                 <span class="erp-omd-kpi-label"><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></span>
                 <strong><?php echo esc_html(number_format_i18n((float) ($omd_month_row['operating_result'] ?? 0), 2)); ?></strong>
