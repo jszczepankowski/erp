@@ -747,6 +747,72 @@ class ERP_OMD_Reporting_Service
         }, $lines));
     }
 
+    private function build_invoice_items_for_project(array $project, array $filters)
+    {
+        $billing_type = (string) ($project['billing_type'] ?? '');
+        $project_id = (int) ($project['id'] ?? 0);
+
+        if ($project_id <= 0) {
+            return [];
+        }
+
+        if ($billing_type === 'fixed_price' && (int) ($project['estimate_id'] ?? 0) > 0 && $this->estimate_items && method_exists($this->estimate_items, 'for_estimate')) {
+            $items = (array) $this->estimate_items->for_estimate((int) $project['estimate_id']);
+
+            return array_values(array_map(static function ($item) {
+                $description = trim((string) ($item['name'] ?? ''));
+                $comment = trim((string) ($item['comment'] ?? ''));
+                if ($comment !== '') {
+                    $description .= ' — ' . $comment;
+                }
+
+                $qty = (float) ($item['qty'] ?? 0);
+                $price = (float) ($item['price'] ?? 0);
+                $line_total = round($qty * $price, 2);
+
+                return [
+                    'label' => sprintf('%s | cena: %s | ilość: %s | kwota: %s', $description !== '' ? $description : '—', number_format($price, 2, '.', ''), number_format($qty, 2, '.', ''), number_format($line_total, 2, '.', '')),
+                    'amount' => $line_total,
+                ];
+            }, $items));
+        }
+
+        $entries = $this->get_filtered_entries([$project_id], $filters);
+        $lines = [];
+
+        foreach ($entries as $entry) {
+            $role_name = (string) ($entry['role_name'] ?? '—');
+            $rate = (float) ($entry['rate_snapshot'] ?? 0);
+            $key = $role_name . '|' . number_format($rate, 4, '.', '');
+            if (! isset($lines[$key])) {
+                $lines[$key] = [
+                    'role_name' => $role_name,
+                    'hours' => 0.0,
+                    'rate' => $rate,
+                ];
+            }
+
+            $lines[$key]['hours'] += (float) ($entry['hours'] ?? 0);
+        }
+
+        return array_values(array_map(static function ($line) {
+            $hours = round((float) ($line['hours'] ?? 0), 2);
+            $rate = (float) ($line['rate'] ?? 0);
+            $total = round($hours * $rate, 2);
+
+            return [
+                'label' => sprintf(
+                    'Czas pracy (%s) | godziny: %s | stawka klienta: %s | kwota: %s',
+                    (string) ($line['role_name'] ?? '—'),
+                    number_format($hours, 2, '.', ''),
+                    number_format($rate, 2, '.', ''),
+                    number_format($total, 2, '.', '')
+                ),
+                'amount' => $total,
+            ];
+        }, $lines));
+    }
+
     private function get_entry_metrics_by_project(array $project_ids, array $filters)
     {
         $entries = $this->get_filtered_entries($project_ids, $filters);
