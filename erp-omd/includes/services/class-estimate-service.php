@@ -178,6 +178,7 @@ class ERP_OMD_Estimate_Service
         $default_manager_id = (int) ($client['account_manager_id'] ?? 0);
         $requester_manager_id = $this->resolve_requester_manager_for_estimate((int) $estimate_id);
         $manager_id = $requester_manager_id > 0 ? $requester_manager_id : $default_manager_id;
+        $manager_ids = array_values(array_unique(array_filter([$manager_id, $requester_manager_id])));
 
         $project_id = $this->projects->create([
             'client_id' => (int) $estimate['client_id'],
@@ -185,11 +186,11 @@ class ERP_OMD_Estimate_Service
             'billing_type' => 'fixed_price',
             'budget' => (float) $totals['net'],
             'retainer_monthly_fee' => 0,
-            'status' => 'do_rozpoczecia',
+            'status' => 'w_realizacji',
             'start_date' => '',
             'end_date' => '',
             'manager_id' => $manager_id,
-            'manager_ids' => array_values(array_filter([$manager_id])),
+            'manager_ids' => $manager_ids,
             'estimate_id' => (int) $estimate_id,
             'brief' => implode("\n", $brief_lines),
             'alert_margin_threshold' => null,
