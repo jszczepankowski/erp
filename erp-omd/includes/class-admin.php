@@ -216,7 +216,7 @@ class ERP_OMD_Admin
         $dashboard_project_monthly_cost = round((float) ($omd_month_row['project_direct_cost'] ?? 0.0), 2);
         $dashboard_employee_time_cost = round((float) ($omd_month_row['time_cost'] ?? 0.0), 2);
         $dashboard_employee_hourly_profit = round((float) ($omd_month_row['hourly_profit'] ?? 0.0), 2);
-        $dashboard_project_profit = round(((float) ($omd_month_row['active_project_budgets'] ?? 0.0) + $dashboard_employee_hourly_profit) - $dashboard_project_monthly_cost, 2);
+        $dashboard_operating_result = round((float) ($omd_month_row['operating_result'] ?? 0.0), 2);
         $dashboard_monthly_finance_metrics = [
             [
                 'key' => 'project_cost',
@@ -237,10 +237,10 @@ class ERP_OMD_Admin
                 'tone' => 'profit',
             ],
             [
-                'key' => 'project_profit',
-                'label' => __('Zysk z projektów', 'erp-omd'),
-                'value' => $dashboard_project_profit,
-                'tone' => $dashboard_project_profit >= 0 ? 'profit' : 'loss',
+                'key' => 'operating_result',
+                'label' => __('Wynik operacyjny', 'erp-omd'),
+                'value' => $dashboard_operating_result,
+                'tone' => $dashboard_operating_result >= 0 ? 'profit' : 'loss',
             ],
         ];
         $dashboard_monthly_finance_max = 1.0;
