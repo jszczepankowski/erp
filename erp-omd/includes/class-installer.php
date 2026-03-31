@@ -366,6 +366,8 @@ class ERP_OMD_Installer
                 preferred_manager_id BIGINT UNSIGNED NULL,
                 estimate_id BIGINT UNSIGNED NULL,
                 brief LONGTEXT NULL,
+                start_date DATE NULL,
+                end_date DATE NULL,
                 status VARCHAR(32) NOT NULL DEFAULT 'new',
                 reviewed_by_user_id BIGINT UNSIGNED NULL,
                 reviewed_at DATETIME NULL,
