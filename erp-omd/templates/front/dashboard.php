@@ -31,6 +31,7 @@
             <?php
             $manager_tabs = [
                 'dodaj-wpis' => __('Dodaj wpis', 'erp-omd'),
+                'wpisy-godzin' => __('Wpisy godzin', 'erp-omd'),
                 'projekty' => __('Projekty', 'erp-omd'),
                 'kosztorysy' => __('Kosztorysy', 'erp-omd'),
                 'akceptacje' => __('Akceptacje', 'erp-omd'),
@@ -117,7 +118,7 @@
                                             data-client-id="<?php echo esc_attr((string) ($manager_time_project['client_id'] ?? 0)); ?>"
                                             <?php selected((int) ($manager_time_defaults['project_id'] ?? 0), (int) ($manager_time_project['id'] ?? 0)); ?>
                                         >
-                                            <?php echo esc_html($manager_time_project['name'] ?? '—'); ?>
+                                            <?php echo esc_html(trim((string) ($manager_time_project['client_name'] ?? '—')) . ' — ' . ($manager_time_project['name'] ?? '—')); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -153,6 +154,57 @@
                             <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Dodaj wpis czasu', 'erp-omd'); ?></button>
                         </div>
                     </form>
+                </article>
+            </div>
+
+            <div class="erp-omd-front-grid erp-omd-front-grid-manager erp-omd-front-grid-manager-full" data-manager-tab-pane="wpisy-godzin">
+                <article class="erp-omd-front-panel">
+                    <div class="erp-omd-front-section-heading">
+                        <h2><?php esc_html_e('Twoje wpisy czasu', 'erp-omd'); ?></h2>
+                    </div>
+
+                    <div class="erp-omd-front-table-wrap">
+                        <table class="erp-omd-front-table" data-table-enhanced="1">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Klient', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Rola', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Godz.', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if ($manager_time_entries) : ?>
+                                    <?php foreach ($manager_time_entries as $time_entry) : ?>
+                                        <tr>
+                                            <td><?php echo esc_html($time_entry['entry_date'] ?? '—'); ?></td>
+                                            <td><?php echo esc_html($time_entry['client_name'] ?? '—'); ?></td>
+                                            <td><?php echo esc_html($time_entry['project_name'] ?? '—'); ?></td>
+                                            <td><?php echo esc_html($time_entry['role_name'] ?? '—'); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($time_entry['hours'] ?? 0), 2)); ?></td>
+                                            <td>
+                                                <span class="erp-omd-front-status erp-omd-front-status-<?php echo esc_attr((string) ($time_entry['status'] ?? '')); ?>">
+                                                    <?php echo esc_html([
+                                                        'submitted' => __('Oczekuje', 'erp-omd'),
+                                                        'approved' => __('Zaakceptowany', 'erp-omd'),
+                                                        'rejected' => __('Odrzucony', 'erp-omd'),
+                                                    ][(string) ($time_entry['status'] ?? '')] ?? (string) ($time_entry['status'] ?? '—')); ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo esc_html(wp_trim_words((string) ($time_entry['description'] ?? ''), 14)); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else : ?>
+                                    <tr>
+                                        <td colspan="7"><?php esc_html_e('Brak wpisów czasu dla bieżącego managera.', 'erp-omd'); ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </article>
             </div>
 
@@ -1052,7 +1104,7 @@
     (function () {
         var setupManagerTabs = function () {
             var storageKey = 'erp_omd_front_manager_active_tab';
-            var allowedTabs = ['dodaj-wpis', 'projekty', 'kosztorysy', 'akceptacje', 'wnioski'];
+            var allowedTabs = ['dodaj-wpis', 'wpisy-godzin', 'projekty', 'kosztorysy', 'akceptacje', 'wnioski'];
             var params = new URLSearchParams(window.location.search);
             var urlTab = params.get('manager_tab');
             var storedTab = localStorage.getItem(storageKey);
