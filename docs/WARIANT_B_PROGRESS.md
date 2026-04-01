@@ -4,7 +4,7 @@ Data snapshotu: 2026-04-01
 
 Cel: szybkie wznowienie prac w kolejnych chatowych sesjach bez utraty kontekstu.
 
-Aktualny punkt pracy: **Opcja B / pakiet P1 (WB-P1-02..WB-P1-04)** — domknięcie reguł księgowania i testów regresji.
+Aktualny punkt pracy: **Opcja B / pakiet P2 (WB-P2-01..WB-P2-04)** — backend contract dashboardu v1 domknięty, kolejny etap to frontend/UI.
 
 ## 1) Co już zrobione
 
@@ -36,6 +36,11 @@ Aktualny punkt pracy: **Opcja B / pakiet P1 (WB-P1-02..WB-P1-04)** — domknięc
 - [x] Dodane API dashboardu v1:
   - `GET /erp-omd/v1/dashboard-v1`
   - payload zawiera: status miesiąca, trend 3M, top/bottom rentowności (client/project), kolejkę rozliczeń i korekty.
+- [x] Dashboard v1 backend contract rozszerzony o:
+  - `readiness_checklist`, `readiness_meta`, `status_actions`,
+  - `metric_definitions` (tooltip/legend keys),
+  - `drilldown_links`,
+  - `profitability_by_scope` (project/client top+bottom bez dodatkowego requestu).
 
 ### Reporting i statusy domenowe
 - [x] Reporting: dodany `mode` (`LIVE`, `DO_ROZLICZENIA`, `ZAMKNIETY`).
@@ -54,7 +59,7 @@ Aktualny punkt pracy: **Opcja B / pakiet P1 (WB-P1-02..WB-P1-04)** — domknięc
 
 - [~] Checklista gotowości LIVE -> DO_ROZLICZENIA jest obecnie uproszczona (część sygnałów domyślna), wymaga dopięcia pełnych walidatorów biznesowych.
 - [~] Mechanika korekt działa, ale pełna ścieżka UI Admin (dedykowany ekran/flow) i filtrowane widoki audytu są do dopracowania.
-- [~] `dashboard-v1` działa backendowo, ale frontendowe komponenty/wykresy i UX states wymagają dokończenia.
+- [~] `dashboard-v1` działa backendowo (contract pod P2-01..P2-04 gotowy), ale frontendowe komponenty/wykresy i UX states wymagają dokończenia.
 
 ## 3) Co dalej (priorytet kolejnych kroków)
 
@@ -64,10 +69,10 @@ Aktualny punkt pracy: **Opcja B / pakiet P1 (WB-P1-02..WB-P1-04)** — domknięc
 3. Ujednolicenie approved-only we wszystkich raportach/eksportach/endpointach finansowych.
 
 ### P2 — operacyjny dashboard v1 (frontend + contract)
-1. Ekran statusu miesiąca + CTA admin.
-2. Wykres trendu 3M i tooltipy definicji metryk.
-3. Top/Bottom z przełącznikiem client/project.
-4. Sekcja kolejki rozliczeń i korekt z deep-linkami do drilldown.
+1. [x] Ekran statusu miesiąca + CTA admin (backend: `status_actions`).
+2. [x] Wykres trendu 3M i tooltipy definicji metryk (backend: `metric_definitions`).
+3. [x] Top/Bottom z przełącznikiem client/project (backend: `profitability_by_scope`).
+4. [x] Sekcja kolejki rozliczeń i korekt z deep-linkami do drilldown (backend: `drilldown_links`).
 
 ### P3 — raporty operacyjne simple/detail (pełny UAT)
 1. Raport klient (simple/detail + drilldown).
@@ -105,10 +110,10 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 - `WB-P1-04` — Testy regresji: przejścia statusów, locki, edge-case 72h + emergency.
 
 ### P2 — Dashboard v1 (frontend + contract)
-- `WB-P2-01` — Karta statusu miesiąca + akcje admin (przejścia statusów).
-- `WB-P2-02` — Wizualizacja trendu 3M (wykres + tooltipy definicji).
-- `WB-P2-03` — Ranking Top/Bottom rentowności z przełącznikiem client/project.
-- `WB-P2-04` — Kolejka rozliczeń + sekcja korekt z linkami do drilldown.
+- `WB-P2-01` — [x] Karta statusu miesiąca + akcje admin (backend contract).
+- `WB-P2-02` — [x] Wizualizacja trendu 3M (backend definitions/tooltip keys).
+- `WB-P2-03` — [x] Ranking Top/Bottom rentowności z przełącznikiem client/project (backend contract).
+- `WB-P2-04` — [x] Kolejka rozliczeń + sekcja korekt z linkami do drilldown (backend contract).
 
 ### P3 — Raporty operacyjne (UAT ready)
 - `WB-P3-01` — Raport klient simple/detail + drilldown klient -> projekt -> pozycje.
