@@ -218,7 +218,7 @@ class ERP_OMD_Project_Repository
 
     public function deactivate($id)
     {
-        return $this->set_status($id, 'inactive');
+        return $this->set_status($id, 'archiwum');
     }
 
     public function set_status($id, $status)
