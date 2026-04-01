@@ -33,6 +33,16 @@ class ERP_OMD_Adjustment_Audit_Repository
         return (int) $wpdb->insert_id;
     }
 
+    public function find($id)
+    {
+        global $wpdb;
+
+        return $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM {$this->table_name()} WHERE id = %d", (int) $id),
+            ARRAY_A
+        );
+    }
+
     public function all(array $filters = [])
     {
         global $wpdb;
