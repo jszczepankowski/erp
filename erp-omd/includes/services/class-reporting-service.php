@@ -234,7 +234,9 @@ class ERP_OMD_Reporting_Service
                         $fixed_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
                     }
                     $hourly_profit = $time_revenue - $time_cost;
-                    $operating_result = ($active_budgets + $hourly_profit) - ($salary_cost + $fixed_cost + $direct_cost);
+                    $operational_result = ($active_budgets + $hourly_profit) - $direct_cost;
+                    $controlling_overhead = $salary_cost + $fixed_cost;
+                    $controlling_result = $operational_result - $controlling_overhead;
                     $rows[] = [
                         'month' => $month,
                         'salary_cost' => round($salary_cost, 2),
@@ -242,7 +244,9 @@ class ERP_OMD_Reporting_Service
                         'active_project_budgets' => round($active_budgets, 2),
                         'hourly_profit' => round($hourly_profit, 2),
                         'fixed_cost' => round($fixed_cost, 2),
-                        'operating_result' => round($operating_result, 2),
+                        'operational_result' => round($operational_result, 2),
+                        'controlling_overhead' => round($controlling_overhead, 2),
+                        'controlling_result' => round($controlling_result, 2),
                         'time_revenue' => round($time_revenue, 2),
                         'time_cost' => round($time_cost, 2),
                     ];
@@ -828,7 +832,7 @@ class ERP_OMD_Reporting_Service
             case 'omd_rozliczenia':
                 return [
                     'filename' => sprintf('erp-omd-rozliczenie-omd-%s.csv', $month),
-                    'headers' => ['Miesiąc', 'Koszt pensji', 'Koszt projektów', 'Budżety aktywnych projektów', 'Zysk godzinowy', 'Koszty stałe', 'Wynik operacyjny', 'Przychód czasu', 'Koszt czasu'],
+                    'headers' => ['Miesiąc', 'Koszt pensji', 'Koszt projektów', 'Budżety aktywnych projektów', 'Zysk godzinowy', 'Koszty stałe', 'Wynik operacyjny', 'Narzut controllingowy', 'Wynik controllingowy', 'Przychód czasu', 'Koszt czasu'],
                     'rows' => array_map(static function ($row) {
                         return [
                             $row['month'],
@@ -837,7 +841,9 @@ class ERP_OMD_Reporting_Service
                             number_format((float) $row['active_project_budgets'], 2, '.', ''),
                             number_format((float) $row['hourly_profit'], 2, '.', ''),
                             number_format((float) $row['fixed_cost'], 2, '.', ''),
-                            number_format((float) $row['operating_result'], 2, '.', ''),
+                            number_format((float) $row['operational_result'], 2, '.', ''),
+                            number_format((float) $row['controlling_overhead'], 2, '.', ''),
+                            number_format((float) $row['controlling_result'], 2, '.', ''),
                             number_format((float) $row['time_revenue'], 2, '.', ''),
                             number_format((float) $row['time_cost'], 2, '.', ''),
                         ];
@@ -947,6 +953,79 @@ class ERP_OMD_Reporting_Service
         }
 
         return $metrics;
+    }
+
+    public function get_last_report_pagination()
+    {
+        return $this->last_report_pagination;
+    }
+
+    private function get_direct_cost_items_for_project($project_id, $month)
+    {
+        $rows = [];
+        foreach ($this->project_costs->for_project((int) $project_id) as $cost_row) {
+            $cost_month = substr((string) ($cost_row['cost_date'] ?? ''), 0, 7);
+            if ($month !== '' && $cost_month !== $month) {
+                continue;
+            }
+
+            $amount = (float) ($cost_row['amount'] ?? 0);
+            $rows[] = [
+                'cost_date' => (string) ($cost_row['cost_date'] ?? ''),
+                'amount' => round($amount, 2),
+                'description' => (string) ($cost_row['description'] ?? ''),
+                'vendor' => (string) ($cost_row['vendor'] ?? ''),
+            ];
+        }
+
+        usort($rows, static function ($left, $right) {
+            return (string) ($left['cost_date'] ?? '') <=> (string) ($right['cost_date'] ?? '');
+        });
+
+        return $rows;
+    }
+
+    private function build_billing_mix_breakdown(array $project, array $entry_metrics, array $financial, $direct_cost)
+    {
+        $billing_type = (string) ($project['billing_type'] ?? '');
+        $hourly_component = round((float) ($entry_metrics['time_revenue'] ?? 0.0), 2);
+        $fixed_component = 0.0;
+        $retainer_component = 0.0;
+
+        if (in_array($billing_type, ['fixed_price', 'mixed'], true)) {
+            $fixed_component = round((float) ($project['budget'] ?? 0.0), 2);
+        }
+        if (in_array($billing_type, ['retainer', 'mixed'], true)) {
+            $retainer_component = round((float) ($project['retainer_monthly_fee'] ?? 0.0), 2);
+        }
+
+        return [
+            'billing_type' => $billing_type,
+            'hourly_component' => $hourly_component,
+            'fixed_component' => $fixed_component,
+            'retainer_component' => $retainer_component,
+            'direct_cost_component' => round((float) $direct_cost, 2),
+            'recognized_revenue' => round((float) ($financial['revenue'] ?? 0.0), 2),
+            'recognized_profit' => round((float) ($financial['profit'] ?? 0.0), 2),
+            'budget_usage' => round((float) ($financial['budget_usage'] ?? 0.0), 2),
+        ];
+    }
+
+    private function build_pagination_meta($total_items, $page_num, $per_page)
+    {
+        $total_items = max(0, (int) $total_items);
+        $per_page = max(1, (int) $per_page);
+        $total_pages = max(1, (int) ceil($total_items / $per_page));
+        $page_num = max(1, min((int) $page_num, $total_pages));
+
+        return [
+            'total_items' => $total_items,
+            'total_pages' => $total_pages,
+            'page_num' => $page_num,
+            'per_page' => $per_page,
+            'has_prev' => $page_num > 1,
+            'has_next' => $page_num < $total_pages,
+        ];
     }
 
     public function get_last_report_pagination()

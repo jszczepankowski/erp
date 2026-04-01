@@ -4,8 +4,8 @@ Data snapshotu: 2026-04-01
 
 Cel: szybkie wznowienie prac w kolejnych chatowych sesjach bez utraty kontekstu.
 
-Aktualny punkt pracy: **Opcja B / pakiet P3 (WB-P3-04)** — eksport raportów dopasowany 1:1 do aktywnych filtrów i bieżącego widoku (w tym `mode`, `detail`, `page_num`, `per_page`).
-Następny krok wg planu: **P4-01** (finalne agregacje controllingowe vs operacyjne).
+Aktualny punkt pracy: **Opcja B / pakiet P4 (WB-P4-01)** — finalne agregacje controllingowe vs operacyjne dopięte dla raportu OMD rozliczenia.
+Następny krok wg planu: **P4-02** (UI OMD z legendą definicji i pełnym eksportem).
 
 ## 1) Co już zrobione
 
@@ -84,7 +84,7 @@ Następny krok wg planu: **P4-01** (finalne agregacje controllingowe vs operacyj
 4. [x] Eksport CSV/XLS zgodny 1:1 z widokiem.
 
 ### P4 — controlling OMD
-1. Dopięcie finalnych agregacji controllingowych vs operacyjnych.
+1. [x] Dopięcie finalnych agregacji controllingowych vs operacyjnych.
 2. Odświeżenie widoku OMD z legendą definicji i eksportem.
 
 ## 4) Checklist do wznowienia pracy w nowym chacie
@@ -125,7 +125,7 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 - `WB-P3-04` — [x] Eksport CSV/XLS zgodny 1:1 z widokiem i filtrami.
 
 ### P4 — Controlling OMD
-- `WB-P4-01` — Finalne agregacje controllingowe vs operacyjne (spis i implementacja).
+- `WB-P4-01` — [x] Finalne agregacje controllingowe vs operacyjne (spis i implementacja).
 - `WB-P4-02` — UI OMD z legendą definicji i pełnym eksportem.
 
 ### P5 — Stabilizacja rollout i operacje
