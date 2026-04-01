@@ -139,7 +139,7 @@ class ERP_OMD_Client_Project_Service
             $errors[] = __('Typ rozliczenia projektu jest niepoprawny.', 'erp-omd');
         }
 
-        if (! in_array($data['status'], ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'], true)) {
+        if (! in_array($data['status'], ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'], true)) {
             $errors[] = __('Status projektu jest niepoprawny.', 'erp-omd');
         }
 
@@ -282,12 +282,12 @@ class ERP_OMD_Client_Project_Service
         }
 
         $allowed_transitions = [
-            'do_rozpoczecia' => ['w_realizacji', 'inactive'],
-            'w_realizacji' => ['w_akceptacji', 'do_faktury', 'inactive'],
-            'w_akceptacji' => ['w_realizacji', 'do_faktury', 'inactive'],
-            'do_faktury' => ['zakonczony', 'w_realizacji', 'inactive'],
-            'zakonczony' => ['inactive'],
-            'inactive' => ['do_rozpoczecia'],
+            'do_rozpoczecia' => ['w_realizacji', 'archiwum'],
+            'w_realizacji' => ['w_akceptacji', 'do_faktury', 'archiwum'],
+            'w_akceptacji' => ['w_realizacji', 'do_faktury', 'archiwum'],
+            'do_faktury' => ['zakonczony', 'w_realizacji', 'archiwum'],
+            'zakonczony' => ['archiwum'],
+            'archiwum' => ['do_rozpoczecia'],
         ];
 
         if (! in_array($target_status, $allowed_transitions[$current_status] ?? [], true)) {
