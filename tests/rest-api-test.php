@@ -345,6 +345,8 @@ final class RestApiTestRunner
         $restApiSource = file_get_contents(__DIR__ . '/../erp-omd/includes/class-rest-api.php');
         $duplicateLegacyMethodCount = preg_match_all('/function\s+register_period_routes\s*\(/', (string) $restApiSource);
         $this->assertSame(0, (int) $duplicateLegacyMethodCount, 'REST API source should not contain legacy duplicated register_period_routes declarations.');
+        $duplicateManagementMethodCount = preg_match_all('/function\s+register_period_management_routes\s*\(/', (string) $restApiSource);
+        $this->assertSame(0, (int) $duplicateManagementMethodCount, 'REST API source should not contain dedicated period management registration method declarations.');
 
         $api = new ERP_OMD_REST_API(
             new ERP_OMD_Role_Repository(),
