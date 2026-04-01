@@ -209,7 +209,7 @@ final class ReportingServiceTestRunner
         $this->assertSame(5.0, $monthlyReport[0]['hours'], 'Monthly report should sum approved hours for the month.');
 
         $timeEntriesPage2 = $service->build_report('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'per_page' => 1, 'page_num' => 2]));
-        $timePagination = $service->get_last_report_pagination();
+        $timePagination = $service->pagination_meta();
         $this->assertSame(2, $timePagination['total_items'], 'Time entries pagination should expose total approved rows for the month.');
         $this->assertSame(2, $timePagination['total_pages'], 'Time entries pagination should expose number of pages.');
         $this->assertSame(2, $timePagination['page_num'], 'Time entries pagination should keep current page.');
