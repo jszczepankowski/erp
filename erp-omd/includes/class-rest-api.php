@@ -198,6 +198,13 @@ class ERP_OMD_REST_API
                 if ($adjustments_limit > 50) {
                     $adjustments_limit = 50;
                 }
+                $queue_limit = (int) $request->get_param('queue_limit');
+                if ($queue_limit <= 0) {
+                    $queue_limit = 25;
+                }
+                if ($queue_limit > 200) {
+                    $queue_limit = 200;
+                }
 
                 $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
                 $readiness_signals = $this->readiness_signals_for_month($month);
@@ -206,8 +213,9 @@ class ERP_OMD_REST_API
                 $trend_3m = array_slice((array) $trend, -3);
                 $project_rows = $this->reporting_service->build_project_report(['month' => $month, 'report_type' => 'projects']);
                 $client_rows = $this->reporting_service->build_client_report(['month' => $month, 'report_type' => 'clients']);
-                $queue_rows = $this->reporting_service->build_invoice_report(['month' => $month, 'report_type' => 'invoice']);
-                $queue_rows = $this->enrich_queue_rows($queue_rows, $month);
+                $queue_rows = (array) $this->reporting_service->build_invoice_report(['month' => $month, 'report_type' => 'invoice']);
+                $queue_rows_total = count($queue_rows);
+                $queue_rows = $this->enrich_queue_rows($queue_rows, $month, $queue_limit);
                 $adjustments = $this->adjustment_audit->all(['month' => $month]);
 
                 $source_rows = $scope === 'client' ? $client_rows : $project_rows;
@@ -235,6 +243,7 @@ class ERP_OMD_REST_API
                     'generated_at' => current_time('mysql'),
                     'applied_limits' => [
                         'adjustments_items' => $adjustments_limit,
+                        'queue_items' => $queue_limit,
                     ],
                     'month' => $month,
                     'status_month' => $period,
@@ -252,7 +261,7 @@ class ERP_OMD_REST_API
                         'client' => $ranked_clients,
                     ],
                     'settlement_queue' => [
-                        'count' => count($queue_rows),
+                        'count' => $queue_rows_total,
                         'items' => $queue_rows,
                     ],
                     'adjustments' => [
@@ -339,7 +348,7 @@ class ERP_OMD_REST_API
         return $base . '&report_type=projects&month=' . rawurlencode((string) $month) . '&project_id=' . (int) ($row['id'] ?? 0);
     }
 
-    private function enrich_queue_rows(array $rows, $month)
+    private function enrich_queue_rows(array $rows, $month, $limit = 25)
     {
         return array_map(function ($row) use ($month) {
             if (! is_array($row)) {
@@ -361,7 +370,7 @@ class ERP_OMD_REST_API
 
             $row['drilldown_link'] = $link;
             return $row;
-        }, $rows);
+        }, array_slice($rows, 0, max(1, (int) $limit)));
     }
 
     private function enrich_adjustment_rows(array $rows, $month, $limit = 10)
