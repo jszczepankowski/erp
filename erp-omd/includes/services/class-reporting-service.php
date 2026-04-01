@@ -164,9 +164,20 @@ class ERP_OMD_Reporting_Service
                     }
 
                     foreach ($projects as $project) {
-                        if (in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony'], true)) {
-                            $active_budgets += (float) ($project['budget'] ?? 0);
+                        if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony'], true)) {
+                            continue;
                         }
+
+                        $close_month = (string) ($project['operational_close_month'] ?? '');
+                        if (preg_match('/^\d{4}-\d{2}$/', $close_month) !== 1) {
+                            continue;
+                        }
+
+                        if ($close_month !== $month) {
+                            continue;
+                        }
+
+                        $active_budgets += (float) ($project['budget'] ?? 0);
                     }
 
                     foreach ($entries as $entry) {
@@ -855,10 +866,13 @@ class ERP_OMD_Reporting_Service
                 continue;
             }
 
-            $end_date = (string) ($project['end_date'] ?? '');
-            $month = substr($end_date, 0, 7);
-            if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
-                continue;
+            $month = (string) ($project['operational_close_month'] ?? '');
+            if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+                $end_date = (string) ($project['end_date'] ?? '');
+                $month = substr($end_date, 0, 7);
+                if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
+                    continue;
+                }
             }
 
             if (! isset($metrics[$month])) {
