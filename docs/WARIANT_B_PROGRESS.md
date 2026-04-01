@@ -47,6 +47,7 @@ Aktualny punkt pracy: **Opcja B / pakiet P1 (WB-P1-02..WB-P1-04)** — domknięc
 - [x] Migracje DB rozszerzone o nowe tabele/kolumny/indeksy i bezpieczne helpery (`add_column_if_missing`, `add_index_if_missing`).
 - [x] Wersja pluginu podniesiona do `2.8.3`.
 - [x] Wersja DB ustawiona na `6.5.1`.
+- [x] Dodany test regresji rozpoznania budżetu wg `operational_close_month` w trendzie OMD.
 
 ## 2) Co jest częściowo / techniczny dług
 
