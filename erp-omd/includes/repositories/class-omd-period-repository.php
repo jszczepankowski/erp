@@ -19,6 +19,13 @@ class ERP_OMD_Period_Repository
         );
     }
 
+    public function all()
+    {
+        global $wpdb;
+
+        return $wpdb->get_results("SELECT * FROM {$this->table_name()} ORDER BY month DESC", ARRAY_A);
+    }
+
     public function upsert(array $data)
     {
         global $wpdb;

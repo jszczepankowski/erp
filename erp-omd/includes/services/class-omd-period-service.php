@@ -114,6 +114,15 @@ class ERP_OMD_Period_Service
         return (string) ($period['status'] ?? self::STATUS_LIVE);
     }
 
+    public function list_periods()
+    {
+        if (! $this->periods || ! method_exists($this->periods, 'all')) {
+            return [];
+        }
+
+        return (array) $this->periods->all();
+    }
+
     public function transition_month($month, $to_status, array $readiness)
     {
         if (! $this->periods) {

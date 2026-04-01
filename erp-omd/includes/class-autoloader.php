@@ -30,6 +30,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Time_Entry_Repository' => 'includes/repositories/class-time-entry-repository.php',
         'ERP_OMD_Attachment_Repository' => 'includes/repositories/class-attachment-repository.php',
         'ERP_OMD_Period_Repository' => 'includes/repositories/class-omd-period-repository.php',
+        'ERP_OMD_Adjustment_Audit_Repository' => 'includes/repositories/class-omd-adjustment-audit-repository.php',
         'ERP_OMD_Monthly_Hours_Service' => 'includes/services/class-monthly-hours-service.php',
         'ERP_OMD_Employee_Service' => 'includes/services/class-employee-service.php',
         'ERP_OMD_Client_Project_Service' => 'includes/services/class-client-project-service.php',
