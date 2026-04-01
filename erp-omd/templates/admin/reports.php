@@ -112,6 +112,9 @@
                         <input type="hidden" name="project_id" value="<?php echo esc_attr($report_filters['project_id']); ?>" />
                         <input type="hidden" name="employee_id" value="<?php echo esc_attr($report_filters['employee_id']); ?>" />
                         <input type="hidden" name="status" value="<?php echo esc_attr($report_filters['status']); ?>" />
+                        <input type="hidden" name="mode" value="<?php echo esc_attr($report_filters['mode']); ?>" />
+                        <input type="hidden" name="detail" value="<?php echo esc_attr($report_filters['detail']); ?>" />
+                        <input type="hidden" name="page_num" value="<?php echo esc_attr((string) ($report_filters['page_num'] ?? 1)); ?>" />
                         <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
                         <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV', 'erp-omd'); ?></button>
                     </form>

@@ -4,8 +4,8 @@ Data snapshotu: 2026-04-01
 
 Cel: szybkie wznowienie prac w kolejnych chatowych sesjach bez utraty kontekstu.
 
-Aktualny punkt pracy: **Opcja B / pakiet P3 (WB-P3-03)** — raport czasu pracy line-by-line z paginacją domknięty po stronie backend + admin view.
-Następny krok wg planu: **P3-04** (eksport CSV/XLS 1:1 zgodny z aktywnymi filtrami i widokiem).
+Aktualny punkt pracy: **Opcja B / pakiet P3 (WB-P3-04)** — eksport raportów dopasowany 1:1 do aktywnych filtrów i bieżącego widoku (w tym `mode`, `detail`, `page_num`, `per_page`).
+Następny krok wg planu: **P4-01** (finalne agregacje controllingowe vs operacyjne).
 
 ## 1) Co już zrobione
 
@@ -81,7 +81,7 @@ Następny krok wg planu: **P3-04** (eksport CSV/XLS 1:1 zgodny z aktywnymi filtr
 1. [x] Raport klient (simple/detail + drilldown).
 2. [x] Raport projekt (direct cost, budget usage, detail mix).
 3. [x] Raport czas pracy (line-by-line + paginacja).
-4. Eksport CSV/XLS zgodny 1:1 z widokiem.
+4. [x] Eksport CSV/XLS zgodny 1:1 z widokiem.
 
 ### P4 — controlling OMD
 1. Dopięcie finalnych agregacji controllingowych vs operacyjnych.
@@ -122,7 +122,7 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 - `WB-P3-01` — [x] Raport klient simple/detail + drilldown klient -> projekt -> pozycje.
 - `WB-P3-02` — [x] Raport projekt simple/detail (direct cost, budget usage, mix billing).
 - `WB-P3-03` — [x] Raport czas pracy simple/detail (line-by-line + paginacja).
-- `WB-P3-04` — Eksport CSV/XLS zgodny 1:1 z widokiem i filtrami.
+- `WB-P3-04` — [x] Eksport CSV/XLS zgodny 1:1 z widokiem i filtrami.
 
 ### P4 — Controlling OMD
 - `WB-P4-01` — Finalne agregacje controllingowe vs operacyjne (spis i implementacja).
