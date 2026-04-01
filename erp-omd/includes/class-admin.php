@@ -190,8 +190,23 @@ class ERP_OMD_Admin
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $alerts = $this->alert_service->all_alerts();
-        $reporting_month = current_time('Y-m');
-        $reporting_month_label = current_time('m.Y');
+        $reporting_month = sanitize_text_field((string) ($_GET['month'] ?? current_time('Y-m')));
+        if (! preg_match('/^\d{4}-\d{2}$/', $reporting_month)) {
+            $reporting_month = current_time('Y-m');
+        }
+        $reporting_month_date = DateTimeImmutable::createFromFormat('Y-m-d', $reporting_month . '-01');
+        if (! $reporting_month_date) {
+            $reporting_month_date = new DateTimeImmutable(current_time('Y-m-01'));
+        }
+        $reporting_month_label = $reporting_month_date->format('m.Y');
+        $dashboard_month_options = [];
+        for ($offset = 0; $offset < 12; $offset++) {
+            $month = $reporting_month_date->modify('-' . $offset . ' month')->format('Y-m');
+            $dashboard_month_options[] = [
+                'value' => $month,
+                'label' => DateTimeImmutable::createFromFormat('Y-m-d', $month . '-01')->format('m.Y'),
+            ];
+        }
         $monthly_metrics = $this->build_monthly_performance_metrics($reporting_month);
         $monthly_totals = $monthly_metrics['totals'] ?? [
             'reported_hours' => 0.0,
@@ -265,7 +280,7 @@ class ERP_OMD_Admin
             ['label' => __('Dodaj klienta', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-clients', 'edit' => 1], admin_url('admin.php'))],
             ['label' => __('Dodaj projekt', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-projects'], admin_url('admin.php'))],
             ['label' => __('Dodaj wpis czasu', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-time'], admin_url('admin.php'))],
-            ['label' => __('Raport miesięczny', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports', 'report_type' => 'monthly'], admin_url('admin.php'))],
+            ['label' => __('Raport miesięczny', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports', 'report_type' => 'monthly', 'month' => $reporting_month], admin_url('admin.php'))],
         ];
         include ERP_OMD_PATH . 'templates/admin/dashboard.php';
     }
