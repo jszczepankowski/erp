@@ -436,6 +436,18 @@ if (! class_exists('ERP_OMD_Period_Service')) {
 
             return ['period' => $this->rows[$month], 'checklist' => $checklist];
         }
+        public function can_transition($from_status, $to_status)
+        {
+            if ($from_status === self::STATUS_LIVE && $to_status === self::STATUS_DO_ROZLICZENIA) {
+                return true;
+            }
+
+            if ($from_status === self::STATUS_DO_ROZLICZENIA && $to_status === self::STATUS_ZAMKNIETY) {
+                return true;
+            }
+
+            return false;
+        }
         public function is_month_locked_for_regular_user($status) { return in_array((string) $status, ['DO_ROZLICZENIA', 'ZAMKNIETY'], true); }
         public function resolve_month_status($month) { return (string) ($this->ensure_month_exists($month)['status'] ?? 'LIVE'); }
         public function is_emergency_adjustment_required(DateTimeImmutable $now, DateTimeImmutable $deadline) { return $now > $deadline; }
@@ -558,6 +570,8 @@ final class RestApiTestRunner
         $this->assertSame('2026-03', $dashboardPayload['month'], 'Dashboard endpoint should preserve explicit month filter.');
         $this->assertSame(false, $dashboardPayload['readiness_checklist']['ready'], 'Dashboard endpoint should expose readiness checklist snapshot for selected month.');
         $this->assertSame(1, $dashboardPayload['readiness_meta']['submitted_or_rejected_entries'], 'Dashboard readiness meta should expose submitted/rejected entry counter.');
+        $this->assertSame('DO_ROZLICZENIA', $dashboardPayload['status_actions'][0]['to_status'], 'Dashboard endpoint should expose next status action for current month.');
+        $this->assertSame(false, $dashboardPayload['status_actions'][0]['enabled'], 'Dashboard status action should be disabled when checklist is not ready.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['trend_3m']), 'Dashboard endpoint should expose metric definitions for frontend tooltip rendering.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['readiness_checklist.ready']), 'Dashboard endpoint should expose readiness definition tooltip key.');
         $this->assertSame(true, isset($dashboardPayload['drilldown_links']['settlement_queue']), 'Dashboard endpoint should expose drilldown links for queue and adjustments.');

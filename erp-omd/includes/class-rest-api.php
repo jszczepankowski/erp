@@ -223,6 +223,7 @@ class ERP_OMD_REST_API
                     'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,
                     'readiness_meta' => (array) ($readiness_signals['_meta'] ?? []),
+                    'status_actions' => $this->dashboard_status_actions($period, $readiness_checklist),
                     'metric_definitions' => $this->dashboard_metric_definitions(),
                     'drilldown_links' => $this->dashboard_drilldown_links($month),
                     'trend_3m' => $trend_3m,
@@ -284,6 +285,42 @@ class ERP_OMD_REST_API
             'top' => array_slice($rows, 0, 5),
             'bottom' => array_slice(array_reverse($rows), 0, 5),
         ];
+    }
+
+    private function dashboard_status_actions(array $period, array $checklist)
+    {
+        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
+        $targets = [
+            ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA,
+            ERP_OMD_Period_Service::STATUS_ZAMKNIETY,
+        ];
+
+        $actions = [];
+        foreach ($targets as $target_status) {
+            $can_transition = $this->period_service->can_transition($status, $target_status);
+            if (! $can_transition) {
+                continue;
+            }
+
+            $enabled = true;
+            $reason = '';
+            if (
+                $status === ERP_OMD_Period_Service::STATUS_LIVE
+                && $target_status === ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA
+                && ! (bool) ($checklist['ready'] ?? false)
+            ) {
+                $enabled = false;
+                $reason = __('LIVE -> DO_ROZLICZENIA requires readiness checklist == ready.', 'erp-omd');
+            }
+
+            $actions[] = [
+                'to_status' => $target_status,
+                'enabled' => $enabled,
+                'reason' => $reason,
+            ];
+        }
+
+        return $actions;
     }
 
     private function register_role_routes()
