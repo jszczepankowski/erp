@@ -866,6 +866,7 @@ class ERP_OMD_Reporting_Service
             'w_akceptacji',
             'do_faktury',
             'zakonczony',
+            'archiwum',
             'inactive',
             'submitted',
             'approved',
@@ -875,7 +876,7 @@ class ERP_OMD_Reporting_Service
 
     private function isProjectStatusFilter($status)
     {
-        return in_array($status, ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'], true);
+        return in_array($status, ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum', 'inactive'], true);
     }
 
     private function isTimeEntryStatusFilter($status)

@@ -1369,7 +1369,7 @@ class ERP_OMD_Frontend
     {
         $project_id = (int) ($_POST['project_id'] ?? 0);
         $status = sanitize_text_field(wp_unslash($_POST['status'] ?? ''));
-        $allowed_statuses = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'];
+        $allowed_statuses = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'];
         if ($project_id <= 0 || ! in_array($status, $allowed_statuses, true)) {
             $this->redirect_manager_with_notice('error', __('Niepoprawne dane zmiany statusu projektu.', 'erp-omd'));
         }
@@ -2022,8 +2022,8 @@ class ERP_OMD_Frontend
                 return __('Do faktury', 'erp-omd');
             case 'zakonczony':
                 return __('Zakończony', 'erp-omd');
-            case 'inactive':
-                return __('Nieaktywny', 'erp-omd');
+            case 'archiwum':
+                return __('Archiwum', 'erp-omd');
             default:
                 return $status ?: '—';
         }
