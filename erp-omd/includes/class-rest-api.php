@@ -366,15 +366,25 @@ class ERP_OMD_REST_API
                 return $row;
             }
 
+            $entity_type = (string) ($row['entity_type'] ?? '');
+            $entity_id = (int) ($row['entity_id'] ?? 0);
+            $drilldown_link = $base . '&month=' . rawurlencode((string) $month) . '&adjustments=1';
+            if ($entity_type !== '') {
+                $drilldown_link .= '&entity_type=' . rawurlencode($entity_type);
+            }
+            if ($entity_id > 0) {
+                $drilldown_link .= '&entity_id=' . $entity_id;
+            }
+
             return [
                 'id' => (int) ($row['id'] ?? 0),
-                'entity_type' => (string) ($row['entity_type'] ?? ''),
-                'entity_id' => (int) ($row['entity_id'] ?? 0),
+                'entity_type' => $entity_type,
+                'entity_id' => $entity_id,
                 'field_name' => (string) ($row['field_name'] ?? ''),
                 'adjustment_type' => (string) ($row['adjustment_type'] ?? ''),
                 'reason' => (string) ($row['reason'] ?? ''),
                 'changed_at' => (string) ($row['changed_at'] ?? ''),
-                'drilldown_link' => $base . '&month=' . rawurlencode((string) $month) . '&adjustments=1',
+                'drilldown_link' => $drilldown_link,
             ];
         }, array_slice($rows, 0, 10));
     }

@@ -596,7 +596,7 @@ final class RestApiTestRunner
         $this->assertSame(2, count($dashboardPayload['profitability_by_scope']['client']['bottom']), 'Dashboard endpoint should expose client ranking rows in profitability_by_scope.');
         $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=invoice&month=2026-03&project_id=10', $dashboardPayload['settlement_queue']['items'][0]['drilldown_link'], 'Queue rows should include month-aware drilldown link to invoice report.');
         $this->assertSame(25.0, $dashboardPayload['adjustments']['impact'], 'Dashboard adjustment impact should sum delta between new and old values.');
-        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=time&month=2026-03&adjustments=1', $dashboardPayload['adjustments']['items'][0]['drilldown_link'], 'Dashboard adjustment rows should expose drilldown link to adjusted time report.');
+        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=time&month=2026-03&adjustments=1&entity_type=project_cost&entity_id=10', $dashboardPayload['adjustments']['items'][0]['drilldown_link'], 'Dashboard adjustment rows should expose drilldown link with entity context.');
         $this->assertSame(2, $dashboardPayload['settlement_queue']['count'], 'Dashboard endpoint should expose invoice queue count.');
 
         echo "Assertions: {$this->assertions}\n";
