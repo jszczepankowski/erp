@@ -4,8 +4,8 @@ Data snapshotu: 2026-04-01
 
 Cel: szybkie wznowienie prac w kolejnych chatowych sesjach bez utraty kontekstu.
 
-Aktualny punkt pracy: **Opcja B / pakiet P3 (WB-P3-01)** — raport klient simple/detail + drilldown domknięty po stronie backend contract.
-Następny krok wg planu: **P3-02** (raport projekt simple/detail: direct cost, budget usage, detail mix).
+Aktualny punkt pracy: **Opcja B / pakiet P3 (WB-P3-02)** — raport projekt simple/detail + detail mix (direct cost, budget usage) domknięty po stronie backend contract.
+Następny krok wg planu: **P3-03** (raport czas pracy line-by-line + paginacja).
 
 ## 1) Co już zrobione
 
@@ -79,7 +79,7 @@ Następny krok wg planu: **P3-02** (raport projekt simple/detail: direct cost, b
 
 ### P3 — raporty operacyjne simple/detail (pełny UAT)
 1. [x] Raport klient (simple/detail + drilldown).
-2. Raport projekt (direct cost, budget usage, detail mix).
+2. [x] Raport projekt (direct cost, budget usage, detail mix).
 3. Raport czas pracy (line-by-line + paginacja).
 4. Eksport CSV/XLS zgodny 1:1 z widokiem.
 
@@ -120,7 +120,7 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 
 ### P3 — Raporty operacyjne (UAT ready)
 - `WB-P3-01` — [x] Raport klient simple/detail + drilldown klient -> projekt -> pozycje.
-- `WB-P3-02` — Raport projekt simple/detail (direct cost, budget usage, mix billing).
+- `WB-P3-02` — [x] Raport projekt simple/detail (direct cost, budget usage, mix billing).
 - `WB-P3-03` — Raport czas pracy simple/detail (line-by-line + paginacja).
 - `WB-P3-04` — Eksport CSV/XLS zgodny 1:1 z widokiem i filtrami.
 
