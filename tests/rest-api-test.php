@@ -392,7 +392,7 @@ if (! class_exists('ERP_OMD_Reporting_Service')) {
         public function build_calendar($filters) { return []; }
         public function build_project_report($filters) { return [['id' => 10, 'margin' => 20], ['id' => 11, 'margin' => 5]]; }
         public function build_client_report($filters) { return [['id' => 1, 'margin' => 15], ['id' => 2, 'margin' => 8]]; }
-        public function build_invoice_report($filters) { return [['id' => 2001], ['id' => 2002]]; }
+        public function build_invoice_report($filters) { return [['id' => 2001, 'project_id' => 10], ['id' => 2002, 'client_id' => 2]]; }
     }
 }
 if (! class_exists('ERP_OMD_Alert_Service')) {
@@ -582,6 +582,7 @@ final class RestApiTestRunner
         $this->assertSame(true, isset($dashboardPayload['profitability_by_scope']['project']['top'][0]['drilldown_link']), 'Dashboard profitability rows should expose drilldown links for detailed reports.');
         $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=projects&month=2026-03&project_id=10', $dashboardPayload['profitability_by_scope']['project']['top'][0]['drilldown_link'], 'Project profitability drilldown link should include month and project_id.');
         $this->assertSame(2, count($dashboardPayload['profitability_by_scope']['client']['bottom']), 'Dashboard endpoint should expose client ranking rows in profitability_by_scope.');
+        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=invoice&month=2026-03&project_id=10', $dashboardPayload['settlement_queue']['items'][0]['drilldown_link'], 'Queue rows should include month-aware drilldown link to invoice report.');
         $this->assertSame(2, $dashboardPayload['settlement_queue']['count'], 'Dashboard endpoint should expose invoice queue count.');
 
         echo "Assertions: {$this->assertions}\n";

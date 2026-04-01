@@ -200,6 +200,7 @@ class ERP_OMD_REST_API
                 $project_rows = $this->reporting_service->build_project_report(['month' => $month, 'report_type' => 'projects']);
                 $client_rows = $this->reporting_service->build_client_report(['month' => $month, 'report_type' => 'clients']);
                 $queue_rows = $this->reporting_service->build_invoice_report(['month' => $month, 'report_type' => 'invoice']);
+                $queue_rows = $this->enrich_queue_rows($queue_rows, $month);
                 $adjustments = $this->adjustment_audit->all(['month' => $month]);
 
                 $source_rows = $scope === 'client' ? $client_rows : $project_rows;
@@ -324,6 +325,31 @@ class ERP_OMD_REST_API
         }
 
         return $base . '&report_type=projects&month=' . rawurlencode((string) $month) . '&project_id=' . (int) ($row['id'] ?? 0);
+    }
+
+    private function enrich_queue_rows(array $rows, $month)
+    {
+        return array_map(function ($row) use ($month) {
+            if (! is_array($row)) {
+                return $row;
+            }
+
+            $base = '/wp-admin/admin.php?page=erp-omd-reports';
+            if (function_exists('admin_url')) {
+                $base = admin_url('admin.php?page=erp-omd-reports');
+            }
+
+            $link = $base . '&report_type=invoice&month=' . rawurlencode((string) $month);
+            if (isset($row['project_id'])) {
+                $link .= '&project_id=' . (int) $row['project_id'];
+            }
+            if (isset($row['client_id'])) {
+                $link .= '&client_id=' . (int) $row['client_id'];
+            }
+
+            $row['drilldown_link'] = $link;
+            return $row;
+        }, $rows);
     }
 
     private function dashboard_status_actions(array $period, array $checklist)
