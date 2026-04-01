@@ -54,11 +54,17 @@ class ERP_OMD_Reporting_Service
             $status = '';
         }
 
+        $mode = strtoupper(sanitize_text_field((string) ($raw_filters['mode'] ?? 'LIVE')));
+        if (! in_array($mode, ['LIVE', 'DO_ROZLICZENIA', 'ZAMKNIETY'], true)) {
+            $mode = 'LIVE';
+        }
+
         return [
             'client_id' => (int) ($raw_filters['client_id'] ?? 0),
             'project_id' => (int) ($raw_filters['project_id'] ?? 0),
             'employee_id' => (int) ($raw_filters['employee_id'] ?? 0),
             'status' => $status,
+            'mode' => $mode,
             'month' => $month,
             'report_type' => $report_type,
             'tab' => $tab,
@@ -158,9 +164,20 @@ class ERP_OMD_Reporting_Service
                     }
 
                     foreach ($projects as $project) {
-                        if (in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony'], true)) {
-                            $active_budgets += (float) ($project['budget'] ?? 0);
+                        if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony'], true)) {
+                            continue;
                         }
+
+                        $close_month = (string) ($project['operational_close_month'] ?? '');
+                        if (preg_match('/^\d{4}-\d{2}$/', $close_month) !== 1) {
+                            continue;
+                        }
+
+                        if ($close_month !== $month) {
+                            continue;
+                        }
+
+                        $active_budgets += (float) ($project['budget'] ?? 0);
                     }
 
                     foreach ($entries as $entry) {
@@ -244,6 +261,7 @@ class ERP_OMD_Reporting_Service
                 'project_name' => (string) ($project['name'] ?? ''),
                 'client_name' => (string) ($project['client_name'] ?? ''),
                 'status' => (string) ($project['status'] ?? ''),
+                'operational_close_month' => (string) ($project['operational_close_month'] ?? ''),
                 'billing_type' => (string) ($project['billing_type'] ?? ''),
                 'manager_login' => (string) ($project['manager_login'] ?? '—'),
                 'budget' => (float) ($project['budget'] ?? 0),
@@ -481,6 +499,13 @@ class ERP_OMD_Reporting_Service
         return array_reverse($report_rows);
     }
 
+    public function build_omd_settlement_report(array $filters)
+    {
+        $filters = $this->sanitize_filters($filters);
+
+        return $this->build_report('omd_rozliczenia', $filters);
+    }
+
     public function build_calendar(array $filters)
     {
         $filters = $this->sanitize_filters($filters);
@@ -609,6 +634,7 @@ class ERP_OMD_Reporting_Service
                         number_format((float) $row['margin'], 2, '.', ''),
                         number_format((float) $row['budget_usage'], 2, '.', ''),
                         $row['status'],
+                        (string) ($row['operational_close_month'] ?? ''),
                     ];
 
                     $invoice_rows[] = ['Pozycje do faktury'];
@@ -622,13 +648,13 @@ class ERP_OMD_Reporting_Service
 
                 return [
                     'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
-                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status'],
+                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status', 'Miesiąc zamk. oper.'],
                     'rows' => $invoice_rows,
                 ];
             case 'projects':
                 return [
                     'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
-                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status'],
+                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status', 'Miesiąc zamk. oper.'],
                     'rows' => array_map(function ($row) {
                         return [
                             $row['client_name'],
@@ -647,6 +673,7 @@ class ERP_OMD_Reporting_Service
                             number_format((float) $row['margin'], 2, '.', ''),
                             number_format((float) $row['budget_usage'], 2, '.', ''),
                             $row['status'],
+                            (string) ($row['operational_close_month'] ?? ''),
                         ];
                     }, $rows),
                 ];
@@ -729,6 +756,14 @@ class ERP_OMD_Reporting_Service
             ) {
                 return false;
             }
+
+            $project_status = (string) ($project['status'] ?? '');
+            if (($filters['mode'] ?? 'LIVE') === 'DO_ROZLICZENIA' && ! in_array($project_status, ['do_faktury', 'zakonczony'], true)) {
+                return false;
+            }
+            if (($filters['mode'] ?? 'LIVE') === 'ZAMKNIETY' && ! in_array($project_status, ['zakonczony', 'archiwum'], true)) {
+                return false;
+            }
             return true;
         }));
     }
@@ -752,6 +787,9 @@ class ERP_OMD_Reporting_Service
                 && $this->isTimeEntryStatusFilter($filters['status'])
                 && (string) ($entry['status'] ?? '') !== $filters['status']
             ) {
+                return false;
+            }
+            if ($filters['status'] === '' && (string) ($entry['status'] ?? '') !== 'approved') {
                 return false;
             }
             if ($filters['month'] !== '' && strpos((string) ($entry['entry_date'] ?? ''), $filters['month']) !== 0) {
@@ -831,10 +869,13 @@ class ERP_OMD_Reporting_Service
                 continue;
             }
 
-            $end_date = (string) ($project['end_date'] ?? '');
-            $month = substr($end_date, 0, 7);
-            if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
-                continue;
+            $month = (string) ($project['operational_close_month'] ?? '');
+            if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+                $end_date = (string) ($project['end_date'] ?? '');
+                $month = substr($end_date, 0, 7);
+                if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
+                    continue;
+                }
             }
 
             if (! isset($metrics[$month])) {
@@ -866,7 +907,7 @@ class ERP_OMD_Reporting_Service
             'w_akceptacji',
             'do_faktury',
             'zakonczony',
-            'inactive',
+            'archiwum',
             'submitted',
             'approved',
             'rejected',
@@ -875,7 +916,7 @@ class ERP_OMD_Reporting_Service
 
     private function isProjectStatusFilter($status)
     {
-        return in_array($status, ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'], true);
+        return in_array($status, ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'], true);
     }
 
     private function isTimeEntryStatusFilter($status)
