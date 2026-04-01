@@ -390,6 +390,7 @@ final class RestApiTestRunner
         $meta = $api->get_meta();
         $this->assertSame('0.9.0', $meta['plugin_version'], 'Meta endpoint should expose plugin version.');
         $this->assertSame(['project', 'estimate'], $meta['attachment_entity_types'], 'Meta endpoint should expose supported attachment entity types.');
+        $this->assertSame(['client', 'agency', 'variant_a', 'variant_b'], $meta['export_variants'], 'Meta endpoint should expose estimate export variants and aliases.');
 
         $alerts = $api->list_alerts(new WP_REST_Request(['entity_type' => 'project', 'entity_id' => 10]));
         $this->assertSame(1, count($alerts), 'Alert endpoint should filter alerts by entity.');
