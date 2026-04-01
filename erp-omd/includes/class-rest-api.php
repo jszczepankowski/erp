@@ -221,6 +221,7 @@ class ERP_OMD_REST_API
                         $adjustment_impact += ($new_amount - $old_amount);
                     }
                 }
+                $adjustment_items = $this->enrich_adjustment_rows($adjustments, $month);
 
                 return rest_ensure_response([
                     'api_version' => 'v1',
@@ -247,6 +248,7 @@ class ERP_OMD_REST_API
                     'adjustments' => [
                         'count' => count($adjustments),
                         'impact' => round($adjustment_impact, 2),
+                        'items' => $adjustment_items,
                     ],
                 ]);
             }, 'permission_callback' => [$this, 'can_access_reports']],
@@ -350,6 +352,31 @@ class ERP_OMD_REST_API
             $row['drilldown_link'] = $link;
             return $row;
         }, $rows);
+    }
+
+    private function enrich_adjustment_rows(array $rows, $month)
+    {
+        $base = '/wp-admin/admin.php?page=erp-omd-reports&report_type=time';
+        if (function_exists('admin_url')) {
+            $base = admin_url('admin.php?page=erp-omd-reports&report_type=time');
+        }
+
+        return array_map(function ($row) use ($month, $base) {
+            if (! is_array($row)) {
+                return $row;
+            }
+
+            return [
+                'id' => (int) ($row['id'] ?? 0),
+                'entity_type' => (string) ($row['entity_type'] ?? ''),
+                'entity_id' => (int) ($row['entity_id'] ?? 0),
+                'field_name' => (string) ($row['field_name'] ?? ''),
+                'adjustment_type' => (string) ($row['adjustment_type'] ?? ''),
+                'reason' => (string) ($row['reason'] ?? ''),
+                'changed_at' => (string) ($row['changed_at'] ?? ''),
+                'drilldown_link' => $base . '&month=' . rawurlencode((string) $month) . '&adjustments=1',
+            ];
+        }, array_slice($rows, 0, 10));
     }
 
     private function dashboard_status_actions(array $period, array $checklist)
