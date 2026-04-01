@@ -225,6 +225,7 @@ class ERP_OMD_REST_API
                     'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,
                     'readiness_meta' => (array) ($readiness_signals['_meta'] ?? []),
+                    'metric_definitions' => $this->dashboard_metric_definitions(),
                     'trend_3m' => $trend_3m,
                     'profitability_scope' => $scope,
                     'profitability_top' => $top,
@@ -241,6 +242,18 @@ class ERP_OMD_REST_API
             }, 'permission_callback' => [$this, 'can_access_reports']],
         ]);
         $this->register_hardening_routes();
+    }
+
+    private function dashboard_metric_definitions()
+    {
+        return [
+            'trend_3m' => __('Three most recent month rows from omd_rozliczenia report.', 'erp-omd'),
+            'profitability_top' => __('Top 5 entities by margin in selected scope.', 'erp-omd'),
+            'profitability_bottom' => __('Bottom 5 entities by margin in selected scope.', 'erp-omd'),
+            'settlement_queue.count' => __('Number of rows in invoice settlement queue for selected month.', 'erp-omd'),
+            'adjustments.impact' => __('Sum of (new-old) amount/hours deltas from adjustment audit rows.', 'erp-omd'),
+            'readiness_checklist.ready' => __('Boolean period-close readiness based on checklist validators.', 'erp-omd'),
+        ];
     }
 
     private function register_role_routes()
