@@ -1,0 +1,159 @@
+# Wariant B v1 — status wdrożenia (snapshot)
+
+Data snapshotu: 2026-04-01
+
+Cel: szybkie wznowienie prac w kolejnych chatowych sesjach bez utraty kontekstu.
+
+Aktualny punkt pracy: **Opcja B / pakiet P1 (WB-P1-02..WB-P1-04)** — domknięcie reguł księgowania i testów regresji.
+
+## 1) Co już zrobione
+
+### Backend fundament okresów i blokad
+- [x] Dodany model okresu miesięcznego (`erp_omd_periods`) z polami:
+  - `month`, `status`, `closed_at`, `correction_window_until`, `updated_by`.
+- [x] Dodany serwis okresów (`ERP_OMD_Period_Service`):
+  - statusy LIVE / DO_ROZLICZENIA / ZAMKNIETY,
+  - walidacja przejść,
+  - checklista gotowości,
+  - wyliczanie okna korekty +72h,
+  - detekcja trybu EMERGENCY_ADJUSTMENT.
+- [x] Dodane blokady zapisu danych (time entries / project costs) w okresach zablokowanych dla non-admin.
+
+### Korekty i audyt
+- [x] Dodana tabela audytu (`erp_omd_adjustment_audit`).
+- [x] Dodane repo audytu (`ERP_OMD_Adjustment_Audit_Repository`).
+- [x] Wprowadzony wymóg `reason` dla korekt admina w miesiącach zablokowanych.
+- [x] Logowanie korekt admina w CRUD time entries i project costs.
+- [x] Dodane API korekt:
+  - `GET /erp-omd/v1/adjustments`
+  - `POST /erp-omd/v1/adjustments`
+
+### API okresów i dashboard
+- [x] Dodane API okresów:
+  - `GET /erp-omd/v1/periods`
+  - `GET /erp-omd/v1/periods/{YYYY-MM}`
+  - `POST /erp-omd/v1/periods/{YYYY-MM}/transition`
+- [x] Dodane API dashboardu v1:
+  - `GET /erp-omd/v1/dashboard-v1`
+  - payload zawiera: status miesiąca, trend 3M, top/bottom rentowności (client/project), kolejkę rozliczeń i korekty.
+
+### Reporting i statusy domenowe
+- [x] Reporting: dodany `mode` (`LIVE`, `DO_ROZLICZENIA`, `ZAMKNIETY`).
+- [x] Reporting: domyślnie approved-only dla time entries.
+- [x] Reporting: obsługa `archiwum`.
+- [x] Domain status: migracja i logika `inactive -> archiwum`.
+
+### Migracje i wersjonowanie
+- [x] Migracje DB rozszerzone o nowe tabele/kolumny/indeksy i bezpieczne helpery (`add_column_if_missing`, `add_index_if_missing`).
+- [x] Wersja pluginu podniesiona do `2.8.3`.
+- [x] Wersja DB ustawiona na `6.5.1`.
+
+## 2) Co jest częściowo / techniczny dług
+
+- [~] Checklista gotowości LIVE -> DO_ROZLICZENIA jest obecnie uproszczona (część sygnałów domyślna), wymaga dopięcia pełnych walidatorów biznesowych.
+- [~] Mechanika korekt działa, ale pełna ścieżka UI Admin (dedykowany ekran/flow) i filtrowane widoki audytu są do dopracowania.
+- [~] `dashboard-v1` działa backendowo, ale frontendowe komponenty/wykresy i UX states wymagają dokończenia.
+
+## 3) Co dalej (priorytet kolejnych kroków)
+
+### P1 — domknięcie zgodności reguł księgowania v1
+1. Dopięcie pełnych walidatorów checklisty gotowości (submitted/rejected, koszty niezweryfikowane, kompletność danych, blokady krytyczne).
+2. Twarde użycie `operational_close_month` w logice budżetowej i agregacjach finansowych.
+3. Ujednolicenie approved-only we wszystkich raportach/eksportach/endpointach finansowych.
+
+### P2 — operacyjny dashboard v1 (frontend + contract)
+1. Ekran statusu miesiąca + CTA admin.
+2. Wykres trendu 3M i tooltipy definicji metryk.
+3. Top/Bottom z przełącznikiem client/project.
+4. Sekcja kolejki rozliczeń i korekt z deep-linkami do drilldown.
+
+### P3 — raporty operacyjne simple/detail (pełny UAT)
+1. Raport klient (simple/detail + drilldown).
+2. Raport projekt (direct cost, budget usage, detail mix).
+3. Raport czas pracy (line-by-line + paginacja).
+4. Eksport CSV/XLS zgodny 1:1 z widokiem.
+
+### P4 — controlling OMD
+1. Dopięcie finalnych agregacji controllingowych vs operacyjnych.
+2. Odświeżenie widoku OMD z legendą definicji i eksportem.
+
+## 4) Checklist do wznowienia pracy w nowym chacie
+
+Wklej na start:
+1. "Kontynuujemy Wariant B v1, pracujemy na `docs/WARIANT_B_PROGRESS.md` i `docs/SPECYFIKACJA_V1_WARIANT_B.txt`."
+2. "Najpierw zrób status git + krótki diff od ostatniego commita."
+3. "Następny cel: [wstaw z sekcji P1/P2/P3/P4]."
+4. "Po zmianach: testy + commit + PR summary + aktualizacja tego pliku progress."
+
+## 5) Source of truth
+- Spec: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
+- Potwierdzenie: `docs/POTWIERDZENIE_USTALEŃ_V1_2026-04-01.md`
+- Ten snapshot roboczy: `docs/WARIANT_B_PROGRESS.md`
+
+---
+
+## 6) Numerowana lista kroków wdrożenia (ID do odwołań w kolejnych chat)
+
+Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
+
+### P1 — Reguły księgowania i zamknięcie miesiąca
+- `WB-P1-01` — Dopięcie pełnej checklisty gotowości LIVE -> DO_ROZLICZENIA (wszystkie walidatory biznesowe).
+- `WB-P1-02` — Użycie `operational_close_month` w pełnej logice budżetowej i controllingowej.
+- `WB-P1-03` — Ujednolicenie approved-only we wszystkich raportach/eksportach/API finansowym.
+- `WB-P1-04` — Testy regresji: przejścia statusów, locki, edge-case 72h + emergency.
+
+### P2 — Dashboard v1 (frontend + contract)
+- `WB-P2-01` — Karta statusu miesiąca + akcje admin (przejścia statusów).
+- `WB-P2-02` — Wizualizacja trendu 3M (wykres + tooltipy definicji).
+- `WB-P2-03` — Ranking Top/Bottom rentowności z przełącznikiem client/project.
+- `WB-P2-04` — Kolejka rozliczeń + sekcja korekt z linkami do drilldown.
+
+### P3 — Raporty operacyjne (UAT ready)
+- `WB-P3-01` — Raport klient simple/detail + drilldown klient -> projekt -> pozycje.
+- `WB-P3-02` — Raport projekt simple/detail (direct cost, budget usage, mix billing).
+- `WB-P3-03` — Raport czas pracy simple/detail (line-by-line + paginacja).
+- `WB-P3-04` — Eksport CSV/XLS zgodny 1:1 z widokiem i filtrami.
+
+### P4 — Controlling OMD
+- `WB-P4-01` — Finalne agregacje controllingowe vs operacyjne (spis i implementacja).
+- `WB-P4-02` — UI OMD z legendą definicji i pełnym eksportem.
+
+### P5 — Stabilizacja rollout i operacje
+- `WB-P5-01` — Feature flags + canary rollout (admin -> wszyscy).
+- `WB-P5-02` — Monitoring błędów/wydajności + plan rollback przez flagi.
+- `WB-P5-03` — Raport powdrożeniowy i cleanup legacy po stabilizacji.
+
+## 7) Jak odwoływać się do kroków
+- W nowym chacie podaj po prostu: „Robimy `WB-P2-03`”.
+- Dla większych kawałków: „Robimy `WB-P3-01` + `WB-P3-04`”.
+- Dla hotfixu: „Priorytetowo wracamy do `WB-P1-04`”.
+
+## 8) Zwiększanie zakresu — ocena ryzyka (praktycznie)
+
+### Opcja A: małe kroki (niższe ryzyko)
+- 1–2 ID na iterację (np. `WB-P1-02` + `WB-P1-04`).
+- Plusy: łatwiejszy rollback, szybsza diagnoza regresji.
+- Minus: więcej iteracji / więcej merge.
+
+### Opcja B: średni pakiet (umiarkowane ryzyko) — REKOMENDOWANE
+- 3–4 spójne ID na iterację, ale tylko z jednego obszaru.
+- Przykład: cały `P1` (WB-P1-01..04) albo cały `P2` (WB-P2-01..04).
+- Warunek: testy + feature flag + checklista release.
+
+### Opcja C: duży pakiet cross-obszar (wyższe ryzyko)
+- Łączenie P1 + P2 + P3 w jednym strzale.
+- Ryzyka:
+  - większe prawdopodobieństwo regresji,
+  - trudniejszy root-cause po wdrożeniu,
+  - dłuższy czas stabilizacji.
+- Wymagane minimum:
+  - canary rollout,
+  - metryki wydajności + error-rate,
+  - gotowy rollback przez flagi.
+
+### Nasza rekomendacja na teraz
+- Trzymać **Opcję B**:
+  1. domknąć `P1`,
+  2. potem pełny `P2`,
+  3. potem `P3`,
+  4. na końcu `P4/P5`.
