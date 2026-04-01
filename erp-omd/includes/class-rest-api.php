@@ -206,6 +206,9 @@ class ERP_OMD_REST_API
                 $ranked_scope = $this->rank_profitability_rows($source_rows);
                 $ranked_projects = $this->rank_profitability_rows($project_rows);
                 $ranked_clients = $this->rank_profitability_rows($client_rows);
+                $ranked_scope = $this->enrich_ranked_profitability_rows($ranked_scope, $scope, $month);
+                $ranked_projects = $this->enrich_ranked_profitability_rows($ranked_projects, 'project', $month);
+                $ranked_clients = $this->enrich_ranked_profitability_rows($ranked_clients, 'client', $month);
 
                 $adjustment_impact = 0.0;
                 foreach ($adjustments as $row) {
@@ -287,6 +290,40 @@ class ERP_OMD_REST_API
             'top' => array_slice($rows, 0, 5),
             'bottom' => array_slice(array_reverse($rows), 0, 5),
         ];
+    }
+
+    private function enrich_ranked_profitability_rows(array $ranked, $scope, $month)
+    {
+        foreach (['top', 'bottom'] as $bucket) {
+            if (! isset($ranked[$bucket]) || ! is_array($ranked[$bucket])) {
+                continue;
+            }
+
+            $ranked[$bucket] = array_map(function ($row) use ($scope, $month) {
+                if (! is_array($row)) {
+                    return $row;
+                }
+
+                $row['drilldown_link'] = $this->profitability_row_drilldown_link($scope, $row, $month);
+                return $row;
+            }, $ranked[$bucket]);
+        }
+
+        return $ranked;
+    }
+
+    private function profitability_row_drilldown_link($scope, array $row, $month)
+    {
+        $base = '/wp-admin/admin.php?page=erp-omd-reports';
+        if (function_exists('admin_url')) {
+            $base = admin_url('admin.php?page=erp-omd-reports');
+        }
+
+        if ($scope === 'client') {
+            return $base . '&report_type=clients&month=' . rawurlencode((string) $month) . '&client_id=' . (int) ($row['id'] ?? 0);
+        }
+
+        return $base . '&report_type=projects&month=' . rawurlencode((string) $month) . '&project_id=' . (int) ($row['id'] ?? 0);
     }
 
     private function dashboard_status_actions(array $period, array $checklist)
