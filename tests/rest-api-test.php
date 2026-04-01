@@ -280,6 +280,7 @@ if (! class_exists('ERP_OMD_Project_Repository')) {
             return [
                 ['id' => 10, 'client_id' => 1, 'name' => 'Projekt A', 'status' => 'w_realizacji', 'start_date' => '2026-03-01', 'end_date' => '2026-03-31'],
                 ['id' => 11, 'client_id' => 0, 'name' => '', 'status' => 'do_rozpoczecia', 'start_date' => '2026-05-01', 'end_date' => '2026-05-31'],
+                ['id' => 12, 'client_id' => 0, 'name' => '', 'status' => 'do_rozpoczecia', 'operational_close_month' => '2026-03', 'start_date' => '', 'end_date' => ''],
             ];
         }
         public function find($id) { return ['id' => $id, 'client_id' => 1]; }
@@ -528,7 +529,8 @@ final class RestApiTestRunner
         $periodStatusPayload = $periodStatusCallback(new WP_REST_Request(['month' => '2026-03']));
         $this->assertSame(false, $periodStatusPayload['checklist']['ready'], 'Period status endpoint should expose non-ready checklist for month with submitted entries.');
         $this->assertSame(true, in_array('time_entries_finalized', $periodStatusPayload['checklist']['blockers'], true), 'Period status endpoint should include time_entries_finalized as a blocker.');
-        $this->assertSame(true, $periodStatusPayload['checklist']['checks']['project_client_completeness'], 'Checklist should ignore unrelated future projects when validating client completeness for selected month.');
+        $this->assertSame(false, $periodStatusPayload['checklist']['checks']['project_client_completeness'], 'Checklist should validate client completeness for projects explicitly closed operationally in selected month.');
+        $this->assertSame(true, in_array('project_client_completeness', $periodStatusPayload['checklist']['blockers'], true), 'Checklist should flag project_client_completeness when operationally-closed project data is incomplete.');
 
         $transitionCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})/transition', WP_REST_Server::CREATABLE);
         $transitionBlocked = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'DO_ROZLICZENIA']));
