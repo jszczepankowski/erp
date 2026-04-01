@@ -33,7 +33,7 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 
 1. ✅ **P3-01** — raport klient simple/detail + drilldown klient -> projekt -> pozycje.
 2. ✅ **P3-02** — raport projekt simple/detail (direct cost, budget usage, mix billing), w tym szczegóły: wpisy czasu + koszty projektowe + billing mix breakdown.
-3. **P3-03** — raport czasu pracy line-by-line + paginacja.
+3. ✅ **P3-03** — raport czasu pracy line-by-line + paginacja (filtr `per_page`, numer strony, metadane i nawigacja stron w admin view).
 4. **P3-04** — eksport CSV/XLS 1:1 zgodny z aktywnymi filtrami i widokiem.
 
 ## 4) Instrukcja startowa do nowego chatu

@@ -162,6 +162,8 @@ final class ReportingServiceTestRunner
         $filters = $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03']);
         $this->assertSame('projects', $filters['report_type'], 'Project report should remain selected.');
         $this->assertSame('2026-03', $filters['month'], 'Valid month filter should be preserved.');
+        $this->assertSame(1, $filters['page_num'], 'Filters should default to first page.');
+        $this->assertSame(25, $filters['per_page'], 'Filters should default to 25 rows per page.');
 
         $projectReport = $service->build_project_report($filters);
         $this->assertSame(2, count($projectReport), 'Project report should include all matching projects.');
@@ -205,6 +207,14 @@ final class ReportingServiceTestRunner
         $monthlyReport = $service->build_monthly_report($filters);
         $this->assertSame(1, count($monthlyReport), 'Monthly report should group entries by month.');
         $this->assertSame(5.0, $monthlyReport[0]['hours'], 'Monthly report should sum approved hours for the month.');
+
+        $timeEntriesPage2 = $service->build_report('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'per_page' => 1, 'page_num' => 2]));
+        $timePagination = $service->get_last_report_pagination();
+        $this->assertSame(2, $timePagination['total_items'], 'Time entries pagination should expose total approved rows for the month.');
+        $this->assertSame(2, $timePagination['total_pages'], 'Time entries pagination should expose number of pages.');
+        $this->assertSame(2, $timePagination['page_num'], 'Time entries pagination should keep current page.');
+        $this->assertSame(1, count($timeEntriesPage2), 'Time entries report should return only rows for current page.');
+        $this->assertSame('2026-03-10', $timeEntriesPage2[0]['entry_date'], 'Time entries pagination should return the second row on page 2.');
 
         $omdSettlement = $service->build_omd_settlement_report($filters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');

@@ -11,6 +11,7 @@ class ERP_OMD_Reporting_Service
     private $time_entries;
     private $project_financial_service;
     private $estimate_items;
+    private $last_report_pagination;
 
     public function __construct(
         ERP_OMD_Project_Repository $projects,
@@ -30,6 +31,7 @@ class ERP_OMD_Reporting_Service
         $this->time_entries = $time_entries;
         $this->project_financial_service = $project_financial_service;
         $this->estimate_items = $estimate_items;
+        $this->last_report_pagination = [];
     }
 
     public function sanitize_filters(array $raw_filters = [])
@@ -64,6 +66,12 @@ class ERP_OMD_Reporting_Service
             $detail = 'simple';
         }
 
+        $page = max(1, (int) ($raw_filters['page_num'] ?? 1));
+        $per_page = (int) ($raw_filters['per_page'] ?? 25);
+        if ($per_page < 1 || $per_page > 200) {
+            $per_page = 25;
+        }
+
         return [
             'client_id' => (int) ($raw_filters['client_id'] ?? 0),
             'project_id' => (int) ($raw_filters['project_id'] ?? 0),
@@ -74,12 +82,15 @@ class ERP_OMD_Reporting_Service
             'month' => $month,
             'report_type' => $report_type,
             'tab' => $tab,
+            'page_num' => $page,
+            'per_page' => $per_page,
         ];
     }
 
     public function build_report($report_type, array $filters)
     {
         $filters = $this->sanitize_filters($filters);
+        $this->last_report_pagination = [];
 
         switch ($report_type) {
             case 'clients':
@@ -119,8 +130,9 @@ class ERP_OMD_Reporting_Service
                         return [(string) ($right['entry_date'] ?? ''), (string) ($left['employee_login'] ?? '')] <=> [(string) ($left['entry_date'] ?? ''), (string) ($right['employee_login'] ?? '')];
                     }
                 );
-
-                return $rows;
+                $this->last_report_pagination = $this->build_pagination_meta(count($rows), (int) $filters['page_num'], (int) $filters['per_page']);
+                $offset = ((int) $this->last_report_pagination['page_num'] - 1) * (int) $this->last_report_pagination['per_page'];
+                return array_slice($rows, $offset, (int) $this->last_report_pagination['per_page']);
             case 'omd_rozliczenia':
                 $rows = [];
                 $anchor = DateTimeImmutable::createFromFormat('Y-m-d', (string) $filters['month'] . '-01');
@@ -937,6 +949,11 @@ class ERP_OMD_Reporting_Service
         return $metrics;
     }
 
+    public function get_last_report_pagination()
+    {
+        return $this->last_report_pagination;
+    }
+
     private function get_direct_cost_items_for_project($project_id, $month)
     {
         $rows = [];
@@ -985,6 +1002,23 @@ class ERP_OMD_Reporting_Service
             'recognized_revenue' => round((float) ($financial['revenue'] ?? 0.0), 2),
             'recognized_profit' => round((float) ($financial['profit'] ?? 0.0), 2),
             'budget_usage' => round((float) ($financial['budget_usage'] ?? 0.0), 2),
+        ];
+    }
+
+    private function build_pagination_meta($total_items, $page_num, $per_page)
+    {
+        $total_items = max(0, (int) $total_items);
+        $per_page = max(1, (int) $per_page);
+        $total_pages = max(1, (int) ceil($total_items / $per_page));
+        $page_num = max(1, min((int) $page_num, $total_pages));
+
+        return [
+            'total_items' => $total_items,
+            'total_pages' => $total_pages,
+            'page_num' => $page_num,
+            'per_page' => $per_page,
+            'has_prev' => $page_num > 1,
+            'has_next' => $page_num < $total_pages,
         ];
     }
 
