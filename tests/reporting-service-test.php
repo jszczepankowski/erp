@@ -208,7 +208,9 @@ final class ReportingServiceTestRunner
 
         $export = $service->export_definition('projects', $filters);
         $this->assertSame('Klient', $export['headers'][0], 'Project export should expose column headers.');
+        $this->assertSame('Miesiąc zamk. oper.', $export['headers'][16], 'Project export should include operational close month column.');
         $this->assertSame(2, count($export['rows']), 'Project export should include report rows.');
+        $this->assertSame('2026-02', $export['rows'][0][16], 'Project export should include operational close month value.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "Reporting service tests passed.\n";

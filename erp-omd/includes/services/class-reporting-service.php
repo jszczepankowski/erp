@@ -261,6 +261,7 @@ class ERP_OMD_Reporting_Service
                 'project_name' => (string) ($project['name'] ?? ''),
                 'client_name' => (string) ($project['client_name'] ?? ''),
                 'status' => (string) ($project['status'] ?? ''),
+                'operational_close_month' => (string) ($project['operational_close_month'] ?? ''),
                 'billing_type' => (string) ($project['billing_type'] ?? ''),
                 'manager_login' => (string) ($project['manager_login'] ?? '—'),
                 'budget' => (float) ($project['budget'] ?? 0),
@@ -633,6 +634,7 @@ class ERP_OMD_Reporting_Service
                         number_format((float) $row['margin'], 2, '.', ''),
                         number_format((float) $row['budget_usage'], 2, '.', ''),
                         $row['status'],
+                        (string) ($row['operational_close_month'] ?? ''),
                     ];
 
                     $invoice_rows[] = ['Pozycje do faktury'];
@@ -646,13 +648,13 @@ class ERP_OMD_Reporting_Service
 
                 return [
                     'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
-                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status'],
+                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status', 'Miesiąc zamk. oper.'],
                     'rows' => $invoice_rows,
                 ];
             case 'projects':
                 return [
                     'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
-                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status'],
+                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Wykorzystanie budżetu %', 'Status', 'Miesiąc zamk. oper.'],
                     'rows' => array_map(function ($row) {
                         return [
                             $row['client_name'],
@@ -671,6 +673,7 @@ class ERP_OMD_Reporting_Service
                             number_format((float) $row['margin'], 2, '.', ''),
                             number_format((float) $row['budget_usage'], 2, '.', ''),
                             $row['status'],
+                            (string) ($row['operational_close_month'] ?? ''),
                         ];
                     }, $rows),
                 ];

@@ -41,6 +41,7 @@ Aktualny punkt pracy: **Opcja B / pakiet P1 (WB-P1-02..WB-P1-04)** — domknięc
 - [x] Reporting: dodany `mode` (`LIVE`, `DO_ROZLICZENIA`, `ZAMKNIETY`).
 - [x] Reporting: domyślnie approved-only dla time entries.
 - [x] Reporting: obsługa `archiwum`.
+- [x] Reporting/eksport projektów: kolumna `operational_close_month` (Miesiąc zamk. oper.).
 - [x] Domain status: migracja i logika `inactive -> archiwum`.
 
 ### Migracje i wersjonowanie
