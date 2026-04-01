@@ -29,6 +29,8 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Project_Financial_Repository' => 'includes/repositories/class-project-financial-repository.php',
         'ERP_OMD_Time_Entry_Repository' => 'includes/repositories/class-time-entry-repository.php',
         'ERP_OMD_Attachment_Repository' => 'includes/repositories/class-attachment-repository.php',
+        'ERP_OMD_Period_Repository' => 'includes/repositories/class-period-repository.php',
+        'ERP_OMD_Adjustment_Audit_Repository' => 'includes/repositories/class-adjustment-audit-repository.php',
         'ERP_OMD_Monthly_Hours_Service' => 'includes/services/class-monthly-hours-service.php',
         'ERP_OMD_Employee_Service' => 'includes/services/class-employee-service.php',
         'ERP_OMD_Client_Project_Service' => 'includes/services/class-client-project-service.php',
@@ -38,6 +40,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Project_Financial_Service' => 'includes/services/class-project-financial-service.php',
         'ERP_OMD_Reporting_Service' => 'includes/services/class-reporting-service.php',
         'ERP_OMD_Alert_Service' => 'includes/services/class-alert-service.php',
+        'ERP_OMD_Period_Service' => 'includes/services/class-period-service.php',
     ];
 
     public static function register()
