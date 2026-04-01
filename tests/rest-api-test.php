@@ -322,6 +322,17 @@ if (! class_exists('ERP_OMD_Reporting_Service')) {
 if (! class_exists('ERP_OMD_Alert_Service')) {
     class ERP_OMD_Alert_Service { public function all_alerts() { return [['severity' => 'warning', 'code' => 'project_low_margin', 'entity_type' => 'project', 'entity_id' => 10, 'message' => 'Low margin']]; } }
 }
+if (! class_exists('ERP_OMD_Period_Service')) {
+    class ERP_OMD_Period_Service {
+        public function get_or_create($month) { return ['month' => $month, 'status' => 'LIVE']; }
+        public function checklist($month) { return ['month' => $month, 'items' => []]; }
+        public function transition($month, $status) { return ['month' => $month, 'status' => $status]; }
+        public function can_modify_date($date, $is_admin, $emergency = false) { return true; }
+    }
+}
+if (! class_exists('ERP_OMD_Adjustment_Audit_Repository')) {
+    class ERP_OMD_Adjustment_Audit_Repository { public function create($payload) { return 1; } }
+}
 
 require_once __DIR__ . '/../erp-omd/includes/class-rest-api.php';
 
@@ -331,6 +342,10 @@ final class RestApiTestRunner
 
     public function run(): void
     {
+        $restApiSource = file_get_contents(__DIR__ . '/../erp-omd/includes/class-rest-api.php');
+        $duplicateLegacyMethodCount = preg_match_all('/function\s+register_period_routes\s*\(/', (string) $restApiSource);
+        $this->assertSame(0, (int) $duplicateLegacyMethodCount, 'REST API source should not contain legacy duplicated register_period_routes declarations.');
+
         $api = new ERP_OMD_REST_API(
             new ERP_OMD_Role_Repository(),
             new ERP_OMD_Employee_Repository(),
@@ -353,7 +368,9 @@ final class RestApiTestRunner
             new ERP_OMD_Time_Entry_Service(),
             new ERP_OMD_Project_Financial_Service(),
             new ERP_OMD_Reporting_Service(),
-            new ERP_OMD_Alert_Service()
+            new ERP_OMD_Alert_Service(),
+            new ERP_OMD_Period_Service(),
+            new ERP_OMD_Adjustment_Audit_Repository()
         );
 
         $meta = $api->get_meta();

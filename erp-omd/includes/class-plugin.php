@@ -18,6 +18,8 @@ class ERP_OMD_Plugin
     private $project_financial_repository;
     private $time_entry_repository;
     private $attachment_repository;
+    private $period_repository;
+    private $adjustment_audit_repository;
     private $monthly_hours_service;
     private $employee_service;
     private $client_project_service;
@@ -27,6 +29,7 @@ class ERP_OMD_Plugin
     private $project_financial_service;
     private $reporting_service;
     private $alert_service;
+    private $period_service;
     private $admin;
     private $frontend;
     private $rest_api;
@@ -49,6 +52,8 @@ class ERP_OMD_Plugin
         $this->project_financial_repository = new ERP_OMD_Project_Financial_Repository();
         $this->time_entry_repository = new ERP_OMD_Time_Entry_Repository();
         $this->attachment_repository = new ERP_OMD_Attachment_Repository();
+        $this->period_repository = new ERP_OMD_Period_Repository();
+        $this->adjustment_audit_repository = new ERP_OMD_Adjustment_Audit_Repository();
         $this->monthly_hours_service = new ERP_OMD_Monthly_Hours_Service();
         $this->employee_service = new ERP_OMD_Employee_Service(
             $this->employee_repository,
@@ -98,6 +103,7 @@ class ERP_OMD_Plugin
             $this->project_financial_service,
             $this->time_entry_repository
         );
+        $this->period_service = new ERP_OMD_Period_Service($this->period_repository);
         $this->client_project_service = new ERP_OMD_Client_Project_Service(
             $this->client_repository,
             $this->employee_repository,
@@ -179,7 +185,9 @@ class ERP_OMD_Plugin
             $this->time_entry_service,
             $this->project_financial_service,
             $this->reporting_service,
-            $this->alert_service
+            $this->alert_service,
+            $this->period_service,
+            $this->adjustment_audit_repository
         );
     }
 
