@@ -104,8 +104,19 @@ class ERP_OMD_REST_API
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request['month']);
                 $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
-                $checklist = $this->period_service->build_readiness_checklist($this->readiness_signals_for_month($month));
-                return rest_ensure_response(['period' => $period, 'checklist' => $checklist]);
+                $signals = $this->readiness_signals_for_month($month);
+                $checklist = $this->period_service->build_readiness_checklist($signals);
+                return rest_ensure_response([
+                    'period' => $period,
+                    'checklist' => $checklist,
+                    'readiness_signals' => [
+                        'time_entries_finalized' => (bool) ($signals['time_entries_finalized'] ?? false),
+                        'project_costs_verified' => (bool) ($signals['project_costs_verified'] ?? false),
+                        'project_client_completeness' => (bool) ($signals['project_client_completeness'] ?? false),
+                        'critical_settlement_locks' => (bool) ($signals['critical_settlement_locks'] ?? false),
+                    ],
+                    'readiness_meta' => (array) ($signals['_meta'] ?? []),
+                ]);
             }, 'permission_callback' => [$this, 'can_access_reports']],
         ]);
         register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-\\d{2})/transition', [
@@ -927,6 +938,7 @@ class ERP_OMD_REST_API
     {
         $entries = (array) $this->time_entries->all();
         $relevant_project_ids = [];
+        $submitted_or_rejected_entries = 0;
         $time_entries_finalized = true;
         foreach ($entries as $entry) {
             if (substr((string) ($entry['entry_date'] ?? ''), 0, 7) !== $month) {
@@ -939,13 +951,16 @@ class ERP_OMD_REST_API
             }
 
             if (in_array((string) ($entry['status'] ?? ''), ['submitted', 'rejected'], true)) {
+                $submitted_or_rejected_entries++;
                 $time_entries_finalized = false;
-                break;
             }
         }
 
         $project_costs_verified = true;
         $project_client_completeness = true;
+        $invalid_cost_rows = 0;
+        $incomplete_relevant_projects = 0;
+        $relevant_projects = 0;
         $projects = (array) $this->projects->all();
         foreach ($projects as $project) {
             $project_id = (int) ($project['id'] ?? 0);
@@ -964,6 +979,7 @@ class ERP_OMD_REST_API
                 $relevant_project_ids[$project_id] = true;
 
                 if ((float) ($cost_row['amount'] ?? 0) <= 0 || trim((string) ($cost_row['description'] ?? '')) === '') {
+                    $invalid_cost_rows++;
                     $project_costs_verified = false;
                     break 2;
                 }
@@ -972,24 +988,27 @@ class ERP_OMD_REST_API
             if (! $this->is_project_relevant_for_month($project, $month, isset($relevant_project_ids[$project_id]) || $project_has_cost_for_month)) {
                 continue;
             }
+            $relevant_projects++;
 
             $project_status = (string) ($project['status'] ?? '');
             if ($project_status !== 'archiwum') {
                 if ((int) ($project['client_id'] ?? 0) <= 0 || trim((string) ($project['name'] ?? '')) === '') {
+                    $incomplete_relevant_projects++;
                     $project_client_completeness = false;
                 }
             }
         }
 
         $critical_settlement_locks = true;
+        $critical_alerts = 0;
         foreach ((array) $this->alert_service->all_alerts() as $alert) {
             if ((string) ($alert['severity'] ?? '') !== 'error') {
                 continue;
             }
 
             if (substr((string) ($alert['month'] ?? $month), 0, 7) === $month) {
+                $critical_alerts++;
                 $critical_settlement_locks = false;
-                break;
             }
         }
 
@@ -998,6 +1017,13 @@ class ERP_OMD_REST_API
             'project_costs_verified' => $project_costs_verified,
             'project_client_completeness' => $project_client_completeness,
             'critical_settlement_locks' => $critical_settlement_locks,
+            '_meta' => [
+                'submitted_or_rejected_entries' => $submitted_or_rejected_entries,
+                'invalid_cost_rows' => $invalid_cost_rows,
+                'incomplete_relevant_projects' => $incomplete_relevant_projects,
+                'critical_alerts' => $critical_alerts,
+                'relevant_projects' => $relevant_projects,
+            ],
         ];
     }
 

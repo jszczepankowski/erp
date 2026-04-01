@@ -531,6 +531,9 @@ final class RestApiTestRunner
         $this->assertSame(true, in_array('time_entries_finalized', $periodStatusPayload['checklist']['blockers'], true), 'Period status endpoint should include time_entries_finalized as a blocker.');
         $this->assertSame(false, $periodStatusPayload['checklist']['checks']['project_client_completeness'], 'Checklist should validate client completeness for projects explicitly closed operationally in selected month.');
         $this->assertSame(true, in_array('project_client_completeness', $periodStatusPayload['checklist']['blockers'], true), 'Checklist should flag project_client_completeness when operationally-closed project data is incomplete.');
+        $this->assertSame(false, $periodStatusPayload['readiness_signals']['time_entries_finalized'], 'Period status endpoint should expose normalized readiness_signals.');
+        $this->assertSame(1, $periodStatusPayload['readiness_meta']['submitted_or_rejected_entries'], 'Readiness meta should count blocking submitted/rejected entries in selected month.');
+        $this->assertSame(2, $periodStatusPayload['readiness_meta']['relevant_projects'], 'Readiness meta should count projects relevant for selected month closure.');
 
         $transitionCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})/transition', WP_REST_Server::CREATABLE);
         $transitionBlocked = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'DO_ROZLICZENIA']));
