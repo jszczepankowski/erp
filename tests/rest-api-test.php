@@ -347,7 +347,8 @@ final class RestApiTestRunner
         $this->assertSame(0, (int) $duplicateLegacyMethodCount, 'REST API source should not contain legacy duplicated register_period_routes declarations.');
         $duplicateManagementMethodCount = preg_match_all('/function\s+register_period_management_routes\s*\(/', (string) $restApiSource);
         $this->assertSame(0, (int) $duplicateManagementMethodCount, 'REST API source should not contain dedicated period management registration method declarations.');
-        $this->assertSame(1, (int) preg_match_all('/function\s+get_period_status\s*\(/', (string) $restApiSource), 'REST API source should declare get_period_status exactly once.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+get_period_status\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy get_period_status method.');
+        $this->assertSame(1, (int) preg_match_all('/function\s+period_status_endpoint\s*\(/', (string) $restApiSource), 'REST API source should declare period_status_endpoint exactly once.');
         $this->assertSame(1, (int) preg_match_all('/function\s+list_periods\s*\(/', (string) $restApiSource), 'REST API source should declare list_periods exactly once.');
         $this->assertSame(1, (int) preg_match_all('/function\s+transition_period_status\s*\(/', (string) $restApiSource), 'REST API source should declare transition_period_status exactly once.');
 
