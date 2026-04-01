@@ -226,6 +226,7 @@ class ERP_OMD_REST_API
                     'readiness_checklist' => $readiness_checklist,
                     'readiness_meta' => (array) ($readiness_signals['_meta'] ?? []),
                     'metric_definitions' => $this->dashboard_metric_definitions(),
+                    'drilldown_links' => $this->dashboard_drilldown_links($month),
                     'trend_3m' => $trend_3m,
                     'profitability_scope' => $scope,
                     'profitability_top' => $top,
@@ -253,6 +254,21 @@ class ERP_OMD_REST_API
             'settlement_queue.count' => __('Number of rows in invoice settlement queue for selected month.', 'erp-omd'),
             'adjustments.impact' => __('Sum of (new-old) amount/hours deltas from adjustment audit rows.', 'erp-omd'),
             'readiness_checklist.ready' => __('Boolean period-close readiness based on checklist validators.', 'erp-omd'),
+        ];
+    }
+
+    private function dashboard_drilldown_links($month)
+    {
+        $base = '/wp-admin/admin.php?page=erp-omd-reports';
+        if (function_exists('admin_url')) {
+            $base = admin_url('admin.php?page=erp-omd-reports');
+        }
+
+        return [
+            'settlement_queue' => $base . '&report_type=invoice&month=' . rawurlencode((string) $month),
+            'adjustments' => $base . '&report_type=time&month=' . rawurlencode((string) $month) . '&adjustments=1',
+            'profitability_projects' => $base . '&report_type=projects&month=' . rawurlencode((string) $month),
+            'profitability_clients' => $base . '&report_type=clients&month=' . rawurlencode((string) $month),
         ];
     }
 
