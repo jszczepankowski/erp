@@ -342,6 +342,24 @@ final class RestApiTestRunner
 
     public function run(): void
     {
+        $restApiSource = file_get_contents(__DIR__ . '/../erp-omd/includes/class-rest-api.php');
+        $duplicateLegacyMethodCount = preg_match_all('/function\s+register_period_routes\s*\(/', (string) $restApiSource);
+        $this->assertSame(0, (int) $duplicateLegacyMethodCount, 'REST API source should not contain legacy duplicated register_period_routes declarations.');
+        $duplicateManagementMethodCount = preg_match_all('/function\s+register_period_management_routes\s*\(/', (string) $restApiSource);
+        $this->assertSame(0, (int) $duplicateManagementMethodCount, 'REST API source should not contain dedicated period management registration method declarations.');
+
+        $periodRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/periods/", (string) $restApiSource);
+        $this->assertSame(3, (int) $periodRouteCount, 'REST API source should register all three period routes directly in register_routes.');
+        $adjustmentsRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/adjustments'/", (string) $restApiSource);
+        $this->assertSame(1, (int) $adjustmentsRouteCount, 'REST API source should register adjustments route directly in register_routes.');
+
+        preg_match_all('/function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/', (string) $restApiSource, $methodMatches);
+        $methodNames = $methodMatches[1] ?? [];
+        $duplicateMethodNames = array_keys(array_filter(array_count_values($methodNames), static function ($count) {
+            return (int) $count > 1;
+        }));
+        $this->assertSame([], $duplicateMethodNames, 'REST API source should not contain duplicate method declarations.');
+
         $api = new ERP_OMD_REST_API(
             new ERP_OMD_Role_Repository(),
             new ERP_OMD_Employee_Repository(),
