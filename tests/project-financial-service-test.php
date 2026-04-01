@@ -154,10 +154,10 @@ final class ProjectFinancialServiceTestRunner
         );
 
         $tmFinancials = $service->rebuild_for_project(10);
-        $this->assertSame(280.0, $tmFinancials['revenue'], 'Time & material revenue should use non-rejected time entry snapshots.');
-        $this->assertSame(250.0, $tmFinancials['cost'], 'Project cost should combine time cost and direct costs.');
-        $this->assertSame(30.0, $tmFinancials['profit'], 'Profit should be revenue minus total cost.');
-        $this->assertSame(25.0, $tmFinancials['budget_usage'], 'Budget usage should be cost divided by budget.');
+        $this->assertSame(200.0, $tmFinancials['revenue'], 'Time & material revenue should use approved time entry snapshots only.');
+        $this->assertSame(230.0, $tmFinancials['cost'], 'Project cost should combine approved time cost and direct costs.');
+        $this->assertSame(-30.0, $tmFinancials['profit'], 'Profit should be revenue minus total cost.');
+        $this->assertSame(23.0, $tmFinancials['budget_usage'], 'Budget usage should be cost divided by budget.');
 
         $fixedFinancials = $service->rebuild_for_project(11);
         $this->assertSame(5000.0, $fixedFinancials['revenue'], 'Fixed price revenue should always recognize the project budget.');
