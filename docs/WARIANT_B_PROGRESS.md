@@ -127,3 +127,33 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 - W nowym chacie podaj po prostu: „Robimy `WB-P2-03`”.
 - Dla większych kawałków: „Robimy `WB-P3-01` + `WB-P3-04`”.
 - Dla hotfixu: „Priorytetowo wracamy do `WB-P1-04`”.
+
+## 8) Zwiększanie zakresu — ocena ryzyka (praktycznie)
+
+### Opcja A: małe kroki (niższe ryzyko)
+- 1–2 ID na iterację (np. `WB-P1-02` + `WB-P1-04`).
+- Plusy: łatwiejszy rollback, szybsza diagnoza regresji.
+- Minus: więcej iteracji / więcej merge.
+
+### Opcja B: średni pakiet (umiarkowane ryzyko) — REKOMENDOWANE
+- 3–4 spójne ID na iterację, ale tylko z jednego obszaru.
+- Przykład: cały `P1` (WB-P1-01..04) albo cały `P2` (WB-P2-01..04).
+- Warunek: testy + feature flag + checklista release.
+
+### Opcja C: duży pakiet cross-obszar (wyższe ryzyko)
+- Łączenie P1 + P2 + P3 w jednym strzale.
+- Ryzyka:
+  - większe prawdopodobieństwo regresji,
+  - trudniejszy root-cause po wdrożeniu,
+  - dłuższy czas stabilizacji.
+- Wymagane minimum:
+  - canary rollout,
+  - metryki wydajności + error-rate,
+  - gotowy rollback przez flagi.
+
+### Nasza rekomendacja na teraz
+- Trzymać **Opcję B**:
+  1. domknąć `P1`,
+  2. potem pełny `P2`,
+  3. potem `P3`,
+  4. na końcu `P4/P5`.
