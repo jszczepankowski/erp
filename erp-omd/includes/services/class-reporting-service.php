@@ -476,6 +476,29 @@ class ERP_OMD_Reporting_Service
         return $base . '&' . implode('&', $query);
     }
 
+    private function build_reports_link(array $params)
+    {
+        $base = '/wp-admin/admin.php?page=erp-omd-reports';
+        if (function_exists('admin_url')) {
+            $base = admin_url('admin.php?page=erp-omd-reports');
+        }
+
+        $query = [];
+        foreach ($params as $key => $value) {
+            $value = (string) $value;
+            if ($value === '') {
+                continue;
+            }
+            $query[] = rawurlencode((string) $key) . '=' . rawurlencode($value);
+        }
+
+        if ($query === []) {
+            return $base;
+        }
+
+        return $base . '&' . implode('&', $query);
+    }
+
     public function build_invoice_report(array $filters)
     {
         $filters = $this->sanitize_filters($filters);
