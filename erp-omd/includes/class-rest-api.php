@@ -926,11 +926,18 @@ class ERP_OMD_REST_API
     private function readiness_signals_for_month($month)
     {
         $entries = (array) $this->time_entries->all();
+        $relevant_project_ids = [];
         $time_entries_finalized = true;
         foreach ($entries as $entry) {
             if (substr((string) ($entry['entry_date'] ?? ''), 0, 7) !== $month) {
                 continue;
             }
+
+            $project_id = (int) ($entry['project_id'] ?? 0);
+            if ($project_id > 0) {
+                $relevant_project_ids[$project_id] = true;
+            }
+
             if (in_array((string) ($entry['status'] ?? ''), ['submitted', 'rejected'], true)) {
                 $time_entries_finalized = false;
                 break;
@@ -946,22 +953,30 @@ class ERP_OMD_REST_API
                 continue;
             }
 
-            $project_status = (string) ($project['status'] ?? '');
-            if ($project_status !== 'archiwum') {
-                if ((int) ($project['client_id'] ?? 0) <= 0 || trim((string) ($project['name'] ?? '')) === '') {
-                    $project_client_completeness = false;
-                }
-            }
-
             $cost_rows = (array) $this->project_costs->for_project($project_id);
+            $project_has_cost_for_month = false;
             foreach ($cost_rows as $cost_row) {
                 if (substr((string) ($cost_row['cost_date'] ?? ''), 0, 7) !== $month) {
                     continue;
                 }
 
+                $project_has_cost_for_month = true;
+                $relevant_project_ids[$project_id] = true;
+
                 if ((float) ($cost_row['amount'] ?? 0) <= 0 || trim((string) ($cost_row['description'] ?? '')) === '') {
                     $project_costs_verified = false;
                     break 2;
+                }
+            }
+
+            if (! $this->is_project_relevant_for_month($project, $month, isset($relevant_project_ids[$project_id]) || $project_has_cost_for_month)) {
+                continue;
+            }
+
+            $project_status = (string) ($project['status'] ?? '');
+            if ($project_status !== 'archiwum') {
+                if ((int) ($project['client_id'] ?? 0) <= 0 || trim((string) ($project['name'] ?? '')) === '') {
+                    $project_client_completeness = false;
                 }
             }
         }
@@ -984,6 +999,42 @@ class ERP_OMD_REST_API
             'project_client_completeness' => $project_client_completeness,
             'critical_settlement_locks' => $critical_settlement_locks,
         ];
+    }
+
+    private function is_project_relevant_for_month(array $project, $month, $has_activity_for_month)
+    {
+        if ($has_activity_for_month) {
+            return true;
+        }
+
+        if ((string) ($project['operational_close_month'] ?? '') === $month) {
+            return true;
+        }
+
+        return $this->project_overlaps_month($project, $month);
+    }
+
+    private function project_overlaps_month(array $project, $month)
+    {
+        $start_of_month = $month . '-01';
+        $end_of_month = $month . '-31';
+
+        $project_start = (string) ($project['start_date'] ?? '');
+        $project_end = (string) ($project['end_date'] ?? '');
+
+        if ($project_start === '' && $project_end === '') {
+            return false;
+        }
+
+        if ($project_start !== '' && $project_start > $end_of_month) {
+            return false;
+        }
+
+        if ($project_end !== '' && $project_end < $start_of_month) {
+            return false;
+        }
+
+        return true;
     }
 
     private function sanitize_adjustment_reason(WP_REST_Request $request)
