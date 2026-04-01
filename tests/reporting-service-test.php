@@ -125,8 +125,8 @@ final class ReportingServiceTestRunner
     {
         $service = new ERP_OMD_Reporting_Service(
             new ERP_OMD_Project_Repository([
-                ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000],
-                ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000],
+                ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000, 'operational_close_month' => '2026-02'],
+                ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000, 'operational_close_month' => '2026-03'],
             ]),
             new ERP_OMD_Client_Repository([
                 ['id' => 1, 'name' => 'ACME'],
@@ -195,6 +195,8 @@ final class ReportingServiceTestRunner
         $omdSettlement = $service->build_omd_settlement_report($filters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
         $this->assertSame('2026-03', $omdSettlement[11]['month'], 'OMD settlement report should end with selected month.');
+        $this->assertSame(0.0, $omdSettlement[10]['active_project_budgets'], 'OMD settlement should not recognize project budget before operational_close_month.');
+        $this->assertSame(5000.0, $omdSettlement[11]['active_project_budgets'], 'OMD settlement should recognize project budget in operational_close_month.');
         $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
 
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
