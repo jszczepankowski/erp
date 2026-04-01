@@ -5,6 +5,7 @@ Data snapshotu: 2026-04-01
 Cel: szybkie wznowienie prac w kolejnych chatowych sesjach bez utraty kontekstu.
 
 Aktualny punkt pracy: **Opcja B / pakiet P2 (WB-P2-01..WB-P2-04)** — backend contract dashboardu v1 domknięty, kolejny etap to frontend/UI.
+Następny krok wg planu: **P3-01** (raport klient simple/detail + drilldown).
 
 ## 1) Co już zrobione
 
@@ -40,7 +41,9 @@ Aktualny punkt pracy: **Opcja B / pakiet P2 (WB-P2-01..WB-P2-04)** — backend c
   - `readiness_checklist`, `readiness_meta`, `status_actions`,
   - `metric_definitions` (tooltip/legend keys),
   - `drilldown_links`,
-  - `profitability_by_scope` (project/client top+bottom bez dodatkowego requestu).
+  - `profitability_by_scope` (project/client top+bottom bez dodatkowego requestu),
+  - `adjustments.items` + entity-aware drilldown,
+  - limity payloadu (`adjustments_limit`, `queue_limit`, `profitability_limit`) i `applied_limits`.
 
 ### Reporting i statusy domenowe
 - [x] Reporting: dodany `mode` (`LIVE`, `DO_ROZLICZENIA`, `ZAMKNIETY`).
