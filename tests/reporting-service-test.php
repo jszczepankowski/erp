@@ -180,6 +180,14 @@ final class ReportingServiceTestRunner
         $settlementModeReport = $service->build_project_report($service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'mode' => 'DO_ROZLICZENIA']));
         $this->assertSame(1, count($settlementModeReport), 'DO ROZLICZENIA mode should keep invoice-ready/closed projects only.');
 
+        $projectDetail = $service->build_project_report($service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'detail' => 'detail', 'project_id' => 10]));
+        $this->assertSame(1, count($projectDetail), 'Project detail report should respect project filter.');
+        $this->assertSame(true, isset($projectDetail[0]['detail']['time_entries']), 'Project detail report should include time entry drilldown rows.');
+        $this->assertSame(1, count($projectDetail[0]['detail']['time_entries']), 'Project detail report should include approved entries for selected month by default.');
+        $this->assertSame(1, count($projectDetail[0]['detail']['direct_cost_items']), 'Project detail report should include direct cost rows for selected month.');
+        $this->assertSame(200.0, $projectDetail[0]['detail']['billing_mix']['hourly_component'], 'Project detail report should expose billing mix hourly component.');
+        $this->assertSame(19.0, $projectDetail[0]['detail']['billing_mix']['budget_usage'], 'Project detail report should expose billing mix budget usage.');
+
         $clientReport = $service->build_client_report($filters);
         $this->assertSame(2, count($clientReport), 'Client report should aggregate per client.');
         $this->assertSame('ACME', $clientReport[0]['client_name'], 'Client report should keep client name.');
