@@ -555,10 +555,10 @@ class ERP_OMD_REST_API
     public function update_project_rate(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->project_rates->find($id); if (! $existing) { return new WP_Error('erp_omd_project_rate_not_found', __('Project rate not found.', 'erp-omd'), ['status' => 404]); } $role_id = (int) ($request->get_param('role_id') ?: $existing['role_id']); $rate = (float) ($request->get_param('rate') ?: $existing['rate']); if (! $this->roles->find($role_id) || $rate < 0) { return new WP_Error('erp_omd_project_rate_invalid', __('Project rate payload is invalid.', 'erp-omd'), ['status' => 422]); } $upserted_id = $this->project_rates->upsert((int) $existing['project_id'], $role_id, $rate); if ($upserted_id !== $id) { $this->project_rates->delete($id); } return rest_ensure_response($this->project_rates->find($upserted_id)); }
     public function delete_project_rate(WP_REST_Request $request) { $this->project_rates->delete((int) $request['id']); return new WP_REST_Response(null, 204); }
     public function list_project_costs(WP_REST_Request $request) { return rest_ensure_response($this->project_costs->for_project((int) $request['id'])); }
-    public function create_project_cost(WP_REST_Request $request) { $project_id = (int) $request['id']; $payload = $this->sanitize_project_cost_payload($request, $project_id); $month = $this->month_from_date($payload['cost_date']); if ($this->is_month_locked_for_current_user($month)) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); } $reason = $this->sanitize_adjustment_reason($request); if ($this->is_month_locked_for_admin($month) && $reason === '') { return new WP_Error('erp_omd_adjustment_reason_required', __('Adjustment reason is required for locked month admin corrections.', 'erp-omd'), ['status' => 422]); } $errors = $this->project_financial_service->validate_project_cost($payload); if ($errors) { return new WP_Error('erp_omd_project_cost_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->project_costs->create($payload); $this->project_financial_service->rebuild_for_project($project_id); $created = $this->project_costs->find($id); if ($reason !== '') { $this->log_adjustment_audit($month, 'project_cost', $id, null, $created, $reason); } return new WP_REST_Response($created, 201); }
+    public function create_project_cost(WP_REST_Request $request) { $project_id = (int) $request['id']; $payload = $this->sanitize_project_cost_payload($request, $project_id); $month = erp_omd_month_from_date($payload['cost_date']); if ($this->is_month_locked_for_current_user($month)) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); } $reason = $this->sanitize_adjustment_reason($request); if ($this->is_month_locked_for_admin($month) && $reason === '') { return new WP_Error('erp_omd_adjustment_reason_required', __('Adjustment reason is required for locked month admin corrections.', 'erp-omd'), ['status' => 422]); } $errors = $this->project_financial_service->validate_project_cost($payload); if ($errors) { return new WP_Error('erp_omd_project_cost_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->project_costs->create($payload); $this->project_financial_service->rebuild_for_project($project_id); $created = $this->project_costs->find($id); if ($reason !== '') { $this->log_adjustment_audit($month, 'project_cost', $id, null, $created, $reason); } return new WP_REST_Response($created, 201); }
     public function get_project_cost(WP_REST_Request $request) { return $this->find_or_error($this->project_costs->find((int) $request['id']), 'erp_omd_project_cost_not_found', __('Project cost not found.', 'erp-omd')); }
-    public function update_project_cost(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->project_costs->find($id); if (! $existing) { return new WP_Error('erp_omd_project_cost_not_found', __('Project cost not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_project_cost_payload($request, (int) $existing['project_id']); $month = $this->month_from_date($payload['cost_date']); if ($this->is_month_locked_for_current_user($month)) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); } $reason = $this->sanitize_adjustment_reason($request); if ($this->is_month_locked_for_admin($month) && $reason === '') { return new WP_Error('erp_omd_adjustment_reason_required', __('Adjustment reason is required for locked month admin corrections.', 'erp-omd'), ['status' => 422]); } $errors = $this->project_financial_service->validate_project_cost($payload); if ($errors) { return new WP_Error('erp_omd_project_cost_invalid', implode(' ', $errors), ['status' => 422]); } $this->project_costs->update($id, $payload); $this->project_financial_service->rebuild_for_project((int) $existing['project_id']); $updated = $this->project_costs->find($id); if ($reason !== '') { $this->log_adjustment_audit($month, 'project_cost', $id, $existing, $updated, $reason); } return rest_ensure_response($updated); }
-    public function delete_project_cost(WP_REST_Request $request) { $existing = $this->project_costs->find((int) $request['id']); if ($existing) { $month = $this->month_from_date($existing['cost_date'] ?? ''); if ($this->is_month_locked_for_current_user($month)) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); } $reason = $this->sanitize_adjustment_reason($request); if ($this->is_month_locked_for_admin($month) && $reason === '') { return new WP_Error('erp_omd_adjustment_reason_required', __('Adjustment reason is required for locked month admin corrections.', 'erp-omd'), ['status' => 422]); } $this->project_costs->delete((int) $request['id']); $this->project_financial_service->rebuild_for_project((int) $existing['project_id']); if ($reason !== '') { $this->log_adjustment_audit($month, 'project_cost', (int) $request['id'], $existing, null, $reason); } } return new WP_REST_Response(null, 204); }
+    public function update_project_cost(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->project_costs->find($id); if (! $existing) { return new WP_Error('erp_omd_project_cost_not_found', __('Project cost not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_project_cost_payload($request, (int) $existing['project_id']); $month = erp_omd_month_from_date($payload['cost_date']); if ($this->is_month_locked_for_current_user($month)) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); } $reason = $this->sanitize_adjustment_reason($request); if ($this->is_month_locked_for_admin($month) && $reason === '') { return new WP_Error('erp_omd_adjustment_reason_required', __('Adjustment reason is required for locked month admin corrections.', 'erp-omd'), ['status' => 422]); } $errors = $this->project_financial_service->validate_project_cost($payload); if ($errors) { return new WP_Error('erp_omd_project_cost_invalid', implode(' ', $errors), ['status' => 422]); } $this->project_costs->update($id, $payload); $this->project_financial_service->rebuild_for_project((int) $existing['project_id']); $updated = $this->project_costs->find($id); if ($reason !== '') { $this->log_adjustment_audit($month, 'project_cost', $id, $existing, $updated, $reason); } return rest_ensure_response($updated); }
+    public function delete_project_cost(WP_REST_Request $request) { $existing = $this->project_costs->find((int) $request['id']); if ($existing) { $month = erp_omd_month_from_date($existing['cost_date'] ?? ''); if ($this->is_month_locked_for_current_user($month)) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); } $reason = $this->sanitize_adjustment_reason($request); if ($this->is_month_locked_for_admin($month) && $reason === '') { return new WP_Error('erp_omd_adjustment_reason_required', __('Adjustment reason is required for locked month admin corrections.', 'erp-omd'), ['status' => 422]); } $this->project_costs->delete((int) $request['id']); $this->project_financial_service->rebuild_for_project((int) $existing['project_id']); if ($reason !== '') { $this->log_adjustment_audit($month, 'project_cost', (int) $request['id'], $existing, null, $reason); } } return new WP_REST_Response(null, 204); }
     public function get_project_finance(WP_REST_Request $request) { $project_id = (int) $request['id']; if (! $this->projects->find($project_id)) { return new WP_Error('erp_omd_project_not_found', __('Project not found.', 'erp-omd'), ['status' => 404]); } return rest_ensure_response($this->project_financial_service->rebuild_for_project($project_id)); }
 
     public function list_time_entries(WP_REST_Request $request)
@@ -592,7 +592,7 @@ class ERP_OMD_REST_API
     public function create_time_entry(WP_REST_Request $request)
     {
         $payload = $this->sanitize_time_entry_payload($request);
-        $month = $this->month_from_date($payload['entry_date']);
+        $month = erp_omd_month_from_date($payload['entry_date']);
         if ($this->is_month_locked_for_current_user($month)) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); }
         $reason = $this->sanitize_adjustment_reason($request);
         if ($this->is_month_locked_for_admin($month) && $reason === '') { return new WP_Error('erp_omd_adjustment_reason_required', __('Adjustment reason is required for locked month admin corrections.', 'erp-omd'), ['status' => 422]); }
@@ -618,7 +618,7 @@ class ERP_OMD_REST_API
         $existing = $this->time_entries->find($id);
         if (! $existing) { return new WP_Error('erp_omd_time_not_found', __('Time entry not found.', 'erp-omd'), ['status' => 404]); }
         if (! current_user_can('administrator')) { return new WP_Error('erp_omd_time_forbidden', __('Only administrator can edit time entries.', 'erp-omd'), ['status' => 403]); }
-        $locked_month = $this->month_from_date($existing['entry_date'] ?? '');
+        $locked_month = erp_omd_month_from_date($existing['entry_date'] ?? '');
         if ($this->is_month_locked_for_current_user($locked_month)) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); }
         $reason = $this->sanitize_adjustment_reason($request);
         if ($this->is_month_locked_for_admin($locked_month) && $reason === '') { return new WP_Error('erp_omd_adjustment_reason_required', __('Adjustment reason is required for locked month admin corrections.', 'erp-omd'), ['status' => 422]); }
@@ -644,12 +644,12 @@ class ERP_OMD_REST_API
         if (! current_user_can('administrator')) { return new WP_Error('erp_omd_time_forbidden', __('Only administrator can delete time entries.', 'erp-omd'), ['status' => 403]); }
         $existing = $this->time_entries->find((int) $request['id']);
         $reason = $this->sanitize_adjustment_reason($request);
-        if ($existing && $this->is_month_locked_for_current_user($this->month_from_date($existing['entry_date'] ?? ''))) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); }
-        if ($existing && $this->is_month_locked_for_admin($this->month_from_date($existing['entry_date'] ?? '')) && $reason === '') { return new WP_Error('erp_omd_adjustment_reason_required', __('Adjustment reason is required for locked month admin corrections.', 'erp-omd'), ['status' => 422]); }
+        if ($existing && $this->is_month_locked_for_current_user(erp_omd_month_from_date($existing['entry_date'] ?? ''))) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); }
+        if ($existing && $this->is_month_locked_for_admin(erp_omd_month_from_date($existing['entry_date'] ?? '')) && $reason === '') { return new WP_Error('erp_omd_adjustment_reason_required', __('Adjustment reason is required for locked month admin corrections.', 'erp-omd'), ['status' => 422]); }
         $this->time_entries->delete((int) $request['id']);
         if ($existing) {
             $this->project_financial_service->rebuild_for_project((int) $existing['project_id']);
-            if ($reason !== '') { $this->log_adjustment_audit($this->month_from_date($existing['entry_date'] ?? ''), 'time_entry', (int) $request['id'], $existing, null, $reason); }
+            if ($reason !== '') { $this->log_adjustment_audit(erp_omd_month_from_date($existing['entry_date'] ?? ''), 'time_entry', (int) $request['id'], $existing, null, $reason); }
         }
         return new WP_REST_Response(null, 204);
     }
@@ -849,574 +849,6 @@ class ERP_OMD_REST_API
         return $value !== '' && $value !== null;
     }
 
-    private function month_from_date($date_value)
-    {
-        $date = sanitize_text_field((string) $date_value);
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
-            return gmdate('Y-m');
-        }
-
-        return substr($date, 0, 7);
-    }
-
-    private function is_month_locked_for_current_user($month)
-    {
-        if (current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function is_month_locked_for_admin($month)
-    {
-        if (! current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function readiness_signals_for_month($month)
-    {
-        $entries = (array) $this->time_entries->all();
-        $time_entries_finalized = true;
-        foreach ($entries as $entry) {
-            if (substr((string) ($entry['entry_date'] ?? ''), 0, 7) !== $month) {
-                continue;
-            }
-            if (in_array((string) ($entry['status'] ?? ''), ['submitted', 'rejected'], true)) {
-                $time_entries_finalized = false;
-                break;
-            }
-        }
-
-        return [
-            'time_entries_finalized' => $time_entries_finalized,
-            'project_costs_verified' => true,
-            'project_client_completeness' => true,
-            'critical_settlement_locks' => true,
-        ];
-    }
-
-    private function sanitize_adjustment_reason(WP_REST_Request $request)
-    {
-        return trim(sanitize_textarea_field((string) $request->get_param('reason')));
-    }
-
-    private function resolve_adjustment_type($month)
-    {
-        $period = $this->period_service->ensure_month_exists($month);
-        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
-        if ($status !== ERP_OMD_Period_Service::STATUS_ZAMKNIETY) {
-            return 'STANDARD';
-        }
-
-        $window_until = (string) ($period['correction_window_until'] ?? '');
-        if ($window_until === '') {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-
-        try {
-            $now = new DateTimeImmutable(current_time('mysql'));
-            $deadline = new DateTimeImmutable($window_until);
-            return $this->period_service->is_emergency_adjustment_required($now, $deadline) ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD';
-        } catch (Exception $exception) {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-    }
-
-    private function log_adjustment_audit($month, $entity_type, $entity_id, $old_value, $new_value, $reason)
-    {
-        $this->adjustment_audit->create([
-            'month' => $month,
-            'entity_type' => $entity_type,
-            'entity_id' => (int) $entity_id,
-            'field_name' => 'payload',
-            'old_value' => $old_value !== null ? wp_json_encode($old_value) : null,
-            'new_value' => $new_value !== null ? wp_json_encode($new_value) : null,
-            'reason' => $reason,
-            'adjustment_type' => $this->resolve_adjustment_type($month),
-            'changed_by' => (int) get_current_user_id(),
-            'changed_at' => current_time('mysql'),
-        ]);
-    }
-
-    private function month_from_date($date_value)
-    {
-        $date = sanitize_text_field((string) $date_value);
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
-            return gmdate('Y-m');
-        }
-
-        return substr($date, 0, 7);
-    }
-
-    private function is_month_locked_for_current_user($month)
-    {
-        if (current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function is_month_locked_for_admin($month)
-    {
-        if (! current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function readiness_signals_for_month($month)
-    {
-        $entries = (array) $this->time_entries->all();
-        $time_entries_finalized = true;
-        foreach ($entries as $entry) {
-            if (substr((string) ($entry['entry_date'] ?? ''), 0, 7) !== $month) {
-                continue;
-            }
-            if (in_array((string) ($entry['status'] ?? ''), ['submitted', 'rejected'], true)) {
-                $time_entries_finalized = false;
-                break;
-            }
-        }
-
-        return [
-            'time_entries_finalized' => $time_entries_finalized,
-            'project_costs_verified' => true,
-            'project_client_completeness' => true,
-            'critical_settlement_locks' => true,
-        ];
-    }
-
-    private function sanitize_adjustment_reason(WP_REST_Request $request)
-    {
-        return trim(sanitize_textarea_field((string) $request->get_param('reason')));
-    }
-
-    private function resolve_adjustment_type($month)
-    {
-        $period = $this->period_service->ensure_month_exists($month);
-        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
-        if ($status !== ERP_OMD_Period_Service::STATUS_ZAMKNIETY) {
-            return 'STANDARD';
-        }
-
-        $window_until = (string) ($period['correction_window_until'] ?? '');
-        if ($window_until === '') {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-
-        try {
-            $now = new DateTimeImmutable(current_time('mysql'));
-            $deadline = new DateTimeImmutable($window_until);
-            return $this->period_service->is_emergency_adjustment_required($now, $deadline) ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD';
-        } catch (Exception $exception) {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-    }
-
-    private function log_adjustment_audit($month, $entity_type, $entity_id, $old_value, $new_value, $reason)
-    {
-        $this->adjustment_audit->create([
-            'month' => $month,
-            'entity_type' => $entity_type,
-            'entity_id' => (int) $entity_id,
-            'field_name' => 'payload',
-            'old_value' => $old_value !== null ? wp_json_encode($old_value) : null,
-            'new_value' => $new_value !== null ? wp_json_encode($new_value) : null,
-            'reason' => $reason,
-            'adjustment_type' => $this->resolve_adjustment_type($month),
-            'changed_by' => (int) get_current_user_id(),
-            'changed_at' => current_time('mysql'),
-        ]);
-    }
-
-    private function month_from_date($date_value)
-    {
-        $date = sanitize_text_field((string) $date_value);
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
-            return gmdate('Y-m');
-        }
-
-        return substr($date, 0, 7);
-    }
-
-    private function is_month_locked_for_current_user($month)
-    {
-        if (current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function is_month_locked_for_admin($month)
-    {
-        if (! current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function readiness_signals_for_month($month)
-    {
-        $entries = (array) $this->time_entries->all();
-        $time_entries_finalized = true;
-        foreach ($entries as $entry) {
-            if (substr((string) ($entry['entry_date'] ?? ''), 0, 7) !== $month) {
-                continue;
-            }
-            if (in_array((string) ($entry['status'] ?? ''), ['submitted', 'rejected'], true)) {
-                $time_entries_finalized = false;
-                break;
-            }
-        }
-
-        return [
-            'time_entries_finalized' => $time_entries_finalized,
-            'project_costs_verified' => true,
-            'project_client_completeness' => true,
-            'critical_settlement_locks' => true,
-        ];
-    }
-
-    private function sanitize_adjustment_reason(WP_REST_Request $request)
-    {
-        return trim(sanitize_textarea_field((string) $request->get_param('reason')));
-    }
-
-    private function resolve_adjustment_type($month)
-    {
-        $period = $this->period_service->ensure_month_exists($month);
-        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
-        if ($status !== ERP_OMD_Period_Service::STATUS_ZAMKNIETY) {
-            return 'STANDARD';
-        }
-
-        $window_until = (string) ($period['correction_window_until'] ?? '');
-        if ($window_until === '') {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-
-        try {
-            $now = new DateTimeImmutable(current_time('mysql'));
-            $deadline = new DateTimeImmutable($window_until);
-            return $this->period_service->is_emergency_adjustment_required($now, $deadline) ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD';
-        } catch (Exception $exception) {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-    }
-
-    private function log_adjustment_audit($month, $entity_type, $entity_id, $old_value, $new_value, $reason)
-    {
-        $this->adjustment_audit->create([
-            'month' => $month,
-            'entity_type' => $entity_type,
-            'entity_id' => (int) $entity_id,
-            'field_name' => 'payload',
-            'old_value' => $old_value !== null ? wp_json_encode($old_value) : null,
-            'new_value' => $new_value !== null ? wp_json_encode($new_value) : null,
-            'reason' => $reason,
-            'adjustment_type' => $this->resolve_adjustment_type($month),
-            'changed_by' => (int) get_current_user_id(),
-            'changed_at' => current_time('mysql'),
-        ]);
-    }
-
-    private function month_from_date($date_value)
-    {
-        $date = sanitize_text_field((string) $date_value);
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
-            return gmdate('Y-m');
-        }
-
-        return substr($date, 0, 7);
-    }
-
-    private function is_month_locked_for_current_user($month)
-    {
-        if (current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function is_month_locked_for_admin($month)
-    {
-        if (! current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function readiness_signals_for_month($month)
-    {
-        $entries = (array) $this->time_entries->all();
-        $time_entries_finalized = true;
-        foreach ($entries as $entry) {
-            if (substr((string) ($entry['entry_date'] ?? ''), 0, 7) !== $month) {
-                continue;
-            }
-            if (in_array((string) ($entry['status'] ?? ''), ['submitted', 'rejected'], true)) {
-                $time_entries_finalized = false;
-                break;
-            }
-        }
-
-        return [
-            'time_entries_finalized' => $time_entries_finalized,
-            'project_costs_verified' => true,
-            'project_client_completeness' => true,
-            'critical_settlement_locks' => true,
-        ];
-    }
-
-    private function sanitize_adjustment_reason(WP_REST_Request $request)
-    {
-        return trim(sanitize_textarea_field((string) $request->get_param('reason')));
-    }
-
-    private function resolve_adjustment_type($month)
-    {
-        $period = $this->period_service->ensure_month_exists($month);
-        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
-        if ($status !== ERP_OMD_Period_Service::STATUS_ZAMKNIETY) {
-            return 'STANDARD';
-        }
-
-        $window_until = (string) ($period['correction_window_until'] ?? '');
-        if ($window_until === '') {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-
-        try {
-            $now = new DateTimeImmutable(current_time('mysql'));
-            $deadline = new DateTimeImmutable($window_until);
-            return $this->period_service->is_emergency_adjustment_required($now, $deadline) ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD';
-        } catch (Exception $exception) {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-    }
-
-    private function log_adjustment_audit($month, $entity_type, $entity_id, $old_value, $new_value, $reason)
-    {
-        $this->adjustment_audit->create([
-            'month' => $month,
-            'entity_type' => $entity_type,
-            'entity_id' => (int) $entity_id,
-            'field_name' => 'payload',
-            'old_value' => $old_value !== null ? wp_json_encode($old_value) : null,
-            'new_value' => $new_value !== null ? wp_json_encode($new_value) : null,
-            'reason' => $reason,
-            'adjustment_type' => $this->resolve_adjustment_type($month),
-            'changed_by' => (int) get_current_user_id(),
-            'changed_at' => current_time('mysql'),
-        ]);
-    }
-
-    private function month_from_date($date_value)
-    {
-        $date = sanitize_text_field((string) $date_value);
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
-            return gmdate('Y-m');
-        }
-
-        return substr($date, 0, 7);
-    }
-
-    private function is_month_locked_for_current_user($month)
-    {
-        if (current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function is_month_locked_for_admin($month)
-    {
-        if (! current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function readiness_signals_for_month($month)
-    {
-        $entries = (array) $this->time_entries->all();
-        $time_entries_finalized = true;
-        foreach ($entries as $entry) {
-            if (substr((string) ($entry['entry_date'] ?? ''), 0, 7) !== $month) {
-                continue;
-            }
-            if (in_array((string) ($entry['status'] ?? ''), ['submitted', 'rejected'], true)) {
-                $time_entries_finalized = false;
-                break;
-            }
-        }
-
-        return [
-            'time_entries_finalized' => $time_entries_finalized,
-            'project_costs_verified' => true,
-            'project_client_completeness' => true,
-            'critical_settlement_locks' => true,
-        ];
-    }
-
-    private function sanitize_adjustment_reason(WP_REST_Request $request)
-    {
-        return trim(sanitize_textarea_field((string) $request->get_param('reason')));
-    }
-
-    private function resolve_adjustment_type($month)
-    {
-        $period = $this->period_service->ensure_month_exists($month);
-        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
-        if ($status !== ERP_OMD_Period_Service::STATUS_ZAMKNIETY) {
-            return 'STANDARD';
-        }
-
-        $window_until = (string) ($period['correction_window_until'] ?? '');
-        if ($window_until === '') {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-
-        try {
-            $now = new DateTimeImmutable(current_time('mysql'));
-            $deadline = new DateTimeImmutable($window_until);
-            return $this->period_service->is_emergency_adjustment_required($now, $deadline) ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD';
-        } catch (Exception $exception) {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-    }
-
-    private function log_adjustment_audit($month, $entity_type, $entity_id, $old_value, $new_value, $reason)
-    {
-        $this->adjustment_audit->create([
-            'month' => $month,
-            'entity_type' => $entity_type,
-            'entity_id' => (int) $entity_id,
-            'field_name' => 'payload',
-            'old_value' => $old_value !== null ? wp_json_encode($old_value) : null,
-            'new_value' => $new_value !== null ? wp_json_encode($new_value) : null,
-            'reason' => $reason,
-            'adjustment_type' => $this->resolve_adjustment_type($month),
-            'changed_by' => (int) get_current_user_id(),
-            'changed_at' => current_time('mysql'),
-        ]);
-    }
-
-    private function month_from_date($date_value)
-    {
-        $date = sanitize_text_field((string) $date_value);
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
-            return gmdate('Y-m');
-        }
-
-        return substr($date, 0, 7);
-    }
-
-    private function is_month_locked_for_current_user($month)
-    {
-        if (current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function is_month_locked_for_admin($month)
-    {
-        if (! current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
-    }
-
-    private function readiness_signals_for_month($month)
-    {
-        $entries = (array) $this->time_entries->all();
-        $time_entries_finalized = true;
-        foreach ($entries as $entry) {
-            if (substr((string) ($entry['entry_date'] ?? ''), 0, 7) !== $month) {
-                continue;
-            }
-            if (in_array((string) ($entry['status'] ?? ''), ['submitted', 'rejected'], true)) {
-                $time_entries_finalized = false;
-                break;
-            }
-        }
-
-        return [
-            'time_entries_finalized' => $time_entries_finalized,
-            'project_costs_verified' => true,
-            'project_client_completeness' => true,
-            'critical_settlement_locks' => true,
-        ];
-    }
-
-    private function sanitize_adjustment_reason(WP_REST_Request $request)
-    {
-        return trim(sanitize_textarea_field((string) $request->get_param('reason')));
-    }
-
-    private function resolve_adjustment_type($month)
-    {
-        $period = $this->period_service->ensure_month_exists($month);
-        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
-        if ($status !== ERP_OMD_Period_Service::STATUS_ZAMKNIETY) {
-            return 'STANDARD';
-        }
-
-        $window_until = (string) ($period['correction_window_until'] ?? '');
-        if ($window_until === '') {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-
-        try {
-            $now = new DateTimeImmutable(current_time('mysql'));
-            $deadline = new DateTimeImmutable($window_until);
-            return $this->period_service->is_emergency_adjustment_required($now, $deadline) ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD';
-        } catch (Exception $exception) {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-    }
-
-    private function log_adjustment_audit($month, $entity_type, $entity_id, $old_value, $new_value, $reason)
-    {
-        $this->adjustment_audit->create([
-            'month' => $month,
-            'entity_type' => $entity_type,
-            'entity_id' => (int) $entity_id,
-            'field_name' => 'payload',
-            'old_value' => $old_value !== null ? wp_json_encode($old_value) : null,
-            'new_value' => $new_value !== null ? wp_json_encode($new_value) : null,
-            'reason' => $reason,
-            'adjustment_type' => $this->resolve_adjustment_type($month),
-            'changed_by' => (int) get_current_user_id(),
-            'changed_at' => current_time('mysql'),
-        ]);
-    }
-
-    private function month_from_date($date_value)
-    {
-        $date = sanitize_text_field((string) $date_value);
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
-            return gmdate('Y-m');
-        }
-
-        return substr($date, 0, 7);
-    }
-
     private function is_month_locked_for_current_user($month)
     {
         if (current_user_can('administrator')) {
@@ -1524,5 +956,17 @@ class ERP_OMD_REST_API
         }
 
         return false;
+    }
+}
+
+if (! function_exists('erp_omd_month_from_date')) {
+    function erp_omd_month_from_date($date_value)
+    {
+        $date = sanitize_text_field((string) $date_value);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
+            return gmdate('Y-m');
+        }
+
+        return substr($date, 0, 7);
     }
 }

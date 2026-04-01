@@ -352,6 +352,7 @@ final class RestApiTestRunner
         $this->assertSame(0, (int) preg_match_all('/function\s+transition_period_status\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy transition_period_status method.');
         $this->assertSame(0, (int) preg_match_all('/function\s+list_adjustments\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy list_adjustments method.');
         $this->assertSame(0, (int) preg_match_all('/function\s+create_adjustment\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy create_adjustment method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+month_from_date\s*\(/', (string) $restApiSource), 'REST API source should not declare month_from_date as a class method.');
         $this->assertSame(0, (int) preg_match_all('/function\s+period_status_endpoint\s*\(/', (string) $restApiSource), 'REST API source should not declare period_status_endpoint as a class method.');
         $this->assertSame(0, (int) preg_match_all('/function\s+periods_index_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should not declare periods_index_endpoint_v1 as a class method.');
         $this->assertSame(0, (int) preg_match_all('/function\s+period_transition_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should not declare period_transition_endpoint_v1 as a class method.');
