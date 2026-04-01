@@ -191,6 +191,10 @@ class ERP_OMD_REST_API
                 if (! in_array($scope, ['client', 'project'], true)) {
                     $scope = 'project';
                 }
+                $mode = sanitize_text_field((string) $request->get_param('mode'));
+                if (! in_array($mode, [ERP_OMD_Period_Service::STATUS_LIVE, ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, ERP_OMD_Period_Service::STATUS_ZAMKNIETY], true)) {
+                    $mode = ERP_OMD_Period_Service::STATUS_LIVE;
+                }
                 $adjustments_limit = (int) $request->get_param('adjustments_limit');
                 if ($adjustments_limit <= 0) {
                     $adjustments_limit = 10;
@@ -216,11 +220,11 @@ class ERP_OMD_REST_API
                 $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
                 $readiness_signals = $this->readiness_signals_for_month($month);
                 $readiness_checklist = $this->period_service->build_readiness_checklist($readiness_signals);
-                $trend = $this->reporting_service->build_report('omd_rozliczenia', ['month' => $month, 'report_type' => 'omd_rozliczenia']);
+                $trend = $this->reporting_service->build_report('omd_rozliczenia', ['month' => $month, 'report_type' => 'omd_rozliczenia', 'mode' => $mode]);
                 $trend_3m = array_slice((array) $trend, -3);
-                $project_rows = $this->reporting_service->build_project_report(['month' => $month, 'report_type' => 'projects']);
-                $client_rows = $this->reporting_service->build_client_report(['month' => $month, 'report_type' => 'clients']);
-                $queue_rows = (array) $this->reporting_service->build_invoice_report(['month' => $month, 'report_type' => 'invoice']);
+                $project_rows = $this->reporting_service->build_project_report(['month' => $month, 'report_type' => 'projects', 'mode' => $mode]);
+                $client_rows = $this->reporting_service->build_client_report(['month' => $month, 'report_type' => 'clients', 'mode' => $mode]);
+                $queue_rows = (array) $this->reporting_service->build_invoice_report(['month' => $month, 'report_type' => 'invoice', 'mode' => $mode]);
                 $queue_rows_total = count($queue_rows);
                 $queue_rows = $this->enrich_queue_rows($queue_rows, $month, $queue_limit);
                 $adjustments = $this->adjustment_audit->all(['month' => $month]);
@@ -254,6 +258,7 @@ class ERP_OMD_REST_API
                         'profitability_items' => $profitability_limit,
                     ],
                     'month' => $month,
+                    'mode' => $mode,
                     'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,
                     'readiness_meta' => (array) ($readiness_signals['_meta'] ?? []),
