@@ -353,6 +353,13 @@ final class RestApiTestRunner
         $adjustmentsRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/adjustments'/", (string) $restApiSource);
         $this->assertSame(1, (int) $adjustmentsRouteCount, 'REST API source should register adjustments route directly in register_routes.');
 
+        preg_match_all('/function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/', (string) $restApiSource, $methodMatches);
+        $methodNames = $methodMatches[1] ?? [];
+        $duplicateMethodNames = array_keys(array_filter(array_count_values($methodNames), static function ($count) {
+            return (int) $count > 1;
+        }));
+        $this->assertSame([], $duplicateMethodNames, 'REST API source should not contain duplicate method declarations.');
+
         $api = new ERP_OMD_REST_API(
             new ERP_OMD_Role_Repository(),
             new ERP_OMD_Employee_Repository(),
