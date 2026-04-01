@@ -348,9 +348,15 @@ final class RestApiTestRunner
         $duplicateManagementMethodCount = preg_match_all('/function\s+register_period_management_routes\s*\(/', (string) $restApiSource);
         $this->assertSame(0, (int) $duplicateManagementMethodCount, 'REST API source should not contain dedicated period management registration method declarations.');
         $this->assertSame(0, (int) preg_match_all('/function\s+get_period_status\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy get_period_status method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+list_periods\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy list_periods method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+transition_period_status\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy transition_period_status method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+list_adjustments\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy list_adjustments method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+create_adjustment\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy create_adjustment method.');
         $this->assertSame(1, (int) preg_match_all('/function\s+period_status_endpoint\s*\(/', (string) $restApiSource), 'REST API source should declare period_status_endpoint exactly once.');
-        $this->assertSame(1, (int) preg_match_all('/function\s+list_periods\s*\(/', (string) $restApiSource), 'REST API source should declare list_periods exactly once.');
-        $this->assertSame(1, (int) preg_match_all('/function\s+transition_period_status\s*\(/', (string) $restApiSource), 'REST API source should declare transition_period_status exactly once.');
+        $this->assertSame(1, (int) preg_match_all('/function\s+periods_index_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should declare periods_index_endpoint_v1 exactly once.');
+        $this->assertSame(1, (int) preg_match_all('/function\s+period_transition_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should declare period_transition_endpoint_v1 exactly once.');
+        $this->assertSame(1, (int) preg_match_all('/function\s+adjustments_index_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should declare adjustments_index_endpoint_v1 exactly once.');
+        $this->assertSame(1, (int) preg_match_all('/function\s+adjustments_create_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should declare adjustments_create_endpoint_v1 exactly once.');
 
         $periodRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/periods/", (string) $restApiSource);
         $this->assertSame(3, (int) $periodRouteCount, 'REST API source should register all three period routes directly in register_routes.');
