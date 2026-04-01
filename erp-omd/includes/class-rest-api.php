@@ -169,6 +169,62 @@ class ERP_OMD_REST_API
                 return new WP_REST_Response($created, 201);
             }, 'permission_callback' => [$this, 'can_manage_settings']],
         ]);
+        register_rest_route('erp-omd/v1', '/dashboard-v1', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
+                $month = sanitize_text_field((string) $request->get_param('month'));
+                if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+                    $month = gmdate('Y-m');
+                }
+
+                $scope = sanitize_key((string) $request->get_param('profitability_scope'));
+                if (! in_array($scope, ['client', 'project'], true)) {
+                    $scope = 'project';
+                }
+
+                $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
+                $trend = $this->reporting_service->build_report('omd_rozliczenia', ['month' => $month, 'report_type' => 'omd_rozliczenia']);
+                $trend_3m = array_slice((array) $trend, -3);
+                $project_rows = $this->reporting_service->build_project_report(['month' => $month, 'report_type' => 'projects']);
+                $client_rows = $this->reporting_service->build_client_report(['month' => $month, 'report_type' => 'clients']);
+                $queue_rows = $this->reporting_service->build_invoice_report(['month' => $month, 'report_type' => 'invoice']);
+                $adjustments = $this->adjustment_audit->all(['month' => $month]);
+
+                $source_rows = $scope === 'client' ? $client_rows : $project_rows;
+                usort($source_rows, static function ($a, $b) {
+                    return (float) ($b['margin'] ?? 0) <=> (float) ($a['margin'] ?? 0);
+                });
+                $top = array_slice($source_rows, 0, 5);
+                $bottom = array_slice(array_reverse($source_rows), 0, 5);
+
+                $adjustment_impact = 0.0;
+                foreach ($adjustments as $row) {
+                    $old = json_decode((string) ($row['old_value'] ?? ''), true);
+                    $new = json_decode((string) ($row['new_value'] ?? ''), true);
+                    if (is_array($old) && is_array($new)) {
+                        $old_amount = (float) ($old['amount'] ?? $old['hours'] ?? 0);
+                        $new_amount = (float) ($new['amount'] ?? $new['hours'] ?? 0);
+                        $adjustment_impact += ($new_amount - $old_amount);
+                    }
+                }
+
+                return rest_ensure_response([
+                    'month' => $month,
+                    'status_month' => $period,
+                    'trend_3m' => $trend_3m,
+                    'profitability_scope' => $scope,
+                    'profitability_top' => $top,
+                    'profitability_bottom' => $bottom,
+                    'settlement_queue' => [
+                        'count' => count($queue_rows),
+                        'items' => $queue_rows,
+                    ],
+                    'adjustments' => [
+                        'count' => count($adjustments),
+                        'impact' => round($adjustment_impact, 2),
+                    ],
+                ]);
+            }, 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
         $this->register_hardening_routes();
     }
 

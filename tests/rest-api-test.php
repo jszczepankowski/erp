@@ -363,6 +363,8 @@ final class RestApiTestRunner
         $this->assertSame(3, (int) $periodRouteCount, 'REST API source should register all three period routes directly in register_routes.');
         $adjustmentsRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/adjustments'/", (string) $restApiSource);
         $this->assertSame(1, (int) $adjustmentsRouteCount, 'REST API source should register adjustments route directly in register_routes.');
+        $dashboardRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/dashboard-v1'/", (string) $restApiSource);
+        $this->assertSame(1, (int) $dashboardRouteCount, 'REST API source should register dashboard-v1 route directly in register_routes.');
 
         preg_match_all('/function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/', (string) $restApiSource, $methodMatches);
         $methodNames = $methodMatches[1] ?? [];
