@@ -165,7 +165,7 @@ final class ReportingServiceTestRunner
 
         $projectReport = $service->build_project_report($filters);
         $this->assertSame(2, count($projectReport), 'Project report should include all matching projects.');
-        $this->assertSame(3.0, $projectReport[0]['reported_hours'], 'Project report should aggregate filtered hours per project.');
+        $this->assertSame(2.0, $projectReport[0]['reported_hours'], 'Project report should aggregate approved hours per project by default.');
 
         $approvedFilters = $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'status' => 'approved']);
         $approvedProjectReport = $service->build_project_report($approvedFilters);
@@ -177,6 +177,9 @@ final class ReportingServiceTestRunner
         $this->assertSame(1, count($invoiceStatusProjectReport), 'Project status filter should narrow projects by lifecycle status.');
         $this->assertSame('Branding', $invoiceStatusProjectReport[0]['project_name'], 'Project status filter should keep matching project rows.');
 
+        $settlementModeReport = $service->build_project_report($service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'mode' => 'DO_ROZLICZENIA']));
+        $this->assertSame(1, count($settlementModeReport), 'DO ROZLICZENIA mode should keep invoice-ready/closed projects only.');
+
         $clientReport = $service->build_client_report($filters);
         $this->assertSame(2, count($clientReport), 'Client report should aggregate per client.');
         $this->assertSame('ACME', $clientReport[0]['client_name'], 'Client report should keep client name.');
@@ -187,7 +190,7 @@ final class ReportingServiceTestRunner
 
         $monthlyReport = $service->build_monthly_report($filters);
         $this->assertSame(1, count($monthlyReport), 'Monthly report should group entries by month.');
-        $this->assertSame(6.0, $monthlyReport[0]['hours'], 'Monthly report should sum hours for the month.');
+        $this->assertSame(5.0, $monthlyReport[0]['hours'], 'Monthly report should sum approved hours for the month.');
 
         $omdSettlement = $service->build_omd_settlement_report($filters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
@@ -196,7 +199,7 @@ final class ReportingServiceTestRunner
 
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame('2026-03', $calendar['month'], 'Calendar should be built for requested month.');
-        $this->assertSame(6.0, $calendar['totals']['hours'], 'Calendar totals should aggregate daily hours.');
+        $this->assertSame(5.0, $calendar['totals']['hours'], 'Calendar totals should aggregate approved daily hours by default.');
 
         $approvedCalendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => 'approved', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame(5.0, $approvedCalendar['totals']['hours'], 'Calendar approved filter should keep approved entry hours.');

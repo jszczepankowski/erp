@@ -139,7 +139,7 @@ class ERP_OMD_Client_Project_Service
             $errors[] = __('Typ rozliczenia projektu jest niepoprawny.', 'erp-omd');
         }
 
-        if (! in_array($data['status'], ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'], true)) {
+        if (! in_array($data['status'], ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum', 'inactive'], true)) {
             $errors[] = __('Status projektu jest niepoprawny.', 'erp-omd');
         }
 
@@ -198,12 +198,13 @@ class ERP_OMD_Client_Project_Service
             'billing_type' => trim((string) ($data['billing_type'] ?? ($existing_project['billing_type'] ?? 'time_material'))) ?: 'time_material',
             'budget' => round((float) ($data['budget'] ?? ($existing_project['budget'] ?? 0)), 2),
             'retainer_monthly_fee' => round((float) ($data['retainer_monthly_fee'] ?? ($existing_project['retainer_monthly_fee'] ?? 0)), 2),
-            'status' => trim((string) ($data['status'] ?? ($existing_project['status'] ?? 'do_rozpoczecia'))) ?: 'do_rozpoczecia',
+            'status' => $this->normalize_project_status(trim((string) ($data['status'] ?? ($existing_project['status'] ?? 'do_rozpoczecia'))) ?: 'do_rozpoczecia'),
             'start_date' => trim((string) ($data['start_date'] ?? ($existing_project['start_date'] ?? ''))),
             'end_date' => trim((string) ($data['end_date'] ?? ($existing_project['end_date'] ?? ''))),
             'manager_id' => $manager_id,
             'manager_ids' => $manager_ids,
             'estimate_id' => (int) ($data['estimate_id'] ?? ($existing_project['estimate_id'] ?? 0)),
+            'operational_close_month' => $this->normalize_operational_close_month((string) ($data['operational_close_month'] ?? ($existing_project['operational_close_month'] ?? ''))),
             'brief' => trim((string) ($data['brief'] ?? ($existing_project['brief'] ?? ''))),
             'alert_margin_threshold' => $this->normalize_margin_threshold($data['alert_margin_threshold'] ?? ($existing_project['alert_margin_threshold'] ?? null)),
         ];
@@ -282,12 +283,12 @@ class ERP_OMD_Client_Project_Service
         }
 
         $allowed_transitions = [
-            'do_rozpoczecia' => ['w_realizacji', 'inactive'],
-            'w_realizacji' => ['w_akceptacji', 'do_faktury', 'inactive'],
-            'w_akceptacji' => ['w_realizacji', 'do_faktury', 'inactive'],
-            'do_faktury' => ['zakonczony', 'w_realizacji', 'inactive'],
-            'zakonczony' => ['inactive'],
-            'inactive' => ['do_rozpoczecia'],
+            'do_rozpoczecia' => ['w_realizacji', 'archiwum'],
+            'w_realizacji' => ['w_akceptacji', 'do_faktury', 'archiwum'],
+            'w_akceptacji' => ['w_realizacji', 'do_faktury', 'archiwum'],
+            'do_faktury' => ['zakonczony', 'w_realizacji', 'archiwum'],
+            'zakonczony' => ['archiwum'],
+            'archiwum' => ['do_rozpoczecia'],
         ];
 
         if (! in_array($target_status, $allowed_transitions[$current_status] ?? [], true)) {
@@ -389,6 +390,26 @@ class ERP_OMD_Client_Project_Service
         }
 
         return max(0, round((float) $value, 2));
+    }
+
+    private function normalize_operational_close_month($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        return preg_match('/^\d{4}-\d{2}$/', $value) ? $value : '';
+    }
+
+    private function normalize_project_status($status)
+    {
+        $status = trim((string) $status);
+        if ($status === 'inactive') {
+            return 'archiwum';
+        }
+
+        return $status;
     }
 
     private function valid_date($date)
