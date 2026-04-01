@@ -604,6 +604,7 @@ final class RestApiTestRunner
         $this->assertSame(false, $dashboardPayload['status_actions'][0]['enabled'], 'Dashboard status action should be disabled when checklist is not ready.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['trend_3m']), 'Dashboard endpoint should expose metric definitions for frontend tooltip rendering.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['readiness_checklist.ready']), 'Dashboard endpoint should expose readiness definition tooltip key.');
+        $this->assertSame(true, isset($dashboardPayload['metric_definitions']['applied_limits']), 'Dashboard endpoint should define applied limits semantics for clients.');
         $this->assertSame(true, isset($dashboardPayload['drilldown_links']['settlement_queue']), 'Dashboard endpoint should expose drilldown links for queue and adjustments.');
         $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=invoice&month=2026-03', $dashboardPayload['drilldown_links']['settlement_queue'], 'Dashboard queue drilldown should target invoice report for selected month.');
         $this->assertSame(true, isset($dashboardPayload['profitability_by_scope']['project']['top']), 'Dashboard endpoint should expose project ranking buckets for scope switch without reload.');

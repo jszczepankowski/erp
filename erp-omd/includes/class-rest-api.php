@@ -291,7 +291,9 @@ class ERP_OMD_REST_API
             'profitability_bottom' => __('Bottom 5 entities by margin in selected scope.', 'erp-omd'),
             'settlement_queue.count' => __('Number of rows in invoice settlement queue for selected month.', 'erp-omd'),
             'adjustments.impact' => __('Sum of (new-old) amount/hours deltas from adjustment audit rows.', 'erp-omd'),
+            'adjustments.items' => __('Recent adjustment audit rows limited by adjustments_limit.', 'erp-omd'),
             'readiness_checklist.ready' => __('Boolean period-close readiness based on checklist validators.', 'erp-omd'),
+            'applied_limits' => __('Server-applied list limits after defaulting and max clamping.', 'erp-omd'),
         ];
     }
 
