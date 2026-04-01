@@ -95,7 +95,7 @@ class ERP_OMD_Project_Financial_Service
             array_filter(
                 $entries,
                 static function ($entry) {
-                    return ($entry['status'] ?? '') !== 'rejected';
+                    return ($entry['status'] ?? '') === 'approved';
                 }
             )
         );
