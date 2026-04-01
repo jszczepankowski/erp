@@ -115,6 +115,54 @@ class ERP_OMD_REST_API
         ]);
     }
 
+    private function register_period_management_routes()
+    {
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_period'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})/checklist', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_period_checklist'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})/transition', [
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'transition_period'], 'permission_callback' => [$this, 'can_manage_settings']],
+        ]);
+        register_rest_route('erp-omd/v1', '/adjustments', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_adjustments'], 'permission_callback' => [$this, 'can_manage_settings']],
+        ]);
+    }
+
+    private function register_period_routes()
+    {
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_period'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})/checklist', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_period_checklist'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})/transition', [
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'transition_period'], 'permission_callback' => [$this, 'can_manage_settings']],
+        ]);
+        register_rest_route('erp-omd/v1', '/adjustments', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_adjustments'], 'permission_callback' => [$this, 'can_manage_settings']],
+        ]);
+    }
+
+    private function register_period_routes()
+    {
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_period'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})/checklist', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_period_checklist'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})/transition', [
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'transition_period'], 'permission_callback' => [$this, 'can_manage_settings']],
+        ]);
+        register_rest_route('erp-omd/v1', '/adjustments', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_adjustments'], 'permission_callback' => [$this, 'can_manage_settings']],
+        ]);
+    }
+
     private function register_role_routes()
     {
         register_rest_route('erp-omd/v1', '/roles', [
@@ -828,6 +876,96 @@ class ERP_OMD_REST_API
     private function is_query_filter($value)
     {
         return $value !== '' && $value !== null;
+    }
+
+    private function assert_period_allows_changes($date, $entity_type, $entity_id = 0, $old_value = null, $new_value = null)
+    {
+        $is_admin = current_user_can('administrator');
+        $emergency = $is_admin && (bool) rest_sanitize_boolean($new_value['emergency_adjustment'] ?? false);
+        $reason = trim((string) ($new_value['adjustment_reason'] ?? ''));
+        if ($emergency && $reason === '') {
+            return new WP_Error('erp_omd_adjustment_reason_required', __('Tryb awaryjny wymaga podania powodu korekty.', 'erp-omd'), ['status' => 422]);
+        }
+
+        if (! $this->period_service->can_modify_date($date, $is_admin, $emergency)) {
+            return new WP_Error('erp_omd_period_locked', __('Wybrany miesiąc jest zamknięty i nie można już modyfikować danych.', 'erp-omd'), ['status' => 423]);
+        }
+
+        if ($is_admin && ($emergency || $reason !== '')) {
+            $this->adjustment_audit->create([
+                'month' => substr((string) $date, 0, 7),
+                'entity_type' => $entity_type,
+                'entity_id' => (int) $entity_id,
+                'field_name' => 'payload',
+                'old_value' => $old_value,
+                'new_value' => $new_value,
+                'reason' => $reason !== '' ? $reason : __('Korekta administracyjna w oknie 72h.', 'erp-omd'),
+                'adjustment_type' => $emergency ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD',
+                'changed_by_user_id' => get_current_user_id(),
+            ]);
+        }
+
+        return true;
+    }
+
+    private function assert_period_allows_changes($date, $entity_type, $entity_id = 0, $old_value = null, $new_value = null)
+    {
+        $is_admin = current_user_can('administrator');
+        $emergency = $is_admin && (bool) rest_sanitize_boolean($new_value['emergency_adjustment'] ?? false);
+        $reason = trim((string) ($new_value['adjustment_reason'] ?? ''));
+        if ($emergency && $reason === '') {
+            return new WP_Error('erp_omd_adjustment_reason_required', __('Tryb awaryjny wymaga podania powodu korekty.', 'erp-omd'), ['status' => 422]);
+        }
+
+        if (! $this->period_service->can_modify_date($date, $is_admin, $emergency)) {
+            return new WP_Error('erp_omd_period_locked', __('Wybrany miesiąc jest zamknięty i nie można już modyfikować danych.', 'erp-omd'), ['status' => 423]);
+        }
+
+        if ($is_admin && ($emergency || $reason !== '')) {
+            $this->adjustment_audit->create([
+                'month' => substr((string) $date, 0, 7),
+                'entity_type' => $entity_type,
+                'entity_id' => (int) $entity_id,
+                'field_name' => 'payload',
+                'old_value' => $old_value,
+                'new_value' => $new_value,
+                'reason' => $reason !== '' ? $reason : __('Korekta administracyjna w oknie 72h.', 'erp-omd'),
+                'adjustment_type' => $emergency ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD',
+                'changed_by_user_id' => get_current_user_id(),
+            ]);
+        }
+
+        return true;
+    }
+
+    private function assert_period_allows_changes($date, $entity_type, $entity_id = 0, $old_value = null, $new_value = null)
+    {
+        $is_admin = current_user_can('administrator');
+        $emergency = $is_admin && (bool) rest_sanitize_boolean($new_value['emergency_adjustment'] ?? false);
+        $reason = trim((string) ($new_value['adjustment_reason'] ?? ''));
+        if ($emergency && $reason === '') {
+            return new WP_Error('erp_omd_adjustment_reason_required', __('Tryb awaryjny wymaga podania powodu korekty.', 'erp-omd'), ['status' => 422]);
+        }
+
+        if (! $this->period_service->can_modify_date($date, $is_admin, $emergency)) {
+            return new WP_Error('erp_omd_period_locked', __('Wybrany miesiąc jest zamknięty i nie można już modyfikować danych.', 'erp-omd'), ['status' => 423]);
+        }
+
+        if ($is_admin && ($emergency || $reason !== '')) {
+            $this->adjustment_audit->create([
+                'month' => substr((string) $date, 0, 7),
+                'entity_type' => $entity_type,
+                'entity_id' => (int) $entity_id,
+                'field_name' => 'payload',
+                'old_value' => $old_value,
+                'new_value' => $new_value,
+                'reason' => $reason !== '' ? $reason : __('Korekta administracyjna w oknie 72h.', 'erp-omd'),
+                'adjustment_type' => $emergency ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD',
+                'changed_by_user_id' => get_current_user_id(),
+            ]);
+        }
+
+        return true;
     }
 
     private function assert_period_allows_changes($date, $entity_type, $entity_id = 0, $old_value = null, $new_value = null)
