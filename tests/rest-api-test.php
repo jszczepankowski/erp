@@ -342,6 +342,10 @@ final class RestApiTestRunner
 
     public function run(): void
     {
+        $restApiSource = file_get_contents(__DIR__ . '/../erp-omd/includes/class-rest-api.php');
+        $duplicateLegacyMethodCount = preg_match_all('/function\s+register_period_routes\s*\(/', (string) $restApiSource);
+        $this->assertSame(0, (int) $duplicateLegacyMethodCount, 'REST API source should not contain legacy duplicated register_period_routes declarations.');
+
         $api = new ERP_OMD_REST_API(
             new ERP_OMD_Role_Repository(),
             new ERP_OMD_Employee_Repository(),
