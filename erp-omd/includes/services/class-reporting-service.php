@@ -48,6 +48,11 @@ class ERP_OMD_Reporting_Service
         if (! in_array($tab, ['reports', 'calendar'], true)) {
             $tab = 'reports';
         }
+        $mode = isset($raw_filters['mode']) ? sanitize_text_field((string) $raw_filters['mode']) : 'LIVE';
+        $mode = strtoupper(str_replace('_', ' ', $mode));
+        if (! in_array($mode, ['LIVE', 'DO ROZLICZENIA', 'ZAMKNIĘTY'], true)) {
+            $mode = 'LIVE';
+        }
 
         $status = sanitize_text_field((string) ($raw_filters['status'] ?? ''));
         if (! in_array($status, $this->allowedStatuses(), true)) {
@@ -62,6 +67,7 @@ class ERP_OMD_Reporting_Service
             'month' => $month,
             'report_type' => $report_type,
             'tab' => $tab,
+            'mode' => $mode,
         ];
     }
 
@@ -747,11 +753,12 @@ class ERP_OMD_Reporting_Service
             if ($filters['project_id'] > 0 && (int) ($entry['project_id'] ?? 0) !== $filters['project_id']) {
                 return false;
             }
-            if (
-                $filters['status'] !== ''
-                && $this->isTimeEntryStatusFilter($filters['status'])
-                && (string) ($entry['status'] ?? '') !== $filters['status']
-            ) {
+            $entry_status = (string) ($entry['status'] ?? '');
+            $status_filter = (string) ($filters['status'] ?? '');
+            if ($status_filter !== '' && $this->isTimeEntryStatusFilter($status_filter) && $entry_status !== $status_filter) {
+                return false;
+            }
+            if ($status_filter === '' && $entry_status !== 'approved') {
                 return false;
             }
             if ($filters['month'] !== '' && strpos((string) ($entry['entry_date'] ?? ''), $filters['month']) !== 0) {
@@ -821,6 +828,13 @@ class ERP_OMD_Reporting_Service
         return $metrics;
     }
 
+    public function build_omd_settlement_report(array $filters)
+    {
+        $filters = $this->sanitize_filters(array_merge($filters, ['report_type' => 'omd_rozliczenia']));
+
+        return $this->build_report('omd_rozliczenia', $filters);
+    }
+
     private function get_project_budget_profit_by_month(array $projects)
     {
         $metrics = [];
@@ -866,6 +880,7 @@ class ERP_OMD_Reporting_Service
             'w_akceptacji',
             'do_faktury',
             'zakonczony',
+            'archiwum',
             'inactive',
             'submitted',
             'approved',
@@ -875,7 +890,7 @@ class ERP_OMD_Reporting_Service
 
     private function isProjectStatusFilter($status)
     {
-        return in_array($status, ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'], true);
+        return in_array($status, ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum', 'inactive'], true);
     }
 
     private function isTimeEntryStatusFilter($status)

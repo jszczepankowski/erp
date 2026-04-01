@@ -322,6 +322,17 @@ if (! class_exists('ERP_OMD_Reporting_Service')) {
 if (! class_exists('ERP_OMD_Alert_Service')) {
     class ERP_OMD_Alert_Service { public function all_alerts() { return [['severity' => 'warning', 'code' => 'project_low_margin', 'entity_type' => 'project', 'entity_id' => 10, 'message' => 'Low margin']]; } }
 }
+if (! class_exists('ERP_OMD_Period_Service')) {
+    class ERP_OMD_Period_Service {
+        public function get_or_create($month) { return ['month' => $month, 'status' => 'LIVE']; }
+        public function checklist($month) { return ['month' => $month, 'items' => []]; }
+        public function transition($month, $status) { return ['month' => $month, 'status' => $status]; }
+        public function can_modify_date($date, $is_admin, $emergency = false) { return true; }
+    }
+}
+if (! class_exists('ERP_OMD_Adjustment_Audit_Repository')) {
+    class ERP_OMD_Adjustment_Audit_Repository { public function create($payload) { return 1; } }
+}
 
 require_once __DIR__ . '/../erp-omd/includes/class-rest-api.php';
 
@@ -353,7 +364,9 @@ final class RestApiTestRunner
             new ERP_OMD_Time_Entry_Service(),
             new ERP_OMD_Project_Financial_Service(),
             new ERP_OMD_Reporting_Service(),
-            new ERP_OMD_Alert_Service()
+            new ERP_OMD_Alert_Service(),
+            new ERP_OMD_Period_Service(),
+            new ERP_OMD_Adjustment_Audit_Repository()
         );
 
         $meta = $api->get_meta();
