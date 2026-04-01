@@ -125,8 +125,8 @@ final class ReportingServiceTestRunner
     {
         $service = new ERP_OMD_Reporting_Service(
             new ERP_OMD_Project_Repository([
-                ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000],
-                ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000],
+                ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000, 'operational_close_month' => '2026-02'],
+                ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000, 'operational_close_month' => '2026-03'],
             ]),
             new ERP_OMD_Client_Repository([
                 ['id' => 1, 'name' => 'ACME'],
@@ -183,6 +183,12 @@ final class ReportingServiceTestRunner
         $clientReport = $service->build_client_report($filters);
         $this->assertSame(2, count($clientReport), 'Client report should aggregate per client.');
         $this->assertSame('ACME', $clientReport[0]['client_name'], 'Client report should keep client name.');
+        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=clients&month=2026-03&detail=detail&client_id=1', $clientReport[0]['drilldown_link'], 'Client report should expose drilldown link to detail view.');
+
+        $clientDetail = $service->build_client_report($service->sanitize_filters(['report_type' => 'clients', 'month' => '2026-03', 'detail' => 'detail', 'client_id' => 1]));
+        $this->assertSame(1, count($clientDetail), 'Client detail report should respect client filter.');
+        $this->assertSame(1, count($clientDetail[0]['projects']), 'Client detail report should include project-level rows.');
+        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=time_entries&month=2026-03&project_id=10', $clientDetail[0]['projects'][0]['drilldown_link'], 'Client detail projects should expose drilldown to line-by-line time entries.');
 
         $invoiceReport = $service->build_invoice_report($filters);
         $this->assertSame(1, count($invoiceReport), 'Invoice report should only include do_faktury projects.');
@@ -195,6 +201,8 @@ final class ReportingServiceTestRunner
         $omdSettlement = $service->build_omd_settlement_report($filters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
         $this->assertSame('2026-03', $omdSettlement[11]['month'], 'OMD settlement report should end with selected month.');
+        $this->assertSame(0.0, $omdSettlement[10]['active_project_budgets'], 'OMD settlement should not recognize project budget before operational_close_month.');
+        $this->assertSame(5000.0, $omdSettlement[11]['active_project_budgets'], 'OMD settlement should recognize project budget in operational_close_month.');
         $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
 
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
@@ -206,7 +214,9 @@ final class ReportingServiceTestRunner
 
         $export = $service->export_definition('projects', $filters);
         $this->assertSame('Klient', $export['headers'][0], 'Project export should expose column headers.');
+        $this->assertSame('Miesiąc zamk. oper.', $export['headers'][16], 'Project export should include operational close month column.');
         $this->assertSame(2, count($export['rows']), 'Project export should include report rows.');
+        $this->assertSame('2026-02', $export['rows'][0][16], 'Project export should include operational close month value.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "Reporting service tests passed.\n";
