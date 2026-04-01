@@ -233,6 +233,9 @@ class ERP_OMD_REST_API
                 return rest_ensure_response([
                     'api_version' => 'v1',
                     'generated_at' => current_time('mysql'),
+                    'applied_limits' => [
+                        'adjustments_items' => $adjustments_limit,
+                    ],
                     'month' => $month,
                     'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,

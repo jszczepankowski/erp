@@ -594,6 +594,7 @@ final class RestApiTestRunner
         $dashboardPayload = $dashboardCallback(new WP_REST_Request(['month' => '2026-03', 'profitability_scope' => 'project', 'adjustments_limit' => 1]));
         $this->assertSame('v1', $dashboardPayload['api_version'], 'Dashboard endpoint should expose explicit contract version.');
         $this->assertSame('2026-03-20 12:00:00', $dashboardPayload['generated_at'], 'Dashboard endpoint should expose deterministic generation timestamp.');
+        $this->assertSame(1, $dashboardPayload['applied_limits']['adjustments_items'], 'Dashboard endpoint should expose applied adjustments item limit.');
         $this->assertSame('2026-03', $dashboardPayload['month'], 'Dashboard endpoint should preserve explicit month filter.');
         $this->assertSame(false, $dashboardPayload['readiness_checklist']['ready'], 'Dashboard endpoint should expose readiness checklist snapshot for selected month.');
         $this->assertSame(1, $dashboardPayload['readiness_meta']['submitted_or_rejected_entries'], 'Dashboard readiness meta should expose submitted/rejected entry counter.');
