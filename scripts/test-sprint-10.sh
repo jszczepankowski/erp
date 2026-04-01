@@ -14,4 +14,5 @@ php tests/alert-service-test.php
 php tests/client-project-service-test.php
 php tests/rest-api-test.php
 php tests/project-request-service-test.php
+php tests/omd-period-service-test.php
 ./scripts/build-sprint-10.sh
