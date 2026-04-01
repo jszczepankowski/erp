@@ -162,12 +162,13 @@ class ERP_OMD_Project_Repository
                 'end_date' => $data['end_date'] ?: null,
                 'manager_id' => $data['manager_id'] ?: null,
                 'estimate_id' => $data['estimate_id'] ?: null,
+                'operational_close_month' => $data['operational_close_month'] ?: null,
                 'brief' => $data['brief'],
                 'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s']
+            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s']
         );
 
         $project_id = (int) $wpdb->insert_id;
@@ -193,12 +194,13 @@ class ERP_OMD_Project_Repository
                 'end_date' => $data['end_date'] ?: null,
                 'manager_id' => $data['manager_id'] ?: null,
                 'estimate_id' => $data['estimate_id'] ?: null,
+                'operational_close_month' => $data['operational_close_month'] ?: null,
                 'brief' => $data['brief'],
                 'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => $id],
-            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s'],
+            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s'],
             ['%d']
         );
 
@@ -218,7 +220,7 @@ class ERP_OMD_Project_Repository
 
     public function deactivate($id)
     {
-        return $this->set_status($id, 'inactive');
+        return $this->set_status($id, 'archiwum');
     }
 
     public function set_status($id, $status)
