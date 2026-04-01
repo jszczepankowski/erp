@@ -191,6 +191,13 @@ class ERP_OMD_REST_API
                 if (! in_array($scope, ['client', 'project'], true)) {
                     $scope = 'project';
                 }
+                $adjustments_limit = (int) $request->get_param('adjustments_limit');
+                if ($adjustments_limit <= 0) {
+                    $adjustments_limit = 10;
+                }
+                if ($adjustments_limit > 50) {
+                    $adjustments_limit = 50;
+                }
 
                 $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
                 $readiness_signals = $this->readiness_signals_for_month($month);
@@ -221,7 +228,7 @@ class ERP_OMD_REST_API
                         $adjustment_impact += ($new_amount - $old_amount);
                     }
                 }
-                $adjustment_items = $this->enrich_adjustment_rows($adjustments, $month);
+                $adjustment_items = $this->enrich_adjustment_rows($adjustments, $month, $adjustments_limit);
 
                 return rest_ensure_response([
                     'api_version' => 'v1',
@@ -354,7 +361,7 @@ class ERP_OMD_REST_API
         }, $rows);
     }
 
-    private function enrich_adjustment_rows(array $rows, $month)
+    private function enrich_adjustment_rows(array $rows, $month, $limit = 10)
     {
         $base = '/wp-admin/admin.php?page=erp-omd-reports&report_type=time';
         if (function_exists('admin_url')) {
@@ -386,7 +393,7 @@ class ERP_OMD_REST_API
                 'changed_at' => (string) ($row['changed_at'] ?? ''),
                 'drilldown_link' => $drilldown_link,
             ];
-        }, array_slice($rows, 0, 10));
+        }, array_slice($rows, 0, max(1, (int) $limit)));
     }
 
     private function dashboard_status_actions(array $period, array $checklist)

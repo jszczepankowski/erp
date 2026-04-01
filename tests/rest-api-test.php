@@ -457,17 +457,30 @@ if (! class_exists('ERP_OMD_Adjustment_Audit_Repository')) {
     class ERP_OMD_Adjustment_Audit_Repository {
         public function create($payload) { return 1; }
         public function all($filters = []) {
-            return [[
-                'id' => 501,
-                'entity_type' => 'project_cost',
-                'entity_id' => 10,
-                'field_name' => 'amount',
-                'old_value' => '{"amount":100}',
-                'new_value' => '{"amount":125}',
-                'adjustment_type' => 'STANDARD',
-                'reason' => 'Korekta faktury',
-                'changed_at' => '2026-03-20 12:00:00',
-            ]];
+            return [
+                [
+                    'id' => 501,
+                    'entity_type' => 'project_cost',
+                    'entity_id' => 10,
+                    'field_name' => 'amount',
+                    'old_value' => '{"amount":100}',
+                    'new_value' => '{"amount":125}',
+                    'adjustment_type' => 'STANDARD',
+                    'reason' => 'Korekta faktury',
+                    'changed_at' => '2026-03-20 12:00:00',
+                ],
+                [
+                    'id' => 502,
+                    'entity_type' => 'time_entry',
+                    'entity_id' => 22,
+                    'field_name' => 'hours',
+                    'old_value' => '{"hours":2}',
+                    'new_value' => '{"hours":3}',
+                    'adjustment_type' => 'STANDARD',
+                    'reason' => 'Korekta godzin',
+                    'changed_at' => '2026-03-20 13:00:00',
+                ],
+            ];
         }
     }
 }
@@ -578,7 +591,7 @@ final class RestApiTestRunner
         $this->assertSame('erp_omd_period_transition_invalid', $transitionInvalid->get_error_code(), 'Transition endpoint should reject unsupported target statuses.');
 
         $dashboardCallback = $this->findRouteCallback('/dashboard-v1', WP_REST_Server::READABLE);
-        $dashboardPayload = $dashboardCallback(new WP_REST_Request(['month' => '2026-03', 'profitability_scope' => 'project']));
+        $dashboardPayload = $dashboardCallback(new WP_REST_Request(['month' => '2026-03', 'profitability_scope' => 'project', 'adjustments_limit' => 1]));
         $this->assertSame('v1', $dashboardPayload['api_version'], 'Dashboard endpoint should expose explicit contract version.');
         $this->assertSame('2026-03-20 12:00:00', $dashboardPayload['generated_at'], 'Dashboard endpoint should expose deterministic generation timestamp.');
         $this->assertSame('2026-03', $dashboardPayload['month'], 'Dashboard endpoint should preserve explicit month filter.');
@@ -595,8 +608,9 @@ final class RestApiTestRunner
         $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=projects&month=2026-03&project_id=10', $dashboardPayload['profitability_by_scope']['project']['top'][0]['drilldown_link'], 'Project profitability drilldown link should include month and project_id.');
         $this->assertSame(2, count($dashboardPayload['profitability_by_scope']['client']['bottom']), 'Dashboard endpoint should expose client ranking rows in profitability_by_scope.');
         $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=invoice&month=2026-03&project_id=10', $dashboardPayload['settlement_queue']['items'][0]['drilldown_link'], 'Queue rows should include month-aware drilldown link to invoice report.');
-        $this->assertSame(25.0, $dashboardPayload['adjustments']['impact'], 'Dashboard adjustment impact should sum delta between new and old values.');
+        $this->assertSame(26.0, $dashboardPayload['adjustments']['impact'], 'Dashboard adjustment impact should sum delta between new and old values.');
         $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=time&month=2026-03&adjustments=1&entity_type=project_cost&entity_id=10', $dashboardPayload['adjustments']['items'][0]['drilldown_link'], 'Dashboard adjustment rows should expose drilldown link with entity context.');
+        $this->assertSame(1, count($dashboardPayload['adjustments']['items']), 'Dashboard should honor adjustments_limit for serialized adjustment rows.');
         $this->assertSame(2, $dashboardPayload['settlement_queue']['count'], 'Dashboard endpoint should expose invoice queue count.');
 
         echo "Assertions: {$this->assertions}\n";
