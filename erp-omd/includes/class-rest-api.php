@@ -24,6 +24,7 @@ class ERP_OMD_REST_API
     private $project_financial_service;
     private $reporting_service;
     private $alert_service;
+    private $period_service;
 
 
     public function __construct(
@@ -73,6 +74,7 @@ class ERP_OMD_REST_API
         $this->project_financial_service = $project_financial_service;
         $this->reporting_service = $reporting_service;
         $this->alert_service = $alert_service;
+        $this->period_service = new ERP_OMD_Period_Service(new ERP_OMD_Period_Repository());
     }
 
     public function register_hooks()
@@ -89,6 +91,7 @@ class ERP_OMD_REST_API
         $this->register_project_routes();
         $this->register_time_routes();
         $this->register_report_routes();
+        $this->register_period_routes();
         $this->register_hardening_routes();
     }
 
@@ -241,6 +244,16 @@ class ERP_OMD_REST_API
         ]);
         register_rest_route('erp-omd/v1', '/calendar', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_calendar'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+    }
+
+    private function register_period_routes()
+    {
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_period_status'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})/transition', [
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'transition_period_status'], 'permission_callback' => [$this, 'can_manage_settings']],
         ]);
     }
 
@@ -475,10 +488,10 @@ class ERP_OMD_REST_API
     public function update_project_rate(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->project_rates->find($id); if (! $existing) { return new WP_Error('erp_omd_project_rate_not_found', __('Project rate not found.', 'erp-omd'), ['status' => 404]); } $role_id = (int) ($request->get_param('role_id') ?: $existing['role_id']); $rate = (float) ($request->get_param('rate') ?: $existing['rate']); if (! $this->roles->find($role_id) || $rate < 0) { return new WP_Error('erp_omd_project_rate_invalid', __('Project rate payload is invalid.', 'erp-omd'), ['status' => 422]); } $upserted_id = $this->project_rates->upsert((int) $existing['project_id'], $role_id, $rate); if ($upserted_id !== $id) { $this->project_rates->delete($id); } return rest_ensure_response($this->project_rates->find($upserted_id)); }
     public function delete_project_rate(WP_REST_Request $request) { $this->project_rates->delete((int) $request['id']); return new WP_REST_Response(null, 204); }
     public function list_project_costs(WP_REST_Request $request) { return rest_ensure_response($this->project_costs->for_project((int) $request['id'])); }
-    public function create_project_cost(WP_REST_Request $request) { $project_id = (int) $request['id']; $payload = $this->sanitize_project_cost_payload($request, $project_id); $errors = $this->project_financial_service->validate_project_cost($payload); if ($errors) { return new WP_Error('erp_omd_project_cost_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->project_costs->create($payload); $this->project_financial_service->rebuild_for_project($project_id); return new WP_REST_Response($this->project_costs->find($id), 201); }
+    public function create_project_cost(WP_REST_Request $request) { $project_id = (int) $request['id']; $payload = $this->sanitize_project_cost_payload($request, $project_id); if ($this->is_month_locked_for_current_user($this->month_from_date($payload['cost_date']))) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); } $errors = $this->project_financial_service->validate_project_cost($payload); if ($errors) { return new WP_Error('erp_omd_project_cost_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->project_costs->create($payload); $this->project_financial_service->rebuild_for_project($project_id); return new WP_REST_Response($this->project_costs->find($id), 201); }
     public function get_project_cost(WP_REST_Request $request) { return $this->find_or_error($this->project_costs->find((int) $request['id']), 'erp_omd_project_cost_not_found', __('Project cost not found.', 'erp-omd')); }
-    public function update_project_cost(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->project_costs->find($id); if (! $existing) { return new WP_Error('erp_omd_project_cost_not_found', __('Project cost not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_project_cost_payload($request, (int) $existing['project_id']); $errors = $this->project_financial_service->validate_project_cost($payload); if ($errors) { return new WP_Error('erp_omd_project_cost_invalid', implode(' ', $errors), ['status' => 422]); } $this->project_costs->update($id, $payload); $this->project_financial_service->rebuild_for_project((int) $existing['project_id']); return rest_ensure_response($this->project_costs->find($id)); }
-    public function delete_project_cost(WP_REST_Request $request) { $existing = $this->project_costs->find((int) $request['id']); if ($existing) { $this->project_costs->delete((int) $request['id']); $this->project_financial_service->rebuild_for_project((int) $existing['project_id']); } return new WP_REST_Response(null, 204); }
+    public function update_project_cost(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->project_costs->find($id); if (! $existing) { return new WP_Error('erp_omd_project_cost_not_found', __('Project cost not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_project_cost_payload($request, (int) $existing['project_id']); if ($this->is_month_locked_for_current_user($this->month_from_date($payload['cost_date']))) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); } $errors = $this->project_financial_service->validate_project_cost($payload); if ($errors) { return new WP_Error('erp_omd_project_cost_invalid', implode(' ', $errors), ['status' => 422]); } $this->project_costs->update($id, $payload); $this->project_financial_service->rebuild_for_project((int) $existing['project_id']); return rest_ensure_response($this->project_costs->find($id)); }
+    public function delete_project_cost(WP_REST_Request $request) { $existing = $this->project_costs->find((int) $request['id']); if ($existing) { if ($this->is_month_locked_for_current_user($this->month_from_date($existing['cost_date'] ?? ''))) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); } $this->project_costs->delete((int) $request['id']); $this->project_financial_service->rebuild_for_project((int) $existing['project_id']); } return new WP_REST_Response(null, 204); }
     public function get_project_finance(WP_REST_Request $request) { $project_id = (int) $request['id']; if (! $this->projects->find($project_id)) { return new WP_Error('erp_omd_project_not_found', __('Project not found.', 'erp-omd'), ['status' => 404]); } return rest_ensure_response($this->project_financial_service->rebuild_for_project($project_id)); }
 
     public function list_time_entries(WP_REST_Request $request)
@@ -512,6 +525,7 @@ class ERP_OMD_REST_API
     public function create_time_entry(WP_REST_Request $request)
     {
         $payload = $this->sanitize_time_entry_payload($request);
+        if ($this->is_month_locked_for_current_user($this->month_from_date($payload['entry_date']))) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); }
         if (! current_user_can('administrator') && ! current_user_can('erp_omd_approve_time')) {
             $payload['employee_id'] = $this->current_employee_id();
             $payload['status'] = 'submitted';
@@ -532,6 +546,7 @@ class ERP_OMD_REST_API
         $existing = $this->time_entries->find($id);
         if (! $existing) { return new WP_Error('erp_omd_time_not_found', __('Time entry not found.', 'erp-omd'), ['status' => 404]); }
         if (! current_user_can('administrator')) { return new WP_Error('erp_omd_time_forbidden', __('Only administrator can edit time entries.', 'erp-omd'), ['status' => 403]); }
+        if ($this->is_month_locked_for_current_user($this->month_from_date($existing['entry_date'] ?? ''))) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); }
         $payload = $this->sanitize_time_entry_payload($request);
         if (! current_user_can('administrator') && ! current_user_can('erp_omd_approve_time')) {
             $payload['employee_id'] = $this->current_employee_id();
@@ -551,6 +566,7 @@ class ERP_OMD_REST_API
     {
         if (! current_user_can('administrator')) { return new WP_Error('erp_omd_time_forbidden', __('Only administrator can delete time entries.', 'erp-omd'), ['status' => 403]); }
         $existing = $this->time_entries->find((int) $request['id']);
+        if ($existing && $this->is_month_locked_for_current_user($this->month_from_date($existing['entry_date'] ?? ''))) { return new WP_Error('erp_omd_period_locked', __('Month is locked for non-admin users.', 'erp-omd'), ['status' => 403]); }
         $this->time_entries->delete((int) $request['id']);
         if ($existing) {
             $this->project_financial_service->rebuild_for_project((int) $existing['project_id']);
@@ -599,6 +615,37 @@ class ERP_OMD_REST_API
         $filters['tab'] = 'calendar';
 
         return rest_ensure_response($this->reporting_service->build_calendar($filters));
+    }
+
+    public function get_period_status(WP_REST_Request $request)
+    {
+        $month = sanitize_text_field((string) $request['month']);
+        $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
+        $checklist = $this->period_service->build_readiness_checklist($this->readiness_signals_for_month($month));
+
+        return rest_ensure_response([
+            'period' => $period,
+            'checklist' => $checklist,
+        ]);
+    }
+
+    public function transition_period_status(WP_REST_Request $request)
+    {
+        $month = sanitize_text_field((string) $request['month']);
+        $to_status = sanitize_text_field((string) $request->get_param('to_status'));
+        if (! in_array($to_status, [ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, ERP_OMD_Period_Service::STATUS_ZAMKNIETY], true)) {
+            return new WP_Error('erp_omd_period_transition_invalid', __('Invalid target period status.', 'erp-omd'), ['status' => 422]);
+        }
+
+        try {
+            $result = $this->period_service->transition_month($month, $to_status, $this->readiness_signals_for_month($month));
+        } catch (InvalidArgumentException $exception) {
+            return new WP_Error('erp_omd_period_transition_blocked', $exception->getMessage(), ['status' => 422]);
+        } catch (RuntimeException $exception) {
+            return new WP_Error('erp_omd_period_transition_failed', $exception->getMessage(), ['status' => 500]);
+        }
+
+        return rest_ensure_response($result);
     }
 
     public function list_alerts(WP_REST_Request $request)
@@ -695,7 +742,7 @@ class ERP_OMD_REST_API
                 ['value' => 'fixed_price', 'label' => __('Ryczałt', 'erp-omd')],
                 ['value' => 'retainer', 'label' => __('Abonament', 'erp-omd')],
             ],
-            'project_statuses' => ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'],
+            'project_statuses' => ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'],
             'estimate_statuses' => ['wstepny', 'do_akceptacji', 'zaakceptowany'],
             'time_statuses' => ['submitted', 'approved', 'rejected'],
             'report_types' => ['projects', 'clients', 'invoice', 'monthly'],
@@ -751,6 +798,47 @@ class ERP_OMD_REST_API
     private function is_query_filter($value)
     {
         return $value !== '' && $value !== null;
+    }
+
+    private function month_from_date($date_value)
+    {
+        $date = sanitize_text_field((string) $date_value);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
+            return gmdate('Y-m');
+        }
+
+        return substr($date, 0, 7);
+    }
+
+    private function is_month_locked_for_current_user($month)
+    {
+        if (current_user_can('administrator')) {
+            return false;
+        }
+
+        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
+    }
+
+    private function readiness_signals_for_month($month)
+    {
+        $entries = (array) $this->time_entries->all();
+        $time_entries_finalized = true;
+        foreach ($entries as $entry) {
+            if (substr((string) ($entry['entry_date'] ?? ''), 0, 7) !== $month) {
+                continue;
+            }
+            if (in_array((string) ($entry['status'] ?? ''), ['submitted', 'rejected'], true)) {
+                $time_entries_finalized = false;
+                break;
+            }
+        }
+
+        return [
+            'time_entries_finalized' => $time_entries_finalized,
+            'project_costs_verified' => true,
+            'project_client_completeness' => true,
+            'critical_settlement_locks' => true,
+        ];
     }
 
     private function sync_wp_role($user_id, $account_type)
