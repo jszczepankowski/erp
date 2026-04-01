@@ -33,4 +33,36 @@ class ERP_OMD_Adjustment_Audit_Repository
 
         return (int) $wpdb->insert_id;
     }
+
+    public function all(array $filters = [])
+    {
+        global $wpdb;
+
+        $where = [];
+        $params = [];
+        if (! empty($filters['month'])) {
+            $where[] = 'month = %s';
+            $params[] = (string) $filters['month'];
+        }
+        if (! empty($filters['entity_type'])) {
+            $where[] = 'entity_type = %s';
+            $params[] = (string) $filters['entity_type'];
+        }
+        if (! empty($filters['entity_id'])) {
+            $where[] = 'entity_id = %d';
+            $params[] = (int) $filters['entity_id'];
+        }
+
+        $sql = "SELECT * FROM {$this->table_name()}";
+        if ($where !== []) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= ' ORDER BY changed_at DESC, id DESC';
+
+        if ($params !== []) {
+            $sql = $wpdb->prepare($sql, ...$params);
+        }
+
+        return $wpdb->get_results($sql, ARRAY_A);
+    }
 }

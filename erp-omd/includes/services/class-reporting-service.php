@@ -722,6 +722,9 @@ class ERP_OMD_Reporting_Service
         $projects = $this->projects->all();
 
         return array_values(array_filter($projects, function ($project) use ($filters) {
+            if (! $this->matches_mode((string) ($project['status'] ?? ''), (string) ($filters['mode'] ?? 'LIVE'))) {
+                return false;
+            }
             if ($filters['project_id'] > 0 && (int) ($project['id'] ?? 0) !== $filters['project_id']) {
                 return false;
             }
@@ -845,8 +848,8 @@ class ERP_OMD_Reporting_Service
                 continue;
             }
 
-            $end_date = (string) ($project['end_date'] ?? '');
-            $month = substr($end_date, 0, 7);
+            $operational_close_month = trim((string) ($project['operational_close_month'] ?? ''));
+            $month = $operational_close_month !== '' ? $operational_close_month : substr((string) ($project['end_date'] ?? ''), 0, 7);
             if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
                 continue;
             }
@@ -859,6 +862,22 @@ class ERP_OMD_Reporting_Service
         }
 
         return $metrics;
+    }
+
+    private function matches_mode($project_status, $mode)
+    {
+        $normalized_mode = strtoupper(str_replace('_', ' ', (string) $mode));
+        $project_status = (string) $project_status;
+
+        if ($normalized_mode === 'DO ROZLICZENIA') {
+            return in_array($project_status, ['do_faktury', 'zakonczony'], true);
+        }
+
+        if ($normalized_mode === 'ZAMKNIĘTY' || $normalized_mode === 'ZAMKNIETY') {
+            return in_array($project_status, ['zakonczony', 'archiwum'], true);
+        }
+
+        return in_array($project_status, ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony'], true);
     }
 
     private function emptyEntryMetrics()

@@ -177,6 +177,9 @@ final class ReportingServiceTestRunner
         $this->assertSame(1, count($invoiceStatusProjectReport), 'Project status filter should narrow projects by lifecycle status.');
         $this->assertSame('Branding', $invoiceStatusProjectReport[0]['project_name'], 'Project status filter should keep matching project rows.');
 
+        $settlementModeReport = $service->build_project_report($service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'mode' => 'DO_ROZLICZENIA']));
+        $this->assertSame(1, count($settlementModeReport), 'DO ROZLICZENIA mode should keep invoice-ready/closed projects only.');
+
         $clientReport = $service->build_client_report($filters);
         $this->assertSame(2, count($clientReport), 'Client report should aggregate per client.');
         $this->assertSame('ACME', $clientReport[0]['client_name'], 'Client report should keep client name.');

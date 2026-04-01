@@ -110,6 +110,9 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/periods/(?P<month>\d{4}-\d{2})/transition', [
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'transition_period'], 'permission_callback' => [$this, 'can_manage_settings']],
         ]);
+        register_rest_route('erp-omd/v1', '/adjustments', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_adjustments'], 'permission_callback' => [$this, 'can_manage_settings']],
+        ]);
     }
 
     private function register_role_routes()
@@ -628,6 +631,24 @@ class ERP_OMD_REST_API
         return rest_ensure_response($result);
     }
 
+    public function list_adjustments(WP_REST_Request $request)
+    {
+        $filters = [
+            'month' => sanitize_text_field((string) $request->get_param('month')),
+            'entity_type' => sanitize_key((string) $request->get_param('entity_type')),
+            'entity_id' => (int) $request->get_param('entity_id'),
+        ];
+
+        if (! preg_match('/^\d{4}-\d{2}$/', (string) $filters['month'])) {
+            $filters['month'] = '';
+        }
+        if (! in_array($filters['entity_type'], ['', 'time_entry', 'project_cost'], true)) {
+            $filters['entity_type'] = '';
+        }
+
+        return rest_ensure_response($this->adjustment_audit->all($filters));
+    }
+
     public function list_reports(WP_REST_Request $request)
     {
         $filters = $this->reporting_service->sanitize_filters($request->get_params());
@@ -754,6 +775,7 @@ class ERP_OMD_REST_API
             'estimate_statuses' => ['wstepny', 'do_akceptacji', 'zaakceptowany'],
             'time_statuses' => ['submitted', 'approved', 'rejected'],
             'report_types' => ['projects', 'clients', 'invoice', 'monthly'],
+            'period_modes' => ['LIVE', 'DO ROZLICZENIA', 'ZAMKNIĘTY'],
             'attachment_entity_types' => ['project', 'estimate'],
             'export_variants' => ['client', 'agency'],
         ]);
