@@ -562,6 +562,8 @@ final class RestApiTestRunner
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['readiness_checklist.ready']), 'Dashboard endpoint should expose readiness definition tooltip key.');
         $this->assertSame(true, isset($dashboardPayload['drilldown_links']['settlement_queue']), 'Dashboard endpoint should expose drilldown links for queue and adjustments.');
         $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=invoice&month=2026-03', $dashboardPayload['drilldown_links']['settlement_queue'], 'Dashboard queue drilldown should target invoice report for selected month.');
+        $this->assertSame(true, isset($dashboardPayload['profitability_by_scope']['project']['top']), 'Dashboard endpoint should expose project ranking buckets for scope switch without reload.');
+        $this->assertSame(2, count($dashboardPayload['profitability_by_scope']['client']['bottom']), 'Dashboard endpoint should expose client ranking rows in profitability_by_scope.');
         $this->assertSame(2, $dashboardPayload['settlement_queue']['count'], 'Dashboard endpoint should expose invoice queue count.');
 
         echo "Assertions: {$this->assertions}\n";

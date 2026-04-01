@@ -203,11 +203,9 @@ class ERP_OMD_REST_API
                 $adjustments = $this->adjustment_audit->all(['month' => $month]);
 
                 $source_rows = $scope === 'client' ? $client_rows : $project_rows;
-                usort($source_rows, static function ($a, $b) {
-                    return (float) ($b['margin'] ?? 0) <=> (float) ($a['margin'] ?? 0);
-                });
-                $top = array_slice($source_rows, 0, 5);
-                $bottom = array_slice(array_reverse($source_rows), 0, 5);
+                $ranked_scope = $this->rank_profitability_rows($source_rows);
+                $ranked_projects = $this->rank_profitability_rows($project_rows);
+                $ranked_clients = $this->rank_profitability_rows($client_rows);
 
                 $adjustment_impact = 0.0;
                 foreach ($adjustments as $row) {
@@ -229,8 +227,12 @@ class ERP_OMD_REST_API
                     'drilldown_links' => $this->dashboard_drilldown_links($month),
                     'trend_3m' => $trend_3m,
                     'profitability_scope' => $scope,
-                    'profitability_top' => $top,
-                    'profitability_bottom' => $bottom,
+                    'profitability_top' => $ranked_scope['top'],
+                    'profitability_bottom' => $ranked_scope['bottom'],
+                    'profitability_by_scope' => [
+                        'project' => $ranked_projects,
+                        'client' => $ranked_clients,
+                    ],
                     'settlement_queue' => [
                         'count' => count($queue_rows),
                         'items' => $queue_rows,
@@ -269,6 +271,18 @@ class ERP_OMD_REST_API
             'adjustments' => $base . '&report_type=time&month=' . rawurlencode((string) $month) . '&adjustments=1',
             'profitability_projects' => $base . '&report_type=projects&month=' . rawurlencode((string) $month),
             'profitability_clients' => $base . '&report_type=clients&month=' . rawurlencode((string) $month),
+        ];
+    }
+
+    private function rank_profitability_rows(array $rows)
+    {
+        usort($rows, static function ($a, $b) {
+            return (float) ($b['margin'] ?? 0) <=> (float) ($a['margin'] ?? 0);
+        });
+
+        return [
+            'top' => array_slice($rows, 0, 5),
+            'bottom' => array_slice(array_reverse($rows), 0, 5),
         ];
     }
 
