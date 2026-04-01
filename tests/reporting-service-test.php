@@ -162,6 +162,8 @@ final class ReportingServiceTestRunner
         $filters = $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03']);
         $this->assertSame('projects', $filters['report_type'], 'Project report should remain selected.');
         $this->assertSame('2026-03', $filters['month'], 'Valid month filter should be preserved.');
+        $this->assertSame(1, $filters['page_num'], 'Filters should default to first page.');
+        $this->assertSame(25, $filters['per_page'], 'Filters should default to 25 rows per page.');
 
         $projectReport = $service->build_project_report($filters);
         $this->assertSame(2, count($projectReport), 'Project report should include all matching projects.');
@@ -179,6 +181,14 @@ final class ReportingServiceTestRunner
 
         $settlementModeReport = $service->build_project_report($service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'mode' => 'DO_ROZLICZENIA']));
         $this->assertSame(1, count($settlementModeReport), 'DO ROZLICZENIA mode should keep invoice-ready/closed projects only.');
+
+        $projectDetail = $service->build_project_report($service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'detail' => 'detail', 'project_id' => 10]));
+        $this->assertSame(1, count($projectDetail), 'Project detail report should respect project filter.');
+        $this->assertSame(true, isset($projectDetail[0]['detail']['time_entries']), 'Project detail report should include time entry drilldown rows.');
+        $this->assertSame(1, count($projectDetail[0]['detail']['time_entries']), 'Project detail report should include approved entries for selected month by default.');
+        $this->assertSame(1, count($projectDetail[0]['detail']['direct_cost_items']), 'Project detail report should include direct cost rows for selected month.');
+        $this->assertSame(200.0, $projectDetail[0]['detail']['billing_mix']['hourly_component'], 'Project detail report should expose billing mix hourly component.');
+        $this->assertSame(19.0, $projectDetail[0]['detail']['billing_mix']['budget_usage'], 'Project detail report should expose billing mix budget usage.');
 
         $clientReport = $service->build_client_report($filters);
         $this->assertSame(2, count($clientReport), 'Client report should aggregate per client.');
@@ -198,12 +208,23 @@ final class ReportingServiceTestRunner
         $this->assertSame(1, count($monthlyReport), 'Monthly report should group entries by month.');
         $this->assertSame(5.0, $monthlyReport[0]['hours'], 'Monthly report should sum approved hours for the month.');
 
+        $timeEntriesPage2 = $service->build_report('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'per_page' => 1, 'page_num' => 2]));
+        $timePagination = $service->get_last_report_pagination();
+        $this->assertSame(2, $timePagination['total_items'], 'Time entries pagination should expose total approved rows for the month.');
+        $this->assertSame(2, $timePagination['total_pages'], 'Time entries pagination should expose number of pages.');
+        $this->assertSame(2, $timePagination['page_num'], 'Time entries pagination should keep current page.');
+        $this->assertSame(1, count($timeEntriesPage2), 'Time entries report should return only rows for current page.');
+        $this->assertSame('2026-03-10', $timeEntriesPage2[0]['entry_date'], 'Time entries pagination should return the second row on page 2.');
+
         $omdSettlement = $service->build_omd_settlement_report($filters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
         $this->assertSame('2026-03', $omdSettlement[11]['month'], 'OMD settlement report should end with selected month.');
         $this->assertSame(0.0, $omdSettlement[10]['active_project_budgets'], 'OMD settlement should not recognize project budget before operational_close_month.');
         $this->assertSame(5000.0, $omdSettlement[11]['active_project_budgets'], 'OMD settlement should recognize project budget in operational_close_month.');
         $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
+        $this->assertSame(5130.0, $omdSettlement[11]['operational_result'], 'OMD settlement should expose operational result before controlling overhead.');
+        $this->assertSame(19000.0, $omdSettlement[11]['controlling_overhead'], 'OMD settlement should expose controlling overhead components.');
+        $this->assertSame(-13870.0, $omdSettlement[11]['controlling_result'], 'OMD settlement should expose controlling result after overhead.');
 
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame('2026-03', $calendar['month'], 'Calendar should be built for requested month.');
@@ -217,6 +238,14 @@ final class ReportingServiceTestRunner
         $this->assertSame('Miesiąc zamk. oper.', $export['headers'][16], 'Project export should include operational close month column.');
         $this->assertSame(2, count($export['rows']), 'Project export should include report rows.');
         $this->assertSame('2026-02', $export['rows'][0][16], 'Project export should include operational close month value.');
+
+        $timeExport = $service->export_definition('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'per_page' => 1, 'page_num' => 2]));
+        $this->assertSame(1, count($timeExport['rows']), 'Time entries export should match paginated time report row count.');
+        $this->assertSame('2026-03-10', $timeExport['rows'][0][0], 'Time entries export should match visible paginated row order.');
+
+        $omdExport = $service->export_definition('omd_rozliczenia', $filters);
+        $this->assertSame('Narzut controllingowy', $omdExport['headers'][7], 'OMD export should expose controlling overhead column.');
+        $this->assertSame('Wynik controllingowy', $omdExport['headers'][8], 'OMD export should expose controlling result column.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "Reporting service tests passed.\n";
