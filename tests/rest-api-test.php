@@ -51,6 +51,24 @@ if (! function_exists('rest_ensure_response')) {
         return $data;
     }
 }
+if (! function_exists('add_action')) {
+    function add_action($hook, $callback)
+    {
+        return true;
+    }
+}
+if (! function_exists('register_rest_route')) {
+    function register_rest_route($namespace, $route, $args)
+    {
+        $GLOBALS['erp_omd_registered_rest_routes'][] = [
+            'namespace' => $namespace,
+            'route' => $route,
+            'args' => $args,
+        ];
+
+        return true;
+    }
+}
 if (! function_exists('current_user_can')) {
     function current_user_can($capability)
     {
@@ -138,7 +156,7 @@ if (! class_exists('WP_REST_Server')) {
 }
 
 if (! class_exists('WP_REST_Request')) {
-    class WP_REST_Request
+    class WP_REST_Request implements ArrayAccess
     {
         private $params;
 
@@ -155,6 +173,26 @@ if (! class_exists('WP_REST_Request')) {
         public function get_params()
         {
             return $this->params;
+        }
+
+        public function offsetExists($offset): bool
+        {
+            return array_key_exists((string) $offset, $this->params);
+        }
+
+        public function offsetGet($offset)
+        {
+            return $this->params[(string) $offset] ?? null;
+        }
+
+        public function offsetSet($offset, $value): void
+        {
+            $this->params[(string) $offset] = $value;
+        }
+
+        public function offsetUnset($offset): void
+        {
+            unset($this->params[(string) $offset]);
         }
     }
 }
@@ -236,7 +274,16 @@ if (! class_exists('ERP_OMD_Client_Rate_Repository')) {
     class ERP_OMD_Client_Rate_Repository { public function for_client($id) { return []; } public function find($id) { return ['id' => $id, 'client_id' => 1, 'role_id' => 1, 'rate' => 100]; } }
 }
 if (! class_exists('ERP_OMD_Project_Repository')) {
-    class ERP_OMD_Project_Repository { public function all() { return [['id' => 10]]; } public function find($id) { return ['id' => $id, 'client_id' => 1]; } }
+    class ERP_OMD_Project_Repository {
+        public function all()
+        {
+            return [
+                ['id' => 10, 'client_id' => 1, 'name' => 'Projekt A', 'status' => 'w_realizacji', 'start_date' => '2026-03-01', 'end_date' => '2026-03-31'],
+                ['id' => 11, 'client_id' => 0, 'name' => '', 'status' => 'do_rozpoczecia', 'start_date' => '2026-05-01', 'end_date' => '2026-05-31'],
+            ];
+        }
+        public function find($id) { return ['id' => $id, 'client_id' => 1]; }
+    }
 }
 if (! class_exists('ERP_OMD_Estimate_Repository')) {
     class ERP_OMD_Estimate_Repository { public function all() { return [['id' => 20]]; } public function find($id) { return ['id' => $id, 'client_id' => 1, 'status' => 'wstepny']; } }
@@ -257,13 +304,33 @@ if (! class_exists('ERP_OMD_Project_Rate_Repository')) {
     class ERP_OMD_Project_Rate_Repository { public function for_project($id) { return []; } public function find($id) { return ['id' => $id, 'project_id' => 10, 'role_id' => 1, 'rate' => 100]; } }
 }
 if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
-    class ERP_OMD_Project_Cost_Repository { public function for_project($id) { return []; } public function find($id) { return ['id' => $id, 'project_id' => 10]; } }
+    class ERP_OMD_Project_Cost_Repository {
+        public function for_project($id)
+        {
+            if ((int) $id !== 10) {
+                return [];
+            }
+
+            return [
+                ['project_id' => (int) $id, 'cost_date' => '2026-03-10', 'amount' => 100.0, 'description' => 'Hosting'],
+            ];
+        }
+        public function find($id) { return ['id' => $id, 'project_id' => 10]; }
+    }
 }
 if (! class_exists('ERP_OMD_Project_Financial_Repository')) {
     class ERP_OMD_Project_Financial_Repository {}
 }
 if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
-    class ERP_OMD_Time_Entry_Repository { public function all(array $filters = []) { return []; } public function find($id) { return ['id' => $id, 'project_id' => 10, 'created_by_user_id' => 1, 'status' => 'submitted']; } }
+    class ERP_OMD_Time_Entry_Repository {
+        public function all(array $filters = [])
+        {
+            return [
+                ['id' => 1, 'entry_date' => '2026-03-05', 'status' => 'submitted', 'project_id' => 10],
+            ];
+        }
+        public function find($id) { return ['id' => $id, 'project_id' => 10, 'created_by_user_id' => 1, 'status' => 'submitted']; }
+    }
 }
 if (! class_exists('ERP_OMD_Attachment_Repository')) {
     class ERP_OMD_Attachment_Repository
@@ -324,10 +391,45 @@ if (! class_exists('ERP_OMD_Alert_Service')) {
 }
 if (! class_exists('ERP_OMD_Period_Service')) {
     class ERP_OMD_Period_Service {
-        public function get_or_create($month) { return ['month' => $month, 'status' => 'LIVE']; }
-        public function checklist($month) { return ['month' => $month, 'items' => []]; }
-        public function transition($month, $status) { return ['month' => $month, 'status' => $status]; }
-        public function can_modify_date($date, $is_admin, $emergency = false) { return true; }
+        public const STATUS_LIVE = 'LIVE';
+        public const STATUS_DO_ROZLICZENIA = 'DO_ROZLICZENIA';
+        public const STATUS_ZAMKNIETY = 'ZAMKNIETY';
+
+        private $rows = [];
+
+        public function list_periods() { return array_values($this->rows); }
+        public function ensure_month_exists($month, $updated_by = 0)
+        {
+            if (! isset($this->rows[$month])) {
+                $this->rows[$month] = ['month' => $month, 'status' => 'LIVE', 'closed_at' => null, 'correction_window_until' => null, 'updated_by' => (int) $updated_by];
+            }
+
+            return $this->rows[$month];
+        }
+        public function build_readiness_checklist(array $signals)
+        {
+            $checks = [];
+            foreach (['time_entries_finalized', 'project_costs_verified', 'project_client_completeness', 'critical_settlement_locks'] as $key) {
+                $checks[$key] = ! empty($signals[$key]);
+            }
+            $blockers = array_keys(array_filter($checks, static function ($passed) { return ! $passed; }));
+
+            return ['ready' => $blockers === [], 'checks' => $checks, 'blockers' => $blockers];
+        }
+        public function transition_month($month, $status, array $readiness)
+        {
+            $existing = $this->ensure_month_exists($month, get_current_user_id());
+            $checklist = $this->build_readiness_checklist($readiness);
+            if ($existing['status'] === 'LIVE' && $status === 'DO_ROZLICZENIA' && ! $checklist['ready']) {
+                throw new InvalidArgumentException('LIVE -> DO_ROZLICZENIA requires readiness checklist == ready.');
+            }
+            $this->rows[$month]['status'] = $status;
+
+            return ['period' => $this->rows[$month], 'checklist' => $checklist];
+        }
+        public function is_month_locked_for_regular_user($status) { return in_array((string) $status, ['DO_ROZLICZENIA', 'ZAMKNIETY'], true); }
+        public function resolve_month_status($month) { return (string) ($this->ensure_month_exists($month)['status'] ?? 'LIVE'); }
+        public function is_emergency_adjustment_required(DateTimeImmutable $now, DateTimeImmutable $deadline) { return $now > $deadline; }
     }
 }
 if (! class_exists('ERP_OMD_Adjustment_Audit_Repository')) {
@@ -342,16 +444,30 @@ final class RestApiTestRunner
 
     public function run(): void
     {
+        $GLOBALS['erp_omd_registered_rest_routes'] = [];
         $restApiSource = file_get_contents(__DIR__ . '/../erp-omd/includes/class-rest-api.php');
         $duplicateLegacyMethodCount = preg_match_all('/function\s+register_period_routes\s*\(/', (string) $restApiSource);
         $this->assertSame(0, (int) $duplicateLegacyMethodCount, 'REST API source should not contain legacy duplicated register_period_routes declarations.');
         $duplicateManagementMethodCount = preg_match_all('/function\s+register_period_management_routes\s*\(/', (string) $restApiSource);
         $this->assertSame(0, (int) $duplicateManagementMethodCount, 'REST API source should not contain dedicated period management registration method declarations.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+get_period_status\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy get_period_status method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+list_periods\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy list_periods method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+transition_period_status\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy transition_period_status method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+list_adjustments\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy list_adjustments method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+create_adjustment\s*\(/', (string) $restApiSource), 'REST API source should not redeclare legacy create_adjustment method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+month_from_date\s*\(/', (string) $restApiSource), 'REST API source should not declare month_from_date as a class method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+period_status_endpoint\s*\(/', (string) $restApiSource), 'REST API source should not declare period_status_endpoint as a class method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+periods_index_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should not declare periods_index_endpoint_v1 as a class method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+period_transition_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should not declare period_transition_endpoint_v1 as a class method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+adjustments_index_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should not declare adjustments_index_endpoint_v1 as a class method.');
+        $this->assertSame(0, (int) preg_match_all('/function\s+adjustments_create_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should not declare adjustments_create_endpoint_v1 as a class method.');
 
         $periodRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/periods/", (string) $restApiSource);
         $this->assertSame(3, (int) $periodRouteCount, 'REST API source should register all three period routes directly in register_routes.');
         $adjustmentsRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/adjustments'/", (string) $restApiSource);
         $this->assertSame(1, (int) $adjustmentsRouteCount, 'REST API source should register adjustments route directly in register_routes.');
+        $dashboardRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/dashboard-v1'/", (string) $restApiSource);
+        $this->assertSame(1, (int) $dashboardRouteCount, 'REST API source should register dashboard-v1 route directly in register_routes.');
 
         preg_match_all('/function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/', (string) $restApiSource, $methodMatches);
         $methodNames = $methodMatches[1] ?? [];
@@ -407,8 +523,39 @@ final class RestApiTestRunner
         $this->assertSame(1, $system['counts']['alerts'], 'System status should include alert count.');
         $this->assertSame(true, $system['current_user']['can_manage_settings'], 'System status should expose current user capabilities.');
 
+        $api->register_routes();
+        $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})', WP_REST_Server::READABLE);
+        $periodStatusPayload = $periodStatusCallback(new WP_REST_Request(['month' => '2026-03']));
+        $this->assertSame(false, $periodStatusPayload['checklist']['ready'], 'Period status endpoint should expose non-ready checklist for month with submitted entries.');
+        $this->assertSame(true, in_array('time_entries_finalized', $periodStatusPayload['checklist']['blockers'], true), 'Period status endpoint should include time_entries_finalized as a blocker.');
+        $this->assertSame(true, $periodStatusPayload['checklist']['checks']['project_client_completeness'], 'Checklist should ignore unrelated future projects when validating client completeness for selected month.');
+
+        $transitionCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})/transition', WP_REST_Server::CREATABLE);
+        $transitionBlocked = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'DO_ROZLICZENIA']));
+        $this->assertSame('erp_omd_period_transition_blocked', $transitionBlocked->get_error_code(), 'Transition endpoint should block LIVE -> DO_ROZLICZENIA when checklist is not ready.');
+
+        $transitionInvalid = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'LIVE']));
+        $this->assertSame('erp_omd_period_transition_invalid', $transitionInvalid->get_error_code(), 'Transition endpoint should reject unsupported target statuses.');
+
         echo "Assertions: {$this->assertions}\n";
         echo "REST API tests passed.\n";
+    }
+
+    private function findRouteCallback(string $route, string $method)
+    {
+        foreach ((array) ($GLOBALS['erp_omd_registered_rest_routes'] ?? []) as $registration) {
+            if (($registration['namespace'] ?? '') !== 'erp-omd/v1' || ($registration['route'] ?? '') !== $route) {
+                continue;
+            }
+
+            foreach ((array) ($registration['args'] ?? []) as $endpoint) {
+                if (($endpoint['methods'] ?? '') === $method) {
+                    return $endpoint['callback'];
+                }
+            }
+        }
+
+        throw new RuntimeException('Unable to find registered callback for route ' . $route . ' [' . $method . ']');
     }
 
     private function assertSame($expected, $actual, string $message): void
