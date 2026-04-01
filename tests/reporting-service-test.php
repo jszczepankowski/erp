@@ -183,6 +183,12 @@ final class ReportingServiceTestRunner
         $clientReport = $service->build_client_report($filters);
         $this->assertSame(2, count($clientReport), 'Client report should aggregate per client.');
         $this->assertSame('ACME', $clientReport[0]['client_name'], 'Client report should keep client name.');
+        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=clients&month=2026-03&detail=detail&client_id=1', $clientReport[0]['drilldown_link'], 'Client report should expose drilldown link to detail view.');
+
+        $clientDetail = $service->build_client_report($service->sanitize_filters(['report_type' => 'clients', 'month' => '2026-03', 'detail' => 'detail', 'client_id' => 1]));
+        $this->assertSame(1, count($clientDetail), 'Client detail report should respect client filter.');
+        $this->assertSame(1, count($clientDetail[0]['projects']), 'Client detail report should include project-level rows.');
+        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=time_entries&month=2026-03&project_id=10', $clientDetail[0]['projects'][0]['drilldown_link'], 'Client detail projects should expose drilldown to line-by-line time entries.');
 
         $invoiceReport = $service->build_invoice_report($filters);
         $this->assertSame(1, count($invoiceReport), 'Invoice report should only include do_faktury projects.');

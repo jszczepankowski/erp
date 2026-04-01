@@ -59,12 +59,18 @@ class ERP_OMD_Reporting_Service
             $mode = 'LIVE';
         }
 
+        $detail = sanitize_key((string) ($raw_filters['detail'] ?? 'simple'));
+        if (! in_array($detail, ['simple', 'detail'], true)) {
+            $detail = 'simple';
+        }
+
         return [
             'client_id' => (int) ($raw_filters['client_id'] ?? 0),
             'project_id' => (int) ($raw_filters['project_id'] ?? 0),
             'employee_id' => (int) ($raw_filters['employee_id'] ?? 0),
             'status' => $status,
             'mode' => $mode,
+            'detail' => $detail,
             'month' => $month,
             'report_type' => $report_type,
             'tab' => $tab,
@@ -257,6 +263,7 @@ class ERP_OMD_Reporting_Service
             }
 
             $rows[] = [
+                'client_id' => (int) ($project['client_id'] ?? 0),
                 'project_id' => $project_id,
                 'project_name' => (string) ($project['name'] ?? ''),
                 'client_name' => (string) ($project['client_name'] ?? ''),
@@ -275,6 +282,11 @@ class ERP_OMD_Reporting_Service
                 'profit' => (float) ($financial['profit'] ?? 0),
                 'margin' => (float) ($financial['margin'] ?? 0),
                 'budget_usage' => (float) ($financial['budget_usage'] ?? 0),
+                'drilldown_link' => $this->build_reports_link([
+                    'report_type' => 'time_entries',
+                    'month' => (string) $filters['month'],
+                    'project_id' => (string) $project_id,
+                ]),
             ];
 
             if (($filters['report_type'] ?? '') === 'invoice') {
@@ -368,11 +380,15 @@ class ERP_OMD_Reporting_Service
         $filters = $this->sanitize_filters($filters);
         $project_rows = $this->build_project_report($filters);
         $client_rows = [];
+        $detail_index = [];
 
         foreach ($project_rows as $project_row) {
             $client_name = (string) ($project_row['client_name'] ?? '—');
-            if (! isset($client_rows[$client_name])) {
-                $client_rows[$client_name] = [
+            $client_id = (int) ($project_row['client_id'] ?? 0);
+            $client_key = $client_id > 0 ? 'id:' . $client_id : 'name:' . $client_name;
+            if (! isset($client_rows[$client_key])) {
+                $client_rows[$client_key] = [
+                    'client_id' => $client_id,
                     'client_name' => $client_name,
                     'projects_count' => 0,
                     'reported_hours' => 0.0,
@@ -385,24 +401,79 @@ class ERP_OMD_Reporting_Service
                 ];
             }
 
-            $client_rows[$client_name]['projects_count']++;
-            $client_rows[$client_name]['reported_hours'] += (float) $project_row['reported_hours'];
-            $client_rows[$client_name]['filtered_time_revenue'] += (float) $project_row['filtered_time_revenue'];
-            $client_rows[$client_name]['filtered_time_cost'] += (float) $project_row['filtered_time_cost'];
-            $client_rows[$client_name]['filtered_direct_cost'] += (float) $project_row['filtered_direct_cost'];
-            $client_rows[$client_name]['revenue'] += (float) $project_row['revenue'];
-            $client_rows[$client_name]['cost'] += (float) $project_row['cost'];
-            $client_rows[$client_name]['profit'] += (float) $project_row['profit'];
+            $client_rows[$client_key]['projects_count']++;
+            $client_rows[$client_key]['reported_hours'] += (float) $project_row['reported_hours'];
+            $client_rows[$client_key]['filtered_time_revenue'] += (float) $project_row['filtered_time_revenue'];
+            $client_rows[$client_key]['filtered_time_cost'] += (float) $project_row['filtered_time_cost'];
+            $client_rows[$client_key]['filtered_direct_cost'] += (float) $project_row['filtered_direct_cost'];
+            $client_rows[$client_key]['revenue'] += (float) $project_row['revenue'];
+            $client_rows[$client_key]['cost'] += (float) $project_row['cost'];
+            $client_rows[$client_key]['profit'] += (float) $project_row['profit'];
+
+            if ($filters['detail'] === 'detail') {
+                if (! isset($detail_index[$client_key])) {
+                    $detail_index[$client_key] = [];
+                }
+                $detail_index[$client_key][] = [
+                    'project_id' => (int) ($project_row['project_id'] ?? 0),
+                    'project_name' => (string) ($project_row['project_name'] ?? ''),
+                    'status' => (string) ($project_row['status'] ?? ''),
+                    'billing_type' => (string) ($project_row['billing_type'] ?? ''),
+                    'reported_hours' => (float) ($project_row['reported_hours'] ?? 0),
+                    'revenue' => (float) ($project_row['revenue'] ?? 0),
+                    'cost' => (float) ($project_row['cost'] ?? 0),
+                    'profit' => (float) ($project_row['profit'] ?? 0),
+                    'margin' => (float) ($project_row['margin'] ?? 0),
+                    'drilldown_link' => (string) ($project_row['drilldown_link'] ?? ''),
+                ];
+            }
         }
 
-        foreach ($client_rows as &$row) {
+        foreach ($client_rows as $client_key => &$row) {
             $row['margin'] = $row['revenue'] > 0 ? round(($row['profit'] / $row['revenue']) * 100, 2) : 0.0;
+            $link_filters = [
+                'report_type' => 'clients',
+                'month' => (string) $filters['month'],
+                'detail' => 'detail',
+            ];
+            if ((int) $row['client_id'] > 0) {
+                $link_filters['client_id'] = (string) ((int) $row['client_id']);
+            }
+            $row['drilldown_link'] = $this->build_reports_link($link_filters);
+            if ($filters['detail'] === 'detail') {
+                $row['projects'] = $detail_index[$client_key] ?? [];
+            }
         }
         unset($row);
 
-        ksort($client_rows);
+        uasort($client_rows, static function ($left, $right) {
+            return [(string) ($left['client_name'] ?? ''), (int) ($left['client_id'] ?? 0)] <=> [(string) ($right['client_name'] ?? ''), (int) ($right['client_id'] ?? 0)];
+        });
 
         return array_values($client_rows);
+    }
+
+    private function build_reports_link(array $params)
+    {
+        $base = '/wp-admin/admin.php?page=erp-omd-reports';
+        if (function_exists('admin_url')) {
+            $base = admin_url('admin.php?page=erp-omd-reports');
+        }
+
+        $query = [];
+        foreach ($params as $key => $value) {
+            $value = (string) $value;
+            if ($value === '') {
+                continue;
+            }
+            $query[] = rawurlencode((string) $key) . '=' . rawurlencode($value);
+        }
+
+        if ($query === []) {
+            return $base;
+        }
+
+        return $base . '&' . implode('&', $query);
     }
 
     public function build_invoice_report(array $filters)
