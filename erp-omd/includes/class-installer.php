@@ -58,6 +58,8 @@ class ERP_OMD_Installer
         $project_requests_table = $wpdb->prefix . 'erp_omd_project_requests';
         $attachments_table = $wpdb->prefix . 'erp_omd_attachments';
         $estimate_audit_table = $wpdb->prefix . 'erp_omd_estimate_audit';
+        $periods_table = $wpdb->prefix . 'erp_omd_periods';
+        $adjustment_audit_table = $wpdb->prefix . 'erp_omd_adjustment_audit';
 
         dbDelta(
             "CREATE TABLE {$roles_table} (
@@ -224,6 +226,7 @@ class ERP_OMD_Installer
                 end_date DATE NULL,
                 manager_id BIGINT UNSIGNED NULL,
                 estimate_id BIGINT UNSIGNED NULL,
+                operational_close_month CHAR(7) NULL,
                 brief LONGTEXT NULL,
                 alert_margin_threshold DECIMAL(8,2) NULL,
                 created_at DATETIME NOT NULL,
@@ -233,6 +236,7 @@ class ERP_OMD_Installer
                 KEY estimate_id (estimate_id),
                 KEY manager_id (manager_id),
                 KEY status (status),
+                KEY operational_close_month (operational_close_month),
                 KEY billing_type (billing_type)
             ) ENGINE=InnoDB {$charset_collate};"
         );
@@ -417,6 +421,43 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
+        dbDelta(
+            "CREATE TABLE {$periods_table} (
+                month CHAR(7) NOT NULL,
+                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
+                closed_at DATETIME NULL,
+                correction_window_until DATETIME NULL,
+                updated_by_user_id BIGINT UNSIGNED NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY  (month),
+                KEY status (status),
+                KEY updated_by_user_id (updated_by_user_id)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+        dbDelta(
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                month CHAR(7) NOT NULL,
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(191) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by_user_id BIGINT UNSIGNED NULL,
+                changed_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by_user_id (changed_by_user_id)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
         self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_employees_default_role', "ALTER TABLE {$employees_table} ADD CONSTRAINT fk_erp_omd_employees_default_role FOREIGN KEY (default_role_id) REFERENCES {$roles_table}(id) ON DELETE SET NULL");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_employees_user', "ALTER TABLE {$employees_table} ADD CONSTRAINT fk_erp_omd_employees_user FOREIGN KEY (user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_employee_roles_employee', "ALTER TABLE {$employee_roles_table} ADD CONSTRAINT fk_erp_omd_employee_roles_employee FOREIGN KEY (employee_id) REFERENCES {$employees_table}(id) ON DELETE CASCADE");
@@ -459,12 +500,22 @@ class ERP_OMD_Installer
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_attachments_created_by', "ALTER TABLE {$attachments_table} ADD CONSTRAINT fk_erp_omd_attachments_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($estimates_table, 'fk_erp_omd_estimate_audit_estimate', "ALTER TABLE {$estimate_audit_table} ADD CONSTRAINT fk_erp_omd_estimate_audit_estimate FOREIGN KEY (estimate_id) REFERENCES {$estimates_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_estimate_audit_user', "ALTER TABLE {$estimate_audit_table} ADD CONSTRAINT fk_erp_omd_estimate_audit_user FOREIGN KEY (changed_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_periods_updated_by_user', "ALTER TABLE {$periods_table} ADD CONSTRAINT fk_erp_omd_periods_updated_by_user FOREIGN KEY (updated_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_adjustment_audit_changed_by_user', "ALTER TABLE {$adjustment_audit_table} ADD CONSTRAINT fk_erp_omd_adjustment_audit_changed_by_user FOREIGN KEY (changed_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
 
         $wpdb->query(
             "INSERT IGNORE INTO {$project_managers_table} (project_id, employee_id, assigned_at)
             SELECT id, manager_id, updated_at
             FROM {$projects_table}
             WHERE manager_id IS NOT NULL"
+        );
+
+        $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$projects_table} SET status = %s WHERE status = %s",
+                'archiwum',
+                'inactive'
+            )
         );
 
         update_option('erp_omd_db_version', ERP_OMD_DB_VERSION);
