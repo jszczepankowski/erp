@@ -2,6 +2,64 @@
 
 declare(strict_types=1);
 
+if (! function_exists('get_current_user_id')) {
+    function get_current_user_id()
+    {
+        return 77;
+    }
+}
+
+if (! function_exists('current_time')) {
+    function current_time($type)
+    {
+        return '2026-04-05 09:15:00';
+    }
+}
+
+if (! class_exists('ERP_OMD_Period_Repository')) {
+    class ERP_OMD_Period_Repository
+    {
+        private $rows = [];
+
+        public function __construct(array $rows = [])
+        {
+            foreach ($rows as $row) {
+                $month = (string) ($row['month'] ?? '');
+                if ($month !== '') {
+                    $this->rows[$month] = $row;
+                }
+            }
+        }
+
+        public function find_by_month($month)
+        {
+            return $this->rows[(string) $month] ?? null;
+        }
+
+        public function upsert(array $data)
+        {
+            $month = (string) ($data['month'] ?? '');
+            if ($month === '') {
+                return 0;
+            }
+
+            $this->rows[$month] = array_merge([
+                'status' => ERP_OMD_Period_Service::STATUS_LIVE,
+                'closed_at' => null,
+                'correction_window_until' => null,
+                'updated_by' => 0,
+            ], $this->rows[$month] ?? [], $data);
+
+            return 1;
+        }
+
+        public function all()
+        {
+            return array_values($this->rows);
+        }
+    }
+}
+
 require_once __DIR__ . '/../erp-omd/includes/services/class-omd-period-service.php';
 
 final class OMDPeriodServiceTestRunner
@@ -73,6 +131,45 @@ final class OMDPeriodServiceTestRunner
             ),
             'Emergency mode should be required after correction window boundary.'
         );
+
+        $repository = new ERP_OMD_Period_Repository([
+            [
+                'month' => '2026-03',
+                'status' => ERP_OMD_Period_Service::STATUS_LIVE,
+                'closed_at' => null,
+                'correction_window_until' => null,
+                'updated_by' => 1,
+            ],
+        ]);
+        $repositoryBackedService = new ERP_OMD_Period_Service($repository);
+
+        $createdPeriod = $repositoryBackedService->ensure_month_exists('2026-04', 12);
+        $this->assertSame('2026-04', $createdPeriod['month'], 'ensure_month_exists should create missing month rows.');
+        $this->assertSame(ERP_OMD_Period_Service::STATUS_LIVE, $createdPeriod['status'], 'New months should default to LIVE status.');
+        $this->assertSame(12, $createdPeriod['updated_by'], 'ensure_month_exists should preserve explicit updater ID during bootstrap.');
+
+        $liveToSettlement = $repositoryBackedService->transition_month('2026-04', ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, [
+            'time_entries_finalized' => true,
+            'project_costs_verified' => true,
+            'project_client_completeness' => true,
+            'critical_settlement_locks' => true,
+        ]);
+        $this->assertSame(ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, $liveToSettlement['period']['status'], 'Transition should update month status to DO_ROZLICZENIA.');
+        $this->assertSame(77, $liveToSettlement['period']['updated_by'], 'Transition should record updater from current user context.');
+        $this->assertTrue($liveToSettlement['checklist']['ready'], 'Checklist should be ready for fully passed readiness signals.');
+
+        $closeResult = $repositoryBackedService->transition_month('2026-04', ERP_OMD_Period_Service::STATUS_ZAMKNIETY, [
+            'time_entries_finalized' => true,
+            'project_costs_verified' => true,
+            'project_client_completeness' => true,
+            'critical_settlement_locks' => true,
+        ]);
+        $this->assertSame(ERP_OMD_Period_Service::STATUS_ZAMKNIETY, $closeResult['period']['status'], 'Transition should allow DO_ROZLICZENIA -> ZAMKNIETY.');
+        $this->assertSame('2026-04-05 09:15:00', $closeResult['period']['closed_at'], 'Closure transition should stamp closed_at using current_time.');
+        $this->assertSame('2026-04-08 09:15:00', $closeResult['period']['correction_window_until'], 'Closure transition should stamp +72h correction window.');
+
+        $periods = $repositoryBackedService->list_periods();
+        $this->assertSame(2, count($periods), 'Repository-backed service should list all known periods.');
 
         echo "OK ({$this->assertions} assertions)\n";
     }
