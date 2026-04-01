@@ -465,6 +465,24 @@ class ERP_OMD_Installer
             )
         );
 
+        // Backfill operational_close_month for historical projects:
+        // 1) prefer end_date month when available
+        // 2) fallback to updated_at month for closed/invoice-ready projects
+        $wpdb->query(
+            "UPDATE {$projects_table}
+            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
+            WHERE (operational_close_month IS NULL OR operational_close_month = '')
+              AND end_date IS NOT NULL
+              AND end_date != '0000-00-00'"
+        );
+        $wpdb->query(
+            "UPDATE {$projects_table}
+            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
+            WHERE (operational_close_month IS NULL OR operational_close_month = '')
+              AND status IN ('do_faktury', 'zakonczony')
+              AND updated_at IS NOT NULL"
+        );
+
         self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_employees_default_role', "ALTER TABLE {$employees_table} ADD CONSTRAINT fk_erp_omd_employees_default_role FOREIGN KEY (default_role_id) REFERENCES {$roles_table}(id) ON DELETE SET NULL");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_employees_user', "ALTER TABLE {$employees_table} ADD CONSTRAINT fk_erp_omd_employees_user FOREIGN KEY (user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_employee_roles_employee', "ALTER TABLE {$employee_roles_table} ADD CONSTRAINT fk_erp_omd_employee_roles_employee FOREIGN KEY (employee_id) REFERENCES {$employees_table}(id) ON DELETE CASCADE");

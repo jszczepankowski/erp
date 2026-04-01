@@ -4,7 +4,7 @@ Data snapshotu: 2026-04-01
 
 Cel: szybkie wznowienie prac w kolejnych chatowych sesjach bez utraty kontekstu.
 
-Aktualny punkt pracy: **WB-P1-02 (w toku)** — `operational_close_month` w logice budżetowej/agregacjach.
+Aktualny punkt pracy: **Opcja B / pakiet P1 (WB-P1-02..WB-P1-04)** — domknięcie reguł księgowania i testów regresji.
 
 ## 1) Co już zrobione
 
