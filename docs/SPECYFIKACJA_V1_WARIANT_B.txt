@@ -1,0 +1,589 @@
+Specyfikacja reguł v1 — Wariant B (zamrożona do developmentu)
+
+Data zamrożenia: 2026-04-01
+Status dokumentu: MUST/SHOULD baseline do wdrożenia v1
+
+1. Cel i zakres
+
+Celem v1 jest wdrożenie nowego modelu raportowania i dashboardu w wariancie B (czysty start), z zachowaniem:
+- stabilnego zamknięcia finansowego miesiąca,
+- kontroli korekt administracyjnych,
+- spójnych definicji wejściowych metryk,
+- dwóch warstw analitycznych:
+  - operacyjnej (raporty klient/projekt/czas),
+  - controllingowej (OMD rozliczenia).
+
+Wszystkie poniższe punkty traktujemy jako MUST do wdrożenia v1, chyba że oznaczone jako SHOULD.
+
+2. Model okresu rozliczeniowego (miesiąca)
+
+2.1 Statusy miesiąca (MUST)
+Każdy miesiąc (YYYY-MM) ma status:
+- LIVE
+- DO ROZLICZENIA
+- ZAMKNIĘTY
+
+2.2 Przejścia statusów miesiąca (MUST)
+- LIVE -> DO ROZLICZENIA (półautomatyczne: system waliduje, admin zatwierdza)
+- DO ROZLICZENIA -> ZAMKNIĘTY (admin)
+- ZAMKNIĘTY -> LIVE niedozwolone (poza trybem awaryjnej korekty na danych, nie przez zmianę statusu miesiąca)
+
+2.3 Walidacja gotowości LIVE -> DO ROZLICZENIA (MUST)
+System prezentuje checklistę gotowości:
+- brak wpisów czasu submitted i rejected w miesiącu,
+- brak niezweryfikowanych kosztów projektowych w miesiącu,
+- kompletność danych projektów/klientów do rozliczenia,
+- brak krytycznych blokad rozliczeniowych.
+
+Jeśli checklista niespełniona — brak możliwości zatwierdzenia przejścia.
+
+2.4 Blokada edycji po przejściu do DO ROZLICZENIA (MUST)
+Po statusie DO ROZLICZENIA:
+- brak edycji/dodawania/usuwania godzin i kosztów dla tego miesiąca dla zwykłych użytkowników,
+- tylko Admin może ingerować przez mechanizm korekty.
+
+3. Model statusów projektu (MUST)
+Statusy projektu:
+- do_rozpoczecia
+- w_realizacji
+- w_akceptacji
+- do_faktury
+- zakonczony
+- archiwum (migracja 1:1 z inactive)
+
+Reguła kluczowa:
+- projekt może pozostać technicznie do_faktury 2–3 dni po końcu miesiąca,
+- wynik finansowy zamkniętego miesiąca nie zmienia się, bo decyduje operational_close_month.
+
+4. Reguły dat i księgowania (MUST)
+
+4.1 Wpisy czasu
+- do rozliczeń finansowych bierzemy tylko wpisy approved,
+- data referencyjna wpisu: entry_date.
+
+4.2 Budżet projektu
+- budżet księgujemy w miesiącu operational_close_month,
+- nie wg daty technicznej zmiany statusu projektu.
+
+4.3 Projekty wielomiesięczne
+- godziny i koszty są księgowane miesiąc po miesiącu zgodnie z entry_date / cost_date,
+- budżet projektu rozpoznawany zgodnie z operational_close_month (jednorazowo lub wg reguły biznesowej projektu).
+
+5. Korekty i tryb awaryjny Admina
+
+5.1 Okno standardowej korekty (MUST)
+- po zamknięciu miesiąca: 72h korekty przez Admina.
+
+5.2 Tryb awaryjny (MUST)
+Po 72h:
+- Admin może korygować bez limitu czasu,
+- każda zmiana musi być oznaczona jako EMERGENCY_ADJUSTMENT.
+
+5.3 Wymogi audytu (MUST)
+Każda korekta (standardowa i awaryjna) zapisuje:
+- kto,
+- kiedy,
+- co zmienił,
+- wartość przed i po,
+- powód (obowiązkowy),
+- miesiąc, którego dotyczy.
+
+6. Wspólne definicje metryk (MUST)
+Definicje wejściowe są wspólne dla warstwy operacyjnej i controllingowej:
+- hours = liczba godzin z wpisu czasu
+- rate_snapshot = stawka sprzedażowa wpisu
+- cost_snapshot = koszt godzinowy wpisu
+- amount = hours * rate_snapshot
+- entry_cost = hours * cost_snapshot
+- entry_profit = amount - entry_cost
+- time_revenue = suma amount
+- time_cost = suma entry_cost
+- hourly_profit = time_revenue - time_cost
+- direct_cost = koszty projektowe w miesiącu
+- project_profit = project_revenue - (time_cost + direct_cost)
+- margin = profit / revenue
+
+7. Dwie warstwy analityczne (MUST)
+
+7.1 Warstwa operacyjna
+Raporty:
+- per klient
+- per projekt (z kosztami projektu)
+- per czas pracy
+
+Każdy raport:
+- widok prosty (summary),
+- widok szczegółowy (drill-down),
+- tryb: LIVE / DO ROZLICZENIA / ZAMKNIĘTY.
+
+7.2 Warstwa controllingowa
+- raport OMD rozliczenia zostaje,
+- korzysta z tych samych definicji wejściowych,
+- może mieć inną agregację końcową (np. koszty stałe, pensje, wynik operacyjny firmy).
+
+8. Dashboard v1 (Wariant B)
+Sekcje dashboardu (MUST):
+- Status miesiąca (LIVE/DO ROZLICZENIA/ZAMKNIĘTY)
+- Trend 3M: przychód, koszt, wynik operacyjny
+- Top/Bottom rentowności z przełącznikiem klient/projekt
+- Kolejka rozliczeń/fakturowania
+- Korekty administracyjne (liczba + wpływ)
+
+9. Specyfikacja raportów operacyjnych
+
+9.1 Raport per klient
+Prosty (MUST):
+- klient
+- godziny
+- przychód
+- koszt
+- zysk
+- marża
+- liczba projektów
+- status miesiąca
+
+Szczegółowy (MUST)
+Drilldown:
+- klient -> projekty -> pozycje czasu/kosztów
+
+9.2 Raport per projekt
+Prosty (MUST):
+- projekt
+- klient
+- typ rozliczenia
+- status projektu
+- godziny
+- przychód
+- koszt czasu
+- koszt projektu (direct cost)
+- koszt łączny
+- zysk
+- marża
+- budget usage
+
+Szczegółowy (MUST)
+Drilldown:
+- wpisy czasu (osoba/rola/data),
+- koszty projektowe,
+- składniki rozliczenia (godzinowe/fixed/abonament/mix).
+
+9.3 Raport per czas pracy
+Prosty (MUST)
+Agregacje:
+- pracownik/rola/projekt/klient
+- suma godzin
+- suma przychodu
+- suma kosztu
+- suma zysku
+
+Szczegółowy (MUST)
+Wiersz wpisu:
+- data
+- pracownik
+- projekt
+- klient
+- rola
+- status
+- hours
+- rate_snapshot
+- cost_snapshot
+- amount
+- entry_cost
+- entry_profit
+- opis
+
+10. Uprawnienia (MUST)
+- Worker:
+  - wpisy czasu wg aktualnych uprawnień roboczych,
+  - brak zmian w DO ROZLICZENIA i ZAMKNIĘTY.
+- Manager:
+  - akceptacje operacyjne,
+  - brak korekt zamkniętych miesięcy.
+- Admin:
+  - zmiany statusu miesiąca,
+  - standardowe korekty 72h,
+  - tryb awaryjny bez limitu czasu,
+  - pełny dostęp do audytu.
+
+11. Zmiany modelu danych (MUST)
+
+11.1 Tabela okresów miesięcznych
+Nowa tabela (np. erp_omd_periods):
+- month (PK, YYYY-MM)
+- status (LIVE, DO_ROZLICZENIA, ZAMKNIETY)
+- closed_at
+- correction_window_until
+- updated_by
+
+11.2 Rozszerzenie projektu
+- operational_close_month (YYYY-MM, nullable)
+- status archiwum
+
+11.3 Tabela audytu korekt
+Nowa tabela (np. erp_omd_adjustment_audit):
+- id
+- month
+- entity_type
+- entity_id
+- field_name
+- old_value
+- new_value
+- reason
+- adjustment_type (STANDARD, EMERGENCY_ADJUSTMENT)
+- changed_by
+- changed_at
+
+12. Migracja i kompatybilność (MUST)
+- Migracja statusu inactive -> archiwum.
+- Backfill operational_close_month dla projektów historycznych:
+  - priorytet: istniejące daty biznesowe,
+  - fallback: miesiąc zakończenia projektu.
+- Przeliczenie agregatów raportowych po migracji.
+- Zachowanie kompatybilności eksportów (CSV/XLS) z dodaniem nowych kolumn statusu okresu.
+
+13. API i interfejs (MUST)
+Minimalne endpointy / akcje:
+- Pobranie statusu miesiąca + checklisty gotowości.
+- Przejście miesiąca:
+  - LIVE -> DO ROZLICZENIA
+  - DO ROZLICZENIA -> ZAMKNIĘTY
+- Korekta admin:
+  - standardowa (72h)
+  - awaryjna
+- Raporty operacyjne:
+  - klient / projekt / czas (simple/detail)
+  - filtr month, mode, client, project, employee, status.
+- Dashboard v1 payload.
+
+14. Kryteria akceptacji (UAT) (MUST)
+- Miesiąc przechodzi przez 3 statusy zgodnie z regułami.
+- Po DO ROZLICZENIA zwykli użytkownicy nie edytują danych miesiąca.
+- Po ZAMKNIĘTY korekty tylko Admin.
+- Korekta standardowa działa 72h.
+- Korekta awaryjna działa bez limitu czasu i ma pełny audit.
+- Wynik miesiąca opiera się o:
+  - entry_date (approved time),
+  - operational_close_month (budżet).
+- Raporty klient/projekt/czas działają w trybach LIVE/DO ROZLICZENIA/ZAMKNIĘTY.
+- Raport projektowy zawiera koszty projektu.
+- Dashboard pokazuje trend 3M i ranking klient/projekt (przełącznik).
+- OMD rozliczenia działa jako warstwa controllingowa.
+
+15. Plan wdrożenia (kolejność)
+1) Backend fundament
+   - okresy miesięczne + statusy + blokady
+   - audit korekt + tryb awaryjny
+2) Reguły księgowania
+   - approved-only dla czasu
+   - operational_close_month dla budżetu
+3) Nowe raporty operacyjne
+   - klient/projekt/czas (simple/detail)
+4) Dashboard v1
+   - 5 sekcji + trend 3M
+5) Doprecyzowanie OMD
+   - warstwa controllingowa
+6) Migracja danych + UAT + rollout
+
+=================================================================
+BACKLOG DEWELOPERSKI (EPIC -> STORY -> TASK)
+=================================================================
+
+EPIC E1 — Silnik okresu rozliczeniowego (LIVE / DO ROZLICZENIA / ZAMKNIĘTY)
+
+Story E1-S1: Model danych okresu
+Cel: dodać tabelę okresów i status miesiąca.
+Taski:
+- Dodać tabelę erp_omd_periods (month, status, closed_at, correction_window_until, updated_by).
+- Dodać repozytorium + serwis okresów.
+- Dodać seed bieżącego miesiąca jako LIVE.
+- Dodać walidację przejść statusów okresu.
+- Dodać testy jednostkowe przejść statusów.
+
+Story E1-S2: Checklista gotowości LIVE -> DO ROZLICZENIA
+Taski:
+- Zaimplementować walidatory checklisty (godziny/koszty/kompletność).
+- Zwracać checklistę jako payload API.
+- Dodać status „ready/not ready” + listę blokad.
+- Testy integracyjne checklisty.
+
+Story E1-S3: Blokada edycji po DO ROZLICZENIA
+Taski:
+- Dodać guardy w operacjach time entries i project costs.
+- Admin override tylko przez dedykowaną ścieżkę korekty.
+- Testy uprawnień worker/manager/admin.
+
+EPIC E2 — Korekty i audyt (72h + tryb awaryjny)
+
+Story E2-S1: Korekta standardowa 72h
+Taski:
+- Logika correction_window_until = closed_at + 72h.
+- Endpoint/akcja korekty standardowej.
+- Blokada po upływie okna.
+- Testy czasowe (edge-case timezone).
+
+Story E2-S2: Tryb awaryjny Admina bez limitu czasu
+Taski:
+- Dodać flagę EMERGENCY_ADJUSTMENT.
+- Wymusić pole reason jako mandatory.
+- Dodać osobną ścieżkę uprawnień Admin-only.
+- Testy bezpieczeństwa i audytu.
+
+Story E2-S3: Audit log korekt
+Taski:
+- Tabela erp_omd_adjustment_audit.
+- Middleware do logowania zmian przed/po.
+- Widok listy korekt (filtrowanie po miesiącu/typie).
+- Eksport CSV korekt.
+
+EPIC E3 — Reguły księgowania v1
+
+Story E3-S1: Approved-only dla czasu
+Taski:
+- Ujednolicić filtry: do finansów/raportów tylko approved.
+- Wyeliminować wliczanie submitted do finansów.
+- Testy regresji finansów projektu i raportów.
+
+Story E3-S2: operational_close_month dla budżetu
+Taski:
+- Dodać pole operational_close_month w projekcie.
+- Walidacja formatu + dostępność w UI/API.
+- Logika księgowania budżetu wg miesiąca operacyjnego.
+- Testy projektów wielomiesięcznych.
+
+Story E3-S3: Migracja statusu inactive -> archiwum
+Taski:
+- Migracja danych statusu.
+- Mapowanie labeli UI.
+- Testy kompatybilności filtrów i raportów historycznych.
+
+EPIC E4 — Nowe raporty operacyjne (klient/projekt/czas)
+
+Story E4-S1: Raport per klient (simple + detail)
+Taski:
+- API summary klienta.
+- API drilldown klient -> projekt -> pozycje.
+- Filtry trybu: LIVE/DO ROZLICZENIA/ZAMKNIĘTY.
+- Eksport CSV/XLS.
+
+Story E4-S2: Raport per projekt (simple + detail, z kosztami projektu)
+Taski:
+- API summary projektu z direct cost.
+- API detail: wpisy czasu + koszty + składniki rozliczeń.
+- Obliczenia marży/budget usage.
+- Eksport + testy danych mieszanych (godziny/fixed/retainer/mix).
+
+Story E4-S3: Raport per czas pracy (simple + detail)
+Taski:
+- API agregatów po pracownik/rola/projekt.
+- API listy wpisów line-by-line.
+- Dodanie pól finansowych per wpis (amount, entry_cost, entry_profit).
+- Testy wydajności i paginacji.
+
+EPIC E5 — Dashboard v1 (Wariant B)
+
+Story E5-S1: Status miesiąca + CTA
+Taski:
+- Karta statusu okresu.
+- CTA przejść statusów (admin).
+- Panel checklisty gotowości.
+
+Story E5-S2: Trend 3M
+Taski:
+- API trendu 3M: przychód/koszt/wynik.
+- Wykres + tooltipy definicji metryk.
+- Obsługa braków danych.
+
+Story E5-S3: Top/Bottom rentowności (przełącznik klient/projekt)
+Taski:
+- API rankingu marży.
+- Przełącznik klient/projekt.
+- Sortowanie i limity Top/Bottom.
+
+Story E5-S4: Kolejka rozliczeń + korekty
+Taski:
+- Widok pozycji gotowych do rozliczenia.
+- Widok ostatnich korekt i wpływu.
+- Linkowanie do raportów szczegółowych.
+
+EPIC E6 — OMD rozliczenia (warstwa controllingowa)
+
+Story E6-S1: Doprecyzowanie agregacji controllingowej
+Taski:
+- Spisać finalne definicje końcowych agregacji OMD.
+- Ujednolicić wejściowe definicje metryk z warstwą operacyjną.
+- Dodać opisy różnic „operacyjne vs controlling”.
+
+Story E6-S2: UI/raport OMD
+Taski:
+- Odświeżenie widoku OMD z legendą definicji.
+- Testy spójności ze słownikiem metryk.
+- Eksport OMD.
+
+EPIC E7 — Bezpieczeństwo, wydajność, obserwowalność
+
+Story E7-S1: Uprawnienia i audyt dostępu
+Taski:
+- Guardy per rola i per akcja.
+- Log security events (próby niedozwolonych zmian).
+- Testy penetracyjne endpointów krytycznych.
+
+Story E7-S2: Wydajność raportów
+Taski:
+- Indeksy DB dla filtrów miesiąc/status/klient/projekt.
+- Paginacja + lazy loading detail.
+- Benchmark raportów na danych produkcyjnych anonimowych.
+
+=================================================================
+SZCZEGÓŁOWA CHECKLISTA UAT PER EKRAN
+=================================================================
+
+Ekran 1: Dashboard główny (Wariant B)
+UAT-D1: Status miesiąca
+- Widzę aktualny status: LIVE/DO ROZLICZENIA/ZAMKNIĘTY.
+- Jako Admin widzę checklistę gotowości.
+- Jako non-admin nie widzę przycisków zmiany statusu.
+
+UAT-D2: Trend 3M
+- Wykres pokazuje dokładnie 3 miesiące.
+- Wartości są zgodne z raportami operacyjnymi.
+- Tooltip wyjaśnia źródło i definicję metryk.
+
+UAT-D3: Top/Bottom rentowności
+- Przełącznik klient/projekt działa.
+- Rankingi aktualizują się po zmianie trybu miesiąca.
+- Brak projektów archiwalnych w domyślnym operacyjnym widoku (jeśli tak ustalone w UI).
+
+UAT-D4: Korekty
+- Widzę ostatnie korekty i ich wpływ.
+- Kliknięcie korekty prowadzi do szczegółów audytu.
+
+Ekran 2: Raport per klient
+UAT-C1: Widok prosty
+- Kolumny: godziny, przychód, koszt, zysk, marża, liczba projektów.
+- Filtry miesiąca i trybu działają poprawnie.
+- Sumy zgadzają się z drilldown.
+
+UAT-C2: Widok szczegółowy
+- Drilldown klient -> projekt -> pozycje działa.
+- Widoczne elementy mix (godziny/fixed/retainer) są czytelnie oznaczone.
+- Eksport CSV/XLS zgodny z widokiem.
+
+Ekran 3: Raport per projekt
+UAT-P1: Widok prosty
+- Zawiera koszt projektu (direct cost) — obowiązkowo.
+- Pokazuje budget usage i marżę.
+- Zgodność liczb z raportem klienta.
+
+UAT-P2: Widok szczegółowy
+- Widzimy wpisy czasu z pełnymi polami finansowymi.
+- Widzimy koszty projektowe.
+- Widzimy elementy rozliczeń (godzinowe/fixed/retainer/mix).
+
+Ekran 4: Raport per czas pracy
+UAT-T1: Widok prosty
+- Agregacja po pracownik/rola/projekt działa.
+- Suma godzin i wartości finansowych poprawna.
+
+UAT-T2: Widok szczegółowy
+- Każdy wpis ma: data, pracownik, projekt, rola, hours, rate, cost, amount, profit.
+- Filtrowanie po statusie/kliencie/projekcie działa.
+- Paginacja działa poprawnie.
+
+Ekran 5: OMD rozliczenia
+UAT-O1: Definicje
+- Opis różnic między operacyjnym a controllingowym jest widoczny.
+- Wejściowe definicje metryk są spójne z raportami operacyjnymi.
+
+UAT-O2: Wyniki
+- Agregacje końcowe odpowiadają specyfikacji OMD.
+- Eksport i filtry działają.
+
+Ekran 6: Zarządzanie miesiącem (Admin)
+UAT-M1: Przejścia statusów
+- LIVE -> DO ROZLICZENIA tylko po pozytywnej checkliście.
+- DO ROZLICZENIA -> ZAMKNIĘTY działa.
+
+UAT-M2: Blokady
+- Po DO ROZLICZENIA worker/manager nie zmienia godzin i kosztów.
+- Admin ma dedykowaną ścieżkę korekty.
+
+UAT-M3: Korekty
+- Do 72h działa korekta standardowa.
+- Po 72h działa tylko tryb awaryjny Admina.
+- Powód korekty jest wymagany i zapisany.
+
+Ekran 7: Audit log korekt
+UAT-A1: Rejestr
+- Widzę kto/co/kiedy/przed/po/powód.
+- Widzę typ korekty (standard/awaryjna).
+- Filtrowanie po miesiącu i encji działa.
+
+=================================================================
+PLAN RELEASE (dev/stage/prod + migracja bez przestoju)
+=================================================================
+
+Strategia: „expand -> migrate -> switch -> cleanup”
+
+Faza R1 — DEV (2–3 sprinty)
+R1.1 Backend fundament
+- nowe tabele (periods, adjustment_audit)
+- pole operational_close_month
+- status archiwum
+- logika przejść miesiąca i blokad
+
+R1.2 Nowe API i feature flags
+- endpointy dashboard/raportów v1
+- feature flags:
+  - reports_v1_enabled
+  - dashboard_v1_enabled
+  - period_lock_enabled
+
+R1.3 Testy
+- unit + integration + permission tests
+- testy migracji na kopii danych
+
+Faza R2 — STAGE (1 sprint + UAT)
+R2.1 Migracja próbna
+- snapshot bazy
+- migracja inactive -> archiwum
+- backfill operational_close_month
+- rekalkulacja agregatów
+
+R2.2 UAT per checklista
+- pełny przebieg UAT ekran po ekranie
+- test scenariuszy granicznych (72h, emergency, projekty wielomiesięczne)
+
+R2.3 Dry run zamknięcia miesiąca
+- symulacja pełnego cyklu LIVE -> DO ROZLICZENIA -> ZAMKNIĘTY
+
+Faza R3 — PROD (bez przestoju)
+R3.1 Przygotowanie (T-7 do T-1)
+- Wdrożyć kod z wyłączonymi feature flags.
+- Wykonać migracje DB kompatybilne wstecznie (bez wyłączania aplikacji).
+- Uruchomić backfill w tle (joby batchowe).
+- Monitorować logi i wydajność.
+
+R3.2 Przełączenie (T0)
+- Włączyć period_lock_enabled (najpierw).
+- Włączyć reports_v1_enabled dla adminów (canary).
+- Po walidacji: włączyć dla wszystkich.
+- Włączyć dashboard_v1_enabled.
+
+R3.3 Stabilizacja (T+1 do T+7)
+- Monitoring błędów i wydajności.
+- Szybkie hotfixy tylko w warstwie prezentacji/API.
+- Raport powdrożeniowy + decyzja o cleanup legacy.
+
+Brak przestoju — wymagania techniczne
+- Migracje DB muszą być „additive” (dodajemy, nie usuwamy na starcie).
+- Stare endpointy działają równolegle do czasu pełnego przełączenia.
+- Recompute raportów działa asynchronicznie (queue/batch).
+- Feature flags sterują ruchem użytkowników.
+- Rollback możliwy przez wyłączenie flag (bez rollbacku bazy).
+
+Plan rollback (awaryjny)
+- Wyłączyć dashboard_v1_enabled.
+- Wyłączyć reports_v1_enabled.
+- Zostawić nowe tabele i logikę w trybie pasywnym.
+- Przywrócić stare widoki raportowe.
+- Przeanalizować dane i poprawić migrację bez downtime.
