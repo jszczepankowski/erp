@@ -1190,7 +1190,7 @@ class ERP_OMD_Admin
         $this->require_capability('erp_omd_manage_projects');
 
         $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
-        $audience = sanitize_text_field(wp_unslash($_POST['export_variant'] ?? 'client'));
+        $audience = $this->normalize_estimate_export_variant($_POST['export_variant'] ?? 'client');
         if (! in_array($audience, ['client', 'agency'], true)) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Niepoprawny wariant eksportu kosztorysu.', 'erp-omd'), ['id' => $estimate_id]);
         }
@@ -1276,6 +1276,23 @@ class ERP_OMD_Admin
 
         fclose($output);
         exit;
+    }
+
+    private function normalize_estimate_export_variant($value)
+    {
+        $normalized = sanitize_key((string) wp_unslash($value));
+        $aliases = [
+            'client' => 'client',
+            'agency' => 'agency',
+            'a' => 'client',
+            'variant_a' => 'client',
+            'wariant_a' => 'client',
+            'b' => 'agency',
+            'variant_b' => 'agency',
+            'wariant_b' => 'agency',
+        ];
+
+        return $aliases[$normalized] ?? $normalized;
     }
 
     private function handle_report_export()

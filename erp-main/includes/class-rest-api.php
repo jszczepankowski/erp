@@ -700,7 +700,7 @@ class ERP_OMD_REST_API
             'time_statuses' => ['submitted', 'approved', 'rejected'],
             'report_types' => ['projects', 'clients', 'invoice', 'monthly'],
             'attachment_entity_types' => ['project', 'estimate'],
-            'export_variants' => ['client', 'agency'],
+            'export_variants' => ['client', 'agency', 'variant_a', 'variant_b'],
         ]);
     }
 
