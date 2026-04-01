@@ -385,7 +385,15 @@ if (! class_exists('ERP_OMD_Project_Financial_Service')) {
     class ERP_OMD_Project_Financial_Service { public function rebuild_for_project($id) { return ['project_id' => $id]; } public function validate_project_cost($payload) { return []; } }
 }
 if (! class_exists('ERP_OMD_Reporting_Service')) {
-    class ERP_OMD_Reporting_Service { public function sanitize_filters($filters) { return array_merge(['report_type' => 'projects'], $filters); } public function build_report($type, $filters) { return []; } public function export_definition($type, $filters) { return ['filename' => 'export.csv', 'headers' => [], 'rows' => []]; } public function build_calendar($filters) { return []; } }
+    class ERP_OMD_Reporting_Service {
+        public function sanitize_filters($filters) { return array_merge(['report_type' => 'projects'], $filters); }
+        public function build_report($type, $filters) { return [['month' => '2026-01', 'margin' => 10], ['month' => '2026-02', 'margin' => 12], ['month' => '2026-03', 'margin' => 11]]; }
+        public function export_definition($type, $filters) { return ['filename' => 'export.csv', 'headers' => [], 'rows' => []]; }
+        public function build_calendar($filters) { return []; }
+        public function build_project_report($filters) { return [['id' => 10, 'margin' => 20], ['id' => 11, 'margin' => 5]]; }
+        public function build_client_report($filters) { return [['id' => 1, 'margin' => 15], ['id' => 2, 'margin' => 8]]; }
+        public function build_invoice_report($filters) { return [['id' => 2001], ['id' => 2002]]; }
+    }
 }
 if (! class_exists('ERP_OMD_Alert_Service')) {
     class ERP_OMD_Alert_Service { public function all_alerts() { return [['severity' => 'warning', 'code' => 'project_low_margin', 'entity_type' => 'project', 'entity_id' => 10, 'message' => 'Low margin']]; } }
@@ -434,7 +442,10 @@ if (! class_exists('ERP_OMD_Period_Service')) {
     }
 }
 if (! class_exists('ERP_OMD_Adjustment_Audit_Repository')) {
-    class ERP_OMD_Adjustment_Audit_Repository { public function create($payload) { return 1; } }
+    class ERP_OMD_Adjustment_Audit_Repository {
+        public function create($payload) { return 1; }
+        public function all($filters = []) { return []; }
+    }
 }
 
 require_once __DIR__ . '/../erp-omd/includes/class-rest-api.php';
@@ -541,6 +552,13 @@ final class RestApiTestRunner
 
         $transitionInvalid = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'LIVE']));
         $this->assertSame('erp_omd_period_transition_invalid', $transitionInvalid->get_error_code(), 'Transition endpoint should reject unsupported target statuses.');
+
+        $dashboardCallback = $this->findRouteCallback('/dashboard-v1', WP_REST_Server::READABLE);
+        $dashboardPayload = $dashboardCallback(new WP_REST_Request(['month' => '2026-03', 'profitability_scope' => 'project']));
+        $this->assertSame('2026-03', $dashboardPayload['month'], 'Dashboard endpoint should preserve explicit month filter.');
+        $this->assertSame(false, $dashboardPayload['readiness_checklist']['ready'], 'Dashboard endpoint should expose readiness checklist snapshot for selected month.');
+        $this->assertSame(1, $dashboardPayload['readiness_meta']['submitted_or_rejected_entries'], 'Dashboard readiness meta should expose submitted/rejected entry counter.');
+        $this->assertSame(2, $dashboardPayload['settlement_queue']['count'], 'Dashboard endpoint should expose invoice queue count.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "REST API tests passed.\n";

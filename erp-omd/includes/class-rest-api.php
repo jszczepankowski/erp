@@ -193,6 +193,8 @@ class ERP_OMD_REST_API
                 }
 
                 $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
+                $readiness_signals = $this->readiness_signals_for_month($month);
+                $readiness_checklist = $this->period_service->build_readiness_checklist($readiness_signals);
                 $trend = $this->reporting_service->build_report('omd_rozliczenia', ['month' => $month, 'report_type' => 'omd_rozliczenia']);
                 $trend_3m = array_slice((array) $trend, -3);
                 $project_rows = $this->reporting_service->build_project_report(['month' => $month, 'report_type' => 'projects']);
@@ -221,6 +223,8 @@ class ERP_OMD_REST_API
                 return rest_ensure_response([
                     'month' => $month,
                     'status_month' => $period,
+                    'readiness_checklist' => $readiness_checklist,
+                    'readiness_meta' => (array) ($readiness_signals['_meta'] ?? []),
                     'trend_3m' => $trend_3m,
                     'profitability_scope' => $scope,
                     'profitability_top' => $top,
