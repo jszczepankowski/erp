@@ -205,6 +205,13 @@ class ERP_OMD_REST_API
                 if ($queue_limit > 200) {
                     $queue_limit = 200;
                 }
+                $profitability_limit = (int) $request->get_param('profitability_limit');
+                if ($profitability_limit <= 0) {
+                    $profitability_limit = 5;
+                }
+                if ($profitability_limit > 20) {
+                    $profitability_limit = 20;
+                }
 
                 $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
                 $readiness_signals = $this->readiness_signals_for_month($month);
@@ -219,9 +226,9 @@ class ERP_OMD_REST_API
                 $adjustments = $this->adjustment_audit->all(['month' => $month]);
 
                 $source_rows = $scope === 'client' ? $client_rows : $project_rows;
-                $ranked_scope = $this->rank_profitability_rows($source_rows);
-                $ranked_projects = $this->rank_profitability_rows($project_rows);
-                $ranked_clients = $this->rank_profitability_rows($client_rows);
+                $ranked_scope = $this->rank_profitability_rows($source_rows, $profitability_limit);
+                $ranked_projects = $this->rank_profitability_rows($project_rows, $profitability_limit);
+                $ranked_clients = $this->rank_profitability_rows($client_rows, $profitability_limit);
                 $ranked_scope = $this->enrich_ranked_profitability_rows($ranked_scope, $scope, $month);
                 $ranked_projects = $this->enrich_ranked_profitability_rows($ranked_projects, 'project', $month);
                 $ranked_clients = $this->enrich_ranked_profitability_rows($ranked_clients, 'client', $month);
@@ -244,6 +251,7 @@ class ERP_OMD_REST_API
                     'applied_limits' => [
                         'adjustments_items' => $adjustments_limit,
                         'queue_items' => $queue_limit,
+                        'profitability_items' => $profitability_limit,
                     ],
                     'month' => $month,
                     'status_month' => $period,
@@ -302,15 +310,17 @@ class ERP_OMD_REST_API
         ];
     }
 
-    private function rank_profitability_rows(array $rows)
+    private function rank_profitability_rows(array $rows, $limit = 5)
     {
         usort($rows, static function ($a, $b) {
             return (float) ($b['margin'] ?? 0) <=> (float) ($a['margin'] ?? 0);
         });
 
+        $limit = max(1, (int) $limit);
+
         return [
-            'top' => array_slice($rows, 0, 5),
-            'bottom' => array_slice(array_reverse($rows), 0, 5),
+            'top' => array_slice($rows, 0, $limit),
+            'bottom' => array_slice(array_reverse($rows), 0, $limit),
         ];
     }
 
