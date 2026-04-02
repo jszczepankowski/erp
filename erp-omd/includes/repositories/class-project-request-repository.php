@@ -98,7 +98,7 @@ class ERP_OMD_Project_Request_Repository
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => (int) $id],
-            ['%d', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%d', '%s', '%d', '%s'],
+            ['%d', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%s'],
             ['%d']
         );
     }
