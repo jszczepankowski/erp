@@ -1028,6 +1028,298 @@ class ERP_OMD_Reporting_Service
         ];
     }
 
+    public function pagination_meta()
+    {
+        return $this->last_report_pagination;
+    }
+
+    private function get_direct_cost_items_for_project($project_id, $month)
+    {
+        $rows = [];
+        foreach ($this->project_costs->for_project((int) $project_id) as $cost_row) {
+            $cost_month = substr((string) ($cost_row['cost_date'] ?? ''), 0, 7);
+            if ($month !== '' && $cost_month !== $month) {
+                continue;
+            }
+
+            $amount = (float) ($cost_row['amount'] ?? 0);
+            $rows[] = [
+                'cost_date' => (string) ($cost_row['cost_date'] ?? ''),
+                'amount' => round($amount, 2),
+                'description' => (string) ($cost_row['description'] ?? ''),
+                'vendor' => (string) ($cost_row['vendor'] ?? ''),
+            ];
+        }
+
+        usort($rows, static function ($left, $right) {
+            return (string) ($left['cost_date'] ?? '') <=> (string) ($right['cost_date'] ?? '');
+        });
+
+        return $rows;
+    }
+
+    private function build_billing_mix_breakdown(array $project, array $entry_metrics, array $financial, $direct_cost)
+    {
+        $billing_type = (string) ($project['billing_type'] ?? '');
+        $hourly_component = round((float) ($entry_metrics['time_revenue'] ?? 0.0), 2);
+        $fixed_component = 0.0;
+        $retainer_component = 0.0;
+
+        if (in_array($billing_type, ['fixed_price', 'mixed'], true)) {
+            $fixed_component = round((float) ($project['budget'] ?? 0.0), 2);
+        }
+        if (in_array($billing_type, ['retainer', 'mixed'], true)) {
+            $retainer_component = round((float) ($project['retainer_monthly_fee'] ?? 0.0), 2);
+        }
+
+        return [
+            'billing_type' => $billing_type,
+            'hourly_component' => $hourly_component,
+            'fixed_component' => $fixed_component,
+            'retainer_component' => $retainer_component,
+            'direct_cost_component' => round((float) $direct_cost, 2),
+            'recognized_revenue' => round((float) ($financial['revenue'] ?? 0.0), 2),
+            'recognized_profit' => round((float) ($financial['profit'] ?? 0.0), 2),
+            'budget_usage' => round((float) ($financial['budget_usage'] ?? 0.0), 2),
+        ];
+    }
+
+    private function build_pagination_meta($total_items, $page_num, $per_page)
+    {
+        $total_items = max(0, (int) $total_items);
+        $per_page = max(1, (int) $per_page);
+        $total_pages = max(1, (int) ceil($total_items / $per_page));
+        $page_num = max(1, min((int) $page_num, $total_pages));
+
+        return [
+            'total_items' => $total_items,
+            'total_pages' => $total_pages,
+            'page_num' => $page_num,
+            'per_page' => $per_page,
+            'has_prev' => $page_num > 1,
+            'has_next' => $page_num < $total_pages,
+        ];
+    }
+
+    public function get_last_report_pagination()
+    {
+        return $this->last_report_pagination;
+    }
+
+    private function get_direct_cost_items_for_project($project_id, $month)
+    {
+        $rows = [];
+        foreach ($this->project_costs->for_project((int) $project_id) as $cost_row) {
+            $cost_month = substr((string) ($cost_row['cost_date'] ?? ''), 0, 7);
+            if ($month !== '' && $cost_month !== $month) {
+                continue;
+            }
+
+            $amount = (float) ($cost_row['amount'] ?? 0);
+            $rows[] = [
+                'cost_date' => (string) ($cost_row['cost_date'] ?? ''),
+                'amount' => round($amount, 2),
+                'description' => (string) ($cost_row['description'] ?? ''),
+                'vendor' => (string) ($cost_row['vendor'] ?? ''),
+            ];
+        }
+
+        usort($rows, static function ($left, $right) {
+            return (string) ($left['cost_date'] ?? '') <=> (string) ($right['cost_date'] ?? '');
+        });
+
+        return $rows;
+    }
+
+    private function build_billing_mix_breakdown(array $project, array $entry_metrics, array $financial, $direct_cost)
+    {
+        $billing_type = (string) ($project['billing_type'] ?? '');
+        $hourly_component = round((float) ($entry_metrics['time_revenue'] ?? 0.0), 2);
+        $fixed_component = 0.0;
+        $retainer_component = 0.0;
+
+        if (in_array($billing_type, ['fixed_price', 'mixed'], true)) {
+            $fixed_component = round((float) ($project['budget'] ?? 0.0), 2);
+        }
+        if (in_array($billing_type, ['retainer', 'mixed'], true)) {
+            $retainer_component = round((float) ($project['retainer_monthly_fee'] ?? 0.0), 2);
+        }
+
+        return [
+            'billing_type' => $billing_type,
+            'hourly_component' => $hourly_component,
+            'fixed_component' => $fixed_component,
+            'retainer_component' => $retainer_component,
+            'direct_cost_component' => round((float) $direct_cost, 2),
+            'recognized_revenue' => round((float) ($financial['revenue'] ?? 0.0), 2),
+            'recognized_profit' => round((float) ($financial['profit'] ?? 0.0), 2),
+            'budget_usage' => round((float) ($financial['budget_usage'] ?? 0.0), 2),
+        ];
+    }
+
+    private function build_pagination_meta($total_items, $page_num, $per_page)
+    {
+        $total_items = max(0, (int) $total_items);
+        $per_page = max(1, (int) $per_page);
+        $total_pages = max(1, (int) ceil($total_items / $per_page));
+        $page_num = max(1, min((int) $page_num, $total_pages));
+
+        return [
+            'total_items' => $total_items,
+            'total_pages' => $total_pages,
+            'page_num' => $page_num,
+            'per_page' => $per_page,
+            'has_prev' => $page_num > 1,
+            'has_next' => $page_num < $total_pages,
+        ];
+    }
+
+    public function get_last_report_pagination()
+    {
+        return $this->last_report_pagination;
+    }
+
+    private function get_direct_cost_items_for_project($project_id, $month)
+    {
+        $rows = [];
+        foreach ($this->project_costs->for_project((int) $project_id) as $cost_row) {
+            $cost_month = substr((string) ($cost_row['cost_date'] ?? ''), 0, 7);
+            if ($month !== '' && $cost_month !== $month) {
+                continue;
+            }
+
+            $amount = (float) ($cost_row['amount'] ?? 0);
+            $rows[] = [
+                'cost_date' => (string) ($cost_row['cost_date'] ?? ''),
+                'amount' => round($amount, 2),
+                'description' => (string) ($cost_row['description'] ?? ''),
+                'vendor' => (string) ($cost_row['vendor'] ?? ''),
+            ];
+        }
+
+        usort($rows, static function ($left, $right) {
+            return (string) ($left['cost_date'] ?? '') <=> (string) ($right['cost_date'] ?? '');
+        });
+
+        return $rows;
+    }
+
+    private function build_billing_mix_breakdown(array $project, array $entry_metrics, array $financial, $direct_cost)
+    {
+        $billing_type = (string) ($project['billing_type'] ?? '');
+        $hourly_component = round((float) ($entry_metrics['time_revenue'] ?? 0.0), 2);
+        $fixed_component = 0.0;
+        $retainer_component = 0.0;
+
+        if (in_array($billing_type, ['fixed_price', 'mixed'], true)) {
+            $fixed_component = round((float) ($project['budget'] ?? 0.0), 2);
+        }
+        if (in_array($billing_type, ['retainer', 'mixed'], true)) {
+            $retainer_component = round((float) ($project['retainer_monthly_fee'] ?? 0.0), 2);
+        }
+
+        return [
+            'billing_type' => $billing_type,
+            'hourly_component' => $hourly_component,
+            'fixed_component' => $fixed_component,
+            'retainer_component' => $retainer_component,
+            'direct_cost_component' => round((float) $direct_cost, 2),
+            'recognized_revenue' => round((float) ($financial['revenue'] ?? 0.0), 2),
+            'recognized_profit' => round((float) ($financial['profit'] ?? 0.0), 2),
+            'budget_usage' => round((float) ($financial['budget_usage'] ?? 0.0), 2),
+        ];
+    }
+
+    private function build_pagination_meta($total_items, $page_num, $per_page)
+    {
+        $total_items = max(0, (int) $total_items);
+        $per_page = max(1, (int) $per_page);
+        $total_pages = max(1, (int) ceil($total_items / $per_page));
+        $page_num = max(1, min((int) $page_num, $total_pages));
+
+        return [
+            'total_items' => $total_items,
+            'total_pages' => $total_pages,
+            'page_num' => $page_num,
+            'per_page' => $per_page,
+            'has_prev' => $page_num > 1,
+            'has_next' => $page_num < $total_pages,
+        ];
+    }
+
+    public function get_last_report_pagination()
+    {
+        return $this->last_report_pagination;
+    }
+
+    private function get_direct_cost_items_for_project($project_id, $month)
+    {
+        $rows = [];
+        foreach ($this->project_costs->for_project((int) $project_id) as $cost_row) {
+            $cost_month = substr((string) ($cost_row['cost_date'] ?? ''), 0, 7);
+            if ($month !== '' && $cost_month !== $month) {
+                continue;
+            }
+
+            $amount = (float) ($cost_row['amount'] ?? 0);
+            $rows[] = [
+                'cost_date' => (string) ($cost_row['cost_date'] ?? ''),
+                'amount' => round($amount, 2),
+                'description' => (string) ($cost_row['description'] ?? ''),
+                'vendor' => (string) ($cost_row['vendor'] ?? ''),
+            ];
+        }
+
+        usort($rows, static function ($left, $right) {
+            return (string) ($left['cost_date'] ?? '') <=> (string) ($right['cost_date'] ?? '');
+        });
+
+        return $rows;
+    }
+
+    private function build_billing_mix_breakdown(array $project, array $entry_metrics, array $financial, $direct_cost)
+    {
+        $billing_type = (string) ($project['billing_type'] ?? '');
+        $hourly_component = round((float) ($entry_metrics['time_revenue'] ?? 0.0), 2);
+        $fixed_component = 0.0;
+        $retainer_component = 0.0;
+
+        if (in_array($billing_type, ['fixed_price', 'mixed'], true)) {
+            $fixed_component = round((float) ($project['budget'] ?? 0.0), 2);
+        }
+        if (in_array($billing_type, ['retainer', 'mixed'], true)) {
+            $retainer_component = round((float) ($project['retainer_monthly_fee'] ?? 0.0), 2);
+        }
+
+        return [
+            'billing_type' => $billing_type,
+            'hourly_component' => $hourly_component,
+            'fixed_component' => $fixed_component,
+            'retainer_component' => $retainer_component,
+            'direct_cost_component' => round((float) $direct_cost, 2),
+            'recognized_revenue' => round((float) ($financial['revenue'] ?? 0.0), 2),
+            'recognized_profit' => round((float) ($financial['profit'] ?? 0.0), 2),
+            'budget_usage' => round((float) ($financial['budget_usage'] ?? 0.0), 2),
+        ];
+    }
+
+    private function build_pagination_meta($total_items, $page_num, $per_page)
+    {
+        $total_items = max(0, (int) $total_items);
+        $per_page = max(1, (int) $per_page);
+        $total_pages = max(1, (int) ceil($total_items / $per_page));
+        $page_num = max(1, min((int) $page_num, $total_pages));
+
+        return [
+            'total_items' => $total_items,
+            'total_pages' => $total_pages,
+            'page_num' => $page_num,
+            'per_page' => $per_page,
+            'has_prev' => $page_num > 1,
+            'has_next' => $page_num < $total_pages,
+        ];
+    }
+
     private function get_direct_cost_metrics_by_month(array $project_ids)
     {
         $metrics = [];
