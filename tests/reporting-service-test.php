@@ -174,6 +174,10 @@ final class ReportingServiceTestRunner
         $this->assertSame(2, count($approvedProjectReport), 'Approved time-entry filter should not hide projects by project lifecycle status.');
         $this->assertSame(2.0, $approvedProjectReport[0]['reported_hours'], 'Approved filter should only count approved project hours.');
 
+        $submittedFilters = $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'status' => 'submitted']);
+        $submittedProjectReport = $service->build_project_report($submittedFilters);
+        $this->assertSame(2.0, $submittedProjectReport[0]['reported_hours'], 'Financial reports should remain approved-only even with submitted status filter.');
+
         $invoiceStatusFilters = $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'status' => 'do_faktury']);
         $invoiceStatusProjectReport = $service->build_project_report($invoiceStatusFilters);
         $this->assertSame(1, count($invoiceStatusProjectReport), 'Project status filter should narrow projects by lifecycle status.');
@@ -215,6 +219,9 @@ final class ReportingServiceTestRunner
         $this->assertSame(2, $timePagination['page_num'], 'Time entries pagination should keep current page.');
         $this->assertSame(1, count($timeEntriesPage2), 'Time entries report should return only rows for current page.');
         $this->assertSame('2026-03-10', $timeEntriesPage2[0]['entry_date'], 'Time entries pagination should return the second row on page 2.');
+
+        $submittedTimeEntries = $service->build_report('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'status' => 'submitted']));
+        $this->assertSame(1, count($submittedTimeEntries), 'Time entries report should allow explicit submitted filter for workflow views.');
 
         $omdSettlement = $service->build_omd_settlement_report($filters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
