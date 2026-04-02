@@ -596,7 +596,7 @@ final class RestApiTestRunner
         $this->assertSame('error_rate_percent', $system['feature_flags']['reports_v1_slo_status']['missing_signals'][0], 'System status should declare missing monitoring signals for SLO completeness.');
 
         $api->register_routes();
-        $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})', WP_REST_Server::READABLE);
+        $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', WP_REST_Server::READABLE);
         $periodStatusPayload = $periodStatusCallback(new WP_REST_Request(['month' => '2026-03']));
         $this->assertSame(false, $periodStatusPayload['checklist']['ready'], 'Period status endpoint should expose non-ready checklist for month with submitted entries.');
         $this->assertSame(true, in_array('time_entries_finalized', $periodStatusPayload['checklist']['blockers'], true), 'Period status endpoint should include time_entries_finalized as a blocker.');
@@ -609,7 +609,7 @@ final class RestApiTestRunner
         $periodStatusInvalidMonth = $periodStatusCallback(new WP_REST_Request(['month' => '2026-13']));
         $this->assertSame('erp_omd_period_month_invalid', $periodStatusInvalidMonth->get_error_code(), 'Period status endpoint should reject out-of-range month values.');
 
-        $transitionCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})/transition', WP_REST_Server::CREATABLE);
+        $transitionCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))/transition', WP_REST_Server::CREATABLE);
         $transitionBlocked = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'DO_ROZLICZENIA']));
         $this->assertSame('erp_omd_period_transition_blocked', $transitionBlocked->get_error_code(), 'Transition endpoint should block LIVE -> DO_ROZLICZENIA when checklist is not ready.');
         $transitionInvalidMonth = $transitionCallback(new WP_REST_Request(['month' => '2026-13', 'to_status' => 'DO_ROZLICZENIA']));
