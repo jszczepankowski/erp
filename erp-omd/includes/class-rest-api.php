@@ -1091,11 +1091,33 @@ class ERP_OMD_REST_API
 
     public function get_system_status()
     {
+        $reports_v1_rollout = sanitize_key((string) get_option('erp_omd_reports_v1_rollout', 'all'));
+        if (! in_array($reports_v1_rollout, ['off', 'admins', 'all'], true)) {
+            $reports_v1_rollout = 'all';
+        }
+        $current_user = wp_get_current_user();
+        $reports_v1_enabled_for_current_user = $reports_v1_rollout === 'all'
+            || ($reports_v1_rollout === 'admins' && user_can($current_user, 'administrator'));
+        $reports_v1_last_metrics = (array) get_option('erp_omd_reports_v1_last_metrics', []);
+        $reports_v1_last_metrics = [
+            'generation_ms' => (int) ($reports_v1_last_metrics['generation_ms'] ?? 0),
+            'rows_count' => (int) ($reports_v1_last_metrics['rows_count'] ?? 0),
+            'report_type' => (string) ($reports_v1_last_metrics['report_type'] ?? ''),
+            'rollout' => (string) ($reports_v1_last_metrics['rollout'] ?? ''),
+            'enabled' => ! empty($reports_v1_last_metrics['enabled']),
+            'captured_at' => (string) ($reports_v1_last_metrics['captured_at'] ?? ''),
+        ];
+
         return rest_ensure_response([
             'plugin_version' => ERP_OMD_VERSION,
             'db_version' => ERP_OMD_DB_VERSION,
             'delete_data_on_uninstall' => (bool) get_option('erp_omd_delete_data_on_uninstall', false),
             'alert_margin_threshold' => (float) get_option('erp_omd_alert_margin_threshold', 10),
+            'feature_flags' => [
+                'reports_v1_rollout' => $reports_v1_rollout,
+                'reports_v1_enabled_for_current_user' => $reports_v1_enabled_for_current_user,
+                'reports_v1_last_metrics' => $reports_v1_last_metrics,
+            ],
             'counts' => [
                 'roles' => count($this->roles->all()),
                 'employees' => count($this->employees->all()),
