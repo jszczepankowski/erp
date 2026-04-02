@@ -31,10 +31,14 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 
 ## 3) Co robimy dalej (kolejność)
 
-1. **P3-01** — raport klient simple/detail + drilldown klient -> projekt -> pozycje.
-2. **P3-02** — raport projekt simple/detail (direct cost, budget usage, mix billing).
-3. **P3-03** — raport czasu pracy line-by-line + paginacja.
-4. **P3-04** — eksport CSV/XLS 1:1 zgodny z aktywnymi filtrami i widokiem.
+1. ✅ **P3-01** — raport klient simple/detail + drilldown klient -> projekt -> pozycje.
+2. ✅ **P3-02** — raport projekt simple/detail (direct cost, budget usage, mix billing), w tym szczegóły: wpisy czasu + koszty projektowe + billing mix breakdown.
+3. ✅ **P3-03** — raport czasu pracy line-by-line + paginacja (filtr `per_page`, numer strony, metadane i nawigacja stron w admin view).
+4. ✅ **P3-04** — eksport CSV/XLS 1:1 zgodny z aktywnymi filtrami i widokiem (uwzględnia `mode`, `detail`, `page_num`, `per_page`).
+5. ✅ **P4-01** — finalne agregacje controllingowe vs operacyjne dopięte w raporcie OMD (operational_result vs controlling_overhead/controlling_result).
+6. ✅ **P4-02** — UI OMD z legendą definicji i pełnym eksportem (kolumny 1:1 z eksportem, w tym przychód/koszt czasu).
+7. ✅ **P5-01** — feature flags + canary rollout (reports v1: `off` / `admins` / `all`).
+8. **P5-02** — monitoring błędów/wydajności + plan rollback przez flagi.
 
 ## 4) Instrukcja startowa do nowego chatu
 
