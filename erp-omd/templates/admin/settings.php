@@ -28,14 +28,8 @@
                                 <?php esc_html_e('Przekierowuj użytkowników FRONT z wp-admin do ERP Front.', 'erp-omd'); ?>
                             </label>
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="erp-omd-reports-v1-rollout"><?php esc_html_e('Reports v1 rollout', 'erp-omd'); ?></label>
-                            <select id="erp-omd-reports-v1-rollout" name="reports_v1_rollout">
-                                <option value="off" <?php selected($reports_v1_rollout, 'off'); ?>><?php esc_html_e('off (wyłączone)', 'erp-omd'); ?></option>
-                                <option value="admins" <?php selected($reports_v1_rollout, 'admins'); ?>><?php esc_html_e('admins (canary)', 'erp-omd'); ?></option>
-                                <option value="all" <?php selected($reports_v1_rollout, 'all'); ?>><?php esc_html_e('all (wszyscy)', 'erp-omd'); ?></option>
-                            </select>
-                            <p class="description"><?php esc_html_e('Steruje widocznością raportów v1 i pozwala na szybki rollback przez ustawienie off.', 'erp-omd'); ?></p>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <p class="description"><?php esc_html_e('Reports v1 jest aktywny dla wszystkich użytkowników ERP OMD. Legacy rollout/canary został wygaszony.', 'erp-omd'); ?></p>
                         </div>
                     </div>
                 </section>

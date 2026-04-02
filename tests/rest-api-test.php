@@ -87,7 +87,7 @@ if (! function_exists('get_option')) {
         $options = [
             'erp_omd_delete_data_on_uninstall' => false,
             'erp_omd_alert_margin_threshold' => 10,
-            'erp_omd_reports_v1_rollout' => 'all',
+            'erp_omd_reports_v1_rollout' => 'off',
             'erp_omd_reports_v1_last_metrics' => [
                 'generation_ms' => 42,
                 'rows_count' => 7,

@@ -40,11 +40,11 @@ Szybki rollback reports v1:
 ## 4) Cleanup legacy — zakres po stabilizacji
 
 Po okresie stabilizacji:
-- usunąć nieużywane ścieżki legacy raportów,
-- usunąć martwe helpery i tymczasowe obejścia rolloutowe,
-- ujednolicić filtry statusów projektów do `archiwum` (usunąć legacy `inactive` z UI),
-- skonsolidować dokumentację release + checklistę on-call,
-- utrwalić finalny zestaw metryk SLO dla raportów.
+- [x] usunąć nieużywane ścieżki legacy raportów,
+- [x] usunąć martwe helpery i tymczasowe obejścia rolloutowe (reports v1 rollout wymuszony na `all`),
+- [x] ujednolicić filtry statusów projektów do `archiwum` (usunąć legacy `inactive` z UI),
+- [ ] skonsolidować dokumentację release + checklistę on-call,
+- [ ] utrwalić finalny zestaw metryk SLO dla raportów.
 
 ## 5) Decyzja końcowa
 

@@ -1091,13 +1091,8 @@ class ERP_OMD_REST_API
 
     public function get_system_status()
     {
-        $reports_v1_rollout = sanitize_key((string) get_option('erp_omd_reports_v1_rollout', 'all'));
-        if (! in_array($reports_v1_rollout, ['off', 'admins', 'all'], true)) {
-            $reports_v1_rollout = 'all';
-        }
-        $current_user = wp_get_current_user();
-        $reports_v1_enabled_for_current_user = $reports_v1_rollout === 'all'
-            || ($reports_v1_rollout === 'admins' && user_can($current_user, 'administrator'));
+        $reports_v1_rollout = 'all';
+        $reports_v1_enabled_for_current_user = true;
         $reports_v1_last_metrics = (array) get_option('erp_omd_reports_v1_last_metrics', []);
         $reports_v1_last_metrics = [
             'generation_ms' => (int) ($reports_v1_last_metrics['generation_ms'] ?? 0),
