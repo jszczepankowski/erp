@@ -138,21 +138,29 @@
                         </p>
                         <p class="description">
                             <?php
+                            $dashboard_preview_base_args = [
+                                'month' => (string) ($report_filters['month'] ?? ''),
+                                'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),
+                                'adjustments_limit' => 5,
+                                'queue_limit' => 25,
+                                'profitability_limit' => 5,
+                                '_wpnonce' => wp_create_nonce('wp_rest'),
+                            ];
                             $dashboard_preview_url = add_query_arg(
-                                [
-                                    'month' => (string) ($report_filters['month'] ?? ''),
-                                    'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),
-                                    'profitability_scope' => 'project',
-                                    'adjustments_limit' => 5,
-                                    'queue_limit' => 25,
-                                    'profitability_limit' => 5,
-                                    '_wpnonce' => wp_create_nonce('wp_rest'),
-                                ],
+                                array_merge($dashboard_preview_base_args, ['profitability_scope' => 'project']),
+                                rest_url('erp-omd/v1/dashboard-v1')
+                            );
+                            $dashboard_preview_clients_url = add_query_arg(
+                                array_merge($dashboard_preview_base_args, ['profitability_scope' => 'client']),
                                 rest_url('erp-omd/v1/dashboard-v1')
                             );
                             ?>
                             <a href="<?php echo esc_url($dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
-                                <?php esc_html_e('Podgląd kontraktu dashboard-v1 (JSON)', 'erp-omd'); ?>
+                                <?php esc_html_e('Podgląd dashboard-v1 (scope: project)', 'erp-omd'); ?>
+                            </a>
+                            <span> | </span>
+                            <a href="<?php echo esc_url($dashboard_preview_clients_url); ?>" target="_blank" rel="noopener noreferrer">
+                                <?php esc_html_e('Podgląd dashboard-v1 (scope: client)', 'erp-omd'); ?>
                             </a>
                         </p>
                     </div>
