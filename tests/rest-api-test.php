@@ -100,6 +100,7 @@ if (! function_exists('get_option')) {
                 ['generation_ms' => 42, 'rows_count' => 7, 'report_type' => 'projects', 'rollout' => 'all', 'enabled' => true, 'captured_at' => '2026-04-02T10:00:00+00:00'],
                 ['generation_ms' => 55, 'rows_count' => 11, 'report_type' => 'time_entries', 'rollout' => 'admins', 'enabled' => true, 'captured_at' => '2026-04-02T09:00:00+00:00'],
             ],
+            'erp_omd_reports_v1_slo_generation_p95_max' => 1800,
         ];
 
         return $options[$key] ?? $default;
@@ -590,7 +591,7 @@ final class RestApiTestRunner
         $this->assertSame('projects', $system['feature_flags']['reports_v1_last_metrics']['report_type'], 'System status should expose monitoring report type.');
         $this->assertSame(2, count($system['feature_flags']['reports_v1_metrics_log']), 'System status should expose compact reports v1 metrics log.');
         $this->assertSame('time_entries', $system['feature_flags']['reports_v1_metrics_log'][1]['report_type'], 'System status should preserve metrics log ordering for latest samples.');
-        $this->assertSame(2500, $system['feature_flags']['reports_v1_slo']['generation_ms_p95_max'], 'System status should expose reports v1 SLO thresholds.');
+        $this->assertSame(1800, $system['feature_flags']['reports_v1_slo']['generation_ms_p95_max'], 'System status should expose reports v1 SLO thresholds.');
         $this->assertSame(55, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95'], 'System status should expose computed p95 from compact metrics samples.');
         $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_within_target'], 'System status should expose whether generation p95 is within target.');
         $this->assertSame('error_rate_percent', $system['feature_flags']['reports_v1_slo_status']['missing_signals'][0], 'System status should declare missing monitoring signals for SLO completeness.');

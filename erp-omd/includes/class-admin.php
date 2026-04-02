@@ -590,6 +590,7 @@ class ERP_OMD_Admin
         $front_admin_redirect_enabled = (bool) get_option('erp_omd_front_admin_redirect_enabled', true);
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
         $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
+        $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
         $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
         $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
         $front_login_logo_url = $front_login_logo_id > 0 ? (string) wp_get_attachment_image_url($front_login_logo_id, 'medium') : '';
@@ -1913,6 +1914,7 @@ class ERP_OMD_Admin
         update_option('erp_omd_reports_v1_rollout', 'all');
         update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
         update_option('erp_omd_reports_v1_metrics_freshness_minutes', max(5, (int) ($_POST['reports_v1_metrics_freshness_minutes'] ?? 1440)));
+        update_option('erp_omd_reports_v1_slo_generation_p95_max', max(100, min(30000, (int) ($_POST['reports_v1_slo_generation_p95_max'] ?? 2500))));
         update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
         update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
         update_option('erp_omd_missing_hours_notification_settings', $notification_settings);

@@ -52,7 +52,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 19. ✅ **P2 UX helper** — w raporcie dodany inline „Szybki smoke test (UX)” (checklista klików do lokalnej weryfikacji paginacji/eksportu/dashboard links).
 20. ✅ **P5-monitoring actionable status** — `system/status` zwraca operacyjny status health (`ok/warn/alert`) z powodami i rekomendowanymi akcjami (p95/freshness/missing signals).
 21. ✅ **P2 dashboard UX controls** — filtry raportów mają teraz sterowanie parametrami podglądu `dashboard-v1` (`scope`, limity), plus szybki link do `system/status`.
-22. **Kolejny etap** — obserwacja produkcyjna i korekty progów SLO po realnym ruchu.
+22. ✅ **P5 SLO tuning controls** — próg `generation_ms_p95_max` dla Reports v1 jest konfigurowalny z panelu ustawień i odczytywany przez `system/status`.
+23. **Kolejny etap** — obserwacja produkcyjna i kalibracja progów SLO po realnym ruchu.
 
 ## 4) Instrukcja startowa do nowego chatu
 

@@ -1141,8 +1141,9 @@ class ERP_OMD_REST_API
             $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
             $reports_v1_generation_p95 = (int) ($reports_v1_generation_samples[$reports_v1_p95_index] ?? 0);
         }
+        $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
         $reports_v1_slo = [
-            'generation_ms_p95_max' => 2500,
+            'generation_ms_p95_max' => $reports_v1_slo_generation_p95_max,
             'rows_count_warn_threshold' => 5000,
             'error_rate_max_percent' => 2.0,
         ];
