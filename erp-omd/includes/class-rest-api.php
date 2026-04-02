@@ -100,7 +100,7 @@ class ERP_OMD_REST_API
                 return rest_ensure_response($this->period_service->list_periods());
             }, 'permission_callback' => [$this, 'can_access_reports']],
         ]);
-        register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-\\d{2})', [
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request['month']);
                 // Keep route regex broad to return explicit 422 from callback (instead of 404 route miss) for out-of-range months.
@@ -123,7 +123,7 @@ class ERP_OMD_REST_API
                 ]);
             }, 'permission_callback' => [$this, 'can_access_reports']],
         ]);
-        register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-\\d{2})/transition', [
+        register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))/transition', [
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request['month']);
                 // Keep route regex broad to return explicit 422 from callback (instead of 404 route miss) for out-of-range months.
