@@ -598,6 +598,8 @@ class ERP_OMD_Admin
         $reports_v1_slo_calibration_decision_ready = false;
         $reports_v1_slo_calibration_next_action = __('Zbieraj próbki metryk raportów, aby domknąć kalibrację SLO.', 'erp-omd');
         $reports_v1_slo_last_decision = (array) get_option('erp_omd_reports_v1_slo_calibration_decision', []);
+        $reports_v1_slo_closure = (array) get_option('erp_omd_reports_v1_slo_calibration_closure', []);
+        $reports_v1_slo_closure_confirmed = ! empty($reports_v1_slo_closure['closed_at']) && ! empty($reports_v1_slo_closure['closed_by_user_id']);
         $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
         $reports_v1_samples = array_values(array_map(static function ($row) {
             return (int) ($row['generation_ms'] ?? 0);
@@ -613,7 +615,9 @@ class ERP_OMD_Admin
             $reports_v1_slo_recommended_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
             $reports_v1_slo_recommended_p95_max = max(100, min(30000, $reports_v1_slo_recommended_p95_max));
         }
-        if ($reports_v1_slo_calibration_decision_ready) {
+        if ($reports_v1_slo_closure_confirmed) {
+            $reports_v1_slo_calibration_next_action = __('Kalibracja formalnie zamknięta: monitoruj SLO w trybie steady-state i aktualizuj próg tylko przy trwałej zmianie trendu.', 'erp-omd');
+        } elseif ($reports_v1_slo_calibration_decision_ready) {
             $reports_v1_slo_calibration_next_action = __('Kalibracja gotowa: zweryfikuj rekomendowany próg p95 i zapisz finalną wartość.', 'erp-omd');
         } else {
             $reports_v1_slo_calibration_next_action = sprintf(
@@ -1993,6 +1997,19 @@ class ERP_OMD_Admin
                 'recommended_threshold_ms' => (int) $recommended_threshold,
                 'sample_count' => (int) $reports_v1_sample_count,
             ]);
+        }
+        if (! empty($_POST['confirm_reports_v1_slo_calibration_closure'])) {
+            $reports_v1_slo_decision = (array) get_option('erp_omd_reports_v1_slo_calibration_decision', []);
+            $decided_at = (string) ($reports_v1_slo_decision['decided_at'] ?? '');
+            $threshold_ms = (int) ($reports_v1_slo_decision['threshold_ms'] ?? 0);
+            if ($decided_at !== '' && $threshold_ms > 0) {
+                update_option('erp_omd_reports_v1_slo_calibration_closure', [
+                    'closed_at' => gmdate('c'),
+                    'closed_by_user_id' => (int) get_current_user_id(),
+                    'decision_decided_at' => $decided_at,
+                    'decision_threshold_ms' => $threshold_ms,
+                ]);
+            }
         }
         update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
         update_option('erp_omd_front_login_cover_id', $front_login_cover_id);

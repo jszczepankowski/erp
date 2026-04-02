@@ -607,10 +607,13 @@ final class RestApiTestRunner
         $this->assertSame('insufficient_samples', $system['feature_flags']['reports_v1_slo_status']['calibration_state'], 'System status should report calibration state when production sample count is too low.');
         $this->assertSame(18, $system['feature_flags']['reports_v1_slo_status']['samples_missing_to_calibration'], 'System status should expose how many samples are missing to finalize calibration.');
         $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['calibration_decision_ready'], 'System status should expose whether SLO calibration decision can be finalized.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['calibration_closed'], 'System status should expose whether SLO calibration was formally closed.');
+        $this->assertSame('', $system['feature_flags']['reports_v1_slo_status']['calibration_closed_at'], 'System status should expose closure timestamp when calibration is formally closed.');
         $this->assertSame('Collect 18 more samples to finalize calibration.', $system['feature_flags']['reports_v1_slo_status']['calibration_next_action'], 'System status should expose explicit next action for SLO calibration workflow.');
         $this->assertSame(500, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_recommended_max'], 'System status should expose rounded recommended p95 target for calibration.');
         $this->assertSame(1300, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_threshold_delta'], 'System status should expose delta between current and recommended p95 threshold.');
         $this->assertSame('decrease', $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_tuning_direction'], 'System status should expose tuning direction based on current vs recommended p95 threshold.');
+        $this->assertSame('', $system['feature_flags']['reports_v1_slo_closure']['closed_at'], 'System status should expose empty closure payload when SLO calibration closure is not persisted yet.');
         $this->assertSame('error_rate_percent', $system['feature_flags']['reports_v1_slo_status']['missing_signals'][0], 'System status should declare missing monitoring signals for SLO completeness.');
         $this->assertSame(1440, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_minutes'], 'System status should expose configurable freshness threshold in minutes.');
         $this->assertSame(86400, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_seconds'], 'System status should expose configurable freshness threshold in seconds.');

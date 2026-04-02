@@ -1199,6 +1199,20 @@ class ERP_OMD_REST_API
             'recommended_threshold_ms' => (int) ($reports_v1_slo_decision['recommended_threshold_ms'] ?? 0),
             'sample_count' => (int) ($reports_v1_slo_decision['sample_count'] ?? 0),
         ];
+        $reports_v1_slo_closure = (array) get_option('erp_omd_reports_v1_slo_calibration_closure', []);
+        $reports_v1_slo_closure = [
+            'closed_at' => (string) ($reports_v1_slo_closure['closed_at'] ?? ''),
+            'closed_by_user_id' => (int) ($reports_v1_slo_closure['closed_by_user_id'] ?? 0),
+            'decision_decided_at' => (string) ($reports_v1_slo_closure['decision_decided_at'] ?? ''),
+            'decision_threshold_ms' => (int) ($reports_v1_slo_closure['decision_threshold_ms'] ?? 0),
+        ];
+        $reports_v1_slo_calibration_closed = $reports_v1_slo_closure['closed_at'] !== '' && $reports_v1_slo_closure['closed_by_user_id'] > 0;
+        if ($reports_v1_slo_calibration_closed) {
+            $reports_v1_slo_status['calibration_state'] = 'closed';
+            $reports_v1_slo_status['calibration_next_action'] = 'Calibration formally closed. Keep monitoring SLO trends and reopen only when sustained drift appears.';
+        }
+        $reports_v1_slo_status['calibration_closed'] = $reports_v1_slo_calibration_closed;
+        $reports_v1_slo_status['calibration_closed_at'] = (string) $reports_v1_slo_closure['closed_at'];
         $reports_v1_operational_status = [
             'level' => 'ok',
             'requires_attention' => false,
@@ -1250,6 +1264,7 @@ class ERP_OMD_REST_API
                 'reports_v1_slo' => $reports_v1_slo,
                 'reports_v1_slo_status' => $reports_v1_slo_status,
                 'reports_v1_slo_decision' => $reports_v1_slo_decision,
+                'reports_v1_slo_closure' => $reports_v1_slo_closure,
                 'reports_v1_metrics_freshness' => $reports_v1_metrics_freshness,
                 'reports_v1_operational_status' => $reports_v1_operational_status,
             ],
