@@ -571,6 +571,8 @@ final class RestApiTestRunner
         $system = $api->get_system_status();
         $this->assertSame(1, $system['counts']['alerts'], 'System status should include alert count.');
         $this->assertSame(true, $system['current_user']['can_manage_settings'], 'System status should expose current user capabilities.');
+        $this->assertSame('all', $system['feature_flags']['reports_v1_rollout'], 'System status should expose reports v1 rollout flag.');
+        $this->assertSame(true, $system['feature_flags']['reports_v1_enabled_for_current_user'], 'System status should expose reports v1 effective state for current user.');
 
         $api->register_routes();
         $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})', WP_REST_Server::READABLE);

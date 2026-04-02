@@ -20,6 +20,7 @@ Monitorowane sygnały:
 - liczba rekordów (`rows_count`),
 - tryb rollout (`off` / `admins` / `all`),
 - stabilność endpointów i logów PHP/WP.
+- flagi rollout dostępne także przez `GET /erp-omd/v1/system/status` (`feature_flags`).
 
 Zalecenie operacyjne:
 - utrzymać rollout `admins` przez 24–48h,
