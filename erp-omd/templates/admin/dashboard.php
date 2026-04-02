@@ -11,8 +11,8 @@
         </div>
         <div class="erp-omd-kpi-grid">
             <div class="erp-omd-kpi erp-omd-kpi-accent erp-omd-kpi-profit">
-                <span class="erp-omd-kpi-label"><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></span>
-                <strong><?php echo esc_html(number_format_i18n((float) ($omd_month_row['operating_result'] ?? 0), 2)); ?></strong>
+                <span class="erp-omd-kpi-label"><?php esc_html_e('Wynik controllingowy', 'erp-omd'); ?></span>
+                <strong><?php echo esc_html(number_format_i18n((float) ($omd_month_row['controlling_result'] ?? 0), 2)); ?></strong>
             </div>
         </div>
     </div>
@@ -142,7 +142,7 @@
             <div class="erp-omd-chart-header">
                 <div>
                     <h2><?php esc_html_e('Miesięczny bilans operacyjny', 'erp-omd'); ?></h2>
-                    <p><?php esc_html_e('Ujęcie bieżącego miesiąca: koszty projektowe, koszty czasu, zysk godzinowy i wynik operacyjny.', 'erp-omd'); ?></p>
+                    <p><?php esc_html_e('Ujęcie bieżącego miesiąca: koszty projektowe, koszty czasu, zysk godzinowy i wynik controllingowy.', 'erp-omd'); ?></p>
                 </div>
                 <span class="erp-omd-chart-period"><?php echo esc_html($reporting_month_label); ?></span>
             </div>
