@@ -761,7 +761,7 @@ class ERP_OMD_Admin
             'invoice' => __('Raport projektów do faktury', 'erp-omd'),
             'time_entries' => __('Raport czasu pracy', 'erp-omd'),
             'monthly' => __('Raport miesięczny', 'erp-omd'),
-            'omd_rozliczenia' => __('Raport OMD rozliczenia', 'erp-omd'),
+            'omd_rozliczenia' => __('Raport Operacyjny OMD', 'erp-omd'),
         ];
         $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');
         include ERP_OMD_PATH . 'templates/admin/reports.php';

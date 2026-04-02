@@ -1113,19 +1113,7 @@ class ERP_OMD_Frontend
         $dashboard_month_navigation = [
             'current_month' => $dashboard_month_date->format('Y-m'),
             'label' => wp_date('F Y', $dashboard_month_date->getTimestamp()),
-            'prev_month' => $dashboard_month_date->modify('-1 month')->format('Y-m'),
-            'next_month' => $dashboard_month_date->modify('+1 month')->format('Y-m'),
         ];
-        $dashboard_month_base_args = [];
-        foreach (['project_id', 'request_id', 'estimate_status', 'estimate_id'] as $arg_key) {
-            if (! isset($_GET[$arg_key])) {
-                continue;
-            }
-            $dashboard_month_base_args[$arg_key] = sanitize_text_field(wp_unslash((string) $_GET[$arg_key]));
-        }
-        $dashboard_month_navigation['prev_url'] = $this->front_url('manager', array_merge($dashboard_month_base_args, ['dashboard_month' => $dashboard_month_navigation['prev_month']]));
-        $dashboard_month_navigation['current_url'] = $this->front_url('manager', array_merge($dashboard_month_base_args, ['dashboard_month' => gmdate('Y-m')]));
-        $dashboard_month_navigation['next_url'] = $this->front_url('manager', array_merge($dashboard_month_base_args, ['dashboard_month' => $dashboard_month_navigation['next_month']]));
 
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/dashboard.php';
