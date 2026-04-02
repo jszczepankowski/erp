@@ -669,14 +669,14 @@ class ERP_OMD_Admin
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $employees = $this->employees->all();
-        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive', 'submitted', 'approved', 'rejected'];
+        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum', 'submitted', 'approved', 'rejected'];
         $status_labels = [
             'do_rozpoczecia' => $this->project_status_label('do_rozpoczecia'),
             'w_realizacji' => $this->project_status_label('w_realizacji'),
             'w_akceptacji' => $this->project_status_label('w_akceptacji'),
             'do_faktury' => $this->project_status_label('do_faktury'),
             'zakonczony' => $this->project_status_label('zakonczony'),
-            'inactive' => $this->active_status_label('inactive'),
+            'archiwum' => $this->project_status_label('archiwum'),
             'submitted' => $this->time_status_label('submitted'),
             'approved' => $this->time_status_label('approved'),
             'rejected' => $this->time_status_label('rejected'),
