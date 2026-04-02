@@ -49,7 +49,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 16. ✅ **P5-monitoring UX** — baner monitoringu w raportach pokazuje wiek poprzedniej próbki metryk i status fresh/stale wg progu z ustawień.
 17. ✅ **P2 UX bridge** — dodany szybki link „Podgląd kontraktu dashboard-v1 (JSON)” z raportów admina (podgląd payloadu dla bieżącego miesiąca/mode).
 18. ✅ **P2 UX bridge+** — podgląd dashboard-v1 z raportów ma osobne linki dla `scope=project` i `scope=client`.
-19. **Kolejny etap** — obserwacja produkcyjna i ewentualne korekty progów SLO po realnym ruchu + dokończenie frontendowego dashboard-v1 UX.
+19. ✅ **P2 UX helper** — w raporcie dodany inline „Szybki smoke test (UX)” (checklista klików do lokalnej weryfikacji paginacji/eksportu/dashboard links).
+20. **Kolejny etap** — obserwacja produkcyjna i ewentualne korekty progów SLO po realnym ruchu + dokończenie frontendowego dashboard-v1 UX.
 
 ## 4) Instrukcja startowa do nowego chatu
 

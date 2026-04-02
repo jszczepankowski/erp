@@ -163,6 +163,15 @@
                                 <?php esc_html_e('Podgląd dashboard-v1 (scope: client)', 'erp-omd'); ?>
                             </a>
                         </p>
+                        <details class="erp-omd-inline-help">
+                            <summary><?php esc_html_e('Szybki smoke test (UX)', 'erp-omd'); ?></summary>
+                            <ol>
+                                <li><?php esc_html_e('Ustaw typ raportu „Czas pracy (szczegółowy)” i wybierz „Wierszy na stronę” = 25/50/100, potem kliknij „Filtruj”.', 'erp-omd'); ?></li>
+                                <li><?php esc_html_e('Sprawdź, czy paginacja działa i czy licznik stron odpowiada liczbie rekordów.', 'erp-omd'); ?></li>
+                                <li><?php esc_html_e('Kliknij „Eksport CSV” i zweryfikuj, że eksport respektuje aktualne filtry (mode/detail/page/per_page).', 'erp-omd'); ?></li>
+                                <li><?php esc_html_e('Otwórz linki dashboard-v1 (project/client) i potwierdź odpowiedź JSON bez błędu uprawnień.', 'erp-omd'); ?></li>
+                            </ol>
+                        </details>
                     </div>
                     <form method="post" class="erp-omd-inline-form">
                         <?php wp_nonce_field('erp_omd_export_report'); ?>
