@@ -4,8 +4,8 @@ Data snapshotu: 2026-04-01
 
 Cel: szybkie wznowienie prac w kolejnych chatowych sesjach bez utraty kontekstu.
 
-Aktualny punkt pracy: **Opcja B / pakiet P3 (WB-P3-01)** — raport klient simple/detail + drilldown domknięty po stronie backend contract.
-Następny krok wg planu: **P3-02** (raport projekt simple/detail: direct cost, budget usage, detail mix).
+Aktualny punkt pracy: **Opcja B / pakiet P5 (WB-P5-03)** — raport powdrożeniowy i plan cleanup legacy przygotowane.
+Następny krok wg planu: **utrzymanie/stabilizacja** (monitoring operacyjny + decyzje cleanup po okresie obserwacji).
 
 ## 1) Co już zrobione
 
@@ -67,9 +67,9 @@ Następny krok wg planu: **P3-02** (raport projekt simple/detail: direct cost, b
 ## 3) Co dalej (priorytet kolejnych kroków)
 
 ### P1 — domknięcie zgodności reguł księgowania v1
-1. Dopięcie pełnych walidatorów checklisty gotowości (submitted/rejected, koszty niezweryfikowane, kompletność danych, blokady krytyczne).
-2. Twarde użycie `operational_close_month` w logice budżetowej i agregacjach finansowych.
-3. Ujednolicenie approved-only we wszystkich raportach/eksportach/endpointach finansowych.
+1. [x] Dopięcie pełnych walidatorów checklisty gotowości (submitted/rejected, koszty niezweryfikowane, kompletność danych, blokady krytyczne).
+2. [x] Twarde użycie `operational_close_month` w logice budżetowej i agregacjach finansowych.
+3. [x] Ujednolicenie approved-only we wszystkich raportach/eksportach/endpointach finansowych.
 
 ### P2 — operacyjny dashboard v1 (frontend + contract)
 1. [x] Ekran statusu miesiąca + CTA admin (backend: `status_actions`).
@@ -79,13 +79,13 @@ Następny krok wg planu: **P3-02** (raport projekt simple/detail: direct cost, b
 
 ### P3 — raporty operacyjne simple/detail (pełny UAT)
 1. [x] Raport klient (simple/detail + drilldown).
-2. Raport projekt (direct cost, budget usage, detail mix).
-3. Raport czas pracy (line-by-line + paginacja).
-4. Eksport CSV/XLS zgodny 1:1 z widokiem.
+2. [x] Raport projekt (direct cost, budget usage, detail mix).
+3. [x] Raport czas pracy (line-by-line + paginacja).
+4. [x] Eksport CSV/XLS zgodny 1:1 z widokiem.
 
 ### P4 — controlling OMD
-1. Dopięcie finalnych agregacji controllingowych vs operacyjnych.
-2. Odświeżenie widoku OMD z legendą definicji i eksportem.
+1. [x] Dopięcie finalnych agregacji controllingowych vs operacyjnych.
+2. [x] Odświeżenie widoku OMD z legendą definicji i eksportem.
 
 ## 4) Checklist do wznowienia pracy w nowym chacie
 
@@ -107,10 +107,10 @@ Wklej na start:
 Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 
 ### P1 — Reguły księgowania i zamknięcie miesiąca
-- `WB-P1-01` — Dopięcie pełnej checklisty gotowości LIVE -> DO_ROZLICZENIA (wszystkie walidatory biznesowe).
-- `WB-P1-02` — Użycie `operational_close_month` w pełnej logice budżetowej i controllingowej.
-- `WB-P1-03` — Ujednolicenie approved-only we wszystkich raportach/eksportach/API finansowym.
-- `WB-P1-04` — Testy regresji: przejścia statusów, locki, edge-case 72h + emergency.
+- `WB-P1-01` — [x] Dopięcie pełnej checklisty gotowości LIVE -> DO_ROZLICZENIA (wszystkie walidatory biznesowe).
+- `WB-P1-02` — [x] Użycie `operational_close_month` w pełnej logice budżetowej i controllingowej.
+- `WB-P1-03` — [x] Ujednolicenie approved-only we wszystkich raportach/eksportach/API finansowym.
+- `WB-P1-04` — [x] Testy regresji: przejścia statusów, locki, edge-case 72h + emergency + walidacja zakresu miesiąca (`YYYY-MM`) także na endpointach okresów (422 dla out-of-range).
 
 ### P2 — Dashboard v1 (frontend + contract)
 - `WB-P2-01` — [x] Karta statusu miesiąca + akcje admin (backend contract).
@@ -120,18 +120,18 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 
 ### P3 — Raporty operacyjne (UAT ready)
 - `WB-P3-01` — [x] Raport klient simple/detail + drilldown klient -> projekt -> pozycje.
-- `WB-P3-02` — Raport projekt simple/detail (direct cost, budget usage, mix billing).
-- `WB-P3-03` — Raport czas pracy simple/detail (line-by-line + paginacja).
-- `WB-P3-04` — Eksport CSV/XLS zgodny 1:1 z widokiem i filtrami.
+- `WB-P3-02` — [x] Raport projekt simple/detail (direct cost, budget usage, mix billing).
+- `WB-P3-03` — [x] Raport czas pracy simple/detail (line-by-line + paginacja).
+- `WB-P3-04` — [x] Eksport CSV/XLS zgodny 1:1 z widokiem i filtrami.
 
 ### P4 — Controlling OMD
-- `WB-P4-01` — Finalne agregacje controllingowe vs operacyjne (spis i implementacja).
-- `WB-P4-02` — UI OMD z legendą definicji i pełnym eksportem.
+- `WB-P4-01` — [x] Finalne agregacje controllingowe vs operacyjne (spis i implementacja).
+- `WB-P4-02` — [x] UI OMD z legendą definicji i pełnym eksportem.
 
 ### P5 — Stabilizacja rollout i operacje
-- `WB-P5-01` — Feature flags + canary rollout (admin -> wszyscy).
-- `WB-P5-02` — Monitoring błędów/wydajności + plan rollback przez flagi.
-- `WB-P5-03` — Raport powdrożeniowy i cleanup legacy po stabilizacji.
+- `WB-P5-01` — [x] Feature flags + canary rollout (admin -> wszyscy).
+- `WB-P5-02` — [x] Monitoring błędów/wydajności + plan rollback przez flagi.
+- `WB-P5-03` — [x] Raport powdrożeniowy i cleanup legacy po stabilizacji.
 
 ## 7) Jak odwoływać się do kroków
 - W nowym chacie podaj po prostu: „Robimy `WB-P2-03`”.

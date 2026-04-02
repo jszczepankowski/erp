@@ -28,6 +28,9 @@
                                 <?php esc_html_e('Przekierowuj użytkowników FRONT z wp-admin do ERP Front.', 'erp-omd'); ?>
                             </label>
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <p class="description"><?php esc_html_e('Reports v1 jest aktywny dla wszystkich użytkowników ERP OMD. Legacy rollout/canary został wygaszony.', 'erp-omd'); ?></p>
+                        </div>
                     </div>
                 </section>
 
