@@ -81,6 +81,10 @@ class ERP_OMD_Period_Service
 
     public function ensure_month_exists($month, $updated_by = 0)
     {
+        if (! $this->is_valid_month($month)) {
+            throw new InvalidArgumentException('Month must use YYYY-MM format.');
+        }
+
         if (! $this->periods) {
             return [
                 'month' => $month,
@@ -109,6 +113,10 @@ class ERP_OMD_Period_Service
 
     public function resolve_month_status($month)
     {
+        if (! $this->is_valid_month($month)) {
+            throw new InvalidArgumentException('Month must use YYYY-MM format.');
+        }
+
         $period = $this->ensure_month_exists($month);
 
         return (string) ($period['status'] ?? self::STATUS_LIVE);
@@ -127,6 +135,12 @@ class ERP_OMD_Period_Service
     {
         if (! $this->periods) {
             throw new RuntimeException('Period repository is required for month transitions.');
+        }
+        if (! $this->is_valid_month($month)) {
+            throw new InvalidArgumentException('Month must use YYYY-MM format.');
+        }
+        if (! in_array((string) $to_status, [self::STATUS_LIVE, self::STATUS_DO_ROZLICZENIA, self::STATUS_ZAMKNIETY], true)) {
+            throw new InvalidArgumentException('Requested target status is not supported.');
         }
 
         $existing = $this->ensure_month_exists($month, get_current_user_id());
@@ -154,5 +168,10 @@ class ERP_OMD_Period_Service
             'period' => $this->periods->find_by_month($month),
             'checklist' => $checklist,
         ];
+    }
+
+    private function is_valid_month($month)
+    {
+        return is_string($month) && preg_match('/^\d{4}-\d{2}$/', $month) === 1;
     }
 }
