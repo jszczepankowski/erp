@@ -172,6 +172,20 @@
                         </p>
                         <p class="description">
                             <?php
+                            $calibration_ready = ! empty($report_monitoring['slo_calibration_decision_ready']);
+                            $calibration_status = $calibration_ready ? __('ready', 'erp-omd') : __('pending', 'erp-omd');
+                            $calibration_action = (string) ($report_monitoring['slo_calibration_next_action'] ?? '');
+                            echo esc_html(
+                                sprintf(
+                                    __('Kalibracja SLO: decyzja=%1$s | akcja=%2$s', 'erp-omd'),
+                                    $calibration_status,
+                                    $calibration_action
+                                )
+                            );
+                            ?>
+                        </p>
+                        <p class="description">
+                            <?php
                             $dashboard_preview_base_args = [
                                 'month' => (string) ($report_filters['month'] ?? ''),
                                 'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),

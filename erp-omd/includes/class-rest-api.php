@@ -1160,7 +1160,20 @@ class ERP_OMD_REST_API
         $reports_v1_slo_status['sample_target_min'] = $reports_v1_slo_sample_target_min;
         $reports_v1_slo_status['calibration_state'] = $reports_v1_sample_count >= $reports_v1_slo_sample_target_min ? 'ready' : 'insufficient_samples';
         $reports_v1_slo_status['samples_missing_to_calibration'] = $reports_v1_samples_missing_to_calibration;
+        $reports_v1_slo_status['calibration_decision_ready'] = $reports_v1_samples_missing_to_calibration === 0;
+        $reports_v1_slo_status['calibration_next_action'] = $reports_v1_samples_missing_to_calibration === 0
+            ? 'Review generation_ms_p95_recommended_max and confirm final threshold in settings.'
+            : sprintf('Collect %d more samples to finalize calibration.', $reports_v1_samples_missing_to_calibration);
         $reports_v1_slo_status['generation_ms_p95_recommended_max'] = $reports_v1_recommended_p95_max;
+        $reports_v1_threshold_delta = (int) $reports_v1_slo['generation_ms_p95_max'] - (int) $reports_v1_recommended_p95_max;
+        $reports_v1_slo_status['generation_ms_p95_threshold_delta'] = $reports_v1_threshold_delta;
+        if ($reports_v1_threshold_delta > 0) {
+            $reports_v1_slo_status['generation_ms_p95_tuning_direction'] = 'decrease';
+        } elseif ($reports_v1_threshold_delta < 0) {
+            $reports_v1_slo_status['generation_ms_p95_tuning_direction'] = 'increase';
+        } else {
+            $reports_v1_slo_status['generation_ms_p95_tuning_direction'] = 'keep';
+        }
         $reports_v1_last_metrics_age_seconds = null;
         $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
         $reports_v1_metrics_freshness_threshold_seconds = $reports_v1_metrics_freshness_minutes * 60;

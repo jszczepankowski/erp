@@ -24,6 +24,17 @@
                             <label for="erp-omd-reports-v1-slo-p95-max"><?php esc_html_e('SLO: maks. p95 czasu raportu (ms)', 'erp-omd'); ?></label>
                             <input id="erp-omd-reports-v1-slo-p95-max" type="number" min="100" max="30000" step="50" name="reports_v1_slo_generation_p95_max" value="<?php echo esc_attr((string) $reports_v1_slo_generation_p95_max); ?>" />
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-reports-v1-slo-p95-recommended"><?php esc_html_e('Rekomendowany próg p95 (ms)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-reports-v1-slo-p95-recommended" type="number" readonly value="<?php echo esc_attr((string) $reports_v1_slo_recommended_p95_max); ?>" />
+                            <p class="description"><?php echo esc_html(sprintf(__('Próbki do rekomendacji: %d', 'erp-omd'), (int) $reports_v1_slo_calibration_sample_count)); ?></p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label class="erp-omd-form-label">
+                                <input type="checkbox" name="apply_reports_v1_recommended_p95_max" value="1" />
+                                <?php esc_html_e('Przy zapisie zastosuj rekomendowany próg p95 na podstawie logu metryk.', 'erp-omd'); ?>
+                            </label>
+                        </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label class="erp-omd-form-label">
                                 <input type="checkbox" name="delete_data_on_uninstall" value="1" <?php checked($delete_data); ?> />

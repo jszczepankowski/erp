@@ -591,6 +591,21 @@ class ERP_OMD_Admin
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
         $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
         $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
+        $reports_v1_slo_recommended_p95_max = $reports_v1_slo_generation_p95_max;
+        $reports_v1_slo_calibration_sample_count = 0;
+        $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
+        $reports_v1_samples = array_values(array_map(static function ($row) {
+            return (int) ($row['generation_ms'] ?? 0);
+        }, $reports_v1_metrics_log));
+        sort($reports_v1_samples);
+        $reports_v1_slo_calibration_sample_count = count($reports_v1_samples);
+        if ($reports_v1_slo_calibration_sample_count > 0) {
+            $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_slo_calibration_sample_count) - 1;
+            $reports_v1_p95_index = max(0, min($reports_v1_slo_calibration_sample_count - 1, $reports_v1_p95_index));
+            $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
+            $reports_v1_slo_recommended_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
+            $reports_v1_slo_recommended_p95_max = max(100, min(30000, $reports_v1_slo_recommended_p95_max));
+        }
         $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
         $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
         $front_login_logo_url = $front_login_logo_id > 0 ? (string) wp_get_attachment_image_url($front_login_logo_id, 'medium') : '';
@@ -692,6 +707,13 @@ class ERP_OMD_Admin
         $metrics_log = array_slice($metrics_log, 0, 20);
         $report_monitoring['slo_sample_count'] = count($metrics_log);
         $report_monitoring['slo_samples_missing_to_calibration'] = max(0, (int) $report_monitoring['slo_sample_target_min'] - (int) $report_monitoring['slo_sample_count']);
+        $report_monitoring['slo_calibration_decision_ready'] = (int) $report_monitoring['slo_samples_missing_to_calibration'] === 0;
+        $report_monitoring['slo_calibration_next_action'] = ! empty($report_monitoring['slo_calibration_decision_ready'])
+            ? __('Zweryfikuj rekomendowany próg p95 i zapisz finalną wartość w Ustawieniach.', 'erp-omd')
+            : sprintf(
+                __('Zbierz jeszcze %d próbek, aby domknąć kalibrację SLO.', 'erp-omd'),
+                (int) $report_monitoring['slo_samples_missing_to_calibration']
+            );
         update_option('erp_omd_reports_v1_metrics_log', $metrics_log);
         $clients = $this->clients->all();
         $projects = $this->projects->all();
@@ -1917,7 +1939,23 @@ class ERP_OMD_Admin
         update_option('erp_omd_reports_v1_rollout', 'all');
         update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
         update_option('erp_omd_reports_v1_metrics_freshness_minutes', max(5, (int) ($_POST['reports_v1_metrics_freshness_minutes'] ?? 1440)));
-        update_option('erp_omd_reports_v1_slo_generation_p95_max', max(100, min(30000, (int) ($_POST['reports_v1_slo_generation_p95_max'] ?? 2500))));
+        $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) ($_POST['reports_v1_slo_generation_p95_max'] ?? 2500)));
+        if (! empty($_POST['apply_reports_v1_recommended_p95_max'])) {
+            $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
+            $reports_v1_samples = array_values(array_map(static function ($row) {
+                return (int) ($row['generation_ms'] ?? 0);
+            }, $reports_v1_metrics_log));
+            sort($reports_v1_samples);
+            $reports_v1_sample_count = count($reports_v1_samples);
+            if ($reports_v1_sample_count > 0) {
+                $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_sample_count) - 1;
+                $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
+                $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
+                $reports_v1_slo_generation_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
+                $reports_v1_slo_generation_p95_max = max(100, min(30000, $reports_v1_slo_generation_p95_max));
+            }
+        }
+        update_option('erp_omd_reports_v1_slo_generation_p95_max', $reports_v1_slo_generation_p95_max);
         update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
         update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
         update_option('erp_omd_missing_hours_notification_settings', $notification_settings);

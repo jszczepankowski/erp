@@ -57,7 +57,12 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 24. ✅ **P5 SLO calibration signals (24-a)** — `system/status` zwraca `sample_target_min`, `calibration_state` i rekomendowany próg `generation_ms_p95_recommended_max`.
 25. ✅ **P5 SLO calibration progress (25-a)** — `system/status` zwraca `samples_missing_to_calibration`, żeby operacyjnie śledzić brakujące próbki do decyzji.
 26. ✅ **P5 SLO calibration UX (26-a)** — baner monitoringu raportów pokazuje postęp kalibracji (`próbki/target` + `brakujące`), aby łatwiej domknąć etap obserwacji.
-27. **Kolejny etap** — obserwacja produkcyjna i decyzja kalibracyjna po osiągnięciu `samples_missing_to_calibration=0`.
+27. ✅ **P5 SLO decision signal (27-a)** — `system/status` zwraca `calibration_decision_ready`, więc moment decyzji kalibracyjnej jest jednoznaczny API-owo.
+28. ✅ **P5 SLO workflow hint (28-a)** — `system/status` zwraca `calibration_next_action`, więc on-call ma jednoznaczną podpowiedź „co dalej” w kalibracji.
+29. ✅ **P5 SLO tuning delta (29-a)** — `system/status` zwraca `generation_ms_p95_threshold_delta` + `generation_ms_p95_tuning_direction` (increase/decrease/keep).
+30. ✅ **P5 SLO apply helper (30-a)** — w ustawieniach widoczny jest rekomendowany próg p95 + opcja zastosowania go przy zapisie.
+31. ✅ **P5 SLO decision UX (31-a)** — baner raportów pokazuje status decyzji kalibracyjnej (`ready/pending`) oraz następną akcję operatorską.
+32. **Kolejny etap** — obserwacja produkcyjna do `calibration_decision_ready=true` i finalna decyzja o progu p95.
 
 ## 4) Instrukcja startowa do nowego chatu
 
