@@ -598,6 +598,7 @@ final class RestApiTestRunner
         $this->assertSame('projects', $system['feature_flags']['reports_v1_last_metrics']['report_type'], 'System status should expose monitoring report type.');
         $this->assertSame(2, count($system['feature_flags']['reports_v1_metrics_log']), 'System status should expose compact reports v1 metrics log.');
         $this->assertSame('time_entries', $system['feature_flags']['reports_v1_metrics_log'][1]['report_type'], 'System status should preserve metrics log ordering for latest samples.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_metrics_log'][0]['has_error'], 'System status should expose error marker for reports monitoring samples.');
         $this->assertSame(1800, $system['feature_flags']['reports_v1_slo']['generation_ms_p95_max'], 'System status should expose reports v1 SLO thresholds.');
         $this->assertSame(1800, $system['feature_flags']['reports_v1_slo_decision']['threshold_ms'], 'System status should expose latest persisted SLO decision threshold.');
         $this->assertSame('2026-04-02T12:30:00+00:00', $system['feature_flags']['reports_v1_slo_decision']['decided_at'], 'System status should expose timestamp of latest SLO decision.');
@@ -607,18 +608,23 @@ final class RestApiTestRunner
         $this->assertSame('insufficient_samples', $system['feature_flags']['reports_v1_slo_status']['calibration_state'], 'System status should report calibration state when production sample count is too low.');
         $this->assertSame(18, $system['feature_flags']['reports_v1_slo_status']['samples_missing_to_calibration'], 'System status should expose how many samples are missing to finalize calibration.');
         $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['calibration_decision_ready'], 'System status should expose whether SLO calibration decision can be finalized.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['calibration_closed'], 'System status should expose whether SLO calibration was formally closed.');
+        $this->assertSame('', $system['feature_flags']['reports_v1_slo_status']['calibration_closed_at'], 'System status should expose closure timestamp when calibration is formally closed.');
         $this->assertSame('Collect 18 more samples to finalize calibration.', $system['feature_flags']['reports_v1_slo_status']['calibration_next_action'], 'System status should expose explicit next action for SLO calibration workflow.');
         $this->assertSame(500, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_recommended_max'], 'System status should expose rounded recommended p95 target for calibration.');
         $this->assertSame(1300, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_threshold_delta'], 'System status should expose delta between current and recommended p95 threshold.');
         $this->assertSame('decrease', $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_tuning_direction'], 'System status should expose tuning direction based on current vs recommended p95 threshold.');
-        $this->assertSame('error_rate_percent', $system['feature_flags']['reports_v1_slo_status']['missing_signals'][0], 'System status should declare missing monitoring signals for SLO completeness.');
+        $this->assertSame('', $system['feature_flags']['reports_v1_slo_closure']['closed_at'], 'System status should expose empty closure payload when SLO calibration closure is not persisted yet.');
+        $this->assertSame(0.0, $system['feature_flags']['reports_v1_slo_status']['error_rate_percent'], 'System status should expose computed error rate percent from monitoring samples.');
+        $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['error_rate_within_target'], 'System status should expose whether current error rate is within target.');
+        $this->assertSame(0, count($system['feature_flags']['reports_v1_slo_status']['missing_signals']), 'System status should clear missing signals when error rate telemetry is available.');
         $this->assertSame(1440, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_minutes'], 'System status should expose configurable freshness threshold in minutes.');
         $this->assertSame(86400, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_seconds'], 'System status should expose configurable freshness threshold in seconds.');
         $this->assertSame(0, $system['feature_flags']['reports_v1_metrics_freshness']['last_metrics_age_seconds'], 'System status should clamp future-captured metrics age to zero.');
         $this->assertSame(true, $system['feature_flags']['reports_v1_metrics_freshness']['last_metrics_fresh_under_threshold'], 'System status should expose freshness signal for latest reports metrics.');
-        $this->assertSame('warn', $system['feature_flags']['reports_v1_operational_status']['level'], 'System status should expose actionable operational status for reports v1.');
-        $this->assertSame(true, $system['feature_flags']['reports_v1_operational_status']['requires_attention'], 'Operational status should flag attention when monitoring signals are incomplete.');
-        $this->assertSame('missing_slo_signals', $system['feature_flags']['reports_v1_operational_status']['reasons'][0], 'Operational status should expose normalized reason codes.');
+        $this->assertSame('ok', $system['feature_flags']['reports_v1_operational_status']['level'], 'System status should expose actionable operational status for reports v1.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_operational_status']['requires_attention'], 'Operational status should remain green when monitoring signals are complete and fresh.');
+        $this->assertSame(0, count($system['feature_flags']['reports_v1_operational_status']['reasons']), 'Operational status should have no reasons when reports monitoring is healthy.');
 
         $api->register_routes();
         $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', WP_REST_Server::READABLE);
