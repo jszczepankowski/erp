@@ -87,6 +87,20 @@ if (! function_exists('get_option')) {
         $options = [
             'erp_omd_delete_data_on_uninstall' => false,
             'erp_omd_alert_margin_threshold' => 10,
+            'erp_omd_reports_v1_rollout' => 'off',
+            'erp_omd_reports_v1_last_metrics' => [
+                'generation_ms' => 42,
+                'rows_count' => 7,
+                'report_type' => 'projects',
+                'rollout' => 'all',
+                'enabled' => true,
+                'captured_at' => '2026-04-02T10:00:00+00:00',
+            ],
+            'erp_omd_reports_v1_metrics_log' => [
+                ['generation_ms' => 42, 'rows_count' => 7, 'report_type' => 'projects', 'rollout' => 'all', 'enabled' => true, 'captured_at' => '2026-04-02T10:00:00+00:00'],
+                ['generation_ms' => 55, 'rows_count' => 11, 'report_type' => 'time_entries', 'rollout' => 'admins', 'enabled' => true, 'captured_at' => '2026-04-02T09:00:00+00:00'],
+            ],
+            'erp_omd_reports_v1_slo_generation_p95_max' => 1800,
         ];
 
         return $options[$key] ?? $default;
@@ -571,6 +585,26 @@ final class RestApiTestRunner
         $system = $api->get_system_status();
         $this->assertSame(1, $system['counts']['alerts'], 'System status should include alert count.');
         $this->assertSame(true, $system['current_user']['can_manage_settings'], 'System status should expose current user capabilities.');
+        $this->assertSame('all', $system['feature_flags']['reports_v1_rollout'], 'System status should expose reports v1 rollout flag.');
+        $this->assertSame(true, $system['feature_flags']['reports_v1_enabled_for_current_user'], 'System status should expose reports v1 effective state for current user.');
+        $this->assertSame(42, $system['feature_flags']['reports_v1_last_metrics']['generation_ms'], 'System status should expose persisted reports v1 monitoring metrics.');
+        $this->assertSame('projects', $system['feature_flags']['reports_v1_last_metrics']['report_type'], 'System status should expose monitoring report type.');
+        $this->assertSame(2, count($system['feature_flags']['reports_v1_metrics_log']), 'System status should expose compact reports v1 metrics log.');
+        $this->assertSame('time_entries', $system['feature_flags']['reports_v1_metrics_log'][1]['report_type'], 'System status should preserve metrics log ordering for latest samples.');
+        $this->assertSame(1800, $system['feature_flags']['reports_v1_slo']['generation_ms_p95_max'], 'System status should expose reports v1 SLO thresholds.');
+        $this->assertSame(55, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95'], 'System status should expose computed p95 from compact metrics samples.');
+        $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_within_target'], 'System status should expose whether generation p95 is within target.');
+        $this->assertSame(20, $system['feature_flags']['reports_v1_slo_status']['sample_target_min'], 'System status should expose minimum sample target for SLO calibration.');
+        $this->assertSame('insufficient_samples', $system['feature_flags']['reports_v1_slo_status']['calibration_state'], 'System status should report calibration state when production sample count is too low.');
+        $this->assertSame(500, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_recommended_max'], 'System status should expose rounded recommended p95 target for calibration.');
+        $this->assertSame('error_rate_percent', $system['feature_flags']['reports_v1_slo_status']['missing_signals'][0], 'System status should declare missing monitoring signals for SLO completeness.');
+        $this->assertSame(1440, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_minutes'], 'System status should expose configurable freshness threshold in minutes.');
+        $this->assertSame(86400, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_seconds'], 'System status should expose configurable freshness threshold in seconds.');
+        $this->assertSame(0, $system['feature_flags']['reports_v1_metrics_freshness']['last_metrics_age_seconds'], 'System status should clamp future-captured metrics age to zero.');
+        $this->assertSame(true, $system['feature_flags']['reports_v1_metrics_freshness']['last_metrics_fresh_under_threshold'], 'System status should expose freshness signal for latest reports metrics.');
+        $this->assertSame('warn', $system['feature_flags']['reports_v1_operational_status']['level'], 'System status should expose actionable operational status for reports v1.');
+        $this->assertSame(true, $system['feature_flags']['reports_v1_operational_status']['requires_attention'], 'Operational status should flag attention when monitoring signals are incomplete.');
+        $this->assertSame('missing_slo_signals', $system['feature_flags']['reports_v1_operational_status']['reasons'][0], 'Operational status should expose normalized reason codes.');
 
         $api->register_routes();
         $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})', WP_REST_Server::READABLE);
@@ -581,11 +615,16 @@ final class RestApiTestRunner
         $this->assertSame(true, in_array('project_client_completeness', $periodStatusPayload['checklist']['blockers'], true), 'Checklist should flag project_client_completeness when operationally-closed project data is incomplete.');
         $this->assertSame(false, $periodStatusPayload['readiness_signals']['time_entries_finalized'], 'Period status endpoint should expose normalized readiness_signals.');
         $this->assertSame(1, $periodStatusPayload['readiness_meta']['submitted_or_rejected_entries'], 'Readiness meta should count blocking submitted/rejected entries in selected month.');
+        $this->assertSame(0, $periodStatusPayload['readiness_meta']['relevant_projects_without_cost_rows'], 'Readiness meta should expose count of relevant projects missing cost rows.');
         $this->assertSame(2, $periodStatusPayload['readiness_meta']['relevant_projects'], 'Readiness meta should count projects relevant for selected month closure.');
+        $periodStatusInvalidMonth = $periodStatusCallback(new WP_REST_Request(['month' => '2026-13']));
+        $this->assertSame('erp_omd_period_month_invalid', $periodStatusInvalidMonth->get_error_code(), 'Period status endpoint should reject out-of-range month values.');
 
         $transitionCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})/transition', WP_REST_Server::CREATABLE);
         $transitionBlocked = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'DO_ROZLICZENIA']));
         $this->assertSame('erp_omd_period_transition_blocked', $transitionBlocked->get_error_code(), 'Transition endpoint should block LIVE -> DO_ROZLICZENIA when checklist is not ready.');
+        $transitionInvalidMonth = $transitionCallback(new WP_REST_Request(['month' => '2026-13', 'to_status' => 'DO_ROZLICZENIA']));
+        $this->assertSame('erp_omd_period_month_invalid', $transitionInvalidMonth->get_error_code(), 'Transition endpoint should reject out-of-range month values.');
 
         $transitionInvalid = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'LIVE']));
         $this->assertSame('erp_omd_period_transition_invalid', $transitionInvalid->get_error_code(), 'Transition endpoint should reject unsupported target statuses.');
@@ -618,6 +657,8 @@ final class RestApiTestRunner
         $this->assertSame(1, count($dashboardPayload['settlement_queue']['items']), 'Dashboard should honor queue_limit for serialized queue rows.');
         $this->assertSame(1, count($dashboardPayload['adjustments']['items']), 'Dashboard should honor adjustments_limit for serialized adjustment rows.');
         $this->assertSame(2, $dashboardPayload['settlement_queue']['count'], 'Dashboard endpoint should expose invoice queue count.');
+        $dashboardPayloadWithInvalidMonth = $dashboardCallback(new WP_REST_Request(['month' => '2026-13']));
+        $this->assertSame(gmdate('Y-m'), $dashboardPayloadWithInvalidMonth['month'], 'Dashboard endpoint should fallback to current month when out-of-range month is provided.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "REST API tests passed.\n";
