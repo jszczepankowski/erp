@@ -588,6 +588,10 @@ class ERP_OMD_Admin
     {
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
         $front_admin_redirect_enabled = (bool) get_option('erp_omd_front_admin_redirect_enabled', true);
+        $reports_v1_rollout = sanitize_key((string) get_option('erp_omd_reports_v1_rollout', 'all'));
+        if (! in_array($reports_v1_rollout, ['off', 'admins', 'all'], true)) {
+            $reports_v1_rollout = 'all';
+        }
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
         $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
         $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
@@ -639,20 +643,40 @@ class ERP_OMD_Admin
 
     public function render_reports()
     {
+        $current_user = wp_get_current_user();
+        $reports_v1_rollout = sanitize_key((string) get_option('erp_omd_reports_v1_rollout', 'all'));
+        if (! in_array($reports_v1_rollout, ['off', 'admins', 'all'], true)) {
+            $reports_v1_rollout = 'all';
+        }
+        $reports_v1_enabled = $reports_v1_rollout === 'all'
+            || ($reports_v1_rollout === 'admins' && user_can($current_user, 'administrator'));
+
         $report_filters = $this->reporting_service->sanitize_filters($_GET);
-        $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
+        $report_started_at = microtime(true);
+        $report_rows = $reports_v1_enabled
+            ? $this->reporting_service->build_report($report_filters['report_type'], $report_filters)
+            : [];
+        $report_generation_ms = (int) round((microtime(true) - $report_started_at) * 1000);
+        $report_pagination = $reports_v1_enabled ? (array) ($this->reporting_service->last_report_pagination ?? []) : [];
         $calendar_data = $this->reporting_service->build_calendar($report_filters);
+        $report_monitoring = [
+            'generation_ms' => $report_generation_ms,
+            'rows_count' => is_array($report_rows) ? count($report_rows) : 0,
+            'report_type' => (string) ($report_filters['report_type'] ?? ''),
+            'rollout' => $reports_v1_rollout,
+            'enabled' => $reports_v1_enabled,
+        ];
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $employees = $this->employees->all();
-        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive', 'submitted', 'approved', 'rejected'];
+        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum', 'submitted', 'approved', 'rejected'];
         $status_labels = [
             'do_rozpoczecia' => $this->project_status_label('do_rozpoczecia'),
             'w_realizacji' => $this->project_status_label('w_realizacji'),
             'w_akceptacji' => $this->project_status_label('w_akceptacji'),
             'do_faktury' => $this->project_status_label('do_faktury'),
             'zakonczony' => $this->project_status_label('zakonczony'),
-            'inactive' => $this->active_status_label('inactive'),
+            'archiwum' => $this->project_status_label('archiwum'),
             'submitted' => $this->time_status_label('submitted'),
             'approved' => $this->time_status_label('approved'),
             'rejected' => $this->time_status_label('rejected'),
@@ -1863,6 +1887,11 @@ class ERP_OMD_Admin
 
         update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
         update_option('erp_omd_front_admin_redirect_enabled', ! empty($_POST['front_admin_redirect_enabled']));
+        $reports_rollout = sanitize_key((string) ($_POST['reports_v1_rollout'] ?? 'all'));
+        if (! in_array($reports_rollout, ['off', 'admins', 'all'], true)) {
+            $reports_rollout = 'all';
+        }
+        update_option('erp_omd_reports_v1_rollout', $reports_rollout);
         update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
         update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
         update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
