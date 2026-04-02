@@ -949,6 +949,10 @@ class ERP_OMD_Frontend
         }
 
         $managed_projects = $this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator'));
+        $dashboard_month = sanitize_text_field(wp_unslash($_GET['dashboard_month'] ?? gmdate('Y-m')));
+        if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $dashboard_month)) {
+            $dashboard_month = gmdate('Y-m');
+        }
         $managed_project_ids = array_map('intval', wp_list_pluck($managed_projects, 'id'));
         $selected_project_id = (int) ($_GET['project_id'] ?? 0);
         $selected_request_id = (int) ($_GET['request_id'] ?? 0);
@@ -995,9 +999,15 @@ class ERP_OMD_Frontend
         }
         $selected_estimate = $selected_estimate_id > 0 ? $this->find_estimate_in_collection($manager_estimates, $selected_estimate_id) : null;
         $approval_queue = $this->load_manager_approval_queue($managed_project_ids);
+        $approval_queue = array_values(array_filter($approval_queue, static function ($queue_row) use ($dashboard_month) {
+            return strpos((string) ($queue_row['entry_date'] ?? ''), $dashboard_month) === 0;
+        }));
         $queue_summary = $this->summarize_queue_entries($approval_queue);
         $manager_time_entries = $this->time_entries->all(['employee_id' => (int) $employee['id']]);
         $manager_time_entries = $this->time_entry_service->filter_visible_entries($manager_time_entries, $user);
+        $manager_time_entries = array_values(array_filter($manager_time_entries, static function ($entry_row) use ($dashboard_month) {
+            return strpos((string) ($entry_row['entry_date'] ?? ''), $dashboard_month) === 0;
+        }));
         usort(
             $manager_time_entries,
             static function ($left, $right) {
@@ -1096,6 +1106,26 @@ class ERP_OMD_Frontend
         $front_manager_url = $this->front_url('manager');
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
         $manager_form_action = $this->front_url('manager');
+        $dashboard_month_date = DateTimeImmutable::createFromFormat('Y-m-d', $dashboard_month . '-01');
+        if (! $dashboard_month_date) {
+            $dashboard_month_date = new DateTimeImmutable('first day of this month');
+        }
+        $dashboard_month_navigation = [
+            'current_month' => $dashboard_month_date->format('Y-m'),
+            'label' => wp_date('F Y', $dashboard_month_date->getTimestamp()),
+            'prev_month' => $dashboard_month_date->modify('-1 month')->format('Y-m'),
+            'next_month' => $dashboard_month_date->modify('+1 month')->format('Y-m'),
+        ];
+        $dashboard_month_base_args = [];
+        foreach (['project_id', 'request_id', 'estimate_status', 'estimate_id'] as $arg_key) {
+            if (! isset($_GET[$arg_key])) {
+                continue;
+            }
+            $dashboard_month_base_args[$arg_key] = sanitize_text_field(wp_unslash((string) $_GET[$arg_key]));
+        }
+        $dashboard_month_navigation['prev_url'] = $this->front_url('manager', array_merge($dashboard_month_base_args, ['dashboard_month' => $dashboard_month_navigation['prev_month']]));
+        $dashboard_month_navigation['current_url'] = $this->front_url('manager', array_merge($dashboard_month_base_args, ['dashboard_month' => gmdate('Y-m')]));
+        $dashboard_month_navigation['next_url'] = $this->front_url('manager', array_merge($dashboard_month_base_args, ['dashboard_month' => $dashboard_month_navigation['next_month']]));
 
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/dashboard.php';
