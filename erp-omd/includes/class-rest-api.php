@@ -103,6 +103,10 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-\\d{2})', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request['month']);
+                // Keep route regex broad to return explicit 422 from callback (instead of 404 route miss) for out-of-range months.
+                if (! $this->is_valid_month_string($month)) {
+                    return new WP_Error('erp_omd_period_month_invalid', __('Month must use YYYY-MM format.', 'erp-omd'), ['status' => 422]);
+                }
                 $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
                 $signals = $this->readiness_signals_for_month($month);
                 $checklist = $this->period_service->build_readiness_checklist($signals);
@@ -122,6 +126,10 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-\\d{2})/transition', [
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request['month']);
+                // Keep route regex broad to return explicit 422 from callback (instead of 404 route miss) for out-of-range months.
+                if (! $this->is_valid_month_string($month)) {
+                    return new WP_Error('erp_omd_period_month_invalid', __('Month must use YYYY-MM format.', 'erp-omd'), ['status' => 422]);
+                }
                 $to_status = sanitize_text_field((string) $request->get_param('to_status'));
                 if (! in_array($to_status, [ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, ERP_OMD_Period_Service::STATUS_ZAMKNIETY], true)) {
                     return new WP_Error('erp_omd_period_transition_invalid', __('Invalid target period status.', 'erp-omd'), ['status' => 422]);
@@ -149,7 +157,7 @@ class ERP_OMD_REST_API
             }, 'permission_callback' => [$this, 'can_manage_settings']],
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request->get_param('month'));
-                if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+                if (! $this->is_valid_month_string($month)) {
                     return new WP_Error('erp_omd_adjustment_month_invalid', __('Adjustment month is required in YYYY-MM format.', 'erp-omd'), ['status' => 422]);
                 }
 
@@ -183,7 +191,7 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/dashboard-v1', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request->get_param('month'));
-                if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+                if (! $this->is_valid_month_string($month)) {
                     $month = gmdate('Y-m');
                 }
 
@@ -300,6 +308,15 @@ class ERP_OMD_REST_API
             'readiness_checklist.ready' => __('Boolean period-close readiness based on checklist validators.', 'erp-omd'),
             'applied_limits' => __('Server-applied list limits after defaulting and max clamping.', 'erp-omd'),
         ];
+    }
+
+    private function is_valid_month_string($month)
+    {
+        if (! is_string($month) || preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) !== 1) {
+            return false;
+        }
+
+        return true;
     }
 
     private function dashboard_drilldown_links($month)
@@ -1091,11 +1108,64 @@ class ERP_OMD_REST_API
 
     public function get_system_status()
     {
+        $reports_v1_rollout = 'all';
+        $reports_v1_enabled_for_current_user = true;
+        $reports_v1_last_metrics = (array) get_option('erp_omd_reports_v1_last_metrics', []);
+        $reports_v1_last_metrics = [
+            'generation_ms' => (int) ($reports_v1_last_metrics['generation_ms'] ?? 0),
+            'rows_count' => (int) ($reports_v1_last_metrics['rows_count'] ?? 0),
+            'report_type' => (string) ($reports_v1_last_metrics['report_type'] ?? ''),
+            'rollout' => (string) ($reports_v1_last_metrics['rollout'] ?? ''),
+            'enabled' => ! empty($reports_v1_last_metrics['enabled']),
+            'captured_at' => (string) ($reports_v1_last_metrics['captured_at'] ?? ''),
+        ];
+        $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
+        $reports_v1_metrics_log = array_values(array_map(static function ($row) {
+            return [
+                'generation_ms' => (int) ($row['generation_ms'] ?? 0),
+                'rows_count' => (int) ($row['rows_count'] ?? 0),
+                'report_type' => (string) ($row['report_type'] ?? ''),
+                'rollout' => (string) ($row['rollout'] ?? ''),
+                'enabled' => ! empty($row['enabled']),
+                'captured_at' => (string) ($row['captured_at'] ?? ''),
+            ];
+        }, array_slice($reports_v1_metrics_log, 0, 5)));
+        $reports_v1_generation_samples = array_values(array_map(static function ($row) {
+            return (int) ($row['generation_ms'] ?? 0);
+        }, $reports_v1_metrics_log));
+        sort($reports_v1_generation_samples);
+        $reports_v1_sample_count = count($reports_v1_generation_samples);
+        $reports_v1_generation_p95 = 0;
+        if ($reports_v1_sample_count > 0) {
+            $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_sample_count) - 1;
+            $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
+            $reports_v1_generation_p95 = (int) ($reports_v1_generation_samples[$reports_v1_p95_index] ?? 0);
+        }
+        $reports_v1_slo = [
+            'generation_ms_p95_max' => 2500,
+            'rows_count_warn_threshold' => 5000,
+            'error_rate_max_percent' => 2.0,
+        ];
+        $reports_v1_slo_status = [
+            'sample_count' => $reports_v1_sample_count,
+            'generation_ms_p95' => $reports_v1_generation_p95,
+            'generation_ms_p95_within_target' => $reports_v1_generation_p95 <= (int) $reports_v1_slo['generation_ms_p95_max'],
+            'missing_signals' => ['error_rate_percent'],
+        ];
+
         return rest_ensure_response([
             'plugin_version' => ERP_OMD_VERSION,
             'db_version' => ERP_OMD_DB_VERSION,
             'delete_data_on_uninstall' => (bool) get_option('erp_omd_delete_data_on_uninstall', false),
             'alert_margin_threshold' => (float) get_option('erp_omd_alert_margin_threshold', 10),
+            'feature_flags' => [
+                'reports_v1_rollout' => $reports_v1_rollout,
+                'reports_v1_enabled_for_current_user' => $reports_v1_enabled_for_current_user,
+                'reports_v1_last_metrics' => $reports_v1_last_metrics,
+                'reports_v1_metrics_log' => $reports_v1_metrics_log,
+                'reports_v1_slo' => $reports_v1_slo,
+                'reports_v1_slo_status' => $reports_v1_slo_status,
+            ],
             'counts' => [
                 'roles' => count($this->roles->all()),
                 'employees' => count($this->employees->all()),
@@ -1181,6 +1251,7 @@ class ERP_OMD_REST_API
         $project_costs_verified = true;
         $project_client_completeness = true;
         $invalid_cost_rows = 0;
+        $relevant_projects_without_cost_rows = 0;
         $incomplete_relevant_projects = 0;
         $relevant_projects = 0;
         $projects = (array) $this->projects->all();
@@ -1203,7 +1274,7 @@ class ERP_OMD_REST_API
                 if ((float) ($cost_row['amount'] ?? 0) <= 0 || trim((string) ($cost_row['description'] ?? '')) === '') {
                     $invalid_cost_rows++;
                     $project_costs_verified = false;
-                    break 2;
+                    break;
                 }
             }
 
@@ -1213,6 +1284,11 @@ class ERP_OMD_REST_API
             $relevant_projects++;
 
             $project_status = (string) ($project['status'] ?? '');
+            if (in_array($project_status, ['do_faktury', 'zakonczony'], true) && ! $project_has_cost_for_month) {
+                $relevant_projects_without_cost_rows++;
+                $project_costs_verified = false;
+            }
+
             if ($project_status !== 'archiwum') {
                 if ((int) ($project['client_id'] ?? 0) <= 0 || trim((string) ($project['name'] ?? '')) === '') {
                     $incomplete_relevant_projects++;
@@ -1242,6 +1318,7 @@ class ERP_OMD_REST_API
             '_meta' => [
                 'submitted_or_rejected_entries' => $submitted_or_rejected_entries,
                 'invalid_cost_rows' => $invalid_cost_rows,
+                'relevant_projects_without_cost_rows' => $relevant_projects_without_cost_rows,
                 'incomplete_relevant_projects' => $incomplete_relevant_projects,
                 'critical_alerts' => $critical_alerts,
                 'relevant_projects' => $relevant_projects,
