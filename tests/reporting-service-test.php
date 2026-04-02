@@ -246,6 +246,8 @@ final class ReportingServiceTestRunner
         $omdExport = $service->export_definition('omd_rozliczenia', $filters);
         $this->assertSame('Narzut controllingowy', $omdExport['headers'][7], 'OMD export should expose controlling overhead column.');
         $this->assertSame('Wynik controllingowy', $omdExport['headers'][8], 'OMD export should expose controlling result column.');
+        $this->assertSame('Przychód czasu', $omdExport['headers'][9], 'OMD export should include time revenue column in full export.');
+        $this->assertSame('Koszt czasu', $omdExport['headers'][10], 'OMD export should include time cost column in full export.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "Reporting service tests passed.\n";
