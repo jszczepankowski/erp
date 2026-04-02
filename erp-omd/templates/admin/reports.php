@@ -157,6 +157,21 @@
                         </p>
                         <p class="description">
                             <?php
+                            $slo_sample_target = (int) ($report_monitoring['slo_sample_target_min'] ?? 20);
+                            $slo_sample_count = (int) ($report_monitoring['slo_sample_count'] ?? 0);
+                            $slo_samples_missing = (int) ($report_monitoring['slo_samples_missing_to_calibration'] ?? max(0, $slo_sample_target - $slo_sample_count));
+                            echo esc_html(
+                                sprintf(
+                                    __('Kalibracja SLO: próbki=%1$d/%2$d | brakujące=%3$d', 'erp-omd'),
+                                    $slo_sample_count,
+                                    $slo_sample_target,
+                                    $slo_samples_missing
+                                )
+                            );
+                            ?>
+                        </p>
+                        <p class="description">
+                            <?php
                             $dashboard_preview_base_args = [
                                 'month' => (string) ($report_filters['month'] ?? ''),
                                 'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),

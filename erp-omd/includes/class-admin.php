@@ -684,11 +684,14 @@ class ERP_OMD_Admin
             'freshness_threshold_minutes' => $reports_v1_freshness_minutes,
             'previous_metrics_age_seconds' => $previous_report_age_seconds,
             'previous_metrics_stale' => $previous_report_age_seconds === null ? null : ($previous_report_age_seconds > $reports_v1_freshness_seconds),
+            'slo_sample_target_min' => 20,
         ];
         update_option('erp_omd_reports_v1_last_metrics', $report_monitoring);
         $metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
         array_unshift($metrics_log, $report_monitoring);
         $metrics_log = array_slice($metrics_log, 0, 20);
+        $report_monitoring['slo_sample_count'] = count($metrics_log);
+        $report_monitoring['slo_samples_missing_to_calibration'] = max(0, (int) $report_monitoring['slo_sample_target_min'] - (int) $report_monitoring['slo_sample_count']);
         update_option('erp_omd_reports_v1_metrics_log', $metrics_log);
         $clients = $this->clients->all();
         $projects = $this->projects->all();
