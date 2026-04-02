@@ -589,6 +589,7 @@ class ERP_OMD_Admin
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
         $front_admin_redirect_enabled = (bool) get_option('erp_omd_front_admin_redirect_enabled', true);
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
+        $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
         $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
         $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
         $front_login_logo_url = $front_login_logo_id > 0 ? (string) wp_get_attachment_image_url($front_login_logo_id, 'medium') : '';
@@ -639,20 +640,53 @@ class ERP_OMD_Admin
 
     public function render_reports()
     {
+        $reports_v1_rollout = 'all';
+        $reports_v1_enabled = true;
+        $reports_v1_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
+        $reports_v1_freshness_seconds = $reports_v1_freshness_minutes * 60;
+        $previous_report_monitoring = (array) get_option('erp_omd_reports_v1_last_metrics', []);
+        $previous_report_age_seconds = null;
+        $previous_report_captured_at = (string) ($previous_report_monitoring['captured_at'] ?? '');
+        if ($previous_report_captured_at !== '') {
+            $previous_timestamp = strtotime($previous_report_captured_at);
+            if ($previous_timestamp !== false) {
+                $previous_report_age_seconds = max(0, (int) (time() - $previous_timestamp));
+            }
+        }
+
         $report_filters = $this->reporting_service->sanitize_filters($_GET);
+        $report_started_at = microtime(true);
         $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
+        $report_generation_ms = (int) round((microtime(true) - $report_started_at) * 1000);
+        $report_pagination = (array) ($this->reporting_service->last_report_pagination ?? []);
         $calendar_data = $this->reporting_service->build_calendar($report_filters);
+        $report_monitoring = [
+            'generation_ms' => $report_generation_ms,
+            'rows_count' => is_array($report_rows) ? count($report_rows) : 0,
+            'report_type' => (string) ($report_filters['report_type'] ?? ''),
+            'rollout' => $reports_v1_rollout,
+            'enabled' => $reports_v1_enabled,
+            'captured_at' => gmdate('c'),
+            'freshness_threshold_minutes' => $reports_v1_freshness_minutes,
+            'previous_metrics_age_seconds' => $previous_report_age_seconds,
+            'previous_metrics_stale' => $previous_report_age_seconds === null ? null : ($previous_report_age_seconds > $reports_v1_freshness_seconds),
+        ];
+        update_option('erp_omd_reports_v1_last_metrics', $report_monitoring);
+        $metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
+        array_unshift($metrics_log, $report_monitoring);
+        $metrics_log = array_slice($metrics_log, 0, 20);
+        update_option('erp_omd_reports_v1_metrics_log', $metrics_log);
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $employees = $this->employees->all();
-        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive', 'submitted', 'approved', 'rejected'];
+        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum', 'submitted', 'approved', 'rejected'];
         $status_labels = [
             'do_rozpoczecia' => $this->project_status_label('do_rozpoczecia'),
             'w_realizacji' => $this->project_status_label('w_realizacji'),
             'w_akceptacji' => $this->project_status_label('w_akceptacji'),
             'do_faktury' => $this->project_status_label('do_faktury'),
             'zakonczony' => $this->project_status_label('zakonczony'),
-            'inactive' => $this->active_status_label('inactive'),
+            'archiwum' => $this->project_status_label('archiwum'),
             'submitted' => $this->time_status_label('submitted'),
             'approved' => $this->time_status_label('approved'),
             'rejected' => $this->time_status_label('rejected'),
@@ -1863,7 +1897,9 @@ class ERP_OMD_Admin
 
         update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
         update_option('erp_omd_front_admin_redirect_enabled', ! empty($_POST['front_admin_redirect_enabled']));
+        update_option('erp_omd_reports_v1_rollout', 'all');
         update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
+        update_option('erp_omd_reports_v1_metrics_freshness_minutes', max(5, (int) ($_POST['reports_v1_metrics_freshness_minutes'] ?? 1440)));
         update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
         update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
         update_option('erp_omd_missing_hours_notification_settings', $notification_settings);
