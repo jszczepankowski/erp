@@ -38,7 +38,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 5. ✅ **P4-01** — finalne agregacje controllingowe vs operacyjne dopięte w raporcie OMD (operational_result vs controlling_overhead/controlling_result).
 6. ✅ **P4-02** — UI OMD z legendą definicji i pełnym eksportem (kolumny 1:1 z eksportem, w tym przychód/koszt czasu).
 7. ✅ **P5-01** — feature flags + canary rollout (reports v1: `off` / `admins` / `all`).
-8. **P5-02** — monitoring błędów/wydajności + plan rollback przez flagi.
+8. ✅ **P5-02** — monitoring wydajności (czas generowania/rekordy/rollout) + plan rollback przez flagę `erp_omd_reports_v1_rollout`.
+9. **P5-03** — raport powdrożeniowy i cleanup legacy po stabilizacji.
 
 ## 4) Instrukcja startowa do nowego chatu
 

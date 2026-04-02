@@ -102,6 +102,19 @@
                     <div>
                         <h2><?php echo esc_html($report_title); ?></h2>
                         <p class="description"><?php esc_html_e('Dane raportowe budowane na podstawie projektów, wpisów czasu i finansów.', 'erp-omd'); ?></p>
+                        <p class="description">
+                            <?php
+                            echo esc_html(
+                                sprintf(
+                                    __('Monitoring v1: typ=%1$s | rekordy=%2$d | czas generowania=%3$d ms | rollout=%4$s', 'erp-omd'),
+                                    (string) ($report_monitoring['report_type'] ?? 'n/a'),
+                                    (int) ($report_monitoring['rows_count'] ?? 0),
+                                    (int) ($report_monitoring['generation_ms'] ?? 0),
+                                    (string) ($report_monitoring['rollout'] ?? 'n/a')
+                                )
+                            );
+                            ?>
+                        </p>
                         <?php if (! $reports_v1_enabled) : ?>
                             <p class="description">
                                 <?php echo esc_html(sprintf(__('Reports v1 są obecnie wyłączone przez feature flagę (rollout: %s).', 'erp-omd'), $reports_v1_rollout)); ?>
@@ -128,6 +141,7 @@
                 </div>
                 <?php if (! $reports_v1_enabled) : ?>
                     <p><?php esc_html_e('Widok raportów v1 jest ukryty dla bieżącego użytkownika (canary rollout).', 'erp-omd'); ?></p>
+                    <p class="description"><?php esc_html_e('Rollback: ustaw `erp_omd_reports_v1_rollout` na `off` aby natychmiast wyłączyć reports v1.', 'erp-omd'); ?></p>
                 <?php elseif ($report_filters['report_type'] === 'clients') : ?>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekty', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th></tr></thead>

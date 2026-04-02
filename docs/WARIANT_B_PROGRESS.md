@@ -4,8 +4,8 @@ Data snapshotu: 2026-04-01
 
 Cel: szybkie wznowienie prac w kolejnych chatowych sesjach bez utraty kontekstu.
 
-Aktualny punkt pracy: **Opcja B / pakiet P5 (WB-P5-01)** — feature flags + canary rollout dla reports v1 wdrożone (off/admins/all).
-Następny krok wg planu: **P5-02** (monitoring błędów/wydajności + plan rollback przez flagi).
+Aktualny punkt pracy: **Opcja B / pakiet P5 (WB-P5-02)** — monitoring wydajności reports v1 + plan rollback przez flagi wdrożone.
+Następny krok wg planu: **P5-03** (raport powdrożeniowy i cleanup legacy po stabilizacji).
 
 ## 1) Co już zrobione
 
@@ -130,7 +130,7 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 
 ### P5 — Stabilizacja rollout i operacje
 - `WB-P5-01` — [x] Feature flags + canary rollout (admin -> wszyscy).
-- `WB-P5-02` — Monitoring błędów/wydajności + plan rollback przez flagi.
+- `WB-P5-02` — [x] Monitoring błędów/wydajności + plan rollback przez flagi.
 - `WB-P5-03` — Raport powdrożeniowy i cleanup legacy po stabilizacji.
 
 ## 7) Jak odwoływać się do kroków
