@@ -110,7 +110,7 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 - `WB-P1-01` — [x] Dopięcie pełnej checklisty gotowości LIVE -> DO_ROZLICZENIA (wszystkie walidatory biznesowe).
 - `WB-P1-02` — [x] Użycie `operational_close_month` w pełnej logice budżetowej i controllingowej.
 - `WB-P1-03` — [x] Ujednolicenie approved-only we wszystkich raportach/eksportach/API finansowym.
-- `WB-P1-04` — [x] Testy regresji: przejścia statusów, locki, edge-case 72h + emergency + walidacja zakresu miesiąca (`YYYY-MM`).
+- `WB-P1-04` — [x] Testy regresji: przejścia statusów, locki, edge-case 72h + emergency + walidacja zakresu miesiąca (`YYYY-MM`) także na endpointach okresów (422 dla out-of-range).
 
 ### P2 — Dashboard v1 (frontend + contract)
 - `WB-P2-01` — [x] Karta statusu miesiąca + akcje admin (backend contract).

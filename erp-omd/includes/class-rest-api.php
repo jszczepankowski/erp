@@ -103,6 +103,9 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-\\d{2})', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request['month']);
+                if (! $this->is_valid_month_string($month)) {
+                    return new WP_Error('erp_omd_period_month_invalid', __('Month must use YYYY-MM format.', 'erp-omd'), ['status' => 422]);
+                }
                 $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
                 $signals = $this->readiness_signals_for_month($month);
                 $checklist = $this->period_service->build_readiness_checklist($signals);
@@ -122,6 +125,9 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-\\d{2})/transition', [
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request['month']);
+                if (! $this->is_valid_month_string($month)) {
+                    return new WP_Error('erp_omd_period_month_invalid', __('Month must use YYYY-MM format.', 'erp-omd'), ['status' => 422]);
+                }
                 $to_status = sanitize_text_field((string) $request->get_param('to_status'));
                 if (! in_array($to_status, [ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, ERP_OMD_Period_Service::STATUS_ZAMKNIETY], true)) {
                     return new WP_Error('erp_omd_period_transition_invalid', __('Invalid target period status.', 'erp-omd'), ['status' => 422]);
@@ -149,7 +155,7 @@ class ERP_OMD_REST_API
             }, 'permission_callback' => [$this, 'can_manage_settings']],
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request->get_param('month'));
-                if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+                if (! $this->is_valid_month_string($month)) {
                     return new WP_Error('erp_omd_adjustment_month_invalid', __('Adjustment month is required in YYYY-MM format.', 'erp-omd'), ['status' => 422]);
                 }
 
@@ -183,7 +189,7 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/dashboard-v1', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request->get_param('month'));
-                if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+                if (! $this->is_valid_month_string($month)) {
                     $month = gmdate('Y-m');
                 }
 
@@ -300,6 +306,15 @@ class ERP_OMD_REST_API
             'readiness_checklist.ready' => __('Boolean period-close readiness based on checklist validators.', 'erp-omd'),
             'applied_limits' => __('Server-applied list limits after defaulting and max clamping.', 'erp-omd'),
         ];
+    }
+
+    private function is_valid_month_string($month)
+    {
+        if (! is_string($month) || preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) !== 1) {
+            return false;
+        }
+
+        return true;
     }
 
     private function dashboard_drilldown_links($month)
