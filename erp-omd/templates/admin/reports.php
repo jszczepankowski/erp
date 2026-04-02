@@ -86,6 +86,25 @@
                                     </select>
                                 </div>
                             <?php endif; ?>
+                            <div class="erp-omd-form-field">
+                                <label for="dashboard-scope"><?php esc_html_e('Dashboard v1 scope', 'erp-omd'); ?></label>
+                                <select id="dashboard-scope" name="dashboard_scope">
+                                    <option value="project" <?php selected((string) ($dashboard_preview_filters['scope'] ?? 'project'), 'project'); ?>><?php esc_html_e('project', 'erp-omd'); ?></option>
+                                    <option value="client" <?php selected((string) ($dashboard_preview_filters['scope'] ?? 'project'), 'client'); ?>><?php esc_html_e('client', 'erp-omd'); ?></option>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="dashboard-profitability-limit"><?php esc_html_e('Dashboard top/bottom limit', 'erp-omd'); ?></label>
+                                <input id="dashboard-profitability-limit" type="number" min="1" max="20" name="dashboard_profitability_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['profitability_limit'] ?? 5)); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="dashboard-queue-limit"><?php esc_html_e('Dashboard queue limit', 'erp-omd'); ?></label>
+                                <input id="dashboard-queue-limit" type="number" min="1" max="100" name="dashboard_queue_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['queue_limit'] ?? 25)); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="dashboard-adjustments-limit"><?php esc_html_e('Dashboard adjustments limit', 'erp-omd'); ?></label>
+                                <input id="dashboard-adjustments-limit" type="number" min="1" max="50" name="dashboard_adjustments_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['adjustments_limit'] ?? 5)); ?>" />
+                            </div>
                         </div>
                     </section>
                 </div>
@@ -141,11 +160,12 @@
                             $dashboard_preview_base_args = [
                                 'month' => (string) ($report_filters['month'] ?? ''),
                                 'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),
-                                'adjustments_limit' => 5,
-                                'queue_limit' => 25,
-                                'profitability_limit' => 5,
+                                'adjustments_limit' => (int) ($dashboard_preview_filters['adjustments_limit'] ?? 5),
+                                'queue_limit' => (int) ($dashboard_preview_filters['queue_limit'] ?? 25),
+                                'profitability_limit' => (int) ($dashboard_preview_filters['profitability_limit'] ?? 5),
                                 '_wpnonce' => wp_create_nonce('wp_rest'),
                             ];
+                            $dashboard_active_scope = (string) ($dashboard_preview_filters['scope'] ?? 'project');
                             $dashboard_preview_url = add_query_arg(
                                 array_merge($dashboard_preview_base_args, ['profitability_scope' => 'project']),
                                 rest_url('erp-omd/v1/dashboard-v1')
@@ -154,13 +174,25 @@
                                 array_merge($dashboard_preview_base_args, ['profitability_scope' => 'client']),
                                 rest_url('erp-omd/v1/dashboard-v1')
                             );
+                            $system_status_url = add_query_arg(
+                                ['_wpnonce' => wp_create_nonce('wp_rest')],
+                                rest_url('erp-omd/v1/system/status')
+                            );
                             ?>
+                            <a href="<?php echo esc_url($dashboard_active_scope === 'client' ? $dashboard_preview_clients_url : $dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
+                                <?php echo esc_html(sprintf(__('Podgląd dashboard-v1 (scope: %s)', 'erp-omd'), $dashboard_active_scope)); ?>
+                            </a>
+                            <span> | </span>
                             <a href="<?php echo esc_url($dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
-                                <?php esc_html_e('Podgląd dashboard-v1 (scope: project)', 'erp-omd'); ?>
+                                <?php esc_html_e('scope: project', 'erp-omd'); ?>
                             </a>
                             <span> | </span>
                             <a href="<?php echo esc_url($dashboard_preview_clients_url); ?>" target="_blank" rel="noopener noreferrer">
-                                <?php esc_html_e('Podgląd dashboard-v1 (scope: client)', 'erp-omd'); ?>
+                                <?php esc_html_e('scope: client', 'erp-omd'); ?>
+                            </a>
+                            <span> | </span>
+                            <a href="<?php echo esc_url($system_status_url); ?>" target="_blank" rel="noopener noreferrer">
+                                <?php esc_html_e('system/status JSON', 'erp-omd'); ?>
                             </a>
                         </p>
                         <details class="erp-omd-inline-help">

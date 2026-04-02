@@ -51,7 +51,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 18. ✅ **P2 UX bridge+** — podgląd dashboard-v1 z raportów ma osobne linki dla `scope=project` i `scope=client`.
 19. ✅ **P2 UX helper** — w raporcie dodany inline „Szybki smoke test (UX)” (checklista klików do lokalnej weryfikacji paginacji/eksportu/dashboard links).
 20. ✅ **P5-monitoring actionable status** — `system/status` zwraca operacyjny status health (`ok/warn/alert`) z powodami i rekomendowanymi akcjami (p95/freshness/missing signals).
-21. **Kolejny etap** — dokończenie frontendowego dashboard-v1 UX + obserwacja produkcyjna i korekty progów SLO po realnym ruchu.
+21. ✅ **P2 dashboard UX controls** — filtry raportów mają teraz sterowanie parametrami podglądu `dashboard-v1` (`scope`, limity), plus szybki link do `system/status`.
+22. **Kolejny etap** — obserwacja produkcyjna i korekty progów SLO po realnym ruchu.
 
 ## 4) Instrukcja startowa do nowego chatu
 
