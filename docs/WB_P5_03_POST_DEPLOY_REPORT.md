@@ -30,6 +30,7 @@ Zalecenie operacyjne:
 
 Szybki rollback reports v1:
 1. Ustawić opcję `erp_omd_reports_v1_rollout=off`.
+   - można to zrobić w panelu: **Ustawienia -> Reports v1 rollout**.
 2. Zweryfikować ukrycie widoku v1.
 3. Pozostawić nowe tabele i logikę pasywnie (bez rollbacku schematu DB).
 
