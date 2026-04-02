@@ -1169,6 +1169,43 @@ class ERP_OMD_REST_API
             'last_metrics_age_seconds' => $reports_v1_last_metrics_age_seconds,
             'last_metrics_fresh_under_threshold' => $reports_v1_last_metrics_age_seconds !== null && $reports_v1_last_metrics_age_seconds <= $reports_v1_metrics_freshness_threshold_seconds,
         ];
+        $reports_v1_operational_status = [
+            'level' => 'ok',
+            'requires_attention' => false,
+            'reasons' => [],
+            'recommended_actions' => [],
+        ];
+        if ($reports_v1_sample_count === 0) {
+            $reports_v1_operational_status['level'] = 'warn';
+            $reports_v1_operational_status['reasons'][] = 'no_metrics_samples';
+            $reports_v1_operational_status['recommended_actions'][] = 'Generate reports and verify metrics ingestion.';
+        }
+        if (! empty($reports_v1_slo_status['missing_signals'])) {
+            if ($reports_v1_operational_status['level'] === 'ok') {
+                $reports_v1_operational_status['level'] = 'warn';
+            }
+            $reports_v1_operational_status['reasons'][] = 'missing_slo_signals';
+            $reports_v1_operational_status['recommended_actions'][] = 'Integrate missing SLO signals (e.g. error_rate_percent) into monitoring.';
+        }
+        if (! $reports_v1_slo_status['generation_ms_p95_within_target']) {
+            $reports_v1_operational_status['level'] = 'alert';
+            $reports_v1_operational_status['reasons'][] = 'generation_p95_exceeds_target';
+            $reports_v1_operational_status['recommended_actions'][] = 'Investigate slow reports and optimize heavy filters/queries.';
+        }
+        if ($reports_v1_last_metrics_age_seconds === null) {
+            if ($reports_v1_operational_status['level'] === 'ok') {
+                $reports_v1_operational_status['level'] = 'warn';
+            }
+            $reports_v1_operational_status['reasons'][] = 'freshness_unknown';
+            $reports_v1_operational_status['recommended_actions'][] = 'Trigger report generation to capture initial freshness sample.';
+        } elseif (! $reports_v1_metrics_freshness['last_metrics_fresh_under_threshold']) {
+            $reports_v1_operational_status['level'] = 'alert';
+            $reports_v1_operational_status['reasons'][] = 'metrics_stale';
+            $reports_v1_operational_status['recommended_actions'][] = 'Check report traffic and validate metrics writer/update_option path.';
+        }
+        $reports_v1_operational_status['requires_attention'] = $reports_v1_operational_status['level'] !== 'ok';
+        $reports_v1_operational_status['reasons'] = array_values(array_unique($reports_v1_operational_status['reasons']));
+        $reports_v1_operational_status['recommended_actions'] = array_values(array_unique($reports_v1_operational_status['recommended_actions']));
 
         return rest_ensure_response([
             'plugin_version' => ERP_OMD_VERSION,
@@ -1183,6 +1220,7 @@ class ERP_OMD_REST_API
                 'reports_v1_slo' => $reports_v1_slo,
                 'reports_v1_slo_status' => $reports_v1_slo_status,
                 'reports_v1_metrics_freshness' => $reports_v1_metrics_freshness,
+                'reports_v1_operational_status' => $reports_v1_operational_status,
             ],
             'counts' => [
                 'roles' => count($this->roles->all()),

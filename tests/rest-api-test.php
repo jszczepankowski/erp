@@ -598,6 +598,9 @@ final class RestApiTestRunner
         $this->assertSame(86400, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_seconds'], 'System status should expose configurable freshness threshold in seconds.');
         $this->assertSame(0, $system['feature_flags']['reports_v1_metrics_freshness']['last_metrics_age_seconds'], 'System status should clamp future-captured metrics age to zero.');
         $this->assertSame(true, $system['feature_flags']['reports_v1_metrics_freshness']['last_metrics_fresh_under_threshold'], 'System status should expose freshness signal for latest reports metrics.');
+        $this->assertSame('warn', $system['feature_flags']['reports_v1_operational_status']['level'], 'System status should expose actionable operational status for reports v1.');
+        $this->assertSame(true, $system['feature_flags']['reports_v1_operational_status']['requires_attention'], 'Operational status should flag attention when monitoring signals are incomplete.');
+        $this->assertSame('missing_slo_signals', $system['feature_flags']['reports_v1_operational_status']['reasons'][0], 'Operational status should expose normalized reason codes.');
 
         $api->register_routes();
         $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', WP_REST_Server::READABLE);
