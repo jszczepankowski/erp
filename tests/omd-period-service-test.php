@@ -158,6 +158,32 @@ final class OMDPeriodServiceTestRunner
         $this->assertSame(77, $liveToSettlement['period']['updated_by'], 'Transition should record updater from current user context.');
         $this->assertTrue($liveToSettlement['checklist']['ready'], 'Checklist should be ready for fully passed readiness signals.');
 
+        $thrownInvalidMonth = false;
+        try {
+            $repositoryBackedService->transition_month('2026/04', ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, [
+                'time_entries_finalized' => true,
+                'project_costs_verified' => true,
+                'project_client_completeness' => true,
+                'critical_settlement_locks' => true,
+            ]);
+        } catch (InvalidArgumentException $exception) {
+            $thrownInvalidMonth = true;
+        }
+        $this->assertTrue($thrownInvalidMonth, 'Transition should reject invalid month format.');
+
+        $thrownInvalidStatus = false;
+        try {
+            $repositoryBackedService->transition_month('2026-04', 'ARCHIVE', [
+                'time_entries_finalized' => true,
+                'project_costs_verified' => true,
+                'project_client_completeness' => true,
+                'critical_settlement_locks' => true,
+            ]);
+        } catch (InvalidArgumentException $exception) {
+            $thrownInvalidStatus = true;
+        }
+        $this->assertTrue($thrownInvalidStatus, 'Transition should reject unsupported target statuses.');
+
         $closeResult = $repositoryBackedService->transition_month('2026-04', ERP_OMD_Period_Service::STATUS_ZAMKNIETY, [
             'time_entries_finalized' => true,
             'project_costs_verified' => true,
@@ -167,6 +193,19 @@ final class OMDPeriodServiceTestRunner
         $this->assertSame(ERP_OMD_Period_Service::STATUS_ZAMKNIETY, $closeResult['period']['status'], 'Transition should allow DO_ROZLICZENIA -> ZAMKNIETY.');
         $this->assertSame('2026-04-05 09:15:00', $closeResult['period']['closed_at'], 'Closure transition should stamp closed_at using current_time.');
         $this->assertSame('2026-04-08 09:15:00', $closeResult['period']['correction_window_until'], 'Closure transition should stamp +72h correction window.');
+
+        $thrownForbiddenTransition = false;
+        try {
+            $repositoryBackedService->transition_month('2026-03', ERP_OMD_Period_Service::STATUS_ZAMKNIETY, [
+                'time_entries_finalized' => true,
+                'project_costs_verified' => true,
+                'project_client_completeness' => true,
+                'critical_settlement_locks' => true,
+            ]);
+        } catch (InvalidArgumentException $exception) {
+            $thrownForbiddenTransition = true;
+        }
+        $this->assertTrue($thrownForbiddenTransition, 'Transition should reject unsupported status jumps.');
 
         $periods = $repositoryBackedService->list_periods();
         $this->assertSame(2, count($periods), 'Repository-backed service should list all known periods.');
