@@ -665,7 +665,9 @@ class ERP_OMD_Admin
             'report_type' => (string) ($report_filters['report_type'] ?? ''),
             'rollout' => $reports_v1_rollout,
             'enabled' => $reports_v1_enabled,
+            'captured_at' => gmdate('c'),
         ];
+        update_option('erp_omd_reports_v1_last_metrics', $report_monitoring);
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $employees = $this->employees->all();

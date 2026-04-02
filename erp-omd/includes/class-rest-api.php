@@ -1098,6 +1098,15 @@ class ERP_OMD_REST_API
         $current_user = wp_get_current_user();
         $reports_v1_enabled_for_current_user = $reports_v1_rollout === 'all'
             || ($reports_v1_rollout === 'admins' && user_can($current_user, 'administrator'));
+        $reports_v1_last_metrics = (array) get_option('erp_omd_reports_v1_last_metrics', []);
+        $reports_v1_last_metrics = [
+            'generation_ms' => (int) ($reports_v1_last_metrics['generation_ms'] ?? 0),
+            'rows_count' => (int) ($reports_v1_last_metrics['rows_count'] ?? 0),
+            'report_type' => (string) ($reports_v1_last_metrics['report_type'] ?? ''),
+            'rollout' => (string) ($reports_v1_last_metrics['rollout'] ?? ''),
+            'enabled' => ! empty($reports_v1_last_metrics['enabled']),
+            'captured_at' => (string) ($reports_v1_last_metrics['captured_at'] ?? ''),
+        ];
 
         return rest_ensure_response([
             'plugin_version' => ERP_OMD_VERSION,
@@ -1107,6 +1116,7 @@ class ERP_OMD_REST_API
             'feature_flags' => [
                 'reports_v1_rollout' => $reports_v1_rollout,
                 'reports_v1_enabled_for_current_user' => $reports_v1_enabled_for_current_user,
+                'reports_v1_last_metrics' => $reports_v1_last_metrics,
             ],
             'counts' => [
                 'roles' => count($this->roles->all()),
