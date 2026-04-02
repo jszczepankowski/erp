@@ -136,6 +136,24 @@
                             );
                             ?>
                         </p>
+                        <p class="description">
+                            <?php
+                            $dashboard_preview_url = add_query_arg(
+                                [
+                                    'month' => (string) ($report_filters['month'] ?? ''),
+                                    'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),
+                                    'profitability_scope' => 'project',
+                                    'adjustments_limit' => 5,
+                                    'queue_limit' => 25,
+                                    'profitability_limit' => 5,
+                                ],
+                                rest_url('erp-omd/v1/dashboard-v1')
+                            );
+                            ?>
+                            <a href="<?php echo esc_url($dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
+                                <?php esc_html_e('Podgląd kontraktu dashboard-v1 (JSON)', 'erp-omd'); ?>
+                            </a>
+                        </p>
                     </div>
                     <form method="post" class="erp-omd-inline-form">
                         <?php wp_nonce_field('erp_omd_export_report'); ?>
