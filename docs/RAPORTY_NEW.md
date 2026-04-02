@@ -68,7 +68,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 35. ✅ **P5 monitoring telemetry hardening (35-a)** — `system/status` liczy `error_rate_percent` z logu metryk Reports v1 (`has_error`) i nie oznacza już tego sygnału jako brakującego.
 36. ✅ **P3/P5 reports UX cleanup (36-a)** — filtry raportów pokazują poprawne statusy zależnie od typu raportu, wrócił jawny wybór wersji `Podstawowa/Szczegółowa`, a blok diagnostyczny monitoringu jest schowany pod sekcją techniczną.
 37. ✅ **P3 status cleanup archiwum (37-a)** — UI projektów używa `archiwum` (zamiast legacy `inactive`) w formularzu, filtrach i akcjach masowych.
-38. **Kolejny etap** — monitoring steady-state po zamknięciu kalibracji + ewentualny rollback/tuning tylko przy trwałym dryfie metryk.
+38. ✅ **P3/P5 technical tab split (38-a)** — elementy diagnostyczne (`Monitoring i diagnostyka`, linki `dashboard-v1`/`system-status`) przeniesione do osobnej zakładki `Techniczne`; `Dashboard queue limit` przemianowany na „Limit kolejki dashboardu” i wyniesiony obok filtrów raportu.
+39. **Kolejny etap** — monitoring steady-state po zamknięciu kalibracji + ewentualny rollback/tuning tylko przy trwałym dryfie metryk.
 
 ## 4) Instrukcja startowa do nowego chatu
 

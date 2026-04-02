@@ -47,7 +47,7 @@ class ERP_OMD_Reporting_Service
         }
 
         $tab = isset($raw_filters['tab']) ? sanitize_key((string) $raw_filters['tab']) : 'reports';
-        if (! in_array($tab, ['reports', 'calendar'], true)) {
+        if (! in_array($tab, ['reports', 'calendar', 'technical'], true)) {
             $tab = 'reports';
         }
 

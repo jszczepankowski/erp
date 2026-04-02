@@ -4,6 +4,7 @@
     <nav class="nav-tab-wrapper erp-omd-nav-tabs">
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'reports' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Raporty', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'calendar'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'calendar' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kalendarz', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'technical'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'technical' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Techniczne', 'erp-omd'); ?></a>
     </nav>
 
     <div class="erp-omd-page-sections">
@@ -85,6 +86,10 @@
                                     </select>
                                 </div>
                             <?php endif; ?>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="dashboard-queue-limit"><?php esc_html_e('Limit kolejki dashboardu', 'erp-omd'); ?></label>
+                                <input id="dashboard-queue-limit" type="number" min="1" max="100" name="dashboard_queue_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['queue_limit'] ?? 25)); ?>" />
+                            </div>
                             <?php if ($report_filters['report_type'] === 'time_entries') : ?>
                                 <div class="erp-omd-form-field">
                                     <label for="report-per-page"><?php esc_html_e('Wierszy na stronę', 'erp-omd'); ?></label>
@@ -95,7 +100,8 @@
                                     </select>
                                 </div>
                             <?php endif; ?>
-                            <details class="erp-omd-inline-help">
+                            <?php if ($report_filters['tab'] === 'technical') : ?>
+                            <details class="erp-omd-inline-help" open>
                                 <summary><?php esc_html_e('Zaawansowane: podgląd dashboard-v1', 'erp-omd'); ?></summary>
                                 <div class="erp-omd-form-field">
                                     <label for="dashboard-scope"><?php esc_html_e('Dashboard v1 scope', 'erp-omd'); ?></label>
@@ -109,14 +115,11 @@
                                     <input id="dashboard-profitability-limit" type="number" min="1" max="20" name="dashboard_profitability_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['profitability_limit'] ?? 5)); ?>" />
                                 </div>
                                 <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                    <label for="dashboard-queue-limit"><?php esc_html_e('Dashboard queue limit', 'erp-omd'); ?></label>
-                                    <input id="dashboard-queue-limit" type="number" min="1" max="100" name="dashboard_queue_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['queue_limit'] ?? 25)); ?>" />
-                                </div>
-                                <div class="erp-omd-form-field erp-omd-form-field-compact">
                                     <label for="dashboard-adjustments-limit"><?php esc_html_e('Dashboard adjustments limit', 'erp-omd'); ?></label>
                                     <input id="dashboard-adjustments-limit" type="number" min="1" max="50" name="dashboard_adjustments_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['adjustments_limit'] ?? 5)); ?>" />
                                 </div>
                             </details>
+                            <?php endif; ?>
                         </div>
                     </section>
                 </div>
@@ -127,6 +130,29 @@
             </form>
         </section>
 
+        <?php
+        $dashboard_preview_base_args = [
+            'month' => (string) ($report_filters['month'] ?? ''),
+            'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),
+            'adjustments_limit' => (int) ($dashboard_preview_filters['adjustments_limit'] ?? 5),
+            'queue_limit' => (int) ($dashboard_preview_filters['queue_limit'] ?? 25),
+            'profitability_limit' => (int) ($dashboard_preview_filters['profitability_limit'] ?? 5),
+            '_wpnonce' => wp_create_nonce('wp_rest'),
+        ];
+        $dashboard_active_scope = (string) ($dashboard_preview_filters['scope'] ?? 'project');
+        $dashboard_preview_url = add_query_arg(
+            array_merge($dashboard_preview_base_args, ['profitability_scope' => 'project']),
+            rest_url('erp-omd/v1/dashboard-v1')
+        );
+        $dashboard_preview_clients_url = add_query_arg(
+            array_merge($dashboard_preview_base_args, ['profitability_scope' => 'client']),
+            rest_url('erp-omd/v1/dashboard-v1')
+        );
+        $system_status_url = add_query_arg(
+            ['_wpnonce' => wp_create_nonce('wp_rest')],
+            rest_url('erp-omd/v1/system/status')
+        );
+        ?>
         <?php if ($report_filters['tab'] === 'reports') : ?>
             <section class="erp-omd-card">
                 <div class="erp-omd-section-header">
@@ -136,83 +162,6 @@
                         <?php if (! empty($report_error_notice)) : ?>
                             <p class="notice notice-error" style="padding:8px 12px;"><?php echo esc_html($report_error_notice); ?></p>
                         <?php endif; ?>
-                        <details class="erp-omd-inline-help">
-                            <summary><?php esc_html_e('Monitoring i diagnostyka techniczna', 'erp-omd'); ?></summary>
-                            <p class="description">
-                                <?php
-                                echo esc_html(
-                                    sprintf(
-                                        __('Monitoring v1: typ=%1$s | rekordy=%2$d | czas generowania=%3$d ms | rollout=%4$s', 'erp-omd'),
-                                        (string) ($report_monitoring['report_type'] ?? 'n/a'),
-                                        (int) ($report_monitoring['rows_count'] ?? 0),
-                                        (int) ($report_monitoring['generation_ms'] ?? 0),
-                                        (string) ($report_monitoring['rollout'] ?? 'n/a')
-                                    )
-                                );
-                                ?>
-                            </p>
-                            <p class="description">
-                                <?php
-                                $previous_age_seconds = isset($report_monitoring['previous_metrics_age_seconds']) ? (int) $report_monitoring['previous_metrics_age_seconds'] : -1;
-                                $previous_age_label = $previous_age_seconds >= 0 ? sprintf('%ds', $previous_age_seconds) : 'n/a';
-                                $freshness_threshold_minutes = (int) ($report_monitoring['freshness_threshold_minutes'] ?? 1440);
-                                $previous_stale_flag = $report_monitoring['previous_metrics_stale'] ?? null;
-                                if ($previous_stale_flag === null) {
-                                    $previous_status = __('n/a', 'erp-omd');
-                                } else {
-                                    $previous_status = ! empty($previous_stale_flag) ? __('stale', 'erp-omd') : __('fresh', 'erp-omd');
-                                }
-                                echo esc_html(
-                                    sprintf(
-                                        __('Monitoring v1: poprzednia próbka=%1$s | próg świeżości=%2$d min | status=%3$s', 'erp-omd'),
-                                        $previous_age_label,
-                                        $freshness_threshold_minutes,
-                                        $previous_status
-                                    )
-                                );
-                                ?>
-                            </p>
-                        </details>
-                        <p class="description">
-                            <?php
-                            $dashboard_preview_base_args = [
-                                'month' => (string) ($report_filters['month'] ?? ''),
-                                'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),
-                                'adjustments_limit' => (int) ($dashboard_preview_filters['adjustments_limit'] ?? 5),
-                                'queue_limit' => (int) ($dashboard_preview_filters['queue_limit'] ?? 25),
-                                'profitability_limit' => (int) ($dashboard_preview_filters['profitability_limit'] ?? 5),
-                                '_wpnonce' => wp_create_nonce('wp_rest'),
-                            ];
-                            $dashboard_active_scope = (string) ($dashboard_preview_filters['scope'] ?? 'project');
-                            $dashboard_preview_url = add_query_arg(
-                                array_merge($dashboard_preview_base_args, ['profitability_scope' => 'project']),
-                                rest_url('erp-omd/v1/dashboard-v1')
-                            );
-                            $dashboard_preview_clients_url = add_query_arg(
-                                array_merge($dashboard_preview_base_args, ['profitability_scope' => 'client']),
-                                rest_url('erp-omd/v1/dashboard-v1')
-                            );
-                            $system_status_url = add_query_arg(
-                                ['_wpnonce' => wp_create_nonce('wp_rest')],
-                                rest_url('erp-omd/v1/system/status')
-                            );
-                            ?>
-                            <a href="<?php echo esc_url($dashboard_active_scope === 'client' ? $dashboard_preview_clients_url : $dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
-                                <?php echo esc_html(sprintf(__('Podgląd dashboard-v1 (scope: %s)', 'erp-omd'), $dashboard_active_scope)); ?>
-                            </a>
-                            <span> | </span>
-                            <a href="<?php echo esc_url($dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
-                                <?php esc_html_e('scope: project', 'erp-omd'); ?>
-                            </a>
-                            <span> | </span>
-                            <a href="<?php echo esc_url($dashboard_preview_clients_url); ?>" target="_blank" rel="noopener noreferrer">
-                                <?php esc_html_e('scope: client', 'erp-omd'); ?>
-                            </a>
-                            <span> | </span>
-                            <a href="<?php echo esc_url($system_status_url); ?>" target="_blank" rel="noopener noreferrer">
-                                <?php esc_html_e('system/status JSON', 'erp-omd'); ?>
-                            </a>
-                        </p>
                     </div>
                     <form method="post" class="erp-omd-inline-form">
                         <?php wp_nonce_field('erp_omd_export_report'); ?>
@@ -442,7 +391,7 @@
                     </table>
                 <?php endif; ?>
             </section>
-        <?php else : ?>
+        <?php elseif ($report_filters['tab'] === 'calendar') : ?>
             <section class="erp-omd-card">
                 <h2><?php echo esc_html(sprintf(__('Kalendarz miesiąca %s', 'erp-omd'), $calendar_data['month'])); ?></h2>
                 <p class="description"><?php echo esc_html(sprintf(__('Łącznie godzin: %1$s | wpisów: %2$s | Zaakceptowancyh: %3$s | Zgłoszonych: %4$s | Odrzuconych: %5$s', 'erp-omd'), number_format_i18n((float) $calendar_data['totals']['hours'], 2), (int) $calendar_data['totals']['entries_count'], number_format_i18n((float) $calendar_data['totals']['approved_hours'], 2), number_format_i18n((float) $calendar_data['totals']['submitted_hours'], 2), number_format_i18n((float) $calendar_data['totals']['rejected_hours'], 2))); ?></p>
@@ -467,6 +416,61 @@
                     <?php endforeach; ?>
                     </tbody>
                 </table>
+            </section>
+        <?php else : ?>
+            <section class="erp-omd-card">
+                <h2><?php esc_html_e('Techniczne — monitoring i podglądy API', 'erp-omd'); ?></h2>
+                <p class="description">
+                    <?php
+                    echo esc_html(
+                        sprintf(
+                            __('Monitoring v1: typ=%1$s | rekordy=%2$d | czas generowania=%3$d ms | rollout=%4$s', 'erp-omd'),
+                            (string) ($report_monitoring['report_type'] ?? 'n/a'),
+                            (int) ($report_monitoring['rows_count'] ?? 0),
+                            (int) ($report_monitoring['generation_ms'] ?? 0),
+                            (string) ($report_monitoring['rollout'] ?? 'n/a')
+                        )
+                    );
+                    ?>
+                </p>
+                <p class="description">
+                    <?php
+                    $previous_age_seconds = isset($report_monitoring['previous_metrics_age_seconds']) ? (int) $report_monitoring['previous_metrics_age_seconds'] : -1;
+                    $previous_age_label = $previous_age_seconds >= 0 ? sprintf('%ds', $previous_age_seconds) : 'n/a';
+                    $freshness_threshold_minutes = (int) ($report_monitoring['freshness_threshold_minutes'] ?? 1440);
+                    $previous_stale_flag = $report_monitoring['previous_metrics_stale'] ?? null;
+                    if ($previous_stale_flag === null) {
+                        $previous_status = __('n/a', 'erp-omd');
+                    } else {
+                        $previous_status = ! empty($previous_stale_flag) ? __('stale', 'erp-omd') : __('fresh', 'erp-omd');
+                    }
+                    echo esc_html(
+                        sprintf(
+                            __('Monitoring v1: poprzednia próbka=%1$s | próg świeżości=%2$d min | status=%3$s', 'erp-omd'),
+                            $previous_age_label,
+                            $freshness_threshold_minutes,
+                            $previous_status
+                        )
+                    );
+                    ?>
+                </p>
+                <p class="description">
+                    <a href="<?php echo esc_url($dashboard_active_scope === 'client' ? $dashboard_preview_clients_url : $dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
+                        <?php echo esc_html(sprintf(__('Podgląd dashboard-v1 (scope: %s)', 'erp-omd'), $dashboard_active_scope)); ?>
+                    </a>
+                    <span> | </span>
+                    <a href="<?php echo esc_url($dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
+                        <?php esc_html_e('scope: project', 'erp-omd'); ?>
+                    </a>
+                    <span> | </span>
+                    <a href="<?php echo esc_url($dashboard_preview_clients_url); ?>" target="_blank" rel="noopener noreferrer">
+                        <?php esc_html_e('scope: client', 'erp-omd'); ?>
+                    </a>
+                    <span> | </span>
+                    <a href="<?php echo esc_url($system_status_url); ?>" target="_blank" rel="noopener noreferrer">
+                        <?php esc_html_e('system/status JSON', 'erp-omd'); ?>
+                    </a>
+                </p>
             </section>
         <?php endif; ?>
     </div>
