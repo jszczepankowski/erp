@@ -594,6 +594,8 @@ final class RestApiTestRunner
         $this->assertSame(55, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95'], 'System status should expose computed p95 from compact metrics samples.');
         $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_within_target'], 'System status should expose whether generation p95 is within target.');
         $this->assertSame('error_rate_percent', $system['feature_flags']['reports_v1_slo_status']['missing_signals'][0], 'System status should declare missing monitoring signals for SLO completeness.');
+        $this->assertSame(0, $system['feature_flags']['reports_v1_metrics_freshness']['last_metrics_age_seconds'], 'System status should clamp future-captured metrics age to zero.');
+        $this->assertSame(true, $system['feature_flags']['reports_v1_metrics_freshness']['last_metrics_fresh_under_24h'], 'System status should expose freshness signal for latest reports metrics.');
 
         $api->register_routes();
         $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', WP_REST_Server::READABLE);

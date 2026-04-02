@@ -1152,6 +1152,19 @@ class ERP_OMD_REST_API
             'generation_ms_p95_within_target' => $reports_v1_generation_p95 <= (int) $reports_v1_slo['generation_ms_p95_max'],
             'missing_signals' => ['error_rate_percent'],
         ];
+        $reports_v1_last_metrics_age_seconds = null;
+        $reports_v1_last_metrics_captured_at = (string) ($reports_v1_last_metrics['captured_at'] ?? '');
+        if ($reports_v1_last_metrics_captured_at !== '') {
+            $captured_at_timestamp = strtotime($reports_v1_last_metrics_captured_at);
+            $now_timestamp = strtotime((string) current_time('mysql'));
+            if ($captured_at_timestamp !== false && $now_timestamp !== false) {
+                $reports_v1_last_metrics_age_seconds = max(0, (int) ($now_timestamp - $captured_at_timestamp));
+            }
+        }
+        $reports_v1_metrics_freshness = [
+            'last_metrics_age_seconds' => $reports_v1_last_metrics_age_seconds,
+            'last_metrics_fresh_under_24h' => $reports_v1_last_metrics_age_seconds !== null && $reports_v1_last_metrics_age_seconds <= 86400,
+        ];
 
         return rest_ensure_response([
             'plugin_version' => ERP_OMD_VERSION,
@@ -1165,6 +1178,7 @@ class ERP_OMD_REST_API
                 'reports_v1_metrics_log' => $reports_v1_metrics_log,
                 'reports_v1_slo' => $reports_v1_slo,
                 'reports_v1_slo_status' => $reports_v1_slo_status,
+                'reports_v1_metrics_freshness' => $reports_v1_metrics_freshness,
             ],
             'counts' => [
                 'roles' => count($this->roles->all()),
