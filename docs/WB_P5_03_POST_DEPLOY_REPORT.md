@@ -47,3 +47,6 @@ Po okresie stabilizacji:
 ## 5) Decyzja końcowa
 
 WB-P5-03 uznany za zakończony: raport powdrożeniowy i plan cleanup legacy przygotowane.
+
+Powiązany dokument operacyjny:
+- `docs/GO_LIVE_REPORTS_V1_CHECKLIST.md`
