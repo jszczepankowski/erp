@@ -38,6 +38,10 @@
                                 <input type="checkbox" name="confirm_reports_v1_slo_calibration_decision" value="1" />
                                 <?php esc_html_e('Potwierdź finalną decyzję progu p95 (zapisz wpis audytowy decyzji).', 'erp-omd'); ?>
                             </label>
+                            <label class="erp-omd-form-label" style="margin-top:8px;">
+                                <input type="checkbox" name="confirm_reports_v1_slo_calibration_closure" value="1" />
+                                <?php esc_html_e('Formalnie zamknij kalibrację SLO (po potwierdzonej decyzji) i przejdź do monitoringu steady-state.', 'erp-omd'); ?>
+                            </label>
                             <p class="description">
                                 <?php
                                 echo esc_html(
@@ -61,6 +65,21 @@
                                             (int) ($reports_v1_slo_last_decision['sample_count'] ?? 0),
                                             (string) ($reports_v1_slo_last_decision['decided_at'] ?? ''),
                                             (int) ($reports_v1_slo_last_decision['decided_by_user_id'] ?? 0)
+                                        )
+                                    );
+                                    ?>
+                                </p>
+                            <?php endif; ?>
+                            <?php if (! empty($reports_v1_slo_closure_confirmed)) : ?>
+                                <p class="description">
+                                    <?php
+                                    echo esc_html(
+                                        sprintf(
+                                            __('Kalibracja formalnie zamknięta: data=%1$s | user_id=%2$d | decyzja=%3$s | próg=%4$d ms', 'erp-omd'),
+                                            (string) ($reports_v1_slo_closure['closed_at'] ?? ''),
+                                            (int) ($reports_v1_slo_closure['closed_by_user_id'] ?? 0),
+                                            (string) ($reports_v1_slo_closure['decision_decided_at'] ?? ''),
+                                            (int) ($reports_v1_slo_closure['decision_threshold_ms'] ?? 0)
                                         )
                                     );
                                     ?>
