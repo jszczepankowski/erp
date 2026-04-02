@@ -76,10 +76,21 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
+                            <?php if ($report_filters['report_type'] === 'time_entries') : ?>
+                                <div class="erp-omd-form-field">
+                                    <label for="report-per-page"><?php esc_html_e('Wierszy na stronę', 'erp-omd'); ?></label>
+                                    <select id="report-per-page" name="per_page">
+                                        <?php foreach ([25, 50, 100] as $per_page_option) : ?>
+                                            <option value="<?php echo esc_attr((string) $per_page_option); ?>" <?php selected((int) ($report_filters['per_page'] ?? 25), $per_page_option); ?>><?php echo esc_html((string) $per_page_option); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </section>
                 </div>
                 <div class="erp-omd-form-actions">
+                    <input type="hidden" name="page_num" value="1" />
                     <button class="button button-primary" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
                 </div>
             </form>
@@ -91,6 +102,76 @@
                     <div>
                         <h2><?php echo esc_html($report_title); ?></h2>
                         <p class="description"><?php esc_html_e('Dane raportowe budowane na podstawie projektów, wpisów czasu i finansów.', 'erp-omd'); ?></p>
+                        <p class="description">
+                            <?php
+                            echo esc_html(
+                                sprintf(
+                                    __('Monitoring v1: typ=%1$s | rekordy=%2$d | czas generowania=%3$d ms | rollout=%4$s', 'erp-omd'),
+                                    (string) ($report_monitoring['report_type'] ?? 'n/a'),
+                                    (int) ($report_monitoring['rows_count'] ?? 0),
+                                    (int) ($report_monitoring['generation_ms'] ?? 0),
+                                    (string) ($report_monitoring['rollout'] ?? 'n/a')
+                                )
+                            );
+                            ?>
+                        </p>
+                        <p class="description">
+                            <?php
+                            $previous_age_seconds = isset($report_monitoring['previous_metrics_age_seconds']) ? (int) $report_monitoring['previous_metrics_age_seconds'] : -1;
+                            $previous_age_label = $previous_age_seconds >= 0 ? sprintf('%ds', $previous_age_seconds) : 'n/a';
+                            $freshness_threshold_minutes = (int) ($report_monitoring['freshness_threshold_minutes'] ?? 1440);
+                            $previous_stale_flag = $report_monitoring['previous_metrics_stale'] ?? null;
+                            if ($previous_stale_flag === null) {
+                                $previous_status = __('n/a', 'erp-omd');
+                            } else {
+                                $previous_status = ! empty($previous_stale_flag) ? __('stale', 'erp-omd') : __('fresh', 'erp-omd');
+                            }
+                            echo esc_html(
+                                sprintf(
+                                    __('Monitoring v1: poprzednia próbka=%1$s | próg świeżości=%2$d min | status=%3$s', 'erp-omd'),
+                                    $previous_age_label,
+                                    $freshness_threshold_minutes,
+                                    $previous_status
+                                )
+                            );
+                            ?>
+                        </p>
+                        <p class="description">
+                            <?php
+                            $dashboard_preview_base_args = [
+                                'month' => (string) ($report_filters['month'] ?? ''),
+                                'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),
+                                'adjustments_limit' => 5,
+                                'queue_limit' => 25,
+                                'profitability_limit' => 5,
+                                '_wpnonce' => wp_create_nonce('wp_rest'),
+                            ];
+                            $dashboard_preview_url = add_query_arg(
+                                array_merge($dashboard_preview_base_args, ['profitability_scope' => 'project']),
+                                rest_url('erp-omd/v1/dashboard-v1')
+                            );
+                            $dashboard_preview_clients_url = add_query_arg(
+                                array_merge($dashboard_preview_base_args, ['profitability_scope' => 'client']),
+                                rest_url('erp-omd/v1/dashboard-v1')
+                            );
+                            ?>
+                            <a href="<?php echo esc_url($dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
+                                <?php esc_html_e('Podgląd dashboard-v1 (scope: project)', 'erp-omd'); ?>
+                            </a>
+                            <span> | </span>
+                            <a href="<?php echo esc_url($dashboard_preview_clients_url); ?>" target="_blank" rel="noopener noreferrer">
+                                <?php esc_html_e('Podgląd dashboard-v1 (scope: client)', 'erp-omd'); ?>
+                            </a>
+                        </p>
+                        <details class="erp-omd-inline-help">
+                            <summary><?php esc_html_e('Szybki smoke test (UX)', 'erp-omd'); ?></summary>
+                            <ol>
+                                <li><?php esc_html_e('Ustaw typ raportu „Czas pracy (szczegółowy)” i wybierz „Wierszy na stronę” = 25/50/100, potem kliknij „Filtruj”.', 'erp-omd'); ?></li>
+                                <li><?php esc_html_e('Sprawdź, czy paginacja działa i czy licznik stron odpowiada liczbie rekordów.', 'erp-omd'); ?></li>
+                                <li><?php esc_html_e('Kliknij „Eksport CSV” i zweryfikuj, że eksport respektuje aktualne filtry (mode/detail/page/per_page).', 'erp-omd'); ?></li>
+                                <li><?php esc_html_e('Otwórz linki dashboard-v1 (project/client) i potwierdź odpowiedź JSON bez błędu uprawnień.', 'erp-omd'); ?></li>
+                            </ol>
+                        </details>
                     </div>
                     <form method="post" class="erp-omd-inline-form">
                         <?php wp_nonce_field('erp_omd_export_report'); ?>
@@ -101,10 +182,13 @@
                         <input type="hidden" name="project_id" value="<?php echo esc_attr($report_filters['project_id']); ?>" />
                         <input type="hidden" name="employee_id" value="<?php echo esc_attr($report_filters['employee_id']); ?>" />
                         <input type="hidden" name="status" value="<?php echo esc_attr($report_filters['status']); ?>" />
+                        <input type="hidden" name="mode" value="<?php echo esc_attr($report_filters['mode']); ?>" />
+                        <input type="hidden" name="detail" value="<?php echo esc_attr($report_filters['detail']); ?>" />
+                        <input type="hidden" name="page_num" value="<?php echo esc_attr((string) ($report_filters['page_num'] ?? 1)); ?>" />
+                        <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
                         <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV', 'erp-omd'); ?></button>
                     </form>
                 </div>
-
                 <?php if ($report_filters['report_type'] === 'clients') : ?>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekty', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th></tr></thead>
@@ -147,10 +231,13 @@
                         </tbody>
                     </table>
                 <?php elseif ($report_filters['report_type'] === 'omd_rozliczenia') : ?>
+                    <p class="description">
+                        <?php esc_html_e('Legenda OMD: wynik operacyjny = budżety aktywnych projektów + zysk godzinowy - koszt projektów; narzut controllingowy = koszt pensji + koszty stałe; wynik controllingowy = wynik operacyjny - narzut controllingowy.', 'erp-omd'); ?>
+                    </p>
                     <table class="widefat striped">
-                        <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt pensji', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Budżety aktywnych projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk godzinowy', 'erp-omd'); ?></th><th><?php esc_html_e('Stałe koszty', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></th></tr></thead>
+                        <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt pensji', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Budżety aktywnych projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk godzinowy', 'erp-omd'); ?></th><th><?php esc_html_e('Stałe koszty', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></th><th><?php esc_html_e('Narzut controllingowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik controllingowy', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th></tr></thead>
                         <tbody>
-                        <?php if (empty($report_rows)) : ?><tr><td colspan="7"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
+                        <?php if (empty($report_rows)) : ?><tr><td colspan="11"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
                         <?php foreach ($report_rows as $row) : ?>
                             <tr>
                                 <td><?php echo esc_html($row['month']); ?></td>
@@ -159,7 +246,11 @@
                                 <td><?php echo esc_html(number_format_i18n((float) $row['active_project_budgets'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['hourly_profit'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['fixed_cost'], 2)); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['operating_result'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['operational_result'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['controlling_overhead'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['controlling_result'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['time_revenue'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['time_cost'], 2)); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
@@ -185,6 +276,37 @@
                         <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php if (! empty($report_pagination) && (int) ($report_pagination['total_pages'] ?? 1) > 1) : ?>
+                        <div class="tablenav">
+                            <div class="tablenav-pages">
+                                <?php
+                                $base_args = [
+                                    'page' => 'erp-omd-reports',
+                                    'tab' => 'reports',
+                                    'report_type' => $report_filters['report_type'],
+                                    'month' => $report_filters['month'],
+                                    'client_id' => (int) $report_filters['client_id'],
+                                    'project_id' => (int) $report_filters['project_id'],
+                                    'employee_id' => (int) $report_filters['employee_id'],
+                                    'status' => $report_filters['status'],
+                                    'mode' => $report_filters['mode'],
+                                    'detail' => $report_filters['detail'],
+                                    'per_page' => (int) ($report_filters['per_page'] ?? 25),
+                                ];
+                                $current_page = (int) ($report_pagination['page_num'] ?? 1);
+                                $total_pages = (int) ($report_pagination['total_pages'] ?? 1);
+                                ?>
+                                <span class="displaying-num"><?php echo esc_html(sprintf(__('Wyniki: %d', 'erp-omd'), (int) ($report_pagination['total_items'] ?? 0))); ?></span>
+                                <?php if (! empty($report_pagination['has_prev'])) : ?>
+                                    <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['page_num' => $current_page - 1]), admin_url('admin.php'))); ?>">&laquo;</a>
+                                <?php endif; ?>
+                                <span class="paging-input"><?php echo esc_html(sprintf(__('%1$d z %2$d', 'erp-omd'), $current_page, $total_pages)); ?></span>
+                                <?php if (! empty($report_pagination['has_next'])) : ?>
+                                    <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['page_num' => $current_page + 1]), admin_url('admin.php'))); ?>">&raquo;</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 <?php else : ?>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet %', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><?php if ($report_filters['report_type'] === 'invoice') : ?><th><?php esc_html_e('Pozycje do faktury', 'erp-omd'); ?></th><?php endif; ?></tr></thead>
