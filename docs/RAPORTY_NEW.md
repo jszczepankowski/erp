@@ -66,9 +66,9 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 33. ✅ **P5 SLO decision audit (33-a)** — możliwe potwierdzenie finalnej decyzji progu p95 z zapisem audytowym (`decided_at`, `user_id`, próg, rekomendacja, sample_count) + ekspozycja w `system/status`.
 34. ✅ **P5 formal closure (34-a)** — formalne zamknięcie kalibracji SLO po potwierdzonej decyzji (zapis closure audit + ekspozycja statusu closure w `system/status` i panelu ustawień).
 35. ✅ **P5 monitoring telemetry hardening (35-a)** — `system/status` liczy `error_rate_percent` z logu metryk Reports v1 (`has_error`) i nie oznacza już tego sygnału jako brakującego.
-36. ✅ **P3/P5 reports UX cleanup (36-a)** — filtry raportów pokazują poprawne statusy zależnie od typu raportu, wrócił jawny wybór wersji `Podstawowa/Szczegółowa`, a blok diagnostyczny monitoringu jest schowany pod sekcją techniczną.
+36. ✅ **P3/P5 reports UX cleanup (36-a)** — filtry raportów pokazują poprawne statusy zależnie od typu raportu, wrócił jawny wybór wersji `Podstawowa/Szczegółowa`, a panel został odchudzony z diagnostycznych elementów technicznych.
 37. ✅ **P3 status cleanup archiwum (37-a)** — UI projektów używa `archiwum` (zamiast legacy `inactive`) w formularzu, filtrach i akcjach masowych.
-38. ✅ **P3/P5 technical tab split (38-a)** — elementy diagnostyczne (`Monitoring i diagnostyka`, linki `dashboard-v1`/`system-status`) przeniesione do osobnej zakładki `Techniczne`; `Dashboard queue limit` przemianowany na „Limit kolejki dashboardu” i wyniesiony obok filtrów raportu.
+38. ✅ **P3/P5 month switcher + cleanup (38-a)** — dodano dedykowany przełącznik miesięcy dla dashboardowego kontekstu raportów (poprzedni/bieżący/następny), usunięto zakładkę `Techniczne`, a eksport CSV rozróżnia wersję podstawową i szczegółową.
 39. **Kolejny etap** — monitoring steady-state po zamknięciu kalibracji + ewentualny rollback/tuning tylko przy trwałym dryfie metryk.
 
 ## 4) Instrukcja startowa do nowego chatu

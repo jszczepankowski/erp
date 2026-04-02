@@ -705,18 +705,9 @@ class ERP_OMD_Admin
         $report_generation_ms = (int) round((microtime(true) - $report_started_at) * 1000);
         $report_pagination = (array) ($this->reporting_service->last_report_pagination ?? []);
         $calendar_data = $this->reporting_service->build_calendar($report_filters);
-        $dashboard_preview_scope = sanitize_key((string) ($_GET['dashboard_scope'] ?? 'project'));
-        if (! in_array($dashboard_preview_scope, ['project', 'client'], true)) {
-            $dashboard_preview_scope = 'project';
-        }
-        $dashboard_preview_adjustments_limit = max(1, min(50, (int) ($_GET['dashboard_adjustments_limit'] ?? 5)));
         $dashboard_preview_queue_limit = max(1, min(100, (int) ($_GET['dashboard_queue_limit'] ?? 25)));
-        $dashboard_preview_profitability_limit = max(1, min(20, (int) ($_GET['dashboard_profitability_limit'] ?? 5)));
         $dashboard_preview_filters = [
-            'scope' => $dashboard_preview_scope,
-            'adjustments_limit' => $dashboard_preview_adjustments_limit,
             'queue_limit' => $dashboard_preview_queue_limit,
-            'profitability_limit' => $dashboard_preview_profitability_limit,
         ];
         $report_monitoring = [
             'generation_ms' => $report_generation_ms,
@@ -767,7 +758,7 @@ class ERP_OMD_Admin
         $report_titles = [
             'projects' => __('Raport projektów', 'erp-omd'),
             'clients' => __('Raport klientów', 'erp-omd'),
-            'invoice' => __('Raport do faktury', 'erp-omd'),
+            'invoice' => __('Raport projektów do faktury', 'erp-omd'),
             'time_entries' => __('Raport czasu pracy', 'erp-omd'),
             'monthly' => __('Raport miesięczny', 'erp-omd'),
             'omd_rozliczenia' => __('Raport OMD rozliczenia', 'erp-omd'),

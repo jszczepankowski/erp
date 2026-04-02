@@ -4,7 +4,6 @@
     <nav class="nav-tab-wrapper erp-omd-nav-tabs">
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'reports' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Raporty', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'calendar'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'calendar' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kalendarz', 'erp-omd'); ?></a>
-        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'technical'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'technical' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Techniczne', 'erp-omd'); ?></a>
     </nav>
 
     <div class="erp-omd-page-sections">
@@ -28,12 +27,12 @@
                                 <div class="erp-omd-form-field">
                                     <label for="report-type"><?php esc_html_e('Typ raportu', 'erp-omd'); ?></label>
                                     <select id="report-type" name="report_type">
-                                        <option value="projects" <?php selected($report_filters['report_type'], 'projects'); ?>><?php esc_html_e('Raport projektów', 'erp-omd'); ?></option>
+                                        <option value="time_entries" <?php selected($report_filters['report_type'], 'time_entries'); ?>><?php esc_html_e('Czas pracy', 'erp-omd'); ?></option>
+                                        <option value="invoice" <?php selected($report_filters['report_type'], 'invoice'); ?>><?php esc_html_e('Projekty do faktury', 'erp-omd'); ?></option>
                                         <option value="clients" <?php selected($report_filters['report_type'], 'clients'); ?>><?php esc_html_e('Raport klientów', 'erp-omd'); ?></option>
-                                        <option value="invoice" <?php selected($report_filters['report_type'], 'invoice'); ?>><?php esc_html_e('Do faktury', 'erp-omd'); ?></option>
-                                        <option value="time_entries" <?php selected($report_filters['report_type'], 'time_entries'); ?>><?php esc_html_e('Czas pracy (szczegółowy)', 'erp-omd'); ?></option>
                                         <option value="monthly" <?php selected($report_filters['report_type'], 'monthly'); ?>><?php esc_html_e('Raport miesięczny', 'erp-omd'); ?></option>
                                         <option value="omd_rozliczenia" <?php selected($report_filters['report_type'], 'omd_rozliczenia'); ?>><?php esc_html_e('Raport OMD rozliczenia', 'erp-omd'); ?></option>
+                                        <option value="projects" <?php selected($report_filters['report_type'], 'projects'); ?>><?php esc_html_e('Raport projektów', 'erp-omd'); ?></option>
                                     </select>
                                 </div>
                             <?php endif; ?>
@@ -100,26 +99,39 @@
                                     </select>
                                 </div>
                             <?php endif; ?>
-                            <?php if ($report_filters['tab'] === 'technical') : ?>
-                            <details class="erp-omd-inline-help" open>
-                                <summary><?php esc_html_e('Zaawansowane: podgląd dashboard-v1', 'erp-omd'); ?></summary>
-                                <div class="erp-omd-form-field">
-                                    <label for="dashboard-scope"><?php esc_html_e('Dashboard v1 scope', 'erp-omd'); ?></label>
-                                    <select id="dashboard-scope" name="dashboard_scope">
-                                        <option value="project" <?php selected((string) ($dashboard_preview_filters['scope'] ?? 'project'), 'project'); ?>><?php esc_html_e('project', 'erp-omd'); ?></option>
-                                        <option value="client" <?php selected((string) ($dashboard_preview_filters['scope'] ?? 'project'), 'client'); ?>><?php esc_html_e('client', 'erp-omd'); ?></option>
-                                    </select>
-                                </div>
-                                <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                    <label for="dashboard-profitability-limit"><?php esc_html_e('Dashboard top/bottom limit', 'erp-omd'); ?></label>
-                                    <input id="dashboard-profitability-limit" type="number" min="1" max="20" name="dashboard_profitability_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['profitability_limit'] ?? 5)); ?>" />
-                                </div>
-                                <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                    <label for="dashboard-adjustments-limit"><?php esc_html_e('Dashboard adjustments limit', 'erp-omd'); ?></label>
-                                    <input id="dashboard-adjustments-limit" type="number" min="1" max="50" name="dashboard_adjustments_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['adjustments_limit'] ?? 5)); ?>" />
-                                </div>
-                            </details>
-                            <?php endif; ?>
+                        </div>
+                        <?php
+                        $month_anchor = DateTimeImmutable::createFromFormat('Y-m-d', (string) ($report_filters['month'] ?? '') . '-01');
+                        if (! $month_anchor) {
+                            $month_anchor = new DateTimeImmutable('first day of this month');
+                        }
+                        $month_switch_base_args = [
+                            'page' => 'erp-omd-reports',
+                            'tab' => $report_filters['tab'],
+                            'report_type' => $report_filters['report_type'],
+                            'month' => '',
+                            'client_id' => (int) $report_filters['client_id'],
+                            'project_id' => (int) $report_filters['project_id'],
+                            'employee_id' => (int) $report_filters['employee_id'],
+                            'status' => $report_filters['status'],
+                            'mode' => $report_filters['mode'],
+                            'detail' => $report_filters['detail'],
+                            'page_num' => 1,
+                            'per_page' => (int) ($report_filters['per_page'] ?? 25),
+                            'dashboard_queue_limit' => (int) ($dashboard_preview_filters['queue_limit'] ?? 25),
+                        ];
+                        $prev_month_args = $month_switch_base_args;
+                        $next_month_args = $month_switch_base_args;
+                        $current_month_args = $month_switch_base_args;
+                        $prev_month_args['month'] = $month_anchor->modify('-1 month')->format('Y-m');
+                        $next_month_args['month'] = $month_anchor->modify('+1 month')->format('Y-m');
+                        $current_month_args['month'] = (new DateTimeImmutable('first day of this month'))->format('Y-m');
+                        ?>
+                        <div class="erp-omd-form-actions" style="justify-content:flex-start;">
+                            <span class="description"><?php esc_html_e('Przełącznik miesięcy (dashboard):', 'erp-omd'); ?></span>
+                            <a class="button" href="<?php echo esc_url(add_query_arg($prev_month_args, admin_url('admin.php'))); ?>">&laquo; <?php esc_html_e('Poprzedni miesiąc', 'erp-omd'); ?></a>
+                            <a class="button" href="<?php echo esc_url(add_query_arg($current_month_args, admin_url('admin.php'))); ?>"><?php esc_html_e('Bieżący miesiąc', 'erp-omd'); ?></a>
+                            <a class="button" href="<?php echo esc_url(add_query_arg($next_month_args, admin_url('admin.php'))); ?>"><?php esc_html_e('Następny miesiąc', 'erp-omd'); ?> &raquo;</a>
                         </div>
                     </section>
                 </div>
@@ -130,29 +142,6 @@
             </form>
         </section>
 
-        <?php
-        $dashboard_preview_base_args = [
-            'month' => (string) ($report_filters['month'] ?? ''),
-            'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),
-            'adjustments_limit' => (int) ($dashboard_preview_filters['adjustments_limit'] ?? 5),
-            'queue_limit' => (int) ($dashboard_preview_filters['queue_limit'] ?? 25),
-            'profitability_limit' => (int) ($dashboard_preview_filters['profitability_limit'] ?? 5),
-            '_wpnonce' => wp_create_nonce('wp_rest'),
-        ];
-        $dashboard_active_scope = (string) ($dashboard_preview_filters['scope'] ?? 'project');
-        $dashboard_preview_url = add_query_arg(
-            array_merge($dashboard_preview_base_args, ['profitability_scope' => 'project']),
-            rest_url('erp-omd/v1/dashboard-v1')
-        );
-        $dashboard_preview_clients_url = add_query_arg(
-            array_merge($dashboard_preview_base_args, ['profitability_scope' => 'client']),
-            rest_url('erp-omd/v1/dashboard-v1')
-        );
-        $system_status_url = add_query_arg(
-            ['_wpnonce' => wp_create_nonce('wp_rest')],
-            rest_url('erp-omd/v1/system/status')
-        );
-        ?>
         <?php if ($report_filters['tab'] === 'reports') : ?>
             <section class="erp-omd-card">
                 <div class="erp-omd-section-header">
@@ -416,61 +405,6 @@
                     <?php endforeach; ?>
                     </tbody>
                 </table>
-            </section>
-        <?php else : ?>
-            <section class="erp-omd-card">
-                <h2><?php esc_html_e('Techniczne — monitoring i podglądy API', 'erp-omd'); ?></h2>
-                <p class="description">
-                    <?php
-                    echo esc_html(
-                        sprintf(
-                            __('Monitoring v1: typ=%1$s | rekordy=%2$d | czas generowania=%3$d ms | rollout=%4$s', 'erp-omd'),
-                            (string) ($report_monitoring['report_type'] ?? 'n/a'),
-                            (int) ($report_monitoring['rows_count'] ?? 0),
-                            (int) ($report_monitoring['generation_ms'] ?? 0),
-                            (string) ($report_monitoring['rollout'] ?? 'n/a')
-                        )
-                    );
-                    ?>
-                </p>
-                <p class="description">
-                    <?php
-                    $previous_age_seconds = isset($report_monitoring['previous_metrics_age_seconds']) ? (int) $report_monitoring['previous_metrics_age_seconds'] : -1;
-                    $previous_age_label = $previous_age_seconds >= 0 ? sprintf('%ds', $previous_age_seconds) : 'n/a';
-                    $freshness_threshold_minutes = (int) ($report_monitoring['freshness_threshold_minutes'] ?? 1440);
-                    $previous_stale_flag = $report_monitoring['previous_metrics_stale'] ?? null;
-                    if ($previous_stale_flag === null) {
-                        $previous_status = __('n/a', 'erp-omd');
-                    } else {
-                        $previous_status = ! empty($previous_stale_flag) ? __('stale', 'erp-omd') : __('fresh', 'erp-omd');
-                    }
-                    echo esc_html(
-                        sprintf(
-                            __('Monitoring v1: poprzednia próbka=%1$s | próg świeżości=%2$d min | status=%3$s', 'erp-omd'),
-                            $previous_age_label,
-                            $freshness_threshold_minutes,
-                            $previous_status
-                        )
-                    );
-                    ?>
-                </p>
-                <p class="description">
-                    <a href="<?php echo esc_url($dashboard_active_scope === 'client' ? $dashboard_preview_clients_url : $dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
-                        <?php echo esc_html(sprintf(__('Podgląd dashboard-v1 (scope: %s)', 'erp-omd'), $dashboard_active_scope)); ?>
-                    </a>
-                    <span> | </span>
-                    <a href="<?php echo esc_url($dashboard_preview_url); ?>" target="_blank" rel="noopener noreferrer">
-                        <?php esc_html_e('scope: project', 'erp-omd'); ?>
-                    </a>
-                    <span> | </span>
-                    <a href="<?php echo esc_url($dashboard_preview_clients_url); ?>" target="_blank" rel="noopener noreferrer">
-                        <?php esc_html_e('scope: client', 'erp-omd'); ?>
-                    </a>
-                    <span> | </span>
-                    <a href="<?php echo esc_url($system_status_url); ?>" target="_blank" rel="noopener noreferrer">
-                        <?php esc_html_e('system/status JSON', 'erp-omd'); ?>
-                    </a>
-                </p>
             </section>
         <?php endif; ?>
     </div>
