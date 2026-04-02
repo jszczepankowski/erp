@@ -48,7 +48,7 @@ W nowym chacie wklej:
 
 1. `Hasło: RAPORTY_NEW. Kontynuujemy Wariant B v1.`
 2. `Najpierw pokaż git status + krótki diff od ostatniego commita.`
-3. `Realizujemy teraz kolejny krok: P3-01 (albo następny niezamknięty z listy).`
+3. `Realizujemy teraz kolejny krok: P5-03 (albo następny niezamknięty z listy).`
 4. `Po zmianach: testy, commit, PR summary i aktualizacja snapshotu RAPORTY_NEW.`
 
 ## 5) Source of truth
