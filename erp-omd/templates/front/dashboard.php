@@ -51,6 +51,28 @@
             </nav>
 
             <div class="erp-omd-front-grid erp-omd-front-grid-summary">
+                <article class="erp-omd-front-panel">
+                    <h2><?php esc_html_e('Miesiąc dashboardu', 'erp-omd'); ?></h2>
+                    <p class="erp-omd-front-muted"><?php echo esc_html($dashboard_month_navigation['label'] ?? ''); ?></p>
+                    <form method="get" action="<?php echo esc_url($front_manager_url); ?>" class="erp-omd-front-inline-actions">
+                        <?php if (! empty($selected_project_id)) : ?>
+                            <input type="hidden" name="project_id" value="<?php echo esc_attr((string) $selected_project_id); ?>">
+                        <?php endif; ?>
+                        <?php if (! empty($selected_request_id)) : ?>
+                            <input type="hidden" name="request_id" value="<?php echo esc_attr((string) $selected_request_id); ?>">
+                        <?php endif; ?>
+                        <?php if (! empty($selected_estimate_id)) : ?>
+                            <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) $selected_estimate_id); ?>">
+                        <?php endif; ?>
+                        <?php if (! empty($estimate_status_filter)) : ?>
+                            <input type="hidden" name="estimate_status" value="<?php echo esc_attr((string) $estimate_status_filter); ?>">
+                        <?php endif; ?>
+                        <label for="erp-omd-dashboard-month" class="screen-reader-text"><?php esc_html_e('Wybierz miesiąc dashboardu', 'erp-omd'); ?></label>
+                        <input id="erp-omd-dashboard-month" type="month" name="dashboard_month" value="<?php echo esc_attr((string) ($dashboard_month_navigation['current_month'] ?? gmdate('Y-m'))); ?>">
+                        <button type="submit" class="erp-omd-front-button erp-omd-front-button-ghost"><?php esc_html_e('Zastosuj miesiąc', 'erp-omd'); ?></button>
+                    </form>
+                </article>
+
                 <article class="erp-omd-front-panel" data-collapsible-section="manager-projects">
                     <h2><?php esc_html_e('Twoje konto', 'erp-omd'); ?></h2>
                     <ul>

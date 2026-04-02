@@ -1127,6 +1127,7 @@ class ERP_OMD_REST_API
                 'report_type' => (string) ($row['report_type'] ?? ''),
                 'rollout' => (string) ($row['rollout'] ?? ''),
                 'enabled' => ! empty($row['enabled']),
+                'has_error' => ! empty($row['has_error']),
                 'captured_at' => (string) ($row['captured_at'] ?? ''),
             ];
         }, array_slice($reports_v1_metrics_log, 0, 5)));
@@ -1151,8 +1152,16 @@ class ERP_OMD_REST_API
             'sample_count' => $reports_v1_sample_count,
             'generation_ms_p95' => $reports_v1_generation_p95,
             'generation_ms_p95_within_target' => $reports_v1_generation_p95 <= (int) $reports_v1_slo['generation_ms_p95_max'],
-            'missing_signals' => ['error_rate_percent'],
+            'missing_signals' => [],
         ];
+        $reports_v1_error_samples = count(array_filter($reports_v1_metrics_log, static function ($row) {
+            return ! empty($row['has_error']);
+        }));
+        $reports_v1_error_rate_percent = $reports_v1_sample_count > 0
+            ? round(((float) $reports_v1_error_samples / (float) $reports_v1_sample_count) * 100, 2)
+            : 0.0;
+        $reports_v1_slo_status['error_rate_percent'] = $reports_v1_error_rate_percent;
+        $reports_v1_slo_status['error_rate_within_target'] = $reports_v1_error_rate_percent <= (float) $reports_v1_slo['error_rate_max_percent'];
         $reports_v1_slo_sample_target_min = 20;
         $reports_v1_recommended_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
         $reports_v1_recommended_p95_max = max(100, min(30000, $reports_v1_recommended_p95_max));
@@ -1199,6 +1208,20 @@ class ERP_OMD_REST_API
             'recommended_threshold_ms' => (int) ($reports_v1_slo_decision['recommended_threshold_ms'] ?? 0),
             'sample_count' => (int) ($reports_v1_slo_decision['sample_count'] ?? 0),
         ];
+        $reports_v1_slo_closure = (array) get_option('erp_omd_reports_v1_slo_calibration_closure', []);
+        $reports_v1_slo_closure = [
+            'closed_at' => (string) ($reports_v1_slo_closure['closed_at'] ?? ''),
+            'closed_by_user_id' => (int) ($reports_v1_slo_closure['closed_by_user_id'] ?? 0),
+            'decision_decided_at' => (string) ($reports_v1_slo_closure['decision_decided_at'] ?? ''),
+            'decision_threshold_ms' => (int) ($reports_v1_slo_closure['decision_threshold_ms'] ?? 0),
+        ];
+        $reports_v1_slo_calibration_closed = $reports_v1_slo_closure['closed_at'] !== '' && $reports_v1_slo_closure['closed_by_user_id'] > 0;
+        if ($reports_v1_slo_calibration_closed) {
+            $reports_v1_slo_status['calibration_state'] = 'closed';
+            $reports_v1_slo_status['calibration_next_action'] = 'Calibration formally closed. Keep monitoring SLO trends and reopen only when sustained drift appears.';
+        }
+        $reports_v1_slo_status['calibration_closed'] = $reports_v1_slo_calibration_closed;
+        $reports_v1_slo_status['calibration_closed_at'] = (string) $reports_v1_slo_closure['closed_at'];
         $reports_v1_operational_status = [
             'level' => 'ok',
             'requires_attention' => false,
@@ -1250,6 +1273,7 @@ class ERP_OMD_REST_API
                 'reports_v1_slo' => $reports_v1_slo,
                 'reports_v1_slo_status' => $reports_v1_slo_status,
                 'reports_v1_slo_decision' => $reports_v1_slo_decision,
+                'reports_v1_slo_closure' => $reports_v1_slo_closure,
                 'reports_v1_metrics_freshness' => $reports_v1_metrics_freshness,
                 'reports_v1_operational_status' => $reports_v1_operational_status,
             ],

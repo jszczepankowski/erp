@@ -245,6 +245,8 @@ final class ReportingServiceTestRunner
         $this->assertSame('Miesiąc zamk. oper.', $export['headers'][16], 'Project export should include operational close month column.');
         $this->assertSame(2, count($export['rows']), 'Project export should include report rows.');
         $this->assertSame('2026-02', $export['rows'][0][16], 'Project export should include operational close month value.');
+        $detailExport = $service->export_definition('projects', $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'detail' => 'detail']));
+        $this->assertSame(true, count($detailExport['rows']) > count($export['rows']), 'Detailed project export should include additional detail rows.');
 
         $timeExport = $service->export_definition('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'per_page' => 1, 'page_num' => 2]));
         $this->assertSame(1, count($timeExport['rows']), 'Time entries export should match paginated time report row count.');
