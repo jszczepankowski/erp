@@ -1106,15 +1106,6 @@ class ERP_OMD_Frontend
         $front_manager_url = $this->front_url('manager');
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
         $manager_form_action = $this->front_url('manager');
-        $dashboard_month_date = DateTimeImmutable::createFromFormat('Y-m-d', $dashboard_month . '-01');
-        if (! $dashboard_month_date) {
-            $dashboard_month_date = new DateTimeImmutable('first day of this month');
-        }
-        $dashboard_month_navigation = [
-            'current_month' => $dashboard_month_date->format('Y-m'),
-            'label' => wp_date('F Y', $dashboard_month_date->getTimestamp()),
-        ];
-
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/dashboard.php';
         exit;

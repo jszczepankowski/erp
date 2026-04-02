@@ -930,20 +930,20 @@ class ERP_OMD_Reporting_Service
             case 'omd_rozliczenia':
                 return [
                     'filename' => sprintf('erp-omd-rozliczenie-omd-%s.csv', $month),
-                    'headers' => ['Miesiąc', 'Koszt pensji', 'Koszt projektów', 'Budżety aktywnych projektów', 'Zysk godzinowy', 'Koszty stałe', 'Wynik operacyjny', 'Narzut controllingowy', 'Wynik controllingowy', 'Przychód czasu', 'Koszt czasu'],
+                    'headers' => ['Miesiąc', 'Koszt pensji', 'Koszt projektów', 'Koszty czasu', 'Stałe koszty', 'Budżety aktywnych projektów', 'Przychód czasu', 'Zysk godzinowy', 'Narzut controllingowy', 'Wynik controllingowy', 'Wynik operacyjny'],
                     'rows' => array_map(static function ($row) {
                         return [
                             $row['month'],
                             number_format((float) $row['salary_cost'], 2, '.', ''),
                             number_format((float) $row['project_direct_cost'], 2, '.', ''),
-                            number_format((float) $row['active_project_budgets'], 2, '.', ''),
-                            number_format((float) $row['hourly_profit'], 2, '.', ''),
+                            number_format((float) $row['time_cost'], 2, '.', ''),
                             number_format((float) $row['fixed_cost'], 2, '.', ''),
-                            number_format((float) $row['operational_result'], 2, '.', ''),
+                            number_format((float) $row['active_project_budgets'], 2, '.', ''),
+                            number_format((float) $row['time_revenue'], 2, '.', ''),
+                            number_format((float) $row['hourly_profit'], 2, '.', ''),
                             number_format((float) $row['controlling_overhead'], 2, '.', ''),
                             number_format((float) $row['controlling_result'], 2, '.', ''),
-                            number_format((float) $row['time_revenue'], 2, '.', ''),
-                            number_format((float) $row['time_cost'], 2, '.', ''),
+                            number_format((float) $row['operational_result'], 2, '.', ''),
                         ];
                     }, $rows),
                 ];

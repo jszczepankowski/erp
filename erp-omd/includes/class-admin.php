@@ -190,8 +190,15 @@ class ERP_OMD_Admin
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $alerts = $this->alert_service->all_alerts();
-        $reporting_month = current_time('Y-m');
-        $reporting_month_label = current_time('m.Y');
+        $reporting_month = sanitize_text_field(wp_unslash($_GET['reporting_month'] ?? current_time('Y-m')));
+        if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $reporting_month)) {
+            $reporting_month = current_time('Y-m');
+        }
+        $reporting_month_label = $reporting_month;
+        $reporting_month_date = DateTimeImmutable::createFromFormat('Y-m-d', $reporting_month . '-01');
+        if ($reporting_month_date instanceof DateTimeImmutable) {
+            $reporting_month_label = wp_date('m.Y', $reporting_month_date->getTimestamp());
+        }
         $monthly_metrics = $this->build_monthly_performance_metrics($reporting_month);
         $monthly_totals = $monthly_metrics['totals'] ?? [
             'reported_hours' => 0.0,

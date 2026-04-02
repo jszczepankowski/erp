@@ -2,7 +2,12 @@
     <div class="erp-omd-dashboard-hero">
         <div class="erp-omd-dashboard-hero-copy">
             <h1><?php esc_html_e('ERP OMD — Dashboard', 'erp-omd'); ?></h1>
-
+            <form method="get" class="erp-omd-inline-form" style="margin-top:12px;">
+                <input type="hidden" name="page" value="erp-omd">
+                <label for="erp-omd-dashboard-reporting-month" style="margin-right:8px;"><?php esc_html_e('Miesiąc dashboardu', 'erp-omd'); ?></label>
+                <input id="erp-omd-dashboard-reporting-month" type="month" name="reporting_month" value="<?php echo esc_attr($reporting_month); ?>">
+                <button type="submit" class="button button-secondary"><?php esc_html_e('Zastosuj miesiąc', 'erp-omd'); ?></button>
+            </form>
         </div>
         <div class="erp-omd-kpi-grid">
             <div class="erp-omd-kpi erp-omd-kpi-accent erp-omd-kpi-profit">
