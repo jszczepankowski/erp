@@ -594,6 +594,9 @@ final class RestApiTestRunner
         $this->assertSame(1800, $system['feature_flags']['reports_v1_slo']['generation_ms_p95_max'], 'System status should expose reports v1 SLO thresholds.');
         $this->assertSame(55, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95'], 'System status should expose computed p95 from compact metrics samples.');
         $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_within_target'], 'System status should expose whether generation p95 is within target.');
+        $this->assertSame(20, $system['feature_flags']['reports_v1_slo_status']['sample_target_min'], 'System status should expose minimum sample target for SLO calibration.');
+        $this->assertSame('insufficient_samples', $system['feature_flags']['reports_v1_slo_status']['calibration_state'], 'System status should report calibration state when production sample count is too low.');
+        $this->assertSame(500, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_recommended_max'], 'System status should expose rounded recommended p95 target for calibration.');
         $this->assertSame('error_rate_percent', $system['feature_flags']['reports_v1_slo_status']['missing_signals'][0], 'System status should declare missing monitoring signals for SLO completeness.');
         $this->assertSame(1440, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_minutes'], 'System status should expose configurable freshness threshold in minutes.');
         $this->assertSame(86400, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_seconds'], 'System status should expose configurable freshness threshold in seconds.');

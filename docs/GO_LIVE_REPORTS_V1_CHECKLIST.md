@@ -1,17 +1,17 @@
-# Go-live checklist — Reports v1 (admins -> all)
+# Go-live checklist — Reports v1 (steady-state after global rollout)
 
 Data: 2026-04-02
 
-## 1) Warunki wejścia
+## 1) Warunki wejścia (steady-state)
 
-- rollout ustawiony na `admins` przez min. 24h,
+- Reports v1 aktywny globalnie (legacy canary wygaszony),
 - brak krytycznych błędów w logach PHP/WP związanych z raportami v1,
 - poprawne generowanie eksportów CSV na danych produkcyjnych,
 - potwierdzona poprawność metryk OMD (operacyjne vs controllingowe) przez właściciela biznesowego.
 
-## 2) Kroki przełączenia
+## 2) Kroki walidacji cyklicznej (bez przełączania rollout)
 
-1. Ustaw w panelu: **Ustawienia -> Reports v1 rollout = all**.
+1. Zweryfikuj w panelu: **Ustawienia -> Reports v1** (świeżość metryk + próg p95 SLO).
 2. Wykonaj smoke test:
    - raport `time_entries` (filtrowanie + paginacja),
    - raport `projects` (detail + billing mix),
@@ -19,9 +19,10 @@ Data: 2026-04-02
    - eksport CSV dla wszystkich ww. raportów.
 3. Sprawdź endpoint statusowy:
    - `GET /erp-omd/v1/system/status`
-   - oczekiwane: `feature_flags.reports_v1_rollout = all`.
+   - oczekiwane: `feature_flags.reports_v1_rollout = all`,
+   - oczekiwane: aktualne `reports_v1_slo.generation_ms_p95_max` i `reports_v1_metrics_freshness`.
 
-## 3) Monitoring po przełączeniu (T+0 ... T+48h)
+## 3) Monitoring operacyjny (ciągły)
 
 - obserwuj `generation_ms` i `rows_count` dla typów raportów,
 - monitoruj wzrost error-rate w logach i timeouty eksportu,

@@ -53,7 +53,9 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 20. ✅ **P5-monitoring actionable status** — `system/status` zwraca operacyjny status health (`ok/warn/alert`) z powodami i rekomendowanymi akcjami (p95/freshness/missing signals).
 21. ✅ **P2 dashboard UX controls** — filtry raportów mają teraz sterowanie parametrami podglądu `dashboard-v1` (`scope`, limity), plus szybki link do `system/status`.
 22. ✅ **P5 SLO tuning controls** — próg `generation_ms_p95_max` dla Reports v1 jest konfigurowalny z panelu ustawień i odczytywany przez `system/status`.
-23. **Kolejny etap** — obserwacja produkcyjna i kalibracja progów SLO po realnym ruchu.
+23. ✅ **P5 docs consistency (post-canary)** — checklista `GO_LIVE_REPORTS_V1_CHECKLIST` zaktualizowana do trybu steady-state (bez legacy przełączania `admins -> all`).
+24. ✅ **P5 SLO calibration signals (24-a)** — `system/status` zwraca `sample_target_min`, `calibration_state` i rekomendowany próg `generation_ms_p95_recommended_max`.
+25. **Kolejny etap** — obserwacja produkcyjna i decyzja kalibracyjna na bazie min. 20 próbek (`calibration_state=ready`).
 
 ## 4) Instrukcja startowa do nowego chatu
 
