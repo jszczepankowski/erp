@@ -55,7 +55,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 22. ✅ **P5 SLO tuning controls** — próg `generation_ms_p95_max` dla Reports v1 jest konfigurowalny z panelu ustawień i odczytywany przez `system/status`.
 23. ✅ **P5 docs consistency (post-canary)** — checklista `GO_LIVE_REPORTS_V1_CHECKLIST` zaktualizowana do trybu steady-state (bez legacy przełączania `admins -> all`).
 24. ✅ **P5 SLO calibration signals (24-a)** — `system/status` zwraca `sample_target_min`, `calibration_state` i rekomendowany próg `generation_ms_p95_recommended_max`.
-25. **Kolejny etap** — obserwacja produkcyjna i decyzja kalibracyjna na bazie min. 20 próbek (`calibration_state=ready`).
+25. ✅ **P5 SLO calibration progress (25-a)** — `system/status` zwraca `samples_missing_to_calibration`, żeby operacyjnie śledzić brakujące próbki do decyzji.
+26. **Kolejny etap** — obserwacja produkcyjna i decyzja kalibracyjna po osiągnięciu `samples_missing_to_calibration=0`.
 
 ## 4) Instrukcja startowa do nowego chatu
 

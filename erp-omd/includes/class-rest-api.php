@@ -1156,8 +1156,10 @@ class ERP_OMD_REST_API
         $reports_v1_slo_sample_target_min = 20;
         $reports_v1_recommended_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
         $reports_v1_recommended_p95_max = max(100, min(30000, $reports_v1_recommended_p95_max));
+        $reports_v1_samples_missing_to_calibration = max(0, $reports_v1_slo_sample_target_min - $reports_v1_sample_count);
         $reports_v1_slo_status['sample_target_min'] = $reports_v1_slo_sample_target_min;
         $reports_v1_slo_status['calibration_state'] = $reports_v1_sample_count >= $reports_v1_slo_sample_target_min ? 'ready' : 'insufficient_samples';
+        $reports_v1_slo_status['samples_missing_to_calibration'] = $reports_v1_samples_missing_to_calibration;
         $reports_v1_slo_status['generation_ms_p95_recommended_max'] = $reports_v1_recommended_p95_max;
         $reports_v1_last_metrics_age_seconds = null;
         $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
