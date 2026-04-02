@@ -64,7 +64,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 31. ✅ **P5 SLO decision UX (31-a)** — baner raportów pokazuje status decyzji kalibracyjnej (`ready/pending`) oraz następną akcję operatorską.
 32. ✅ **P5 SLO decision UX in settings (32-a)** — panel Ustawień pokazuje status kalibracji, brakujące próbki i następną akcję przy konfiguracji progu p95.
 33. ✅ **P5 SLO decision audit (33-a)** — możliwe potwierdzenie finalnej decyzji progu p95 z zapisem audytowym (`decided_at`, `user_id`, próg, rekomendacja, sample_count) + ekspozycja w `system/status`.
-34. **Kolejny etap** — obserwacja produkcyjna i formalne zamknięcie kalibracji po potwierdzonej decyzji.
+34. ✅ **P5 formal closure (34-a)** — formalne zamknięcie kalibracji SLO po potwierdzonej decyzji (zapis closure audit + ekspozycja statusu closure w `system/status` i panelu ustawień).
+35. **Kolejny etap** — monitoring steady-state po zamknięciu kalibracji + ewentualny rollback/tuning tylko przy trwałym dryfie metryk.
 
 ## 4) Instrukcja startowa do nowego chatu
 
