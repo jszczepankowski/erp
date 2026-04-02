@@ -172,6 +172,21 @@ class ERP_OMD_Period_Service
 
     private function is_valid_month($month)
     {
-        return is_string($month) && preg_match('/^\d{4}-\d{2}$/', $month) === 1;
+        if (! is_string($month) || preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+            return false;
+        }
+
+        $date = DateTimeImmutable::createFromFormat('!Y-m', $month);
+        $errors = DateTimeImmutable::getLastErrors();
+
+        if ($date === false) {
+            return false;
+        }
+
+        if (is_array($errors) && (! empty($errors['warning_count']) || ! empty($errors['error_count']))) {
+            return false;
+        }
+
+        return $date->format('Y-m') === $month;
     }
 }

@@ -67,9 +67,9 @@ Następny krok wg planu: **utrzymanie/stabilizacja** (monitoring operacyjny + de
 ## 3) Co dalej (priorytet kolejnych kroków)
 
 ### P1 — domknięcie zgodności reguł księgowania v1
-1. Dopięcie pełnych walidatorów checklisty gotowości (submitted/rejected, koszty niezweryfikowane, kompletność danych, blokady krytyczne).
-2. Twarde użycie `operational_close_month` w logice budżetowej i agregacjach finansowych.
-3. Ujednolicenie approved-only we wszystkich raportach/eksportach/endpointach finansowych.
+1. [x] Dopięcie pełnych walidatorów checklisty gotowości (submitted/rejected, koszty niezweryfikowane, kompletność danych, blokady krytyczne).
+2. [x] Twarde użycie `operational_close_month` w logice budżetowej i agregacjach finansowych.
+3. [x] Ujednolicenie approved-only we wszystkich raportach/eksportach/endpointach finansowych.
 
 ### P2 — operacyjny dashboard v1 (frontend + contract)
 1. [x] Ekran statusu miesiąca + CTA admin (backend: `status_actions`).
@@ -107,10 +107,10 @@ Wklej na start:
 Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 
 ### P1 — Reguły księgowania i zamknięcie miesiąca
-- `WB-P1-01` — Dopięcie pełnej checklisty gotowości LIVE -> DO_ROZLICZENIA (wszystkie walidatory biznesowe).
-- `WB-P1-02` — Użycie `operational_close_month` w pełnej logice budżetowej i controllingowej.
-- `WB-P1-03` — Ujednolicenie approved-only we wszystkich raportach/eksportach/API finansowym.
-- `WB-P1-04` — Testy regresji: przejścia statusów, locki, edge-case 72h + emergency.
+- `WB-P1-01` — [x] Dopięcie pełnej checklisty gotowości LIVE -> DO_ROZLICZENIA (wszystkie walidatory biznesowe).
+- `WB-P1-02` — [x] Użycie `operational_close_month` w pełnej logice budżetowej i controllingowej.
+- `WB-P1-03` — [x] Ujednolicenie approved-only we wszystkich raportach/eksportach/API finansowym.
+- `WB-P1-04` — [x] Testy regresji: przejścia statusów, locki, edge-case 72h + emergency + walidacja zakresu miesiąca (`YYYY-MM`).
 
 ### P2 — Dashboard v1 (frontend + contract)
 - `WB-P2-01` — [x] Karta statusu miesiąca + akcje admin (backend contract).

@@ -171,6 +171,27 @@ final class OMDPeriodServiceTestRunner
         }
         $this->assertTrue($thrownInvalidMonth, 'Transition should reject invalid month format.');
 
+        $thrownInvalidMonthOutOfRange = false;
+        try {
+            $repositoryBackedService->transition_month('2026-13', ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, [
+                'time_entries_finalized' => true,
+                'project_costs_verified' => true,
+                'project_client_completeness' => true,
+                'critical_settlement_locks' => true,
+            ]);
+        } catch (InvalidArgumentException $exception) {
+            $thrownInvalidMonthOutOfRange = true;
+        }
+        $this->assertTrue($thrownInvalidMonthOutOfRange, 'Transition should reject out-of-range months in YYYY-MM format.');
+
+        $thrownInvalidResolveMonth = false;
+        try {
+            $repositoryBackedService->resolve_month_status('2026-00');
+        } catch (InvalidArgumentException $exception) {
+            $thrownInvalidResolveMonth = true;
+        }
+        $this->assertTrue($thrownInvalidResolveMonth, 'resolve_month_status should reject month 00.');
+
         $thrownInvalidStatus = false;
         try {
             $repositoryBackedService->transition_month('2026-04', 'ARCHIVE', [
