@@ -641,6 +641,7 @@ class ERP_OMD_Admin
     {
         $report_filters = $this->reporting_service->sanitize_filters($_GET);
         $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
+        $report_pagination = (array) ($this->reporting_service->last_report_pagination ?? []);
         $calendar_data = $this->reporting_service->build_calendar($report_filters);
         $clients = $this->clients->all();
         $projects = $this->projects->all();
