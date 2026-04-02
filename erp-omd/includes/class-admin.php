@@ -669,7 +669,7 @@ class ERP_OMD_Admin
             'captured_at' => gmdate('c'),
             'freshness_threshold_minutes' => $reports_v1_freshness_minutes,
             'previous_metrics_age_seconds' => $previous_report_age_seconds,
-            'previous_metrics_stale' => $previous_report_age_seconds !== null && $previous_report_age_seconds > $reports_v1_freshness_seconds,
+            'previous_metrics_stale' => $previous_report_age_seconds === null ? null : ($previous_report_age_seconds > $reports_v1_freshness_seconds),
         ];
         update_option('erp_omd_reports_v1_last_metrics', $report_monitoring);
         $metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
