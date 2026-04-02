@@ -1153,6 +1153,8 @@ class ERP_OMD_REST_API
             'missing_signals' => ['error_rate_percent'],
         ];
         $reports_v1_last_metrics_age_seconds = null;
+        $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
+        $reports_v1_metrics_freshness_threshold_seconds = $reports_v1_metrics_freshness_minutes * 60;
         $reports_v1_last_metrics_captured_at = (string) ($reports_v1_last_metrics['captured_at'] ?? '');
         if ($reports_v1_last_metrics_captured_at !== '') {
             $captured_at_timestamp = strtotime($reports_v1_last_metrics_captured_at);
@@ -1162,8 +1164,9 @@ class ERP_OMD_REST_API
             }
         }
         $reports_v1_metrics_freshness = [
+            'threshold_seconds' => $reports_v1_metrics_freshness_threshold_seconds,
             'last_metrics_age_seconds' => $reports_v1_last_metrics_age_seconds,
-            'last_metrics_fresh_under_24h' => $reports_v1_last_metrics_age_seconds !== null && $reports_v1_last_metrics_age_seconds <= 86400,
+            'last_metrics_fresh_under_threshold' => $reports_v1_last_metrics_age_seconds !== null && $reports_v1_last_metrics_age_seconds <= $reports_v1_metrics_freshness_threshold_seconds,
         ];
 
         return rest_ensure_response([
