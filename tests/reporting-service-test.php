@@ -256,6 +256,32 @@ final class ReportingServiceTestRunner
         $this->assertSame('Przychód czasu', $omdExport['headers'][9], 'OMD export should include time revenue column in full export.');
         $this->assertSame('Koszt czasu', $omdExport['headers'][10], 'OMD export should include time cost column in full export.');
 
+        $strictOperationalCloseService = new ERP_OMD_Reporting_Service(
+            new ERP_OMD_Project_Repository([
+                ['id' => 99, 'client_id' => 1, 'name' => 'Legacy close month fallback', 'client_name' => 'ACME', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager', 'budget' => 3000, 'end_date' => '2026-03-31'],
+            ]),
+            new ERP_OMD_Client_Repository([
+                ['id' => 1, 'name' => 'ACME'],
+            ]),
+            new ERP_OMD_Employee_Repository([
+                ['id' => 1, 'user_login' => 'anna'],
+            ]),
+            new ERP_OMD_Salary_History_Repository([
+                1 => [['monthly_salary' => 10000.0, 'valid_from' => '2026-01-01', 'valid_to' => null]],
+            ]),
+            new ERP_OMD_Project_Cost_Repository([
+                99 => [],
+            ]),
+            new ERP_OMD_Time_Entry_Repository([
+                ['project_id' => 99, 'client_id' => 1, 'employee_id' => 1, 'hours' => 1, 'entry_date' => '2026-03-10', 'status' => 'approved', 'rate_snapshot' => 100, 'cost_snapshot' => 40],
+            ]),
+            new ERP_OMD_Project_Financial_Service([
+                99 => ['revenue' => 100.0, 'cost' => 40.0, 'profit' => 60.0, 'margin' => 60.0, 'budget_usage' => 1.0],
+            ])
+        );
+        $strictMonthly = $strictOperationalCloseService->build_monthly_report($strictOperationalCloseService->sanitize_filters(['report_type' => 'monthly', 'month' => '2026-03']));
+        $this->assertSame(0.0, $strictMonthly[0]['project_budget_profit'], 'Monthly report should not fallback to end_date when operational_close_month is missing.');
+
         echo "Assertions: {$this->assertions}\n";
         echo "Reporting service tests passed.\n";
     }

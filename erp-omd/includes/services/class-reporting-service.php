@@ -1040,11 +1040,7 @@ class ERP_OMD_Reporting_Service
 
             $month = (string) ($project['operational_close_month'] ?? '');
             if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
-                $end_date = (string) ($project['end_date'] ?? '');
-                $month = substr($end_date, 0, 7);
-                if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
-                    continue;
-                }
+                continue;
             }
 
             if (! isset($metrics[$month])) {
