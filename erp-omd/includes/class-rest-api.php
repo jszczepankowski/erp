@@ -1164,6 +1164,7 @@ class ERP_OMD_REST_API
             }
         }
         $reports_v1_metrics_freshness = [
+            'threshold_minutes' => $reports_v1_metrics_freshness_minutes,
             'threshold_seconds' => $reports_v1_metrics_freshness_threshold_seconds,
             'last_metrics_age_seconds' => $reports_v1_last_metrics_age_seconds,
             'last_metrics_fresh_under_threshold' => $reports_v1_last_metrics_age_seconds !== null && $reports_v1_last_metrics_age_seconds <= $reports_v1_metrics_freshness_threshold_seconds,
