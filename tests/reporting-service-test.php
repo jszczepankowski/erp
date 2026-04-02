@@ -245,16 +245,19 @@ final class ReportingServiceTestRunner
         $this->assertSame('Miesiąc zamk. oper.', $export['headers'][16], 'Project export should include operational close month column.');
         $this->assertSame(2, count($export['rows']), 'Project export should include report rows.');
         $this->assertSame('2026-02', $export['rows'][0][16], 'Project export should include operational close month value.');
+        $detailExport = $service->export_definition('projects', $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'detail' => 'detail']));
+        $this->assertSame(true, count($detailExport['rows']) > count($export['rows']), 'Detailed project export should include additional detail rows.');
 
         $timeExport = $service->export_definition('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'per_page' => 1, 'page_num' => 2]));
         $this->assertSame(1, count($timeExport['rows']), 'Time entries export should match paginated time report row count.');
         $this->assertSame('2026-03-10', $timeExport['rows'][0][0], 'Time entries export should match visible paginated row order.');
 
         $omdExport = $service->export_definition('omd_rozliczenia', $filters);
-        $this->assertSame('Narzut controllingowy', $omdExport['headers'][7], 'OMD export should expose controlling overhead column.');
-        $this->assertSame('Wynik controllingowy', $omdExport['headers'][8], 'OMD export should expose controlling result column.');
-        $this->assertSame('Przychód czasu', $omdExport['headers'][9], 'OMD export should include time revenue column in full export.');
-        $this->assertSame('Koszt czasu', $omdExport['headers'][10], 'OMD export should include time cost column in full export.');
+        $this->assertSame('Koszty czasu', $omdExport['headers'][3], 'OMD export should expose time-cost column in requested order.');
+        $this->assertSame('Przychód czasu', $omdExport['headers'][6], 'OMD export should expose time-revenue column in requested order.');
+        $this->assertSame('Narzut controllingowy', $omdExport['headers'][8], 'OMD export should expose controlling overhead column.');
+        $this->assertSame('Wynik controllingowy', $omdExport['headers'][9], 'OMD export should expose controlling result column.');
+        $this->assertSame('Wynik operacyjny', $omdExport['headers'][10], 'OMD export should expose operational result column at the end.');
 
         $strictOperationalCloseService = new ERP_OMD_Reporting_Service(
             new ERP_OMD_Project_Repository([
