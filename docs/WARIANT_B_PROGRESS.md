@@ -4,8 +4,8 @@ Data snapshotu: 2026-04-01
 
 Cel: szybkie wznowienie prac w kolejnych chatowych sesjach bez utraty kontekstu.
 
-Aktualny punkt pracy: **Opcja B / pakiet P4 (WB-P4-02)** — UI OMD z legendą definicji i pełnym eksportem dopięte.
-Następny krok wg planu: **P5-01** (feature flags + canary rollout admin -> wszyscy).
+Aktualny punkt pracy: **Opcja B / pakiet P5 (WB-P5-01)** — feature flags + canary rollout dla reports v1 wdrożone (off/admins/all).
+Następny krok wg planu: **P5-02** (monitoring błędów/wydajności + plan rollback przez flagi).
 
 ## 1) Co już zrobione
 
@@ -129,7 +129,7 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 - `WB-P4-02` — [x] UI OMD z legendą definicji i pełnym eksportem.
 
 ### P5 — Stabilizacja rollout i operacje
-- `WB-P5-01` — Feature flags + canary rollout (admin -> wszyscy).
+- `WB-P5-01` — [x] Feature flags + canary rollout (admin -> wszyscy).
 - `WB-P5-02` — Monitoring błędów/wydajności + plan rollback przez flagi.
 - `WB-P5-03` — Raport powdrożeniowy i cleanup legacy po stabilizacji.
 

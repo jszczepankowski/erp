@@ -102,25 +102,33 @@
                     <div>
                         <h2><?php echo esc_html($report_title); ?></h2>
                         <p class="description"><?php esc_html_e('Dane raportowe budowane na podstawie projektów, wpisów czasu i finansów.', 'erp-omd'); ?></p>
+                        <?php if (! $reports_v1_enabled) : ?>
+                            <p class="description">
+                                <?php echo esc_html(sprintf(__('Reports v1 są obecnie wyłączone przez feature flagę (rollout: %s).', 'erp-omd'), $reports_v1_rollout)); ?>
+                            </p>
+                        <?php endif; ?>
                     </div>
-                    <form method="post" class="erp-omd-inline-form">
-                        <?php wp_nonce_field('erp_omd_export_report'); ?>
-                        <input type="hidden" name="erp_omd_action" value="export_report" />
-                        <input type="hidden" name="report_type" value="<?php echo esc_attr($report_filters['report_type']); ?>" />
-                        <input type="hidden" name="month" value="<?php echo esc_attr($report_filters['month']); ?>" />
-                        <input type="hidden" name="client_id" value="<?php echo esc_attr($report_filters['client_id']); ?>" />
-                        <input type="hidden" name="project_id" value="<?php echo esc_attr($report_filters['project_id']); ?>" />
-                        <input type="hidden" name="employee_id" value="<?php echo esc_attr($report_filters['employee_id']); ?>" />
-                        <input type="hidden" name="status" value="<?php echo esc_attr($report_filters['status']); ?>" />
-                        <input type="hidden" name="mode" value="<?php echo esc_attr($report_filters['mode']); ?>" />
-                        <input type="hidden" name="detail" value="<?php echo esc_attr($report_filters['detail']); ?>" />
-                        <input type="hidden" name="page_num" value="<?php echo esc_attr((string) ($report_filters['page_num'] ?? 1)); ?>" />
-                        <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
-                        <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV', 'erp-omd'); ?></button>
-                    </form>
+                    <?php if ($reports_v1_enabled) : ?>
+                        <form method="post" class="erp-omd-inline-form">
+                            <?php wp_nonce_field('erp_omd_export_report'); ?>
+                            <input type="hidden" name="erp_omd_action" value="export_report" />
+                            <input type="hidden" name="report_type" value="<?php echo esc_attr($report_filters['report_type']); ?>" />
+                            <input type="hidden" name="month" value="<?php echo esc_attr($report_filters['month']); ?>" />
+                            <input type="hidden" name="client_id" value="<?php echo esc_attr($report_filters['client_id']); ?>" />
+                            <input type="hidden" name="project_id" value="<?php echo esc_attr($report_filters['project_id']); ?>" />
+                            <input type="hidden" name="employee_id" value="<?php echo esc_attr($report_filters['employee_id']); ?>" />
+                            <input type="hidden" name="status" value="<?php echo esc_attr($report_filters['status']); ?>" />
+                            <input type="hidden" name="mode" value="<?php echo esc_attr($report_filters['mode']); ?>" />
+                            <input type="hidden" name="detail" value="<?php echo esc_attr($report_filters['detail']); ?>" />
+                            <input type="hidden" name="page_num" value="<?php echo esc_attr((string) ($report_filters['page_num'] ?? 1)); ?>" />
+                            <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
+                            <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV', 'erp-omd'); ?></button>
+                        </form>
+                    <?php endif; ?>
                 </div>
-
-                <?php if ($report_filters['report_type'] === 'clients') : ?>
+                <?php if (! $reports_v1_enabled) : ?>
+                    <p><?php esc_html_e('Widok raportów v1 jest ukryty dla bieżącego użytkownika (canary rollout).', 'erp-omd'); ?></p>
+                <?php elseif ($report_filters['report_type'] === 'clients') : ?>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekty', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th></tr></thead>
                         <tbody>

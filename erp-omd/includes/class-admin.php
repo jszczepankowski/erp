@@ -639,9 +639,19 @@ class ERP_OMD_Admin
 
     public function render_reports()
     {
+        $current_user = wp_get_current_user();
+        $reports_v1_rollout = sanitize_key((string) get_option('erp_omd_reports_v1_rollout', 'all'));
+        if (! in_array($reports_v1_rollout, ['off', 'admins', 'all'], true)) {
+            $reports_v1_rollout = 'all';
+        }
+        $reports_v1_enabled = $reports_v1_rollout === 'all'
+            || ($reports_v1_rollout === 'admins' && user_can($current_user, 'administrator'));
+
         $report_filters = $this->reporting_service->sanitize_filters($_GET);
-        $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
-        $report_pagination = (array) ($this->reporting_service->last_report_pagination ?? []);
+        $report_rows = $reports_v1_enabled
+            ? $this->reporting_service->build_report($report_filters['report_type'], $report_filters)
+            : [];
+        $report_pagination = $reports_v1_enabled ? (array) ($this->reporting_service->last_report_pagination ?? []) : [];
         $calendar_data = $this->reporting_service->build_calendar($report_filters);
         $clients = $this->clients->all();
         $projects = $this->projects->all();
