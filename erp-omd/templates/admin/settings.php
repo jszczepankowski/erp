@@ -16,6 +16,57 @@
                             <label for="erp-omd-alert-margin-threshold"><?php esc_html_e('Próg alertu niskiej marży (%)', 'erp-omd'); ?></label>
                             <input id="erp-omd-alert-margin-threshold" type="number" min="0" step="0.01" name="alert_margin_threshold" value="<?php echo esc_attr($margin_threshold); ?>" />
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-reports-v1-freshness-minutes"><?php esc_html_e('Maks. wiek metryk Reports v1 (min)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-reports-v1-freshness-minutes" type="number" min="5" step="1" name="reports_v1_metrics_freshness_minutes" value="<?php echo esc_attr((string) $reports_v1_metrics_freshness_minutes); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-reports-v1-slo-p95-max"><?php esc_html_e('SLO: maks. p95 czasu raportu (ms)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-reports-v1-slo-p95-max" type="number" min="100" max="30000" step="50" name="reports_v1_slo_generation_p95_max" value="<?php echo esc_attr((string) $reports_v1_slo_generation_p95_max); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-reports-v1-slo-p95-recommended"><?php esc_html_e('Rekomendowany próg p95 (ms)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-reports-v1-slo-p95-recommended" type="number" readonly value="<?php echo esc_attr((string) $reports_v1_slo_recommended_p95_max); ?>" />
+                            <p class="description"><?php echo esc_html(sprintf(__('Próbki do rekomendacji: %d', 'erp-omd'), (int) $reports_v1_slo_calibration_sample_count)); ?></p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label class="erp-omd-form-label">
+                                <input type="checkbox" name="apply_reports_v1_recommended_p95_max" value="1" />
+                                <?php esc_html_e('Przy zapisie zastosuj rekomendowany próg p95 na podstawie logu metryk.', 'erp-omd'); ?>
+                            </label>
+                            <label class="erp-omd-form-label" style="margin-top:8px;">
+                                <input type="checkbox" name="confirm_reports_v1_slo_calibration_decision" value="1" />
+                                <?php esc_html_e('Potwierdź finalną decyzję progu p95 (zapisz wpis audytowy decyzji).', 'erp-omd'); ?>
+                            </label>
+                            <p class="description">
+                                <?php
+                                echo esc_html(
+                                    sprintf(
+                                        __('Status kalibracji SLO: %1$s | brakujące próbki: %2$d | akcja: %3$s', 'erp-omd'),
+                                        ! empty($reports_v1_slo_calibration_decision_ready) ? __('ready', 'erp-omd') : __('pending', 'erp-omd'),
+                                        (int) $reports_v1_slo_samples_missing_to_calibration,
+                                        (string) $reports_v1_slo_calibration_next_action
+                                    )
+                                );
+                                ?>
+                            </p>
+                            <?php if (! empty($reports_v1_slo_last_decision)) : ?>
+                                <p class="description">
+                                    <?php
+                                    echo esc_html(
+                                        sprintf(
+                                            __('Ostatnia decyzja SLO: próg=%1$d ms | rekomendacja=%2$d ms | próbki=%3$d | data=%4$s | user_id=%5$d', 'erp-omd'),
+                                            (int) ($reports_v1_slo_last_decision['threshold_ms'] ?? 0),
+                                            (int) ($reports_v1_slo_last_decision['recommended_threshold_ms'] ?? 0),
+                                            (int) ($reports_v1_slo_last_decision['sample_count'] ?? 0),
+                                            (string) ($reports_v1_slo_last_decision['decided_at'] ?? ''),
+                                            (int) ($reports_v1_slo_last_decision['decided_by_user_id'] ?? 0)
+                                        )
+                                    );
+                                    ?>
+                                </p>
+                            <?php endif; ?>
+                        </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label class="erp-omd-form-label">
                                 <input type="checkbox" name="delete_data_on_uninstall" value="1" <?php checked($delete_data); ?> />
@@ -27,6 +78,9 @@
                                 <input type="checkbox" name="front_admin_redirect_enabled" value="1" <?php checked($front_admin_redirect_enabled); ?> />
                                 <?php esc_html_e('Przekierowuj użytkowników FRONT z wp-admin do ERP Front.', 'erp-omd'); ?>
                             </label>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <p class="description"><?php esc_html_e('Reports v1 jest aktywny dla wszystkich użytkowników ERP OMD. Legacy rollout/canary został wygaszony.', 'erp-omd'); ?></p>
                         </div>
                     </div>
                 </section>
