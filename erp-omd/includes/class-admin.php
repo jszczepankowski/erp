@@ -691,7 +691,17 @@ class ERP_OMD_Admin
 
         $report_filters = $this->reporting_service->sanitize_filters($_GET);
         $report_started_at = microtime(true);
-        $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
+        $report_rows = [];
+        $report_error = false;
+        $report_error_message = '';
+        $report_error_notice = '';
+        try {
+            $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
+        } catch (Throwable $error) {
+            $report_error = true;
+            $report_error_message = (string) $error->getMessage();
+            $report_error_notice = __('Nie udało się zbudować raportu. Sprawdź logi systemowe i spróbuj ponownie.', 'erp-omd');
+        }
         $report_generation_ms = (int) round((microtime(true) - $report_started_at) * 1000);
         $report_pagination = (array) ($this->reporting_service->last_report_pagination ?? []);
         $calendar_data = $this->reporting_service->build_calendar($report_filters);
@@ -714,6 +724,8 @@ class ERP_OMD_Admin
             'report_type' => (string) ($report_filters['report_type'] ?? ''),
             'rollout' => $reports_v1_rollout,
             'enabled' => $reports_v1_enabled,
+            'has_error' => $report_error,
+            'error_message' => $report_error_message,
             'captured_at' => gmdate('c'),
             'freshness_threshold_minutes' => $reports_v1_freshness_minutes,
             'previous_metrics_age_seconds' => $previous_report_age_seconds,
@@ -737,7 +749,10 @@ class ERP_OMD_Admin
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $employees = $this->employees->all();
-        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum', 'submitted', 'approved', 'rejected'];
+        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'];
+        if ($report_filters['report_type'] === 'time_entries') {
+            $status_options = ['submitted', 'approved', 'rejected'];
+        }
         $status_labels = [
             'do_rozpoczecia' => $this->project_status_label('do_rozpoczecia'),
             'w_realizacji' => $this->project_status_label('w_realizacji'),
@@ -1404,7 +1419,11 @@ class ERP_OMD_Admin
         $this->require_capability('erp_omd_manage_projects');
         $id = empty($_POST['id']) ? 0 : (int) $_POST['id'];
         $existing = $id ? $this->projects->find($id) : null;
-        $payload = $this->client_project_service->prepare_project(['client_id' => (int) ($_POST['client_id'] ?? 0), 'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')), 'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')), 'budget' => (float) ($_POST['budget'] ?? 0), 'retainer_monthly_fee' => (float) ($_POST['retainer_monthly_fee'] ?? 0), 'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? 'do_rozpoczecia')), 'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')), 'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')), 'manager_id' => (int) ($_POST['manager_id'] ?? 0), 'manager_ids' => array_map('intval', wp_unslash($_POST['manager_ids'] ?? [])), 'estimate_id' => (int) ($_POST['estimate_id'] ?? 0), 'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')), 'alert_margin_threshold' => sanitize_text_field(wp_unslash($_POST['alert_margin_threshold'] ?? ''))], $existing);
+        $project_status = sanitize_text_field(wp_unslash($_POST['status'] ?? 'do_rozpoczecia'));
+        if ($project_status === 'inactive') {
+            $project_status = 'archiwum';
+        }
+        $payload = $this->client_project_service->prepare_project(['client_id' => (int) ($_POST['client_id'] ?? 0), 'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')), 'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')), 'budget' => (float) ($_POST['budget'] ?? 0), 'retainer_monthly_fee' => (float) ($_POST['retainer_monthly_fee'] ?? 0), 'status' => $project_status, 'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')), 'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')), 'manager_id' => (int) ($_POST['manager_id'] ?? 0), 'manager_ids' => array_map('intval', wp_unslash($_POST['manager_ids'] ?? [])), 'estimate_id' => (int) ($_POST['estimate_id'] ?? 0), 'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')), 'alert_margin_threshold' => sanitize_text_field(wp_unslash($_POST['alert_margin_threshold'] ?? ''))], $existing);
         $errors = $this->client_project_service->validate_project($payload, $existing);
         if ($errors) { $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), $id ? ['id' => $id] : []); }
         $was_update = $id > 0;
@@ -1430,10 +1449,14 @@ class ERP_OMD_Admin
         }
         $manager_id = $manager_ids !== [] ? (int) $manager_ids[0] : (int) ($existing['manager_id'] ?? 0);
 
+        $inline_status = sanitize_text_field(wp_unslash($_POST['status'] ?? ($existing['status'] ?? 'do_rozpoczecia')));
+        if ($inline_status === 'inactive') {
+            $inline_status = 'archiwum';
+        }
         $payload = $this->client_project_service->prepare_project(
             [
                 'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? ($existing['name'] ?? ''))),
-                'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? ($existing['status'] ?? 'do_rozpoczecia'))),
+                'status' => $inline_status,
                 'manager_id' => $manager_id,
                 'manager_ids' => $manager_ids,
             ],
@@ -1494,10 +1517,10 @@ class ERP_OMD_Admin
         $project = $id ? $this->projects->find($id) : null;
 
         if ($project) {
-            $target_status = ($project['status'] ?? '') === 'inactive' ? 'do_rozpoczecia' : 'inactive';
+            $target_status = in_array((string) ($project['status'] ?? ''), ['inactive', 'archiwum'], true) ? 'do_rozpoczecia' : 'archiwum';
             $this->projects->set_status($id, $target_status);
-            $message = $target_status === 'inactive'
-                ? __('Projekt został dezaktywowany.', 'erp-omd')
+            $message = $target_status === 'archiwum'
+                ? __('Projekt został przeniesiony do archiwum.', 'erp-omd')
                 : __('Projekt został aktywowany.', 'erp-omd');
             $this->redirect_with_notice('erp-omd-projects', 'success', $message);
         }
@@ -1864,7 +1887,10 @@ class ERP_OMD_Admin
             $target_status = substr($bulk_action, strlen('set_status_'));
         }
 
-        $allowed_statuses = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'inactive'];
+        if ($target_status === 'inactive') {
+            $target_status = 'archiwum';
+        }
+        $allowed_statuses = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'];
         if ($target_status !== '' && ! in_array($target_status, $allowed_statuses, true)) {
             $this->redirect_with_notice('erp-omd-projects', 'error', __('Niepoprawna akcja masowa dla projektów.', 'erp-omd'));
         }
@@ -1873,7 +1899,7 @@ class ERP_OMD_Admin
             if ($bulk_action === 'activate') {
                 $this->projects->set_status($project_id, 'do_rozpoczecia');
             } elseif ($bulk_action === 'deactivate') {
-                $this->projects->set_status($project_id, 'inactive');
+                $this->projects->set_status($project_id, 'archiwum');
             } elseif ($target_status !== '') {
                 $this->projects->set_status($project_id, $target_status);
             }
@@ -2273,8 +2299,9 @@ class ERP_OMD_Admin
                 return __('Do faktury', 'erp-omd');
             case 'zakonczony':
                 return __('Zakończony', 'erp-omd');
+            case 'archiwum':
             case 'inactive':
-                return __('Nieaktywny', 'erp-omd');
+                return __('Archiwum', 'erp-omd');
             default:
                 return (string) $status;
         }
@@ -2324,7 +2351,7 @@ class ERP_OMD_Admin
                 if ((string) $status === 'zakonczony') {
                     return 'erp-omd-badge-success';
                 }
-                if ((string) $status === 'inactive') {
+                if (in_array((string) $status, ['inactive', 'archiwum'], true)) {
                     return 'erp-omd-badge-muted';
                 }
                 if (in_array((string) $status, ['do_faktury', 'w_akceptacji'], true)) {

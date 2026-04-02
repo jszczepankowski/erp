@@ -65,7 +65,10 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 32. ✅ **P5 SLO decision UX in settings (32-a)** — panel Ustawień pokazuje status kalibracji, brakujące próbki i następną akcję przy konfiguracji progu p95.
 33. ✅ **P5 SLO decision audit (33-a)** — możliwe potwierdzenie finalnej decyzji progu p95 z zapisem audytowym (`decided_at`, `user_id`, próg, rekomendacja, sample_count) + ekspozycja w `system/status`.
 34. ✅ **P5 formal closure (34-a)** — formalne zamknięcie kalibracji SLO po potwierdzonej decyzji (zapis closure audit + ekspozycja statusu closure w `system/status` i panelu ustawień).
-35. **Kolejny etap** — monitoring steady-state po zamknięciu kalibracji + ewentualny rollback/tuning tylko przy trwałym dryfie metryk.
+35. ✅ **P5 monitoring telemetry hardening (35-a)** — `system/status` liczy `error_rate_percent` z logu metryk Reports v1 (`has_error`) i nie oznacza już tego sygnału jako brakującego.
+36. ✅ **P3/P5 reports UX cleanup (36-a)** — filtry raportów pokazują poprawne statusy zależnie od typu raportu, wrócił jawny wybór wersji `Podstawowa/Szczegółowa`, a blok diagnostyczny monitoringu jest schowany pod sekcją techniczną.
+37. ✅ **P3 status cleanup archiwum (37-a)** — UI projektów używa `archiwum` (zamiast legacy `inactive`) w formularzu, filtrach i akcjach masowych.
+38. **Kolejny etap** — monitoring steady-state po zamknięciu kalibracji + ewentualny rollback/tuning tylko przy trwałym dryfie metryk.
 
 ## 4) Instrukcja startowa do nowego chatu
 

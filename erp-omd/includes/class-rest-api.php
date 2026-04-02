@@ -1127,6 +1127,7 @@ class ERP_OMD_REST_API
                 'report_type' => (string) ($row['report_type'] ?? ''),
                 'rollout' => (string) ($row['rollout'] ?? ''),
                 'enabled' => ! empty($row['enabled']),
+                'has_error' => ! empty($row['has_error']),
                 'captured_at' => (string) ($row['captured_at'] ?? ''),
             ];
         }, array_slice($reports_v1_metrics_log, 0, 5)));
@@ -1151,8 +1152,16 @@ class ERP_OMD_REST_API
             'sample_count' => $reports_v1_sample_count,
             'generation_ms_p95' => $reports_v1_generation_p95,
             'generation_ms_p95_within_target' => $reports_v1_generation_p95 <= (int) $reports_v1_slo['generation_ms_p95_max'],
-            'missing_signals' => ['error_rate_percent'],
+            'missing_signals' => [],
         ];
+        $reports_v1_error_samples = count(array_filter($reports_v1_metrics_log, static function ($row) {
+            return ! empty($row['has_error']);
+        }));
+        $reports_v1_error_rate_percent = $reports_v1_sample_count > 0
+            ? round(((float) $reports_v1_error_samples / (float) $reports_v1_sample_count) * 100, 2)
+            : 0.0;
+        $reports_v1_slo_status['error_rate_percent'] = $reports_v1_error_rate_percent;
+        $reports_v1_slo_status['error_rate_within_target'] = $reports_v1_error_rate_percent <= (float) $reports_v1_slo['error_rate_max_percent'];
         $reports_v1_slo_sample_target_min = 20;
         $reports_v1_recommended_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
         $reports_v1_recommended_p95_max = max(100, min(30000, $reports_v1_recommended_p95_max));
