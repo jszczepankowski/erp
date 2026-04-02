@@ -163,6 +163,7 @@ class ERP_OMD_Admin
             case 'bulk_clients': $this->handle_clients_bulk_action(); break;
             case 'bulk_projects': $this->handle_projects_bulk_action(); break;
             case 'bulk_estimates': $this->handle_estimates_bulk_action(); break;
+            case 'run_manual_backup': $this->handle_manual_backup_action(); break;
             case 'add_project_note': $this->handle_project_note_add(); break;
             case 'save_project_rate': $this->handle_project_rate_save(); break;
             case 'delete_project_rate': $this->handle_project_rate_delete(); break;
@@ -1475,9 +1476,19 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_duplicate_project');
         $this->require_capability('erp_omd_manage_projects');
         $project_id = (int) ($_POST['id'] ?? 0);
-        $project = $project_id ? $this->projects->find($project_id) : null;
-        if (! $project) {
+        $new_project_id = $this->duplicate_project_and_rebuild($project_id);
+        if ($new_project_id <= 0) {
             $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono projektu do duplikacji.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Projekt został zduplikowany.', 'erp-omd'), ['id' => $new_project_id]);
+    }
+
+    private function duplicate_project_and_rebuild($project_id)
+    {
+        $project = $project_id ? $this->projects->find((int) $project_id) : null;
+        if (! $project) {
+            return 0;
         }
 
         $duplicate_payload = $this->client_project_service->prepare_project([
@@ -1498,13 +1509,17 @@ class ERP_OMD_Admin
 
         $errors = $this->client_project_service->validate_project($duplicate_payload);
         if ($errors) {
-            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+            return 0;
         }
 
-        $new_project_id = $this->projects->create($duplicate_payload);
+        $new_project_id = (int) $this->projects->create($duplicate_payload);
+        if ($new_project_id <= 0) {
+            return 0;
+        }
+
         $this->project_financial_service->rebuild_for_project($new_project_id);
 
-        $this->redirect_with_notice('erp-omd-projects', 'success', __('Projekt został zduplikowany.', 'erp-omd'), ['id' => $new_project_id]);
+        return $new_project_id;
     }
 
     private function handle_project_active_toggle()
@@ -1898,6 +1913,8 @@ class ERP_OMD_Admin
                 $this->projects->set_status($project_id, 'do_rozpoczecia');
             } elseif ($bulk_action === 'deactivate') {
                 $this->projects->set_status($project_id, 'archiwum');
+            } elseif ($bulk_action === 'duplicate') {
+                $this->duplicate_project_and_rebuild($project_id);
             } elseif ($target_status !== '') {
                 $this->projects->set_status($project_id, $target_status);
             }
@@ -2044,6 +2061,25 @@ class ERP_OMD_Admin
         update_option('erp_omd_fixed_monthly_cost_items', $fixed_items);
         update_option('erp_omd_fixed_monthly_cost', array_sum(wp_list_pluck($fixed_items, 'amount')));
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
     }
 
     private function normalize_fixed_monthly_cost_items(array $raw_items)
