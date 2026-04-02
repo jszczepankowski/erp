@@ -62,7 +62,9 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 29. ✅ **P5 SLO tuning delta (29-a)** — `system/status` zwraca `generation_ms_p95_threshold_delta` + `generation_ms_p95_tuning_direction` (increase/decrease/keep).
 30. ✅ **P5 SLO apply helper (30-a)** — w ustawieniach widoczny jest rekomendowany próg p95 + opcja zastosowania go przy zapisie.
 31. ✅ **P5 SLO decision UX (31-a)** — baner raportów pokazuje status decyzji kalibracyjnej (`ready/pending`) oraz następną akcję operatorską.
-32. **Kolejny etap** — obserwacja produkcyjna do `calibration_decision_ready=true` i finalna decyzja o progu p95.
+32. ✅ **P5 SLO decision UX in settings (32-a)** — panel Ustawień pokazuje status kalibracji, brakujące próbki i następną akcję przy konfiguracji progu p95.
+33. ✅ **P5 SLO decision audit (33-a)** — możliwe potwierdzenie finalnej decyzji progu p95 z zapisem audytowym (`decided_at`, `user_id`, próg, rekomendacja, sample_count) + ekspozycja w `system/status`.
+34. **Kolejny etap** — obserwacja produkcyjna i formalne zamknięcie kalibracji po potwierdzonej decyzji.
 
 ## 4) Instrukcja startowa do nowego chatu
 

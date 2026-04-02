@@ -593,18 +593,33 @@ class ERP_OMD_Admin
         $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
         $reports_v1_slo_recommended_p95_max = $reports_v1_slo_generation_p95_max;
         $reports_v1_slo_calibration_sample_count = 0;
+        $reports_v1_slo_calibration_sample_target = 20;
+        $reports_v1_slo_samples_missing_to_calibration = $reports_v1_slo_calibration_sample_target;
+        $reports_v1_slo_calibration_decision_ready = false;
+        $reports_v1_slo_calibration_next_action = __('Zbieraj próbki metryk raportów, aby domknąć kalibrację SLO.', 'erp-omd');
+        $reports_v1_slo_last_decision = (array) get_option('erp_omd_reports_v1_slo_calibration_decision', []);
         $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
         $reports_v1_samples = array_values(array_map(static function ($row) {
             return (int) ($row['generation_ms'] ?? 0);
         }, $reports_v1_metrics_log));
         sort($reports_v1_samples);
         $reports_v1_slo_calibration_sample_count = count($reports_v1_samples);
+        $reports_v1_slo_samples_missing_to_calibration = max(0, (int) $reports_v1_slo_calibration_sample_target - (int) $reports_v1_slo_calibration_sample_count);
+        $reports_v1_slo_calibration_decision_ready = $reports_v1_slo_samples_missing_to_calibration === 0;
         if ($reports_v1_slo_calibration_sample_count > 0) {
             $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_slo_calibration_sample_count) - 1;
             $reports_v1_p95_index = max(0, min($reports_v1_slo_calibration_sample_count - 1, $reports_v1_p95_index));
             $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
             $reports_v1_slo_recommended_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
             $reports_v1_slo_recommended_p95_max = max(100, min(30000, $reports_v1_slo_recommended_p95_max));
+        }
+        if ($reports_v1_slo_calibration_decision_ready) {
+            $reports_v1_slo_calibration_next_action = __('Kalibracja gotowa: zweryfikuj rekomendowany próg p95 i zapisz finalną wartość.', 'erp-omd');
+        } else {
+            $reports_v1_slo_calibration_next_action = sprintf(
+                __('Kalibracja jeszcze niegotowa: zbierz %d dodatkowych próbek.', 'erp-omd'),
+                (int) $reports_v1_slo_samples_missing_to_calibration
+            );
         }
         $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
         $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
@@ -1956,6 +1971,29 @@ class ERP_OMD_Admin
             }
         }
         update_option('erp_omd_reports_v1_slo_generation_p95_max', $reports_v1_slo_generation_p95_max);
+        if (! empty($_POST['confirm_reports_v1_slo_calibration_decision'])) {
+            $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
+            $reports_v1_sample_count = count($reports_v1_metrics_log);
+            $recommended_threshold = $reports_v1_slo_generation_p95_max;
+            if ($reports_v1_sample_count > 0) {
+                $reports_v1_samples = array_values(array_map(static function ($row) {
+                    return (int) ($row['generation_ms'] ?? 0);
+                }, $reports_v1_metrics_log));
+                sort($reports_v1_samples);
+                $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_sample_count) - 1;
+                $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
+                $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
+                $recommended_threshold = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
+                $recommended_threshold = max(100, min(30000, $recommended_threshold));
+            }
+            update_option('erp_omd_reports_v1_slo_calibration_decision', [
+                'decided_at' => gmdate('c'),
+                'decided_by_user_id' => (int) get_current_user_id(),
+                'threshold_ms' => (int) $reports_v1_slo_generation_p95_max,
+                'recommended_threshold_ms' => (int) $recommended_threshold,
+                'sample_count' => (int) $reports_v1_sample_count,
+            ]);
+        }
         update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
         update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
         update_option('erp_omd_missing_hours_notification_settings', $notification_settings);

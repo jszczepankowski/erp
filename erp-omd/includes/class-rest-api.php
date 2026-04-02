@@ -1191,6 +1191,14 @@ class ERP_OMD_REST_API
             'last_metrics_age_seconds' => $reports_v1_last_metrics_age_seconds,
             'last_metrics_fresh_under_threshold' => $reports_v1_last_metrics_age_seconds !== null && $reports_v1_last_metrics_age_seconds <= $reports_v1_metrics_freshness_threshold_seconds,
         ];
+        $reports_v1_slo_decision = (array) get_option('erp_omd_reports_v1_slo_calibration_decision', []);
+        $reports_v1_slo_decision = [
+            'decided_at' => (string) ($reports_v1_slo_decision['decided_at'] ?? ''),
+            'decided_by_user_id' => (int) ($reports_v1_slo_decision['decided_by_user_id'] ?? 0),
+            'threshold_ms' => (int) ($reports_v1_slo_decision['threshold_ms'] ?? 0),
+            'recommended_threshold_ms' => (int) ($reports_v1_slo_decision['recommended_threshold_ms'] ?? 0),
+            'sample_count' => (int) ($reports_v1_slo_decision['sample_count'] ?? 0),
+        ];
         $reports_v1_operational_status = [
             'level' => 'ok',
             'requires_attention' => false,
@@ -1241,6 +1249,7 @@ class ERP_OMD_REST_API
                 'reports_v1_metrics_log' => $reports_v1_metrics_log,
                 'reports_v1_slo' => $reports_v1_slo,
                 'reports_v1_slo_status' => $reports_v1_slo_status,
+                'reports_v1_slo_decision' => $reports_v1_slo_decision,
                 'reports_v1_metrics_freshness' => $reports_v1_metrics_freshness,
                 'reports_v1_operational_status' => $reports_v1_operational_status,
             ],
