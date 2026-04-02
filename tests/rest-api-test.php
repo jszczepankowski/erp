@@ -87,6 +87,19 @@ if (! function_exists('get_option')) {
         $options = [
             'erp_omd_delete_data_on_uninstall' => false,
             'erp_omd_alert_margin_threshold' => 10,
+            'erp_omd_reports_v1_rollout' => 'off',
+            'erp_omd_reports_v1_last_metrics' => [
+                'generation_ms' => 42,
+                'rows_count' => 7,
+                'report_type' => 'projects',
+                'rollout' => 'all',
+                'enabled' => true,
+                'captured_at' => '2026-04-02T10:00:00+00:00',
+            ],
+            'erp_omd_reports_v1_metrics_log' => [
+                ['generation_ms' => 42, 'rows_count' => 7, 'report_type' => 'projects', 'rollout' => 'all', 'enabled' => true, 'captured_at' => '2026-04-02T10:00:00+00:00'],
+                ['generation_ms' => 55, 'rows_count' => 11, 'report_type' => 'time_entries', 'rollout' => 'admins', 'enabled' => true, 'captured_at' => '2026-04-02T09:00:00+00:00'],
+            ],
         ];
 
         return $options[$key] ?? $default;
@@ -571,6 +584,12 @@ final class RestApiTestRunner
         $system = $api->get_system_status();
         $this->assertSame(1, $system['counts']['alerts'], 'System status should include alert count.');
         $this->assertSame(true, $system['current_user']['can_manage_settings'], 'System status should expose current user capabilities.');
+        $this->assertSame('all', $system['feature_flags']['reports_v1_rollout'], 'System status should expose reports v1 rollout flag.');
+        $this->assertSame(true, $system['feature_flags']['reports_v1_enabled_for_current_user'], 'System status should expose reports v1 effective state for current user.');
+        $this->assertSame(42, $system['feature_flags']['reports_v1_last_metrics']['generation_ms'], 'System status should expose persisted reports v1 monitoring metrics.');
+        $this->assertSame('projects', $system['feature_flags']['reports_v1_last_metrics']['report_type'], 'System status should expose monitoring report type.');
+        $this->assertSame(2, count($system['feature_flags']['reports_v1_metrics_log']), 'System status should expose compact reports v1 metrics log.');
+        $this->assertSame('time_entries', $system['feature_flags']['reports_v1_metrics_log'][1]['report_type'], 'System status should preserve metrics log ordering for latest samples.');
 
         $api->register_routes();
         $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})', WP_REST_Server::READABLE);
