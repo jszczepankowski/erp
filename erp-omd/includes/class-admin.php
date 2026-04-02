@@ -668,6 +668,10 @@ class ERP_OMD_Admin
             'captured_at' => gmdate('c'),
         ];
         update_option('erp_omd_reports_v1_last_metrics', $report_monitoring);
+        $metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
+        array_unshift($metrics_log, $report_monitoring);
+        $metrics_log = array_slice($metrics_log, 0, 20);
+        update_option('erp_omd_reports_v1_metrics_log', $metrics_log);
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $employees = $this->employees->all();

@@ -22,6 +22,7 @@ Monitorowane sygnały:
 - stabilność endpointów i logów PHP/WP.
 - flagi rollout dostępne także przez `GET /erp-omd/v1/system/status` (`feature_flags`).
 - ostatnie metryki reports v1 utrwalane w opcji `erp_omd_reports_v1_last_metrics` i eksponowane przez `system/status`.
+- próbka ostatnich metryk (log) utrwalana w `erp_omd_reports_v1_metrics_log` (do 20 wpisów; API zwraca ostatnie 5).
 
 Zalecenie operacyjne:
 - utrzymać rollout `admins` przez 24–48h,

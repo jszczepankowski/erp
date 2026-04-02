@@ -1107,6 +1107,17 @@ class ERP_OMD_REST_API
             'enabled' => ! empty($reports_v1_last_metrics['enabled']),
             'captured_at' => (string) ($reports_v1_last_metrics['captured_at'] ?? ''),
         ];
+        $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
+        $reports_v1_metrics_log = array_values(array_map(static function ($row) {
+            return [
+                'generation_ms' => (int) ($row['generation_ms'] ?? 0),
+                'rows_count' => (int) ($row['rows_count'] ?? 0),
+                'report_type' => (string) ($row['report_type'] ?? ''),
+                'rollout' => (string) ($row['rollout'] ?? ''),
+                'enabled' => ! empty($row['enabled']),
+                'captured_at' => (string) ($row['captured_at'] ?? ''),
+            ];
+        }, array_slice($reports_v1_metrics_log, 0, 5)));
 
         return rest_ensure_response([
             'plugin_version' => ERP_OMD_VERSION,
@@ -1117,6 +1128,7 @@ class ERP_OMD_REST_API
                 'reports_v1_rollout' => $reports_v1_rollout,
                 'reports_v1_enabled_for_current_user' => $reports_v1_enabled_for_current_user,
                 'reports_v1_last_metrics' => $reports_v1_last_metrics,
+                'reports_v1_metrics_log' => $reports_v1_metrics_log,
             ],
             'counts' => [
                 'roles' => count($this->roles->all()),
