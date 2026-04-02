@@ -146,6 +146,7 @@
                                     'adjustments_limit' => 5,
                                     'queue_limit' => 25,
                                     'profitability_limit' => 5,
+                                    '_wpnonce' => wp_create_nonce('wp_rest'),
                                 ],
                                 rest_url('erp-omd/v1/dashboard-v1')
                             );
