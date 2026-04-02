@@ -27,9 +27,13 @@ Data: 2026-04-02
 - monitoruj wzrost error-rate w logach i timeouty eksportu,
 - porównuj wybrane miesiące raportów z danymi referencyjnymi.
 
-## 4) Szybki rollback
+## 4) Tryb awaryjny (po wygaszeniu canary)
 
 Jeśli pojawią się regresje:
-1. Ustaw rollout na `off`.
-2. Zweryfikuj ukrycie widoku reports v1.
-3. Zgłoś incydent i uruchom checklistę analizy przyczyny.
+1. Ogranicz użycie ciężkich filtrów (`detail`, wysokie `per_page`) i potwierdź wpływ na `generation_ms`.
+2. Zgłoś incydent i uruchom runbook on-call (`docs/REPORTS_V1_ON_CALL_RUNBOOK.md`).
+3. Wdróż hotfix aplikacyjny (brak rollbacku przez flagę `off`, rollout canary został wygaszony).
+
+## 5) Operacje on-call
+
+- Runbook incydentowy: `docs/REPORTS_V1_ON_CALL_RUNBOOK.md`.
