@@ -642,6 +642,17 @@ class ERP_OMD_Admin
     {
         $reports_v1_rollout = 'all';
         $reports_v1_enabled = true;
+        $reports_v1_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
+        $reports_v1_freshness_seconds = $reports_v1_freshness_minutes * 60;
+        $previous_report_monitoring = (array) get_option('erp_omd_reports_v1_last_metrics', []);
+        $previous_report_age_seconds = null;
+        $previous_report_captured_at = (string) ($previous_report_monitoring['captured_at'] ?? '');
+        if ($previous_report_captured_at !== '') {
+            $previous_timestamp = strtotime($previous_report_captured_at);
+            if ($previous_timestamp !== false) {
+                $previous_report_age_seconds = max(0, (int) (time() - $previous_timestamp));
+            }
+        }
 
         $report_filters = $this->reporting_service->sanitize_filters($_GET);
         $report_started_at = microtime(true);
@@ -656,6 +667,9 @@ class ERP_OMD_Admin
             'rollout' => $reports_v1_rollout,
             'enabled' => $reports_v1_enabled,
             'captured_at' => gmdate('c'),
+            'freshness_threshold_minutes' => $reports_v1_freshness_minutes,
+            'previous_metrics_age_seconds' => $previous_report_age_seconds,
+            'previous_metrics_stale' => $previous_report_age_seconds !== null && $previous_report_age_seconds > $reports_v1_freshness_seconds,
         ];
         update_option('erp_omd_reports_v1_last_metrics', $report_monitoring);
         $metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);

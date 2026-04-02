@@ -46,7 +46,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 13. ✅ **P1-04 hardening** — regresje okresów domknięte o walidację zakresu miesiąca (`YYYY-MM`, odrzucenie `00/13`).
 14. ✅ **P1-04 API hardening** — endpointy `/periods` i `/periods/.../transition` odrzucają miesiące spoza zakresu (`YYYY-MM`, np. `2026-13`) kodem 422.
 15. ✅ **P5-monitoring hardening** — `system/status` zwraca freshness metryk Reports v1 (wiek próbki, próg, status świeżości) + próg konfigurowalny z panelu ustawień.
-16. **Kolejny etap** — obserwacja produkcyjna i ewentualne korekty progów SLO po realnym ruchu + dokończenie frontendowego dashboard-v1 UX.
+16. ✅ **P5-monitoring UX** — baner monitoringu w raportach pokazuje wiek poprzedniej próbki metryk i status fresh/stale wg progu z ustawień.
+17. **Kolejny etap** — obserwacja produkcyjna i ewentualne korekty progów SLO po realnym ruchu + dokończenie frontendowego dashboard-v1 UX.
 
 ## 4) Instrukcja startowa do nowego chatu
 

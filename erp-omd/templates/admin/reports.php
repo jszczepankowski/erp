@@ -115,6 +115,22 @@
                             );
                             ?>
                         </p>
+                        <p class="description">
+                            <?php
+                            $previous_age_seconds = isset($report_monitoring['previous_metrics_age_seconds']) ? (int) $report_monitoring['previous_metrics_age_seconds'] : -1;
+                            $previous_age_label = $previous_age_seconds >= 0 ? sprintf('%ds', $previous_age_seconds) : 'n/a';
+                            $freshness_threshold_minutes = (int) ($report_monitoring['freshness_threshold_minutes'] ?? 1440);
+                            $previous_status = ! empty($report_monitoring['previous_metrics_stale']) ? __('stale', 'erp-omd') : __('fresh', 'erp-omd');
+                            echo esc_html(
+                                sprintf(
+                                    __('Monitoring v1: poprzednia próbka=%1$s | próg świeżości=%2$d min | status=%3$s', 'erp-omd'),
+                                    $previous_age_label,
+                                    $freshness_threshold_minutes,
+                                    $previous_status
+                                )
+                            );
+                            ?>
+                        </p>
                     </div>
                     <form method="post" class="erp-omd-inline-form">
                         <?php wp_nonce_field('erp_omd_export_report'); ?>
