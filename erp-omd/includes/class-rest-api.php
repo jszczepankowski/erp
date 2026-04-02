@@ -1113,6 +1113,28 @@ class ERP_OMD_REST_API
                 'captured_at' => (string) ($row['captured_at'] ?? ''),
             ];
         }, array_slice($reports_v1_metrics_log, 0, 5)));
+        $reports_v1_generation_samples = array_values(array_map(static function ($row) {
+            return (int) ($row['generation_ms'] ?? 0);
+        }, $reports_v1_metrics_log));
+        sort($reports_v1_generation_samples);
+        $reports_v1_sample_count = count($reports_v1_generation_samples);
+        $reports_v1_generation_p95 = 0;
+        if ($reports_v1_sample_count > 0) {
+            $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_sample_count) - 1;
+            $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
+            $reports_v1_generation_p95 = (int) ($reports_v1_generation_samples[$reports_v1_p95_index] ?? 0);
+        }
+        $reports_v1_slo = [
+            'generation_ms_p95_max' => 2500,
+            'rows_count_warn_threshold' => 5000,
+            'error_rate_max_percent' => 2.0,
+        ];
+        $reports_v1_slo_status = [
+            'sample_count' => $reports_v1_sample_count,
+            'generation_ms_p95' => $reports_v1_generation_p95,
+            'generation_ms_p95_within_target' => $reports_v1_generation_p95 <= (int) $reports_v1_slo['generation_ms_p95_max'],
+            'missing_signals' => ['error_rate_percent'],
+        ];
 
         return rest_ensure_response([
             'plugin_version' => ERP_OMD_VERSION,
@@ -1124,6 +1146,8 @@ class ERP_OMD_REST_API
                 'reports_v1_enabled_for_current_user' => $reports_v1_enabled_for_current_user,
                 'reports_v1_last_metrics' => $reports_v1_last_metrics,
                 'reports_v1_metrics_log' => $reports_v1_metrics_log,
+                'reports_v1_slo' => $reports_v1_slo,
+                'reports_v1_slo_status' => $reports_v1_slo_status,
             ],
             'counts' => [
                 'roles' => count($this->roles->all()),

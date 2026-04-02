@@ -44,7 +44,7 @@ Po okresie stabilizacji:
 - [x] usunąć martwe helpery i tymczasowe obejścia rolloutowe (reports v1 rollout wymuszony na `all`),
 - [x] ujednolicić filtry statusów projektów do `archiwum` (usunąć legacy `inactive` z UI),
 - [ ] skonsolidować dokumentację release + checklistę on-call,
-- [ ] utrwalić finalny zestaw metryk SLO dla raportów.
+- [x] utrwalić finalny zestaw metryk SLO dla raportów (`docs/REPORTS_V1_SLO.md` + status przez `system/status`).
 
 ## 5) Decyzja końcowa
 

@@ -41,7 +41,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 8. ✅ **P5-02** — monitoring wydajności (czas generowania/rekordy/rollout) + plan rollback przez flagę `erp_omd_reports_v1_rollout`.
 9. ✅ **P5-03** — raport powdrożeniowy i plan cleanup legacy (`docs/WB_P5_03_POST_DEPLOY_REPORT.md`).
 10. ✅ **P5-04** — wygaszenie canary/legacy: reports v1 aktywny globalnie (`all`), usunięte przełączniki UI rollout.
-11. **Kolejny etap** — domknięcie dokumentacji release/on-call i finalnych SLO metryk raportowych.
+11. ✅ **P5-05** — docelowe SLO metryk raportowych utrwalone i wystawione w `system/status`.
+12. **Kolejny etap** — domknięcie dokumentacji release/on-call.
 
 ## 4) Instrukcja startowa do nowego chatu
 

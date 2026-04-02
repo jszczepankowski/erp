@@ -590,6 +590,10 @@ final class RestApiTestRunner
         $this->assertSame('projects', $system['feature_flags']['reports_v1_last_metrics']['report_type'], 'System status should expose monitoring report type.');
         $this->assertSame(2, count($system['feature_flags']['reports_v1_metrics_log']), 'System status should expose compact reports v1 metrics log.');
         $this->assertSame('time_entries', $system['feature_flags']['reports_v1_metrics_log'][1]['report_type'], 'System status should preserve metrics log ordering for latest samples.');
+        $this->assertSame(2500, $system['feature_flags']['reports_v1_slo']['generation_ms_p95_max'], 'System status should expose reports v1 SLO thresholds.');
+        $this->assertSame(55, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95'], 'System status should expose computed p95 from compact metrics samples.');
+        $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_within_target'], 'System status should expose whether generation p95 is within target.');
+        $this->assertSame('error_rate_percent', $system['feature_flags']['reports_v1_slo_status']['missing_signals'][0], 'System status should declare missing monitoring signals for SLO completeness.');
 
         $api->register_routes();
         $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-\\d{2})', WP_REST_Server::READABLE);
