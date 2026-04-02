@@ -1234,6 +1234,7 @@ class ERP_OMD_REST_API
         $project_costs_verified = true;
         $project_client_completeness = true;
         $invalid_cost_rows = 0;
+        $relevant_projects_without_cost_rows = 0;
         $incomplete_relevant_projects = 0;
         $relevant_projects = 0;
         $projects = (array) $this->projects->all();
@@ -1256,7 +1257,7 @@ class ERP_OMD_REST_API
                 if ((float) ($cost_row['amount'] ?? 0) <= 0 || trim((string) ($cost_row['description'] ?? '')) === '') {
                     $invalid_cost_rows++;
                     $project_costs_verified = false;
-                    break 2;
+                    break;
                 }
             }
 
@@ -1266,6 +1267,11 @@ class ERP_OMD_REST_API
             $relevant_projects++;
 
             $project_status = (string) ($project['status'] ?? '');
+            if (in_array($project_status, ['do_faktury', 'zakonczony'], true) && ! $project_has_cost_for_month) {
+                $relevant_projects_without_cost_rows++;
+                $project_costs_verified = false;
+            }
+
             if ($project_status !== 'archiwum') {
                 if ((int) ($project['client_id'] ?? 0) <= 0 || trim((string) ($project['name'] ?? '')) === '') {
                     $incomplete_relevant_projects++;
@@ -1295,6 +1301,7 @@ class ERP_OMD_REST_API
             '_meta' => [
                 'submitted_or_rejected_entries' => $submitted_or_rejected_entries,
                 'invalid_cost_rows' => $invalid_cost_rows,
+                'relevant_projects_without_cost_rows' => $relevant_projects_without_cost_rows,
                 'incomplete_relevant_projects' => $incomplete_relevant_projects,
                 'critical_alerts' => $critical_alerts,
                 'relevant_projects' => $relevant_projects,
