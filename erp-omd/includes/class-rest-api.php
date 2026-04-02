@@ -103,6 +103,7 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request['month']);
+                // Keep route regex broad to return explicit 422 from callback (instead of 404 route miss) for out-of-range months.
                 if (! $this->is_valid_month_string($month)) {
                     return new WP_Error('erp_omd_period_month_invalid', __('Month must use YYYY-MM format.', 'erp-omd'), ['status' => 422]);
                 }
@@ -125,6 +126,7 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))/transition', [
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => function (WP_REST_Request $request) {
                 $month = sanitize_text_field((string) $request['month']);
+                // Keep route regex broad to return explicit 422 from callback (instead of 404 route miss) for out-of-range months.
                 if (! $this->is_valid_month_string($month)) {
                     return new WP_Error('erp_omd_period_month_invalid', __('Month must use YYYY-MM format.', 'erp-omd'), ['status' => 422]);
                 }
