@@ -39,7 +39,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 6. ✅ **P4-02** — UI OMD z legendą definicji i pełnym eksportem (kolumny 1:1 z eksportem, w tym przychód/koszt czasu).
 7. ✅ **P5-01** — feature flags + canary rollout (reports v1: `off` / `admins` / `all`).
 8. ✅ **P5-02** — monitoring wydajności (czas generowania/rekordy/rollout) + plan rollback przez flagę `erp_omd_reports_v1_rollout`.
-9. **P5-03** — raport powdrożeniowy i cleanup legacy po stabilizacji.
+9. ✅ **P5-03** — raport powdrożeniowy i plan cleanup legacy (`docs/WB_P5_03_POST_DEPLOY_REPORT.md`).
+10. **Kolejny etap** — utrzymanie/stabilizacja i decyzje cleanup po okresie obserwacji.
 
 ## 4) Instrukcja startowa do nowego chatu
 
