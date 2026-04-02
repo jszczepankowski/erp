@@ -100,39 +100,6 @@
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <?php
-                        $month_anchor = DateTimeImmutable::createFromFormat('Y-m-d', (string) ($report_filters['month'] ?? '') . '-01');
-                        if (! $month_anchor) {
-                            $month_anchor = new DateTimeImmutable('first day of this month');
-                        }
-                        $month_switch_base_args = [
-                            'page' => 'erp-omd-reports',
-                            'tab' => $report_filters['tab'],
-                            'report_type' => $report_filters['report_type'],
-                            'month' => '',
-                            'client_id' => (int) $report_filters['client_id'],
-                            'project_id' => (int) $report_filters['project_id'],
-                            'employee_id' => (int) $report_filters['employee_id'],
-                            'status' => $report_filters['status'],
-                            'mode' => $report_filters['mode'],
-                            'detail' => $report_filters['detail'],
-                            'page_num' => 1,
-                            'per_page' => (int) ($report_filters['per_page'] ?? 25),
-                            'dashboard_queue_limit' => (int) ($dashboard_preview_filters['queue_limit'] ?? 25),
-                        ];
-                        $prev_month_args = $month_switch_base_args;
-                        $next_month_args = $month_switch_base_args;
-                        $current_month_args = $month_switch_base_args;
-                        $prev_month_args['month'] = $month_anchor->modify('-1 month')->format('Y-m');
-                        $next_month_args['month'] = $month_anchor->modify('+1 month')->format('Y-m');
-                        $current_month_args['month'] = (new DateTimeImmutable('first day of this month'))->format('Y-m');
-                        ?>
-                        <div class="erp-omd-form-actions" style="justify-content:flex-start;">
-                            <span class="description"><?php esc_html_e('Przełącznik miesięcy (dashboard):', 'erp-omd'); ?></span>
-                            <a class="button" href="<?php echo esc_url(add_query_arg($prev_month_args, admin_url('admin.php'))); ?>">&laquo; <?php esc_html_e('Poprzedni miesiąc', 'erp-omd'); ?></a>
-                            <a class="button" href="<?php echo esc_url(add_query_arg($current_month_args, admin_url('admin.php'))); ?>"><?php esc_html_e('Bieżący miesiąc', 'erp-omd'); ?></a>
-                            <a class="button" href="<?php echo esc_url(add_query_arg($next_month_args, admin_url('admin.php'))); ?>"><?php esc_html_e('Następny miesiąc', 'erp-omd'); ?> &raquo;</a>
-                        </div>
                     </section>
                 </div>
                 <div class="erp-omd-form-actions">

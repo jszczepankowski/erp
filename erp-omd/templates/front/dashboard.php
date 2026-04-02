@@ -51,6 +51,16 @@
             </nav>
 
             <div class="erp-omd-front-grid erp-omd-front-grid-summary">
+                <article class="erp-omd-front-panel">
+                    <h2><?php esc_html_e('Miesiąc dashboardu', 'erp-omd'); ?></h2>
+                    <p class="erp-omd-front-muted"><?php echo esc_html($dashboard_month_navigation['label'] ?? ''); ?></p>
+                    <div class="erp-omd-front-inline-actions">
+                        <a class="erp-omd-front-button erp-omd-front-button-ghost" href="<?php echo esc_url($dashboard_month_navigation['prev_url'] ?? $front_manager_url); ?>">&laquo; <?php esc_html_e('Poprzedni', 'erp-omd'); ?></a>
+                        <a class="erp-omd-front-button erp-omd-front-button-ghost" href="<?php echo esc_url($dashboard_month_navigation['current_url'] ?? $front_manager_url); ?>"><?php esc_html_e('Bieżący', 'erp-omd'); ?></a>
+                        <a class="erp-omd-front-button erp-omd-front-button-ghost" href="<?php echo esc_url($dashboard_month_navigation['next_url'] ?? $front_manager_url); ?>"><?php esc_html_e('Następny', 'erp-omd'); ?> &raquo;</a>
+                    </div>
+                </article>
+
                 <article class="erp-omd-front-panel" data-collapsible-section="manager-projects">
                     <h2><?php esc_html_e('Twoje konto', 'erp-omd'); ?></h2>
                     <ul>
