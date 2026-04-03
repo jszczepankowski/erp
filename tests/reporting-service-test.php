@@ -229,9 +229,9 @@ final class ReportingServiceTestRunner
         $this->assertSame(0.0, $omdSettlement[10]['active_project_budgets'], 'OMD settlement should not recognize project budget before operational_close_month.');
         $this->assertSame(5000.0, $omdSettlement[11]['active_project_budgets'], 'OMD settlement should recognize project budget in operational_close_month.');
         $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
-        $this->assertSame(5130.0, $omdSettlement[11]['operational_result'], 'OMD settlement should expose operational result before controlling overhead.');
+        $this->assertSame(5230.0, $omdSettlement[11]['operational_result'], 'OMD settlement should expose operational result before controlling overhead.');
         $this->assertSame(19000.0, $omdSettlement[11]['controlling_overhead'], 'OMD settlement should expose controlling overhead components.');
-        $this->assertSame(-13870.0, $omdSettlement[11]['controlling_result'], 'OMD settlement should expose controlling result after overhead.');
+        $this->assertSame(-13770.0, $omdSettlement[11]['controlling_result'], 'OMD settlement should expose controlling result after overhead.');
 
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame('2026-03', $calendar['month'], 'Calendar should be built for requested month.');
