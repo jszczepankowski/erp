@@ -15,6 +15,7 @@ class ERP_OMD_Plugin
     private $project_note_repository;
     private $project_rate_repository;
     private $project_cost_repository;
+    private $project_revenue_repository;
     private $project_financial_repository;
     private $time_entry_repository;
     private $attachment_repository;
@@ -46,6 +47,7 @@ class ERP_OMD_Plugin
         $this->project_note_repository = new ERP_OMD_Project_Note_Repository();
         $this->project_rate_repository = new ERP_OMD_Project_Rate_Repository();
         $this->project_cost_repository = new ERP_OMD_Project_Cost_Repository();
+        $this->project_revenue_repository = new ERP_OMD_Project_Revenue_Repository();
         $this->project_financial_repository = new ERP_OMD_Project_Financial_Repository();
         $this->time_entry_repository = new ERP_OMD_Time_Entry_Repository();
         $this->attachment_repository = new ERP_OMD_Attachment_Repository();
@@ -76,6 +78,7 @@ class ERP_OMD_Plugin
         $this->project_financial_service = new ERP_OMD_Project_Financial_Service(
             $this->project_repository,
             $this->project_cost_repository,
+            $this->project_revenue_repository,
             $this->project_financial_repository,
             $this->time_entry_repository
         );
@@ -131,6 +134,7 @@ class ERP_OMD_Plugin
             $this->estimate_service,
             $this->project_rate_repository,
             $this->project_cost_repository,
+            $this->project_revenue_repository,
             $this->project_financial_repository,
             $this->time_entry_repository,
             $this->attachment_repository,
@@ -149,6 +153,7 @@ class ERP_OMD_Plugin
             $this->estimate_repository,
             $this->estimate_item_repository,
             $this->project_cost_repository,
+            $this->project_revenue_repository,
             $this->time_entry_service,
             $this->client_project_service,
             $this->project_request_service,

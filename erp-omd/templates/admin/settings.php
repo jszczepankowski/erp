@@ -105,6 +105,11 @@
                     <?php if ($last_backup_file !== '') : ?>
                         <p><code><?php echo esc_html($last_backup_file); ?></code></p>
                     <?php endif; ?>
+                    <form method="post">
+                        <?php wp_nonce_field('erp_omd_run_manual_backup'); ?>
+                        <input type="hidden" name="erp_omd_action" value="run_manual_backup" />
+                        <button type="submit" class="button button-secondary"><?php esc_html_e('Uruchom backup teraz', 'erp-omd'); ?></button>
+                    </form>
                 </section>
 
                 <section class="erp-omd-form-section">

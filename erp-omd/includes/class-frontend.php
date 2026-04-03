@@ -11,6 +11,7 @@ class ERP_OMD_Frontend
     private $estimates;
     private $estimate_items;
     private $project_costs;
+    private $project_revenues;
     private $time_entry_service;
     private $client_project_service;
     private $project_request_service;
@@ -29,6 +30,7 @@ class ERP_OMD_Frontend
         ERP_OMD_Estimate_Repository $estimates,
         ERP_OMD_Estimate_Item_Repository $estimate_items,
         ERP_OMD_Project_Cost_Repository $project_costs,
+        ERP_OMD_Project_Revenue_Repository $project_revenues,
         ERP_OMD_Time_Entry_Service $time_entry_service,
         ERP_OMD_Client_Project_Service $client_project_service,
         ERP_OMD_Project_Request_Service $project_request_service,
@@ -46,6 +48,7 @@ class ERP_OMD_Frontend
         $this->estimates = $estimates;
         $this->estimate_items = $estimate_items;
         $this->project_costs = $project_costs;
+        $this->project_revenues = $project_revenues;
         $this->time_entry_service = $time_entry_service;
         $this->client_project_service = $client_project_service;
         $this->project_request_service = $project_request_service;
@@ -415,6 +418,10 @@ class ERP_OMD_Frontend
             $this->add_manager_project_cost($user);
             return;
         }
+        if ($action === 'add_project_revenue') {
+            $this->add_manager_project_revenue($user);
+            return;
+        }
         if ($action === 'delete_project_cost') {
             $cost_id = (int) ($_POST['project_cost_id'] ?? 0);
             $project_id = (int) ($_POST['project_id'] ?? 0);
@@ -437,6 +444,30 @@ class ERP_OMD_Frontend
             $this->project_costs->delete($cost_id);
             $this->project_financial_service->rebuild_for_project($project_id);
             $this->redirect_manager_with_notice('success', __('Koszt projektu został usunięty.', 'erp-omd'), ['project_id' => $project_id]);
+            return;
+        }
+        if ($action === 'delete_project_revenue') {
+            $revenue_id = (int) ($_POST['project_revenue_id'] ?? 0);
+            $project_id = (int) ($_POST['project_id'] ?? 0);
+            $revenue = $revenue_id > 0 ? $this->project_revenues->find($revenue_id) : null;
+            if (! $revenue) {
+                $this->redirect_manager_with_notice('error', __('Nie znaleziono pozycji przychodowej projektu do usunięcia.', 'erp-omd'), $project_id > 0 ? ['project_id' => $project_id] : []);
+            }
+
+            $project_id = (int) ($revenue['project_id'] ?? $project_id);
+            $employee = $this->employees->find_by_user_id((int) $user->ID);
+            if (! $employee) {
+                $this->redirect_manager_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+            }
+
+            $managed_project_ids = array_map('intval', wp_list_pluck($this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator')), 'id'));
+            if (! in_array($project_id, $managed_project_ids, true)) {
+                $this->redirect_manager_with_notice('error', __('Nie możesz usuwać pozycji przychodowych projektu spoza własnego zakresu odpowiedzialności.', 'erp-omd'));
+            }
+
+            $this->project_revenues->delete($revenue_id);
+            $this->project_financial_service->rebuild_for_project($project_id);
+            $this->redirect_manager_with_notice('success', __('Pozycja przychodowa projektu została usunięta.', 'erp-omd'), ['project_id' => $project_id]);
             return;
         }
         if ($action === 'accept_estimate') {
@@ -1427,6 +1458,36 @@ class ERP_OMD_Frontend
         $this->redirect_manager_with_notice('success', __('Koszt projektu został dodany.', 'erp-omd'), ['project_id' => $project_id]);
     }
 
+    private function add_manager_project_revenue(WP_User $user)
+    {
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $employee = $this->employees->find_by_user_id((int) $user->ID);
+        if (! $employee) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono profilu pracownika dla bieżącego użytkownika.', 'erp-omd'));
+        }
+
+        $managed_project_ids = array_map('intval', wp_list_pluck($this->load_managed_projects((int) $employee['id'], user_can($user, 'administrator')), 'id'));
+        if (! in_array($project_id, $managed_project_ids, true)) {
+            $this->redirect_manager_with_notice('error', __('Nie możesz dodawać pozycji przychodowych do projektów spoza własnego zakresu odpowiedzialności.', 'erp-omd'));
+        }
+
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($_POST['amount'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'revenue_date' => sanitize_text_field(wp_unslash($_POST['revenue_date'] ?? '')),
+            'created_by_user_id' => (int) $user->ID,
+        ];
+        $errors = $this->project_financial_service->validate_project_revenue($payload);
+        if ($errors) {
+            $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)), ['project_id' => $project_id]);
+        }
+
+        $this->project_revenues->create($payload);
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_manager_with_notice('success', __('Pozycja przychodowa projektu została dodana.', 'erp-omd'), ['project_id' => $project_id]);
+    }
+
     private function accept_manager_estimate(WP_User $user)
     {
         $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
@@ -2045,6 +2106,8 @@ class ERP_OMD_Frontend
                 return __('Ryczałt', 'erp-omd');
             case 'retainer':
                 return __('Abonament', 'erp-omd');
+            case 'mixed':
+                return __('Hybryda (ryczałt + godziny)', 'erp-omd');
             case 'time_material':
             default:
                 return __('Godzinowy', 'erp-omd');
