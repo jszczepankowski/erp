@@ -2286,6 +2286,120 @@ class ERP_OMD_Admin
         );
     }
 
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
+    }
+
     private function normalize_fixed_monthly_cost_items(array $raw_items)
     {
         $items = [];
