@@ -418,9 +418,17 @@
                 </div>
             <?php endif; ?>
 
-            <h2><?php esc_html_e('Lista kosztorysów', 'erp-omd'); ?></h2>
+            <div class="erp-omd-section-header">
+                <h2><?php esc_html_e('Lista kosztorysów', 'erp-omd'); ?></h2>
+                <form method="get" class="erp-omd-filter-form">
+                    <input type="hidden" name="page" value="erp-omd-estimates" />
+                    <input type="month" name="month" value="<?php echo esc_attr($estimate_filters['month'] ?? ''); ?>">
+                    <button class="button" type="submit"><?php esc_html_e('Ustaw miesiąc', 'erp-omd'); ?></button>
+                </form>
+            </div>
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-estimates" />
+                <input type="hidden" name="month" value="<?php echo esc_attr($estimate_filters['month'] ?? ''); ?>">
                 <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj kosztorysu, klienta, projektu…', 'erp-omd'); ?>" value="<?php echo esc_attr($estimate_filters['search'] ?? ''); ?>">
                 <select name="client_id"><option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option><?php foreach ($clients as $client_row) : ?><option value="<?php echo esc_attr($client_row['id']); ?>" <?php selected((int) ($estimate_filters['client_id'] ?? 0), (int) $client_row['id']); ?>><?php echo esc_html($client_row['name']); ?></option><?php endforeach; ?></select>
                 <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['wstepny', 'do_akceptacji', 'zaakceptowany'] as $status_option) : ?><option value="<?php echo esc_attr($status_option); ?>" <?php selected($estimate_filters['status'] ?? '', $status_option); ?>><?php echo esc_html($status_option); ?></option><?php endforeach; ?></select>
