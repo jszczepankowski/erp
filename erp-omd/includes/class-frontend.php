@@ -2045,6 +2045,8 @@ class ERP_OMD_Frontend
                 return __('Ryczałt', 'erp-omd');
             case 'retainer':
                 return __('Abonament', 'erp-omd');
+            case 'mixed':
+                return __('Hybryda (ryczałt + godziny)', 'erp-omd');
             case 'time_material':
             default:
                 return __('Godzinowy', 'erp-omd');

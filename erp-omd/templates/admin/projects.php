@@ -27,6 +27,7 @@
                                 <option value="time_material" <?php selected($project['billing_type'] ?? 'time_material', 'time_material'); ?>><?php esc_html_e('Godzinowy', 'erp-omd'); ?></option>
                                 <option value="fixed_price" <?php selected($project['billing_type'] ?? '', 'fixed_price'); ?>><?php esc_html_e('Ryczałt', 'erp-omd'); ?></option>
                                 <option value="retainer" <?php selected($project['billing_type'] ?? '', 'retainer'); ?>><?php esc_html_e('Abonament', 'erp-omd'); ?></option>
+                                <option value="mixed" <?php selected($project['billing_type'] ?? '', 'mixed'); ?>><?php esc_html_e('Hybryda (ryczałt + godziny)', 'erp-omd'); ?></option>
                             </select>
                         </div>
                     </div>
@@ -475,7 +476,6 @@
                                             <?php wp_nonce_field('erp_omd_inline_project_update'); ?>
                                             <input type="hidden" name="erp_omd_action" value="inline_update_project" />
                                             <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
-                                            <button class="button button-small button-primary" type="submit"><?php esc_html_e('Zapisz inline', 'erp-omd'); ?></button>
                                         </form>
                                         <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                         <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php')) . '#erp-omd-project-details'); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
@@ -519,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     var toggleProjectBillingRows = function () {
-        budgetRow.style.display = billingTypeField.value === 'fixed_price' ? '' : 'none';
+        budgetRow.style.display = (billingTypeField.value === 'fixed_price' || billingTypeField.value === 'mixed') ? '' : 'none';
         retainerRow.style.display = billingTypeField.value === 'retainer' ? '' : 'none';
     };
 
