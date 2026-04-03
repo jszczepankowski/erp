@@ -10,6 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
   ]);
   const tables = document.querySelectorAll('.erp-omd-admin table.widefat');
 
+  if (window.jQuery && typeof window.jQuery.fn.datepicker === 'function') {
+    window.jQuery('[data-erp-omd-month-picker="1"]').datepicker({
+      changeMonth: true,
+      changeYear: true,
+      dateFormat: 'yy-mm',
+    });
+  }
+
   tables.forEach((table, tableIndex) => {
     if (table.dataset.disableTableTools === '1') {
       return;

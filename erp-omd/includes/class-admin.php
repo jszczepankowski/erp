@@ -208,6 +208,7 @@ class ERP_OMD_Admin
         wp_enqueue_style('erp-omd-admin', ERP_OMD_URL . 'assets/css/admin.css', [], ERP_OMD_VERSION);
         wp_add_inline_style('erp-omd-admin', '#toplevel_page_erp-omd .wp-submenu a[href*="page=erp-omd-separator-"]{pointer-events:none;opacity:.5;cursor:default;border-top:1px solid rgba(255,255,255,.18);margin-top:4px;padding-top:8px;padding-bottom:8px;}');
         wp_enqueue_script('erp-omd-admin', ERP_OMD_URL . 'assets/js/admin.js', [], ERP_OMD_VERSION, true);
+        wp_enqueue_script('jquery-ui-datepicker');
         wp_localize_script('erp-omd-admin', 'erpOmdAdminData', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'inlineProjectNonce' => wp_create_nonce('erp_omd_inline_project_update'),
@@ -925,17 +926,27 @@ class ERP_OMD_Admin
         }
 
         $report_filters = $this->reporting_service->sanitize_filters($_GET);
+        $requested_report_type = sanitize_key((string) ($_GET['report_type'] ?? ''));
+        $allowed_report_types = ['projects', 'clients', 'invoice', 'monthly', 'omd_rozliczenia', 'time_entries'];
+        if (! in_array($requested_report_type, $allowed_report_types, true)) {
+            $requested_report_type = '';
+        }
+        if ($report_filters['tab'] === 'reports') {
+            $report_filters['report_type'] = $requested_report_type;
+        }
         $report_started_at = microtime(true);
         $report_rows = [];
         $report_error = false;
         $report_error_message = '';
         $report_error_notice = '';
-        try {
-            $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
-        } catch (Throwable $error) {
-            $report_error = true;
-            $report_error_message = (string) $error->getMessage();
-            $report_error_notice = __('Nie udało się zbudować raportu. Sprawdź logi systemowe i spróbuj ponownie.', 'erp-omd');
+        if ($report_filters['tab'] === 'reports' && $report_filters['report_type'] !== '') {
+            try {
+                $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
+            } catch (Throwable $error) {
+                $report_error = true;
+                $report_error_message = (string) $error->getMessage();
+                $report_error_notice = __('Nie udało się zbudować raportu. Sprawdź logi systemowe i spróbuj ponownie.', 'erp-omd');
+            }
         }
         $report_generation_ms = (int) round((microtime(true) - $report_started_at) * 1000);
         $report_pagination = (array) ($this->reporting_service->last_report_pagination ?? []);
@@ -996,7 +1007,7 @@ class ERP_OMD_Admin
             'invoice' => __('Raport projektów do faktury', 'erp-omd'),
             'time_entries' => __('Raport czasu pracy', 'erp-omd'),
             'monthly' => __('Raport miesięczny', 'erp-omd'),
-            'omd_rozliczenia' => __('Raport Operacyjny OMD', 'erp-omd'),
+            'omd_rozliczenia' => __('Raport operacyjny OMD', 'erp-omd'),
         ];
         $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');
         include ERP_OMD_PATH . 'templates/admin/reports.php';
