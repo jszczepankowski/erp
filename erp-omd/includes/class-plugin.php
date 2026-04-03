@@ -134,6 +134,7 @@ class ERP_OMD_Plugin
             $this->estimate_service,
             $this->project_rate_repository,
             $this->project_cost_repository,
+            $this->project_revenue_repository,
             $this->project_financial_repository,
             $this->time_entry_repository,
             $this->attachment_repository,
