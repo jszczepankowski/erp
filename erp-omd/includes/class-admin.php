@@ -208,7 +208,6 @@ class ERP_OMD_Admin
         wp_enqueue_style('erp-omd-admin', ERP_OMD_URL . 'assets/css/admin.css', [], ERP_OMD_VERSION);
         wp_add_inline_style('erp-omd-admin', '#toplevel_page_erp-omd .wp-submenu a[href*="page=erp-omd-separator-"]{pointer-events:none;opacity:.5;cursor:default;border-top:1px solid rgba(255,255,255,.18);margin-top:4px;padding-top:8px;padding-bottom:8px;}');
         wp_enqueue_script('erp-omd-admin', ERP_OMD_URL . 'assets/js/admin.js', [], ERP_OMD_VERSION, true);
-        wp_enqueue_script('jquery-ui-datepicker');
         wp_localize_script('erp-omd-admin', 'erpOmdAdminData', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'inlineProjectNonce' => wp_create_nonce('erp_omd_inline_project_update'),

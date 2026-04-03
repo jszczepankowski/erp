@@ -37,6 +37,9 @@ class ERP_OMD_Reporting_Service
     public function sanitize_filters(array $raw_filters = [])
     {
         $month = isset($raw_filters['month']) ? sanitize_text_field((string) $raw_filters['month']) : gmdate('Y-m');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $month) === 1) {
+            $month = substr($month, 0, 7);
+        }
         if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
             $month = gmdate('Y-m');
         }

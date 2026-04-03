@@ -39,7 +39,7 @@
                             <?php endif; ?>
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
                                 <label for="report-month"><?php esc_html_e('Miesiąc', 'erp-omd'); ?></label>
-                                <input id="report-month" type="text" name="month" value="<?php echo esc_attr($report_filters['month']); ?>" data-erp-omd-month-picker="1" />
+                                <input id="report-month" type="date" name="month" value="<?php echo esc_attr($report_filters['month'] . '-01'); ?>" />
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="report-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
