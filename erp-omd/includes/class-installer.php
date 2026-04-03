@@ -53,6 +53,7 @@ class ERP_OMD_Installer
         $project_rates_table = $wpdb->prefix . 'erp_omd_project_rates';
         $project_rate_history_table = $wpdb->prefix . 'erp_omd_project_rate_history';
         $project_costs_table = $wpdb->prefix . 'erp_omd_project_costs';
+        $project_revenues_table = $wpdb->prefix . 'erp_omd_project_revenues';
         $project_financials_table = $wpdb->prefix . 'erp_omd_project_financials';
         $time_entries_table = $wpdb->prefix . 'erp_omd_time_entries';
         $project_requests_table = $wpdb->prefix . 'erp_omd_project_requests';
@@ -305,6 +306,23 @@ class ERP_OMD_Installer
                 PRIMARY KEY  (id),
                 KEY project_id (project_id),
                 KEY cost_date (cost_date),
+                KEY created_by_user_id (created_by_user_id)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+        dbDelta(
+            "CREATE TABLE {$project_revenues_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                project_id BIGINT UNSIGNED NOT NULL,
+                amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                description TEXT NULL,
+                revenue_date DATE NOT NULL,
+                created_by_user_id BIGINT UNSIGNED NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY project_id (project_id),
+                KEY revenue_date (revenue_date),
                 KEY created_by_user_id (created_by_user_id)
             ) ENGINE=InnoDB {$charset_collate};"
         );
@@ -2301,6 +2319,8 @@ class ERP_OMD_Installer
         self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_project_rate_history_role', "ALTER TABLE {$project_rate_history_table} ADD CONSTRAINT fk_erp_omd_project_rate_history_role FOREIGN KEY (role_id) REFERENCES {$roles_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_costs_project', "ALTER TABLE {$project_costs_table} ADD CONSTRAINT fk_erp_omd_project_costs_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_project_costs_created_by', "ALTER TABLE {$project_costs_table} ADD CONSTRAINT fk_erp_omd_project_costs_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_revenues_project', "ALTER TABLE {$project_revenues_table} ADD CONSTRAINT fk_erp_omd_project_revenues_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_project_revenues_created_by', "ALTER TABLE {$project_revenues_table} ADD CONSTRAINT fk_erp_omd_project_revenues_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_financials_project', "ALTER TABLE {$project_financials_table} ADD CONSTRAINT fk_erp_omd_project_financials_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_time_entries_employee', "ALTER TABLE {$time_entries_table} ADD CONSTRAINT fk_erp_omd_time_entries_employee FOREIGN KEY (employee_id) REFERENCES {$employees_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_time_entries_project', "ALTER TABLE {$time_entries_table} ADD CONSTRAINT fk_erp_omd_time_entries_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
