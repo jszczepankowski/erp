@@ -88,6 +88,7 @@ class ERP_OMD_Admin
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('admin_init', [$this, 'handle_forms']);
         add_action('wp_ajax_erp_omd_inline_project_update', [$this, 'handle_inline_project_update_ajax']);
+        add_action('wp_ajax_erp_omd_save_dashboard_order', [$this, 'handle_save_dashboard_order_ajax']);
     }
 
     public function register_menu()
@@ -211,8 +212,42 @@ class ERP_OMD_Admin
         wp_localize_script('erp-omd-admin', 'erpOmdAdminData', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'inlineProjectNonce' => wp_create_nonce('erp_omd_inline_project_update'),
+            'dashboardOrderNonce' => wp_create_nonce('erp_omd_save_dashboard_order'),
+            'dashboardSectionOrder' => $this->get_user_dashboard_section_order(),
         ]);
         wp_enqueue_media();
+    }
+
+    private function get_dashboard_section_ids()
+    {
+        return [
+            'shortcuts',
+            'metrics',
+            'visuals',
+        ];
+    }
+
+    private function get_user_dashboard_section_order()
+    {
+        if (! is_user_logged_in()) {
+            return $this->get_dashboard_section_ids();
+        }
+
+        $allowed = $this->get_dashboard_section_ids();
+        $stored = get_user_meta(get_current_user_id(), 'erp_omd_dashboard_section_order', true);
+        if (! is_array($stored)) {
+            return $allowed;
+        }
+
+        $stored = array_values(array_filter(array_map('sanitize_key', $stored)));
+        $ordered = array_values(array_intersect($stored, $allowed));
+        foreach ($allowed as $section_id) {
+            if (! in_array($section_id, $ordered, true)) {
+                $ordered[] = $section_id;
+            }
+        }
+
+        return $ordered;
     }
 
     private function add_submenu_separator($parent_slug, $menu_slug)
@@ -670,6 +705,10 @@ class ERP_OMD_Admin
             'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
             'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
         ];
+        $projects_list_view = sanitize_key(wp_unslash($_GET['list_view'] ?? 'active'));
+        if (! in_array($projects_list_view, ['active', 'archive'], true)) {
+            $projects_list_view = 'active';
+        }
         $projects = array_values(array_filter($projects, function ($project_row) use ($project_filters) {
             if ($project_filters['search'] !== '') {
                 $haystack = strtolower(implode(' ', [
@@ -695,6 +734,18 @@ class ERP_OMD_Admin
                 if (substr($project_month_source, 0, 7) !== $project_filters['month']) {
                     return false;
                 }
+            }
+
+            return true;
+        }));
+        $projects = array_values(array_filter($projects, function ($project_row) use ($projects_list_view, $project_filters) {
+            $status = (string) ($project_row['status'] ?? '');
+            if ($projects_list_view === 'archive') {
+                return $status === 'archiwum';
+            }
+
+            if ($status === 'archiwum' && $project_filters['status'] === '') {
+                return false;
             }
 
             return true;
@@ -1688,6 +1739,34 @@ class ERP_OMD_Admin
             'project_id' => $id,
             'status' => (string) ($payload['status'] ?? ''),
             'status_label' => $this->project_status_label((string) ($payload['status'] ?? '')),
+        ]);
+    }
+
+    public function handle_save_dashboard_order_ajax()
+    {
+        check_ajax_referer('erp_omd_save_dashboard_order');
+        if (! current_user_can('erp_omd_access')) {
+            wp_send_json_error(['message' => __('Brak uprawnień do zapisu układu dashboardu.', 'erp-omd')], 403);
+        }
+
+        $order = wp_unslash($_POST['order'] ?? []);
+        if (! is_array($order) || $order === []) {
+            wp_send_json_error(['message' => __('Nieprawidłowe dane układu dashboardu.', 'erp-omd')], 422);
+        }
+
+        $allowed = $this->get_dashboard_section_ids();
+        $normalized = array_values(array_filter(array_map('sanitize_key', $order)));
+        $filtered = array_values(array_intersect($normalized, $allowed));
+        foreach ($allowed as $section_id) {
+            if (! in_array($section_id, $filtered, true)) {
+                $filtered[] = $section_id;
+            }
+        }
+
+        update_user_meta(get_current_user_id(), 'erp_omd_dashboard_section_order', $filtered);
+        wp_send_json_success([
+            'message' => __('Układ dashboardu został zapisany.', 'erp-omd'),
+            'order' => $filtered,
         ]);
     }
 
