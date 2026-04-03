@@ -20,12 +20,12 @@ if (! empty($duplicates)) {
     throw new RuntimeException('Duplicate admin methods found: ' . implode(', ', array_keys($duplicates)));
 }
 
-if (($counts['render_finances_page'] ?? 0) !== 1) {
-    throw new RuntimeException('Expected exactly one render_finances_page() method in ERP_OMD_Admin.');
+if (($counts['render_finances_page'] ?? 0) !== 0) {
+    throw new RuntimeException('render_finances_page() should not be declared in ERP_OMD_Admin (finances page uses closure callback).');
 }
 
-if (($counts['build_profit_ranking'] ?? 0) !== 1) {
-    throw new RuntimeException('Expected exactly one build_profit_ranking() method in ERP_OMD_Admin.');
+if (($counts['build_profit_ranking'] ?? 0) !== 0) {
+    throw new RuntimeException('build_profit_ranking() should not be declared in ERP_OMD_Admin (ranking uses local closure).');
 }
 
 echo "Assertions: 3\n";
