@@ -97,13 +97,13 @@ class ERP_OMD_Admin
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-team');
         add_submenu_page('erp-omd', __('Pracownicy', 'erp-omd'), __('Pracownicy', 'erp-omd'), 'erp_omd_manage_employees', 'erp-omd-employees', [$this, 'render_employees']);
         add_submenu_page('erp-omd', __('Role', 'erp-omd'), __('Role', 'erp-omd'), 'erp_omd_manage_roles', 'erp-omd-roles', [$this, 'render_roles']);
-        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-commercial');
         add_submenu_page('erp-omd', __('Klienci', 'erp-omd'), __('Klienci', 'erp-omd'), 'erp_omd_manage_clients', 'erp-omd-clients', [$this, 'render_clients']);
-        add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
-        add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
-        add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
-        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
+        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-commercial');
         add_submenu_page('erp-omd', __('Czas pracy', 'erp-omd'), __('Czas pracy', 'erp-omd'), 'erp_omd_manage_time', 'erp-omd-time', [$this, 'render_time_entries']);
+        add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
+        add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
+        add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
+        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
         add_submenu_page(
             'erp-omd',
@@ -375,7 +375,8 @@ class ERP_OMD_Admin
         $dashboard_project_monthly_cost = round((float) ($omd_month_row['project_direct_cost'] ?? 0.0), 2);
         $dashboard_employee_time_cost = round((float) ($omd_month_row['time_cost'] ?? 0.0), 2);
         $dashboard_employee_hourly_profit = round((float) ($omd_month_row['hourly_profit'] ?? 0.0), 2);
-        $dashboard_controlling_result = round((float) ($omd_month_row['controlling_result'] ?? 0.0), 2);
+        $dashboard_controlling_result = $this->resolve_dashboard_controlling_result($omd_month_row);
+        $dashboard_active_projects_count = $this->count_dashboard_active_projects_for_month($projects, $reporting_month);
         $dashboard_monthly_finance_metrics = [
             [
                 'key' => 'project_cost',
@@ -427,6 +428,43 @@ class ERP_OMD_Admin
             ['label' => __('Raport miesięczny', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports', 'report_type' => 'monthly'], admin_url('admin.php'))],
         ];
         include ERP_OMD_PATH . 'templates/admin/dashboard.php';
+    }
+
+    private function resolve_dashboard_controlling_result(array $omd_month_row)
+    {
+        $controlling_result = (float) ($omd_month_row['controlling_result'] ?? 0.0);
+        if (isset($omd_month_row['controlling_result']) && is_numeric($omd_month_row['controlling_result'])) {
+            return round($controlling_result, 2);
+        }
+
+        $operational_result = (float) ($omd_month_row['operational_result'] ?? 0.0);
+        $controlling_overhead = (float) ($omd_month_row['controlling_overhead'] ?? 0.0);
+        return round($operational_result - $controlling_overhead, 2);
+    }
+
+    private function count_dashboard_active_projects_for_month(array $projects, $reporting_month)
+    {
+        $active_statuses = ['archiwum', 'zakonczony'];
+        $count = 0;
+
+        foreach ($projects as $project) {
+            $status = (string) ($project['status'] ?? '');
+            if (in_array($status, $active_statuses, true)) {
+                continue;
+            }
+
+            $end_date = (string) ($project['end_date'] ?? '');
+            if ($end_date === '') {
+                $count++;
+                continue;
+            }
+
+            if (substr($end_date, 0, 7) === (string) $reporting_month) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 
     public function render_roles()
@@ -887,17 +925,27 @@ class ERP_OMD_Admin
         }
 
         $report_filters = $this->reporting_service->sanitize_filters($_GET);
+        $requested_report_type = sanitize_key((string) ($_GET['report_type'] ?? ''));
+        $allowed_report_types = ['projects', 'clients', 'invoice', 'monthly', 'omd_rozliczenia', 'time_entries'];
+        if (! in_array($requested_report_type, $allowed_report_types, true)) {
+            $requested_report_type = '';
+        }
+        if ($report_filters['tab'] === 'reports') {
+            $report_filters['report_type'] = $requested_report_type;
+        }
         $report_started_at = microtime(true);
         $report_rows = [];
         $report_error = false;
         $report_error_message = '';
         $report_error_notice = '';
-        try {
-            $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
-        } catch (Throwable $error) {
-            $report_error = true;
-            $report_error_message = (string) $error->getMessage();
-            $report_error_notice = __('Nie udało się zbudować raportu. Sprawdź logi systemowe i spróbuj ponownie.', 'erp-omd');
+        if ($report_filters['tab'] === 'reports' && $report_filters['report_type'] !== '') {
+            try {
+                $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
+            } catch (Throwable $error) {
+                $report_error = true;
+                $report_error_message = (string) $error->getMessage();
+                $report_error_notice = __('Nie udało się zbudować raportu. Sprawdź logi systemowe i spróbuj ponownie.', 'erp-omd');
+            }
         }
         $report_generation_ms = (int) round((microtime(true) - $report_started_at) * 1000);
         $report_pagination = (array) ($this->reporting_service->last_report_pagination ?? []);
@@ -958,7 +1006,7 @@ class ERP_OMD_Admin
             'invoice' => __('Raport projektów do faktury', 'erp-omd'),
             'time_entries' => __('Raport czasu pracy', 'erp-omd'),
             'monthly' => __('Raport miesięczny', 'erp-omd'),
-            'omd_rozliczenia' => __('Raport Operacyjny OMD', 'erp-omd'),
+            'omd_rozliczenia' => __('Raport operacyjny OMD', 'erp-omd'),
         ];
         $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');
         include ERP_OMD_PATH . 'templates/admin/reports.php';

@@ -27,18 +27,19 @@
                                 <div class="erp-omd-form-field">
                                     <label for="report-type"><?php esc_html_e('Typ raportu', 'erp-omd'); ?></label>
                                     <select id="report-type" name="report_type">
-                                        <option value="time_entries" <?php selected($report_filters['report_type'], 'time_entries'); ?>><?php esc_html_e('Czas pracy', 'erp-omd'); ?></option>
-                                        <option value="invoice" <?php selected($report_filters['report_type'], 'invoice'); ?>><?php esc_html_e('Projekty do faktury', 'erp-omd'); ?></option>
-                                        <option value="clients" <?php selected($report_filters['report_type'], 'clients'); ?>><?php esc_html_e('Raport klientów', 'erp-omd'); ?></option>
-                                        <option value="monthly" <?php selected($report_filters['report_type'], 'monthly'); ?>><?php esc_html_e('Raport miesięczny', 'erp-omd'); ?></option>
-                                        <option value="omd_rozliczenia" <?php selected($report_filters['report_type'], 'omd_rozliczenia'); ?>><?php esc_html_e('Raport Operacyjny OMD', 'erp-omd'); ?></option>
+                                        <option value="" <?php selected($report_filters['report_type'], ''); ?>><?php esc_html_e('— Wybierz typ raportu —', 'erp-omd'); ?></option>
                                         <option value="projects" <?php selected($report_filters['report_type'], 'projects'); ?>><?php esc_html_e('Raport projektów', 'erp-omd'); ?></option>
+                                        <option value="clients" <?php selected($report_filters['report_type'], 'clients'); ?>><?php esc_html_e('Raport klientów', 'erp-omd'); ?></option>
+                                        <option value="invoice" <?php selected($report_filters['report_type'], 'invoice'); ?>><?php esc_html_e('Projekty do faktury', 'erp-omd'); ?></option>
+                                        <option value="time_entries" <?php selected($report_filters['report_type'], 'time_entries'); ?>><?php esc_html_e('Czas pracy', 'erp-omd'); ?></option>
+                                        <option value="monthly" <?php selected($report_filters['report_type'], 'monthly'); ?>><?php esc_html_e('Raport miesięczny', 'erp-omd'); ?></option>
+                                        <option value="omd_rozliczenia" <?php selected($report_filters['report_type'], 'omd_rozliczenia'); ?>><?php esc_html_e('Raport operacyjny OMD', 'erp-omd'); ?></option>
                                     </select>
                                 </div>
                             <?php endif; ?>
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
                                 <label for="report-month"><?php esc_html_e('Miesiąc', 'erp-omd'); ?></label>
-                                <input id="report-month" type="month" name="month" value="<?php echo esc_attr($report_filters['month']); ?>" />
+                                <input id="report-month" type="date" name="month" value="<?php echo esc_attr($report_filters['month'] . '-01'); ?>" />
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="report-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
@@ -119,23 +120,27 @@
                             <p class="notice notice-error" style="padding:8px 12px;"><?php echo esc_html($report_error_notice); ?></p>
                         <?php endif; ?>
                     </div>
-                    <form method="post" class="erp-omd-inline-form">
-                        <?php wp_nonce_field('erp_omd_export_report'); ?>
-                        <input type="hidden" name="erp_omd_action" value="export_report" />
-                        <input type="hidden" name="report_type" value="<?php echo esc_attr($report_filters['report_type']); ?>" />
-                        <input type="hidden" name="month" value="<?php echo esc_attr($report_filters['month']); ?>" />
-                        <input type="hidden" name="client_id" value="<?php echo esc_attr($report_filters['client_id']); ?>" />
-                        <input type="hidden" name="project_id" value="<?php echo esc_attr($report_filters['project_id']); ?>" />
-                        <input type="hidden" name="employee_id" value="<?php echo esc_attr($report_filters['employee_id']); ?>" />
-                        <input type="hidden" name="status" value="<?php echo esc_attr($report_filters['status']); ?>" />
-                        <input type="hidden" name="mode" value="<?php echo esc_attr($report_filters['mode']); ?>" />
-                        <input type="hidden" name="detail" value="<?php echo esc_attr($report_filters['detail']); ?>" />
-                        <input type="hidden" name="page_num" value="<?php echo esc_attr((string) ($report_filters['page_num'] ?? 1)); ?>" />
-                        <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
-                        <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV', 'erp-omd'); ?></button>
-                    </form>
+                    <?php if ($report_filters['report_type'] !== '') : ?>
+                        <form method="post" class="erp-omd-inline-form">
+                            <?php wp_nonce_field('erp_omd_export_report'); ?>
+                            <input type="hidden" name="erp_omd_action" value="export_report" />
+                            <input type="hidden" name="report_type" value="<?php echo esc_attr($report_filters['report_type']); ?>" />
+                            <input type="hidden" name="month" value="<?php echo esc_attr($report_filters['month']); ?>" />
+                            <input type="hidden" name="client_id" value="<?php echo esc_attr($report_filters['client_id']); ?>" />
+                            <input type="hidden" name="project_id" value="<?php echo esc_attr($report_filters['project_id']); ?>" />
+                            <input type="hidden" name="employee_id" value="<?php echo esc_attr($report_filters['employee_id']); ?>" />
+                            <input type="hidden" name="status" value="<?php echo esc_attr($report_filters['status']); ?>" />
+                            <input type="hidden" name="mode" value="<?php echo esc_attr($report_filters['mode']); ?>" />
+                            <input type="hidden" name="detail" value="<?php echo esc_attr($report_filters['detail']); ?>" />
+                            <input type="hidden" name="page_num" value="<?php echo esc_attr((string) ($report_filters['page_num'] ?? 1)); ?>" />
+                            <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
+                            <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV', 'erp-omd'); ?></button>
+                        </form>
+                    <?php endif; ?>
                 </div>
-                <?php if ($report_filters['report_type'] === 'clients') : ?>
+                <?php if ($report_filters['report_type'] === '') : ?>
+                    <p class="description"><?php esc_html_e('Wybierz typ raportu i kliknij „Filtruj”, aby wyświetlić dane.', 'erp-omd'); ?></p>
+                <?php elseif ($report_filters['report_type'] === 'clients') : ?>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekty', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th></tr></thead>
                         <tbody>
@@ -204,7 +209,7 @@
                         <?php esc_html_e('Legenda OMD: wynik operacyjny = budżety aktywnych projektów + zysk godzinowy - koszt projektów; narzut controllingowy = koszt pensji + koszty stałe; wynik controllingowy = wynik operacyjny - narzut controllingowy.', 'erp-omd'); ?>
                     </p>
                     <table class="widefat striped">
-                        <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt pensji', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Koszty czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Stałe koszty', 'erp-omd'); ?></th><th><?php esc_html_e('Budżety aktywnych projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk godzinowy', 'erp-omd'); ?></th><th><?php esc_html_e('Narzut controllingowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik controllingowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></th></tr></thead>
+                        <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt pensji', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Koszty czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Stałe koszty', 'erp-omd'); ?></th><th><?php esc_html_e('Budżety aktywnych projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk godzinowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></th><th><?php esc_html_e('Narzut controllingowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik controllingowy', 'erp-omd'); ?></th></tr></thead>
                         <tbody>
                         <?php if (empty($report_rows)) : ?><tr><td colspan="11"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
                         <?php foreach ($report_rows as $row) : ?>
@@ -217,9 +222,9 @@
                                 <td><?php echo esc_html(number_format_i18n((float) $row['active_project_budgets'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['time_revenue'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['hourly_profit'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['operational_result'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['controlling_overhead'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['controlling_result'], 2)); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['operational_result'], 2)); ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>

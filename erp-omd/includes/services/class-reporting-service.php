@@ -37,6 +37,9 @@ class ERP_OMD_Reporting_Service
     public function sanitize_filters(array $raw_filters = [])
     {
         $month = isset($raw_filters['month']) ? sanitize_text_field((string) $raw_filters['month']) : gmdate('Y-m');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $month) === 1) {
+            $month = substr($month, 0, 7);
+        }
         if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
             $month = gmdate('Y-m');
         }
@@ -163,6 +166,7 @@ class ERP_OMD_Reporting_Service
                     $salary_cost = 0.0;
                     $direct_cost = 0.0;
                     $active_budgets = 0.0;
+                    $active_budget_project_ids = [];
                     $time_revenue = 0.0;
                     $time_cost = 0.0;
                     $month_date = DateTimeImmutable::createFromFormat('Y-m-d', $month . '-01');
@@ -193,7 +197,7 @@ class ERP_OMD_Reporting_Service
                     }
 
                     foreach ($projects as $project) {
-                        if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony'], true)) {
+                        if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony', 'archiwum'], true)) {
                             continue;
                         }
 
@@ -206,6 +210,7 @@ class ERP_OMD_Reporting_Service
                             continue;
                         }
 
+                        $active_budget_project_ids[] = (int) ($project['id'] ?? 0);
                         $active_budgets += (float) ($project['budget'] ?? 0);
                     }
 
@@ -215,7 +220,10 @@ class ERP_OMD_Reporting_Service
                         $time_cost += $hours * (float) ($entry['cost_snapshot'] ?? 0);
                     }
 
-                    foreach ($this->get_direct_cost_metrics_by_project($project_ids, $month) as $project_cost) {
+                    $direct_cost_project_ids = array_values(array_unique(array_filter($active_budget_project_ids, static function ($project_id) {
+                        return (int) $project_id > 0;
+                    })));
+                    foreach ($this->get_direct_cost_metrics_by_project($direct_cost_project_ids, $month) as $project_cost) {
                         $direct_cost += (float) $project_cost;
                     }
 
@@ -955,8 +963,9 @@ class ERP_OMD_Reporting_Service
     private function get_filtered_projects(array $filters)
     {
         $projects = $this->projects->all();
+        $report_type = (string) ($filters['report_type'] ?? '');
 
-        return array_values(array_filter($projects, function ($project) use ($filters) {
+        return array_values(array_filter($projects, function ($project) use ($filters, $report_type) {
             if ($filters['project_id'] > 0 && (int) ($project['id'] ?? 0) !== $filters['project_id']) {
                 return false;
             }
@@ -978,8 +987,35 @@ class ERP_OMD_Reporting_Service
             if (($filters['mode'] ?? 'LIVE') === 'ZAMKNIETY' && ! in_array($project_status, ['zakonczony', 'archiwum'], true)) {
                 return false;
             }
+
+            if (in_array($report_type, ['projects', 'clients'], true) && ! $this->is_project_from_reporting_month($project, (string) ($filters['month'] ?? ''))) {
+                return false;
+            }
+
             return true;
         }));
+    }
+
+    private function is_project_from_reporting_month(array $project, $month)
+    {
+        if (! preg_match('/^\d{4}-\d{2}$/', (string) $month)) {
+            return true;
+        }
+
+        $start_date = (string) ($project['start_date'] ?? '');
+        $end_date = (string) ($project['end_date'] ?? '');
+        $start_month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date) === 1 ? substr($start_date, 0, 7) : '';
+        $end_month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date) === 1 ? substr($end_date, 0, 7) : '';
+
+        if ($start_month === '') {
+            return true;
+        }
+
+        if ($start_month !== (string) $month) {
+            return false;
+        }
+
+        return $end_month === '' || $end_month === (string) $month;
     }
 
     private function get_filtered_entries(array $project_ids, array $filters)
@@ -1090,7 +1126,7 @@ class ERP_OMD_Reporting_Service
 
         foreach ($projects as $project) {
             $status = (string) ($project['status'] ?? '');
-            if (! in_array($status, ['do_faktury', 'zakonczony'], true)) {
+            if (! in_array($status, ['do_faktury', 'zakonczony', 'archiwum'], true)) {
                 continue;
             }
 
