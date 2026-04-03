@@ -28,5 +28,9 @@ if (($counts['build_profit_ranking'] ?? 0) !== 0) {
     throw new RuntimeException('build_profit_ranking() should not be declared in ERP_OMD_Admin (ranking uses local closure).');
 }
 
-echo "Assertions: 3\n";
+if (($counts['handle_project_revenue_save'] ?? 0) !== 0 || ($counts['handle_project_revenue_delete'] ?? 0) !== 0) {
+    throw new RuntimeException('Project revenue handlers should be inlined in handle_forms() and not declared as class methods.');
+}
+
+echo "Assertions: 4\n";
 echo "Admin class duplicate-method test passed.\n";
