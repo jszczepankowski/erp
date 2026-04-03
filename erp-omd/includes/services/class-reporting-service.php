@@ -163,6 +163,7 @@ class ERP_OMD_Reporting_Service
                     $salary_cost = 0.0;
                     $direct_cost = 0.0;
                     $active_budgets = 0.0;
+                    $active_budget_project_ids = [];
                     $time_revenue = 0.0;
                     $time_cost = 0.0;
                     $month_date = DateTimeImmutable::createFromFormat('Y-m-d', $month . '-01');
@@ -206,6 +207,7 @@ class ERP_OMD_Reporting_Service
                             continue;
                         }
 
+                        $active_budget_project_ids[] = (int) ($project['id'] ?? 0);
                         $active_budgets += (float) ($project['budget'] ?? 0);
                     }
 
@@ -215,7 +217,10 @@ class ERP_OMD_Reporting_Service
                         $time_cost += $hours * (float) ($entry['cost_snapshot'] ?? 0);
                     }
 
-                    foreach ($this->get_direct_cost_metrics_by_project($project_ids, $month) as $project_cost) {
+                    $direct_cost_project_ids = array_values(array_unique(array_filter($active_budget_project_ids, static function ($project_id) {
+                        return (int) $project_id > 0;
+                    })));
+                    foreach ($this->get_direct_cost_metrics_by_project($direct_cost_project_ids, $month) as $project_cost) {
                         $direct_cost += (float) $project_cost;
                     }
 
