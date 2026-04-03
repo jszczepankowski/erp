@@ -105,11 +105,7 @@
                     <?php if ($last_backup_file !== '') : ?>
                         <p><code><?php echo esc_html($last_backup_file); ?></code></p>
                     <?php endif; ?>
-                    <form method="post">
-                        <?php wp_nonce_field('erp_omd_run_manual_backup'); ?>
-                        <input type="hidden" name="erp_omd_action" value="run_manual_backup" />
-                        <button type="submit" class="button button-secondary"><?php esc_html_e('Uruchom backup teraz', 'erp-omd'); ?></button>
-                    </form>
+                    <button type="submit" class="button button-secondary" form="erp-omd-manual-backup-form"><?php esc_html_e('Uruchom backup teraz', 'erp-omd'); ?></button>
                 </section>
 
                 <section class="erp-omd-form-section">
@@ -298,6 +294,10 @@
                 </section>
             </div>
             <?php submit_button(__('Zapisz ustawienia', 'erp-omd')); ?>
+        </form>
+        <form id="erp-omd-manual-backup-form" method="post">
+            <?php wp_nonce_field('erp_omd_run_manual_backup'); ?>
+            <input type="hidden" name="erp_omd_action" value="run_manual_backup" />
         </form>
     </div>
 </div>
