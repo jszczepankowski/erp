@@ -190,98 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
     applyTableView();
   });
 
-  const dashboardSectionsRoot = document.querySelector('[data-dashboard-sections="1"]');
-  if (dashboardSectionsRoot instanceof HTMLElement) {
-    const adminData =
-      typeof erpOmdAdminData === 'undefined' || !erpOmdAdminData
-        ? {}
-        : erpOmdAdminData;
-    const draggableSections = Array.from(
-      dashboardSectionsRoot.querySelectorAll('[data-section-id]')
-    ).filter((section) => section instanceof HTMLElement);
-    const configuredOrder = Array.isArray(adminData.dashboardSectionOrder)
-      ? adminData.dashboardSectionOrder
-      : [];
-
-    const moveSectionBefore = (dragged, beforeNode) => {
-      if (!(dragged instanceof HTMLElement)) {
-        return;
-      }
-      if (beforeNode instanceof HTMLElement) {
-        dashboardSectionsRoot.insertBefore(dragged, beforeNode);
-        return;
-      }
-      dashboardSectionsRoot.appendChild(dragged);
-    };
-
-    const applyConfiguredOrder = () => {
-      configuredOrder.forEach((sectionId) => {
-        const section = dashboardSectionsRoot.querySelector(
-          `[data-section-id="${sectionId}"]`
-        );
-        if (section instanceof HTMLElement) {
-          dashboardSectionsRoot.appendChild(section);
-        }
-      });
-    };
-
-    const getCurrentOrder = () =>
-      Array.from(dashboardSectionsRoot.querySelectorAll('[data-section-id]'))
-        .map((section) => section.getAttribute('data-section-id') || '')
-        .filter((value) => value !== '');
-
-    const persistOrder = () => {
-      const nonce = adminData.dashboardOrderNonce || '';
-      const ajaxUrl = adminData.ajaxUrl || '';
-      if (!nonce || !ajaxUrl) {
-        return;
-      }
-      const payload = new FormData();
-      payload.append('action', 'erp_omd_save_dashboard_order');
-      payload.append('_ajax_nonce', nonce);
-      getCurrentOrder().forEach((sectionId) => {
-        payload.append('order[]', sectionId);
-      });
-
-      fetch(ajaxUrl, {
-        method: 'POST',
-        credentials: 'same-origin',
-        body: payload,
-      }).catch(() => {});
-    };
-
-    applyConfiguredOrder();
-    let draggedSection = null;
-
-    draggableSections.forEach((section) => {
-      section.draggable = true;
-      section.addEventListener('dragstart', (event) => {
-        draggedSection = section;
-        section.classList.add('erp-omd-dashboard-section-dragging');
-        if (event.dataTransfer) {
-          event.dataTransfer.effectAllowed = 'move';
-          event.dataTransfer.setData('text/plain', section.dataset.sectionId || '');
-        }
-      });
-      section.addEventListener('dragend', () => {
-        section.classList.remove('erp-omd-dashboard-section-dragging');
-      });
-      section.addEventListener('dragover', (event) => {
-        event.preventDefault();
-        if (!(draggedSection instanceof HTMLElement) || draggedSection === section) {
-          return;
-        }
-        const bounds = section.getBoundingClientRect();
-        const shouldInsertBefore = event.clientY < bounds.top + bounds.height / 2;
-        moveSectionBefore(draggedSection, shouldInsertBefore ? section : section.nextElementSibling);
-      });
-      section.addEventListener('drop', (event) => {
-        event.preventDefault();
-        persistOrder();
-      });
-    });
-  }
-
   const fixedCostBody = document.querySelector('tbody[data-fixed-cost-body="1"]');
   const addFixedCostButton = document.getElementById('erp-omd-add-fixed-cost-row');
 
@@ -502,6 +410,39 @@ document.addEventListener('DOMContentLoaded', () => {
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
       input.focus();
+    });
+  });
+
+  document.querySelectorAll('.erp-omd-project-monthly-dates').forEach((button) => {
+    button.addEventListener('click', () => {
+      const startSelector = button.dataset.startTarget || '';
+      const endSelector = button.dataset.endTarget || '';
+
+      if (!startSelector || !endSelector) {
+        return;
+      }
+
+      const startInput = document.querySelector(startSelector);
+      const endInput = document.querySelector(endSelector);
+
+      if (!(startInput instanceof HTMLInputElement) || !(endInput instanceof HTMLInputElement)) {
+        return;
+      }
+
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      startInput.value = formatDate(monthStart);
+      endInput.value = formatDate(monthEnd);
+      startInput.dispatchEvent(new Event('change', { bubbles: true }));
+      endInput.dispatchEvent(new Event('change', { bubbles: true }));
     });
   });
 
