@@ -12,7 +12,7 @@
         <div class="erp-omd-kpi-grid">
             <div class="erp-omd-kpi erp-omd-kpi-accent erp-omd-kpi-profit">
                 <span class="erp-omd-kpi-label"><?php esc_html_e('Wynik controllingowy', 'erp-omd'); ?></span>
-                <strong><?php echo esc_html(number_format_i18n((float) ($omd_month_row['controlling_result'] ?? 0), 2)); ?></strong>
+                <strong><?php echo esc_html(number_format_i18n((float) ($dashboard_controlling_result ?? 0), 2)); ?></strong>
             </div>
         </div>
     </div>
@@ -41,7 +41,7 @@
         ],
         [
             'icon' => 'portfolio',
-            'value' => count($projects),
+            'value' => (int) ($dashboard_active_projects_count ?? 0),
             'label' => __('Projekty', 'erp-omd'),
             'variant' => '',
         ],
