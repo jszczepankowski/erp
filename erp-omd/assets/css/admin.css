@@ -832,14 +832,6 @@
     margin-bottom: 20px;
 }
 
-.erp-omd-admin .erp-omd-project-rates-section {
-    order: 20;
-}
-
-.erp-omd-admin .erp-omd-project-revenue-section {
-    order: 30;
-}
-
 .erp-omd-admin .erp-omd-form-sections.erp-omd-form-sections-half {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }

@@ -159,6 +159,55 @@
                         </div>
                     </section>
 
+                    <section class="erp-omd-form-section erp-omd-project-rates-section">
+                        <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Stawki projektowe', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Dodawanie i przegląd stawek projektowych w jednej spójnej sekcji.', 'erp-omd'); ?></p>
+                        </div>
+                        <form method="post">
+                            <?php wp_nonce_field('erp_omd_save_project_rate'); ?>
+                            <input type="hidden" name="erp_omd_action" value="save_project_rate" />
+                            <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                            <div class="erp-omd-form-grid">
+                                <div class="erp-omd-form-field">
+                                    <label for="project-rate-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label>
+                                    <select id="project-rate-role" name="role_id" required><?php foreach ($roles as $role_item) : ?><option value="<?php echo esc_attr($role_item['id']); ?>"><?php echo esc_html($role_item['name']); ?></option><?php endforeach; ?></select>
+                                </div>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="project-rate-value"><?php esc_html_e('Stawka', 'erp-omd'); ?></label>
+                                    <input id="project-rate-value" type="number" step="0.01" min="0" name="rate" required />
+                                </div>
+                            </div>
+                            <div class="erp-omd-form-actions">
+                                <?php submit_button(__('Zapisz stawkę projektową', 'erp-omd'), 'secondary'); ?>
+                            </div>
+                        </form>
+                        <table class="widefat striped">
+                            <thead><tr><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Stawka', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                            <tbody>
+                                <?php if (empty($project_rates)) : ?>
+                                    <tr><td colspan="3"><?php esc_html_e('Brak stawek projektowych. Projekt będzie dziedziczył stawki klienta, jeśli są skonfigurowane.', 'erp-omd'); ?></td></tr>
+                                <?php else : ?>
+                                    <?php foreach ($project_rates as $project_rate) : ?>
+                                        <tr>
+                                            <td><?php echo esc_html($project_rate['role_name'] ?? '—'); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($project_rate['rate'] ?? 0), 2)); ?></td>
+                                            <td>
+                                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć stawkę projektową?', 'erp-omd')); ?>');">
+                                                    <?php wp_nonce_field('erp_omd_delete_project_rate'); ?>
+                                                    <input type="hidden" name="erp_omd_action" value="delete_project_rate" />
+                                                    <input type="hidden" name="id" value="<?php echo esc_attr($project_rate['id'] ?? 0); ?>" />
+                                                    <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                                    <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </section>
+
                     <section class="erp-omd-form-section erp-omd-project-revenue-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Pozycje przychodowe projektu', 'erp-omd'); ?></h3>
@@ -202,55 +251,6 @@
                                                     <?php wp_nonce_field('erp_omd_delete_project_revenue'); ?>
                                                     <input type="hidden" name="erp_omd_action" value="delete_project_revenue" />
                                                     <input type="hidden" name="project_revenue_id" value="<?php echo esc_attr($project_revenue_row['id']); ?>" />
-                                                    <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
-                                                    <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </section>
-
-                    <section class="erp-omd-form-section erp-omd-project-rates-section">
-                        <div class="erp-omd-form-section-header">
-                            <h3><?php esc_html_e('Stawki projektowe', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Dodawanie i przegląd stawek projektowych w jednej spójnej sekcji.', 'erp-omd'); ?></p>
-                        </div>
-                        <form method="post">
-                            <?php wp_nonce_field('erp_omd_save_project_rate'); ?>
-                            <input type="hidden" name="erp_omd_action" value="save_project_rate" />
-                            <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
-                            <div class="erp-omd-form-grid">
-                                <div class="erp-omd-form-field">
-                                    <label for="project-rate-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label>
-                                    <select id="project-rate-role" name="role_id" required><?php foreach ($roles as $role_item) : ?><option value="<?php echo esc_attr($role_item['id']); ?>"><?php echo esc_html($role_item['name']); ?></option><?php endforeach; ?></select>
-                                </div>
-                                <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                    <label for="project-rate-value"><?php esc_html_e('Stawka', 'erp-omd'); ?></label>
-                                    <input id="project-rate-value" type="number" step="0.01" min="0" name="rate" required />
-                                </div>
-                            </div>
-                            <div class="erp-omd-form-actions">
-                                <?php submit_button(__('Zapisz stawkę projektową', 'erp-omd'), 'secondary'); ?>
-                            </div>
-                        </form>
-                        <table class="widefat striped">
-                            <thead><tr><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Stawka', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
-                            <tbody>
-                                <?php if (empty($project_rates)) : ?>
-                                    <tr><td colspan="3"><?php esc_html_e('Brak stawek projektowych. Projekt będzie dziedziczył stawki klienta, jeśli są skonfigurowane.', 'erp-omd'); ?></td></tr>
-                                <?php else : ?>
-                                    <?php foreach ($project_rates as $project_rate) : ?>
-                                        <tr>
-                                            <td><?php echo esc_html($project_rate['role_name'] ?? '—'); ?></td>
-                                            <td><?php echo esc_html(number_format_i18n((float) ($project_rate['rate'] ?? 0), 2)); ?></td>
-                                            <td>
-                                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć stawkę projektową?', 'erp-omd')); ?>');">
-                                                    <?php wp_nonce_field('erp_omd_delete_project_rate'); ?>
-                                                    <input type="hidden" name="erp_omd_action" value="delete_project_rate" />
-                                                    <input type="hidden" name="id" value="<?php echo esc_attr($project_rate['id'] ?? 0); ?>" />
                                                     <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
                                                     <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
                                                 </form>
