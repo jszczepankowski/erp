@@ -12,7 +12,7 @@
         <div class="erp-omd-kpi-grid">
             <div class="erp-omd-kpi erp-omd-kpi-accent erp-omd-kpi-profit">
                 <span class="erp-omd-kpi-label"><?php esc_html_e('Wynik controllingowy', 'erp-omd'); ?></span>
-                <strong><?php echo esc_html(number_format_i18n((float) ($omd_month_row['controlling_result'] ?? 0), 2)); ?></strong>
+                <strong><?php echo esc_html(number_format_i18n((float) ($dashboard_controlling_result ?? 0), 2)); ?></strong>
             </div>
         </div>
     </div>
@@ -41,7 +41,7 @@
         ],
         [
             'icon' => 'portfolio',
-            'value' => count($projects),
+            'value' => (int) ($dashboard_active_projects_count ?? 0),
             'label' => __('Projekty', 'erp-omd'),
             'variant' => '',
         ],
@@ -71,12 +71,10 @@
         __('Raport miesięczny', 'erp-omd') => 'media-spreadsheet',
     ];
     ?>
-    <p class="description"><?php esc_html_e('Sekcje poniżej możesz przeciągać i upuszczać — układ zapisuje się per użytkownik.', 'erp-omd'); ?></p>
     <div class="erp-omd-dashboard-sections" data-dashboard-sections="1">
-        <section class="erp-omd-dashboard-section" data-section-id="shortcuts" draggable="true">
+        <section class="erp-omd-dashboard-section" data-section-id="shortcuts">
             <div class="erp-omd-section-header">
                 <h2><?php esc_html_e('Skróty operacyjne', 'erp-omd'); ?></h2>
-                <button type="button" class="button button-secondary erp-omd-section-drag-handle" aria-label="<?php esc_attr_e('Przeciągnij sekcję', 'erp-omd'); ?>">↕</button>
             </div>
             <div class="erp-omd-shortcut-grid">
                 <?php foreach ($dashboard_shortcuts as $shortcut) : ?>
@@ -92,10 +90,9 @@
             </div>
         </section>
 
-        <section class="erp-omd-metric-section erp-omd-dashboard-section" data-section-id="metrics" draggable="true">
+        <section class="erp-omd-metric-section erp-omd-dashboard-section" data-section-id="metrics">
             <div class="erp-omd-section-header">
                 <h2><?php printf(esc_html__('Puls operacyjny za %s', 'erp-omd'), esc_html($reporting_month_label)); ?></h2>
-                <button type="button" class="button button-secondary erp-omd-section-drag-handle" aria-label="<?php esc_attr_e('Przeciągnij sekcję', 'erp-omd'); ?>">↕</button>
             </div>
             <div class="erp-omd-metric-strip">
                 <?php foreach ($dashboard_metric_tiles as $tile) : ?>
@@ -110,10 +107,9 @@
             </div>
         </section>
 
-        <div class="erp-omd-dashboard-section erp-omd-dashboard-visuals-section" data-section-id="visuals" draggable="true">
+        <div class="erp-omd-dashboard-section erp-omd-dashboard-visuals-section" data-section-id="visuals">
             <div class="erp-omd-section-header">
                 <h2><?php esc_html_e('Wizualizacje dashboardu', 'erp-omd'); ?></h2>
-                <button type="button" class="button button-secondary erp-omd-section-drag-handle" aria-label="<?php esc_attr_e('Przeciągnij sekcję', 'erp-omd'); ?>">↕</button>
             </div>
             <div class="erp-omd-dashboard-visuals">
                 <div class="erp-omd-card erp-omd-chart-card">
