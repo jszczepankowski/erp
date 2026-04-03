@@ -1842,6 +1842,211 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-projects', 'success', __('Pozycja przychodowa projektu została usunięta.', 'erp-omd'), ['id' => $project_id]);
     }
 
+    private function handle_project_revenue_save()
+    {
+        check_admin_referer('erp_omd_save_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = empty($_POST['project_revenue_id']) ? 0 : (int) $_POST['project_revenue_id'];
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($_POST['amount'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'revenue_date' => sanitize_text_field(wp_unslash($_POST['revenue_date'] ?? '')),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+        $errors = $this->project_financial_service->validate_project_revenue($payload);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+        }
+        if ($id) {
+            $this->project_revenues->update($id, $payload);
+            $message = __('Pozycja przychodowa projektu została zaktualizowana.', 'erp-omd');
+        } else {
+            $this->project_revenues->create($payload);
+            $message = __('Pozycja przychodowa projektu została dodana.', 'erp-omd');
+        }
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_delete()
+    {
+        check_admin_referer('erp_omd_delete_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = (int) ($_POST['project_revenue_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        if ($id) {
+            $this->project_revenues->delete($id);
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Pozycja przychodowa projektu została usunięta.', 'erp-omd'), ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_save()
+    {
+        check_admin_referer('erp_omd_save_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = empty($_POST['project_revenue_id']) ? 0 : (int) $_POST['project_revenue_id'];
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($_POST['amount'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'revenue_date' => sanitize_text_field(wp_unslash($_POST['revenue_date'] ?? '')),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+        $errors = $this->project_financial_service->validate_project_revenue($payload);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+        }
+        if ($id) {
+            $this->project_revenues->update($id, $payload);
+            $message = __('Pozycja przychodowa projektu została zaktualizowana.', 'erp-omd');
+        } else {
+            $this->project_revenues->create($payload);
+            $message = __('Pozycja przychodowa projektu została dodana.', 'erp-omd');
+        }
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_delete()
+    {
+        check_admin_referer('erp_omd_delete_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = (int) ($_POST['project_revenue_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        if ($id) {
+            $this->project_revenues->delete($id);
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Pozycja przychodowa projektu została usunięta.', 'erp-omd'), ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_save()
+    {
+        check_admin_referer('erp_omd_save_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = empty($_POST['project_revenue_id']) ? 0 : (int) $_POST['project_revenue_id'];
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($_POST['amount'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'revenue_date' => sanitize_text_field(wp_unslash($_POST['revenue_date'] ?? '')),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+        $errors = $this->project_financial_service->validate_project_revenue($payload);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+        }
+        if ($id) {
+            $this->project_revenues->update($id, $payload);
+            $message = __('Pozycja przychodowa projektu została zaktualizowana.', 'erp-omd');
+        } else {
+            $this->project_revenues->create($payload);
+            $message = __('Pozycja przychodowa projektu została dodana.', 'erp-omd');
+        }
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_delete()
+    {
+        check_admin_referer('erp_omd_delete_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = (int) ($_POST['project_revenue_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        if ($id) {
+            $this->project_revenues->delete($id);
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Pozycja przychodowa projektu została usunięta.', 'erp-omd'), ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_save()
+    {
+        check_admin_referer('erp_omd_save_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = empty($_POST['project_revenue_id']) ? 0 : (int) $_POST['project_revenue_id'];
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($_POST['amount'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'revenue_date' => sanitize_text_field(wp_unslash($_POST['revenue_date'] ?? '')),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+        $errors = $this->project_financial_service->validate_project_revenue($payload);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+        }
+        if ($id) {
+            $this->project_revenues->update($id, $payload);
+            $message = __('Pozycja przychodowa projektu została zaktualizowana.', 'erp-omd');
+        } else {
+            $this->project_revenues->create($payload);
+            $message = __('Pozycja przychodowa projektu została dodana.', 'erp-omd');
+        }
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_delete()
+    {
+        check_admin_referer('erp_omd_delete_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = (int) ($_POST['project_revenue_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        if ($id) {
+            $this->project_revenues->delete($id);
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Pozycja przychodowa projektu została usunięta.', 'erp-omd'), ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_save()
+    {
+        check_admin_referer('erp_omd_save_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = empty($_POST['project_revenue_id']) ? 0 : (int) $_POST['project_revenue_id'];
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($_POST['amount'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'revenue_date' => sanitize_text_field(wp_unslash($_POST['revenue_date'] ?? '')),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+        $errors = $this->project_financial_service->validate_project_revenue($payload);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+        }
+        if ($id) {
+            $this->project_revenues->update($id, $payload);
+            $message = __('Pozycja przychodowa projektu została zaktualizowana.', 'erp-omd');
+        } else {
+            $this->project_revenues->create($payload);
+            $message = __('Pozycja przychodowa projektu została dodana.', 'erp-omd');
+        }
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_delete()
+    {
+        check_admin_referer('erp_omd_delete_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = (int) ($_POST['project_revenue_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        if ($id) {
+            $this->project_revenues->delete($id);
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Pozycja przychodowa projektu została usunięta.', 'erp-omd'), ['id' => $project_id]);
+    }
+
     private function handle_time_entry_save()
     {
         check_admin_referer('erp_omd_save_time_entry');
@@ -2271,6 +2476,101 @@ class ERP_OMD_Admin
         update_option('erp_omd_fixed_monthly_cost_items', $fixed_items);
         update_option('erp_omd_fixed_monthly_cost', array_sum(wp_list_pluck($fixed_items, 'amount')));
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
     }
 
     private function handle_manual_backup_action()
