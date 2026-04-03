@@ -472,11 +472,37 @@
         <?php endif; ?>
     </div>
     <div class="erp-omd-card">
+        <?php
+        $projects_list_view = in_array((string) ($projects_list_view ?? 'active'), ['active', 'archive'], true)
+            ? (string) $projects_list_view
+            : 'active';
+        $projects_is_archive_view = $projects_list_view === 'archive';
+        $projects_list_base_args = [
+            'page' => 'erp-omd-projects',
+            'month' => $project_filters['month'] ?? '',
+            'search' => $project_filters['search'] ?? '',
+            'client_id' => (int) ($project_filters['client_id'] ?? 0),
+            'manager_id' => (int) ($project_filters['manager_id'] ?? 0),
+            'status' => (string) ($project_filters['status'] ?? ''),
+        ];
+        $projects_active_url = add_query_arg(
+            array_merge($projects_list_base_args, ['list_view' => 'active']),
+            admin_url('admin.php')
+        );
+        $projects_archive_url = add_query_arg(
+            array_merge($projects_list_base_args, ['list_view' => 'archive', 'status' => '']),
+            admin_url('admin.php')
+        );
+        $project_filter_statuses = $projects_is_archive_view
+            ? ['archiwum']
+            : ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony'];
+        ?>
 
         <div class="erp-omd-section-header">
             <h2><?php esc_html_e('Lista projektów', 'erp-omd'); ?></h2>
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-projects" />
+                <input type="hidden" name="list_view" value="<?php echo esc_attr($projects_list_view); ?>" />
                 <input type="month" name="month" value="<?php echo esc_attr($project_filters['month'] ?? ''); ?>" />
                 <button class="button" type="submit"><?php esc_html_e('Ustaw miesiąc', 'erp-omd'); ?></button>
             </form>
@@ -484,13 +510,18 @@
         <div class="erp-omd-section-header">
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-projects" />
+                <input type="hidden" name="list_view" value="<?php echo esc_attr($projects_list_view); ?>" />
                 <input type="hidden" name="month" value="<?php echo esc_attr($project_filters['month'] ?? ''); ?>" />
                 <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj projektu, klienta, managera…', 'erp-omd'); ?>" value="<?php echo esc_attr($project_filters['search'] ?? ''); ?>" />
                 <select name="client_id"><option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option><?php foreach ($clients as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) ($project_filters['client_id'] ?? 0), (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select>
                 <select name="manager_id"><option value="0"><?php esc_html_e('Wszyscy managerowie', 'erp-omd'); ?></option><?php foreach ($employees_for_select as $employee_item) : ?><option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($project_filters['manager_id'] ?? 0), (int) $employee_item['id']); ?>><?php echo esc_html($employee_item['user_login']); ?></option><?php endforeach; ?></select>
-                <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'] as $project_status) : ?><option value="<?php echo esc_attr($project_status); ?>" <?php selected($project_filters['status'] ?? '', $project_status); ?>><?php echo esc_html($this->project_status_label($project_status)); ?></option><?php endforeach; ?></select>
+                <select name="status"><option value=""><?php echo esc_html($projects_is_archive_view ? __('Status: Archiwum', 'erp-omd') : __('Wszystkie statusy', 'erp-omd')); ?></option><?php foreach ($project_filter_statuses as $project_status) : ?><option value="<?php echo esc_attr($project_status); ?>" <?php selected($project_filters['status'] ?? '', $project_status); ?>><?php echo esc_html($this->project_status_label($project_status)); ?></option><?php endforeach; ?></select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
+            <div class="erp-omd-filter-form">
+                <a class="button <?php echo $projects_is_archive_view ? '' : 'button-primary'; ?>" href="<?php echo esc_url($projects_active_url); ?>"><?php esc_html_e('Projekty', 'erp-omd'); ?></a>
+                <a class="button <?php echo $projects_is_archive_view ? 'button-primary' : ''; ?>" href="<?php echo esc_url($projects_archive_url); ?>"><?php esc_html_e('Archiwum', 'erp-omd'); ?></a>
+            </div>
         </div>
         <form method="post" id="erp-omd-bulk-projects-form">
             <?php wp_nonce_field('erp_omd_bulk_projects'); ?>
@@ -501,7 +532,7 @@
             <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-project-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Typ', 'erp-omd'); ?></th><th><?php esc_html_e('Managerowie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
             <tbody>
                 <?php if (empty($projects)) : ?>
-                    <tr><td colspan="12"><?php esc_html_e('Brak projektów dla wybranych filtrów. Zmień kryteria albo dodaj nowy projekt.', 'erp-omd'); ?></td></tr>
+                    <tr><td colspan="12"><?php echo esc_html($projects_is_archive_view ? __('Brak projektów w archiwum dla wybranych filtrów.', 'erp-omd') : __('Brak projektów dla wybranych filtrów. Zmień kryteria albo dodaj nowy projekt.', 'erp-omd')); ?></td></tr>
                 <?php else : ?>
                     <?php foreach ($projects as $project_row) : ?>
                         <?php $list_financial = $project_financials_by_project[(int) $project_row['id']] ?? []; ?>

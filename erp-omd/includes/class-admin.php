@@ -670,6 +670,10 @@ class ERP_OMD_Admin
             'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
             'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
         ];
+        $projects_list_view = sanitize_key(wp_unslash($_GET['list_view'] ?? 'active'));
+        if (! in_array($projects_list_view, ['active', 'archive'], true)) {
+            $projects_list_view = 'active';
+        }
         $projects = array_values(array_filter($projects, function ($project_row) use ($project_filters) {
             if ($project_filters['search'] !== '') {
                 $haystack = strtolower(implode(' ', [
@@ -695,6 +699,18 @@ class ERP_OMD_Admin
                 if (substr($project_month_source, 0, 7) !== $project_filters['month']) {
                     return false;
                 }
+            }
+
+            return true;
+        }));
+        $projects = array_values(array_filter($projects, function ($project_row) use ($projects_list_view, $project_filters) {
+            $status = (string) ($project_row['status'] ?? '');
+            if ($projects_list_view === 'archive') {
+                return $status === 'archiwum';
+            }
+
+            if ($status === 'archiwum' && $project_filters['status'] === '') {
+                return false;
             }
 
             return true;
