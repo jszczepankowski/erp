@@ -63,7 +63,7 @@ class ERP_OMD_Project_Request_Service
             $errors[] = __('Nazwa projektu we wniosku jest wymagana.', 'erp-omd');
         }
 
-        if (! in_array($data['billing_type'], ['time_material', 'fixed_price', 'retainer'], true)) {
+        if (! in_array($data['billing_type'], ['time_material', 'fixed_price', 'retainer', 'mixed'], true)) {
             $errors[] = __('Typ rozliczenia wniosku jest niepoprawny.', 'erp-omd');
         }
 
