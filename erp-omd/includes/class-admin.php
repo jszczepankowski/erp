@@ -97,13 +97,13 @@ class ERP_OMD_Admin
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-team');
         add_submenu_page('erp-omd', __('Pracownicy', 'erp-omd'), __('Pracownicy', 'erp-omd'), 'erp_omd_manage_employees', 'erp-omd-employees', [$this, 'render_employees']);
         add_submenu_page('erp-omd', __('Role', 'erp-omd'), __('Role', 'erp-omd'), 'erp_omd_manage_roles', 'erp-omd-roles', [$this, 'render_roles']);
-        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-commercial');
         add_submenu_page('erp-omd', __('Klienci', 'erp-omd'), __('Klienci', 'erp-omd'), 'erp_omd_manage_clients', 'erp-omd-clients', [$this, 'render_clients']);
-        add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
-        add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
-        add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
-        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
+        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-commercial');
         add_submenu_page('erp-omd', __('Czas pracy', 'erp-omd'), __('Czas pracy', 'erp-omd'), 'erp_omd_manage_time', 'erp-omd-time', [$this, 'render_time_entries']);
+        add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
+        add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
+        add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
+        $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
         add_submenu_page(
             'erp-omd',
