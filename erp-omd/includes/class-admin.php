@@ -1027,6 +1027,92 @@ class ERP_OMD_Admin
         return array_slice($normalized, 0, 5);
     }
 
+    public function render_finances()
+    {
+        $month = sanitize_text_field(wp_unslash($_GET['month'] ?? current_time('Y-m')));
+        if (preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) !== 1) {
+            $month = current_time('Y-m');
+        }
+
+        $projects_report = $this->reporting_service->build_report('projects', [
+            'report_type' => 'projects',
+            'month' => $month,
+            'detail' => 'simple',
+            'tab' => 'reports',
+        ]);
+        $clients_report = $this->reporting_service->build_report('clients', [
+            'report_type' => 'clients',
+            'month' => $month,
+            'detail' => 'simple',
+            'tab' => 'reports',
+        ]);
+
+        $top_projects_best = $this->build_top_profit_ranking($projects_report, 'project_name');
+        $top_projects_worst = $this->build_top_profit_ranking($projects_report, 'project_name', false);
+        $top_clients_best = $this->build_top_profit_ranking($clients_report, 'client_name');
+        $top_clients_worst = $this->build_top_profit_ranking($clients_report, 'client_name', false);
+
+        $trend_rows = (array) $this->reporting_service->build_report('omd_rozliczenia', [
+            'report_type' => 'omd_rozliczenia',
+            'month' => $month,
+            'tab' => 'reports',
+        ]);
+        $selected_month_summary = [
+            'revenue' => 0.0,
+            'cost' => 0.0,
+            'salary_cost' => 0.0,
+            'project_direct_cost' => 0.0,
+            'time_cost' => 0.0,
+            'fixed_cost' => 0.0,
+        ];
+        foreach ($trend_rows as $trend_row) {
+            if ((string) ($trend_row['month'] ?? '') !== $month) {
+                continue;
+            }
+
+            $selected_month_summary['revenue'] = (float) ($trend_row['active_project_budgets'] ?? 0.0) + (float) ($trend_row['time_revenue'] ?? 0.0);
+            $selected_month_summary['cost'] = (float) ($trend_row['salary_cost'] ?? 0.0) + (float) ($trend_row['project_direct_cost'] ?? 0.0) + (float) ($trend_row['time_cost'] ?? 0.0) + (float) ($trend_row['fixed_cost'] ?? 0.0);
+            $selected_month_summary['salary_cost'] = (float) ($trend_row['salary_cost'] ?? 0.0);
+            $selected_month_summary['project_direct_cost'] = (float) ($trend_row['project_direct_cost'] ?? 0.0);
+            $selected_month_summary['time_cost'] = (float) ($trend_row['time_cost'] ?? 0.0);
+            $selected_month_summary['fixed_cost'] = (float) ($trend_row['fixed_cost'] ?? 0.0);
+            break;
+        }
+
+        include ERP_OMD_PATH . 'templates/admin/finances.php';
+    }
+
+    private function build_top_profit_ranking(array $rows, $name_key, $best = true)
+    {
+        $normalized = [];
+        foreach ($rows as $row) {
+            $normalized[] = [
+                'name' => (string) ($row[$name_key] ?? '—'),
+                'client_name' => (string) ($row['client_name'] ?? ''),
+                'profit' => (float) ($row['profit'] ?? 0.0),
+                'revenue' => (float) ($row['revenue'] ?? 0.0),
+                'cost' => (float) ($row['cost'] ?? 0.0),
+                'margin' => (float) ($row['margin'] ?? 0.0),
+            ];
+        }
+
+        usort($normalized, static function ($left, $right) use ($best) {
+            $left_profit = (float) ($left['profit'] ?? 0.0);
+            $right_profit = (float) ($right['profit'] ?? 0.0);
+            if ($left_profit === $right_profit) {
+                return 0;
+            }
+
+            if ($best) {
+                return $left_profit < $right_profit ? 1 : -1;
+            }
+
+            return $left_profit > $right_profit ? 1 : -1;
+        });
+
+        return array_slice($normalized, 0, 5);
+    }
+
     private function handle_role_save() { /* retained */
         check_admin_referer('erp_omd_save_role');
         $this->require_capability('erp_omd_manage_roles');
@@ -1966,6 +2052,47 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-projects', 'success', __('Pozycja przychodowa projektu została usunięta.', 'erp-omd'), ['id' => $project_id]);
     }
 
+    private function handle_project_revenue_save()
+    {
+        check_admin_referer('erp_omd_save_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = empty($_POST['project_revenue_id']) ? 0 : (int) $_POST['project_revenue_id'];
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($_POST['amount'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'revenue_date' => sanitize_text_field(wp_unslash($_POST['revenue_date'] ?? '')),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+        $errors = $this->project_financial_service->validate_project_revenue($payload);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+        }
+        if ($id) {
+            $this->project_revenues->update($id, $payload);
+            $message = __('Pozycja przychodowa projektu została zaktualizowana.', 'erp-omd');
+        } else {
+            $this->project_revenues->create($payload);
+            $message = __('Pozycja przychodowa projektu została dodana.', 'erp-omd');
+        }
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_delete()
+    {
+        check_admin_referer('erp_omd_delete_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = (int) ($_POST['project_revenue_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        if ($id) {
+            $this->project_revenues->delete($id);
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Pozycja przychodowa projektu została usunięta.', 'erp-omd'), ['id' => $project_id]);
+    }
+
     private function handle_time_entry_save()
     {
         check_admin_referer('erp_omd_save_time_entry');
@@ -2395,6 +2522,25 @@ class ERP_OMD_Admin
         update_option('erp_omd_fixed_monthly_cost_items', $fixed_items);
         update_option('erp_omd_fixed_monthly_cost', array_sum(wp_list_pluck($fixed_items, 'amount')));
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
+    }
+
+    private function handle_manual_backup_action()
+    {
+        check_admin_referer('erp_omd_run_manual_backup');
+        $this->require_capability('erp_omd_manage_settings');
+
+        ERP_OMD_Cron_Manager::run_weekly_backup();
+        $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
+
+        if ($last_backup_status === 'success') {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy został wykonany ręcznie.', 'erp-omd'));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'error',
+            sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+        );
     }
 
     private function handle_manual_backup_action()
