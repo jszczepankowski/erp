@@ -135,7 +135,7 @@ class ERP_OMD_Client_Project_Service
             $errors[] = __('Nazwa projektu jest wymagana.', 'erp-omd');
         }
 
-        if (! in_array($data['billing_type'], ['time_material', 'fixed_price', 'retainer'], true)) {
+        if (! in_array($data['billing_type'], ['time_material', 'fixed_price', 'retainer', 'mixed'], true)) {
             $errors[] = __('Typ rozliczenia projektu jest niepoprawny.', 'erp-omd');
         }
 
@@ -264,6 +264,14 @@ class ERP_OMD_Client_Project_Service
                 }
                 if ((float) $data['budget'] !== 0.0) {
                     $errors[] = __('Projekt retainer nie powinien mieć budżetu fixed price — ustaw 0.', 'erp-omd');
+                }
+                break;
+            case 'mixed':
+                if ((float) $data['budget'] <= 0 && (int) ($data['estimate_id'] ?? 0) <= 0) {
+                    $errors[] = __('Projekt mixed (hybrydowy) wymaga budżetu części ryczałtowej lub powiązanej estymacji pozycyjnej.', 'erp-omd');
+                }
+                if ((float) $data['retainer_monthly_fee'] !== 0.0) {
+                    $errors[] = __('Projekt mixed (hybrydowy) nie używa opłaty retainer — ustaw 0.', 'erp-omd');
                 }
                 break;
         }

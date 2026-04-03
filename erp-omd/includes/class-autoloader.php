@@ -26,6 +26,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Project_Note_Repository' => 'includes/repositories/class-project-note-repository.php',
         'ERP_OMD_Project_Rate_Repository' => 'includes/repositories/class-project-rate-repository.php',
         'ERP_OMD_Project_Cost_Repository' => 'includes/repositories/class-project-cost-repository.php',
+        'ERP_OMD_Project_Revenue_Repository' => 'includes/repositories/class-project-revenue-repository.php',
         'ERP_OMD_Project_Financial_Repository' => 'includes/repositories/class-project-financial-repository.php',
         'ERP_OMD_Time_Entry_Repository' => 'includes/repositories/class-time-entry-repository.php',
         'ERP_OMD_Attachment_Repository' => 'includes/repositories/class-attachment-repository.php',
