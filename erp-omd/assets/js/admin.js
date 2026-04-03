@@ -413,6 +413,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  document.querySelectorAll('.erp-omd-project-monthly-dates').forEach((button) => {
+    button.addEventListener('click', () => {
+      const startSelector = button.dataset.startTarget || '';
+      const endSelector = button.dataset.endTarget || '';
+
+      if (!startSelector || !endSelector) {
+        return;
+      }
+
+      const startInput = document.querySelector(startSelector);
+      const endInput = document.querySelector(endSelector);
+
+      if (!(startInput instanceof HTMLInputElement) || !(endInput instanceof HTMLInputElement)) {
+        return;
+      }
+
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      startInput.value = formatDate(monthStart);
+      endInput.value = formatDate(monthEnd);
+      startInput.dispatchEvent(new Event('change', { bubbles: true }));
+      endInput.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+
 
   const syncRoleAvailability = (projectSelect) => {
     if (!(projectSelect instanceof HTMLSelectElement)) {
