@@ -32,5 +32,9 @@ if (($counts['handle_project_revenue_save'] ?? 0) !== 0 || ($counts['handle_proj
     throw new RuntimeException('Project revenue handlers should be inlined in handle_forms() and not declared as class methods.');
 }
 
-echo "Assertions: 4\n";
+if (($counts['handle_manual_backup_action'] ?? 0) !== 0) {
+    throw new RuntimeException('Manual backup handler should be inlined in handle_forms() and not declared as class method.');
+}
+
+echo "Assertions: 5\n";
 echo "Admin class duplicate-method test passed.\n";
