@@ -340,7 +340,7 @@ class ERP_OMD_Reporting_Service
                 $billing_type = (string) ($project['billing_type'] ?? '');
                 $hourly_component = round((float) ($entry_metrics['time_revenue'] ?? 0.0), 2);
                 $fixed_component = in_array($billing_type, ['fixed_price', 'mixed'], true) ? round((float) ($project['budget'] ?? 0.0), 2) : 0.0;
-                $retainer_component = in_array($billing_type, ['retainer', 'mixed'], true) ? round((float) ($project['retainer_monthly_fee'] ?? 0.0), 2) : 0.0;
+                $retainer_component = $billing_type === 'retainer' ? round((float) ($project['retainer_monthly_fee'] ?? 0.0), 2) : 0.0;
                 $rows[count($rows) - 1]['detail'] = [
                     'time_entries' => array_values(array_map(static function ($entry) {
                         $hours = (float) ($entry['hours'] ?? 0);
@@ -381,7 +381,7 @@ class ERP_OMD_Reporting_Service
 
                 if (
                     $project_id_for_invoice > 0
-                    && $billing_type === 'fixed_price'
+                    && in_array($billing_type, ['fixed_price', 'mixed'], true)
                     && (int) ($project['estimate_id'] ?? 0) > 0
                     && $this->estimate_items
                     && method_exists($this->estimate_items, 'for_estimate')
@@ -1152,6 +1152,8 @@ class ERP_OMD_Reporting_Service
                 return __('Ryczałt', 'erp-omd');
             case 'retainer':
                 return __('Abonament', 'erp-omd');
+            case 'mixed':
+                return __('Hybryda (ryczałt + godziny)', 'erp-omd');
             case 'time_material':
             default:
                 return __('Godzinowy', 'erp-omd');

@@ -276,8 +276,81 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let debounceTimer = null;
+    let ajaxInFlight = false;
+
+    const setInlineState = (stateClass) => {
+      form.classList.remove(
+        'erp-omd-inline-pending',
+        'erp-omd-inline-success',
+        'erp-omd-inline-error'
+      );
+      if (stateClass) {
+        form.classList.add(stateClass);
+      }
+    };
+
+    const submitInlineProjectViaAjax = () => {
+      if (
+        typeof erpOmdAdminData === 'undefined' ||
+        !erpOmdAdminData ||
+        !erpOmdAdminData.ajaxUrl ||
+        ajaxInFlight
+      ) {
+        return false;
+      }
+
+      const idInput = form.querySelector('input[name="id"]');
+      if (!(idInput instanceof HTMLInputElement) || idInput.value === '') {
+        return false;
+      }
+
+      ajaxInFlight = true;
+      setInlineState('erp-omd-inline-pending');
+
+      const payload = new FormData(form);
+      payload.set('action', 'erp_omd_inline_project_update');
+      payload.set(
+        '_ajax_nonce',
+        String(erpOmdAdminData.inlineProjectNonce || '')
+      );
+
+      fetch(erpOmdAdminData.ajaxUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: payload,
+      })
+        .then((response) => response.json())
+        .then((json) => {
+          if (!json || json.success !== true) {
+            throw new Error(
+              (json && json.data && json.data.message) ||
+                'Błąd zapisu inline projektu.'
+            );
+          }
+          setInlineState('erp-omd-inline-success');
+          setTimeout(() => setInlineState(''), 1200);
+        })
+        .catch((error) => {
+          setInlineState('erp-omd-inline-error');
+          window.console &&
+            console.warn &&
+            console.warn('[ERP OMD] Inline save error:', error);
+        })
+        .finally(() => {
+          ajaxInFlight = false;
+        });
+
+      return true;
+    };
 
     const submitInlineForm = () => {
+      if (actionInput.value === 'inline_update_project') {
+        const usedAjax = submitInlineProjectViaAjax();
+        if (usedAjax) {
+          return;
+        }
+      }
+
       if (typeof form.requestSubmit === 'function') {
         form.requestSubmit();
         return;
