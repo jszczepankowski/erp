@@ -20,5 +20,9 @@ if (! empty($duplicates)) {
     throw new RuntimeException('Duplicate admin methods found: ' . implode(', ', array_keys($duplicates)));
 }
 
-echo "Assertions: 1\n";
+if (($counts['render_finances_page'] ?? 0) !== 1) {
+    throw new RuntimeException('Expected exactly one render_finances_page() method in ERP_OMD_Admin.');
+}
+
+echo "Assertions: 2\n";
 echo "Admin class duplicate-method test passed.\n";
