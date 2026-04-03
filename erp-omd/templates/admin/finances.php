@@ -178,10 +178,13 @@
         </section>
     </div>
 
-    <div class="erp-omd-page-sections">
-        <?php $render_profit_chart($top_projects_best, __('TOP 5 najbardziej opłacalnych projektów', 'erp-omd'), '', true); ?>
-        <?php $render_profit_chart($top_projects_worst, __('TOP 5 najmniej opłacalnych projektów', 'erp-omd'), '', true); ?>
-        <?php $render_profit_chart($top_clients_best, __('TOP 5 najbardziej opłacalnych klientów', 'erp-omd')); ?>
-        <?php $render_profit_chart($top_clients_worst, __('TOP 5 najmniej opłacalnych klientów', 'erp-omd')); ?>
+    <div class="erp-omd-page-sections erp-omd-finance-top-grid">
+        <?php $render_profit_chart($top_projects_best, __('TOP 5 najbardziej opłacalnych projektów', 'erp-omd'), 'erp-omd-finance-top-card', true); ?>
+        <?php $render_profit_chart($top_projects_worst, __('TOP 5 najmniej opłacalnych projektów', 'erp-omd'), 'erp-omd-finance-top-card', true); ?>
+    </div>
+
+    <div class="erp-omd-page-sections erp-omd-finance-top-grid">
+        <?php $render_profit_chart($top_clients_best, __('TOP 5 najbardziej opłacalnych klientów', 'erp-omd'), 'erp-omd-finance-top-card'); ?>
+        <?php $render_profit_chart($top_clients_worst, __('TOP 5 najmniej opłacalnych klientów', 'erp-omd'), 'erp-omd-finance-top-card'); ?>
     </div>
 </div>
