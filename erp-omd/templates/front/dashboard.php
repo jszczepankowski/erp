@@ -327,6 +327,7 @@
                         $selected_project_financial = (array) ($selected_project['financial'] ?? []);
                         $selected_project_alerts = (array) ($selected_project['alerts'] ?? []);
                         $selected_project_cost_rows = $this->project_costs->for_project((int) ($selected_project['id'] ?? 0));
+                        $selected_project_revenue_rows = $this->project_revenues->for_project((int) ($selected_project['id'] ?? 0));
                         $selected_project_estimates = array_values(
                             array_filter(
                                 $available_estimates,
@@ -476,6 +477,70 @@
                                 </table>
                             </div>
                         </div>
+
+                        <?php if ((string) ($selected_project['billing_type'] ?? '') === 'mixed') : ?>
+                        <div class="erp-omd-front-panel erp-omd-front-panel-subtle">
+                            <div class="erp-omd-front-section-heading">
+                                <h3><?php esc_html_e('Dodaj pozycję przychodową', 'erp-omd'); ?></h3>
+                            </div>
+                            <form method="post" action="<?php echo esc_url($manager_form_action); ?>" class="erp-omd-front-form">
+                                <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                <input type="hidden" name="erp_omd_front_action" value="add_project_revenue">
+                                <input type="hidden" name="project_id" value="<?php echo esc_attr((string) ($selected_project['id'] ?? 0)); ?>">
+                                <div class="erp-omd-front-form-row">
+                                    <div>
+                                        <label for="erp-omd-front-project-revenue-amount"><?php esc_html_e('Kwota', 'erp-omd'); ?></label>
+                                        <input id="erp-omd-front-project-revenue-amount" type="number" min="0" step="0.01" name="amount" value="0" required>
+                                    </div>
+                                    <div>
+                                        <label for="erp-omd-front-project-revenue-date"><?php esc_html_e('Data pozycji', 'erp-omd'); ?></label>
+                                        <input id="erp-omd-front-project-revenue-date" type="date" name="revenue_date" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" required>
+                                    </div>
+                                </div>
+                                <label for="erp-omd-front-project-revenue-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
+                                <textarea id="erp-omd-front-project-revenue-description" name="description" rows="3" required></textarea>
+                                <div class="erp-omd-front-inline-actions">
+                                    <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Dodaj pozycję przychodową', 'erp-omd'); ?></button>
+                                </div>
+                            </form>
+                            <div class="erp-omd-front-table-wrap">
+                                <table class="erp-omd-front-table" data-table-enhanced="1">
+                                    <thead>
+                                        <tr>
+                                            <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                            <th><?php esc_html_e('Kwota', 'erp-omd'); ?></th>
+                                            <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                            <th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($selected_project_revenue_rows)) : ?>
+                                            <tr>
+                                                <td colspan="4"><?php esc_html_e('Brak pozycji przychodowych projektu.', 'erp-omd'); ?></td>
+                                            </tr>
+                                        <?php else : ?>
+                                            <?php foreach ($selected_project_revenue_rows as $project_revenue_row) : ?>
+                                                <tr>
+                                                    <td><?php echo esc_html($project_revenue_row['revenue_date'] ?? '—'); ?></td>
+                                                    <td><?php echo esc_html(number_format_i18n((float) ($project_revenue_row['amount'] ?? 0), 2)); ?></td>
+                                                    <td><?php echo esc_html($project_revenue_row['description'] ?? ''); ?></td>
+                                                    <td>
+                                                        <form method="post" action="<?php echo esc_url($manager_form_action); ?>" onsubmit="return window.confirm('<?php echo esc_js(__('Usunąć pozycję przychodową projektu?', 'erp-omd')); ?>');">
+                                                            <?php wp_nonce_field('erp_omd_front_manager'); ?>
+                                                            <input type="hidden" name="erp_omd_front_action" value="delete_project_revenue">
+                                                            <input type="hidden" name="project_id" value="<?php echo esc_attr((string) ($selected_project['id'] ?? 0)); ?>">
+                                                            <input type="hidden" name="project_revenue_id" value="<?php echo esc_attr((string) ($project_revenue_row['id'] ?? 0)); ?>">
+                                                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <?php endif; ?>
 
                         <div class="erp-omd-front-grid erp-omd-front-grid-summary">
                             <div class="erp-omd-front-panel erp-omd-front-panel-subtle">
@@ -980,6 +1045,7 @@
                                         'time_material' => __('Godzinowy', 'erp-omd'),
                                         'fixed_price' => __('Ryczałt', 'erp-omd'),
                                         'retainer' => __('Abonament', 'erp-omd'),
+                                        'mixed' => __('Hybryda (ryczałt + godziny)', 'erp-omd'),
                                     ] as $billing_type => $billing_label) : ?>
                                         <option value="<?php echo esc_attr($billing_type); ?>" <?php selected((string) ($request_form_defaults['billing_type'] ?? 'time_material'), $billing_type); ?>>
                                             <?php echo esc_html($billing_label); ?>

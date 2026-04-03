@@ -103,9 +103,15 @@
                 <div>
                     <h2><?php esc_html_e('Lista wpisów czasu', 'erp-omd'); ?></h2>
                 </div>
+                <form method="get" class="erp-omd-filter-form">
+                    <input type="hidden" name="page" value="erp-omd-time" />
+                    <input type="month" name="month" value="<?php echo esc_attr($filters['month'] ?? ''); ?>" />
+                    <button class="button" type="submit"><?php esc_html_e('Ustaw miesiąc', 'erp-omd'); ?></button>
+                </form>
             </div>
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-time" />
+                <input type="hidden" name="month" value="<?php echo esc_attr($filters['month'] ?? ''); ?>" />
                 <input type="date" name="entry_date" value="<?php echo esc_attr($filters['entry_date'] ?? ''); ?>" />
                 <?php if ($can_select_any_employee) : ?>
                     <select name="employee_id"><option value=""><?php esc_html_e('Wszyscy pracownicy', 'erp-omd'); ?></option><?php foreach ($employees_for_select as $employee_item) : ?><option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((string) ($filters['employee_id'] ?? ''), (string) $employee_item['id']); ?>><?php echo esc_html($employee_item['user_login']); ?></option><?php endforeach; ?></select>
