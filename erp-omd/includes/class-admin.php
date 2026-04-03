@@ -19,6 +19,7 @@ class ERP_OMD_Admin
     private $estimate_service;
     private $project_rates;
     private $project_costs;
+    private $project_revenues;
     private $project_financials;
     private $time_entries;
     private $attachments;
@@ -45,6 +46,7 @@ class ERP_OMD_Admin
         ERP_OMD_Estimate_Service $estimate_service,
         ERP_OMD_Project_Rate_Repository $project_rates,
         ERP_OMD_Project_Cost_Repository $project_costs,
+        ERP_OMD_Project_Revenue_Repository $project_revenues,
         ERP_OMD_Project_Financial_Repository $project_financials,
         ERP_OMD_Time_Entry_Repository $time_entries,
         ERP_OMD_Attachment_Repository $attachments,
@@ -70,6 +72,7 @@ class ERP_OMD_Admin
         $this->estimate_service = $estimate_service;
         $this->project_rates = $project_rates;
         $this->project_costs = $project_costs;
+        $this->project_revenues = $project_revenues;
         $this->project_financials = $project_financials;
         $this->time_entries = $time_entries;
         $this->attachments = $attachments;
@@ -175,6 +178,8 @@ class ERP_OMD_Admin
             case 'delete_project_rate': $this->handle_project_rate_delete(); break;
             case 'save_project_cost': $this->handle_project_cost_save(); break;
             case 'delete_project_cost': $this->handle_project_cost_delete(); break;
+            case 'save_project_revenue': $this->handle_project_revenue_save(); break;
+            case 'delete_project_revenue': $this->handle_project_revenue_delete(); break;
             case 'save_time_entry': $this->handle_time_entry_save(); break;
             case 'inline_update_time_entry': $this->handle_inline_time_entry_update_action(); break;
             case 'change_time_status': $this->handle_time_status_change(); break;
@@ -442,6 +447,7 @@ class ERP_OMD_Admin
             'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
             'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
             'client_id' => (int) ($_GET['client_id'] ?? 0),
+            'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
         ];
         $estimates = array_values(array_filter($estimates, function ($estimate_row) use ($estimate_filters) {
             if ($estimate_filters['search'] !== '') {
@@ -460,6 +466,12 @@ class ERP_OMD_Admin
             if ($estimate_filters['client_id'] > 0 && (int) ($estimate_row['client_id'] ?? 0) !== $estimate_filters['client_id']) {
                 return false;
             }
+            if ($estimate_filters['month'] !== '') {
+                $estimate_month = substr((string) ($estimate_row['created_at'] ?? ''), 0, 7);
+                if ($estimate_month !== $estimate_filters['month']) {
+                    return false;
+                }
+            }
 
             return true;
         }));
@@ -473,6 +485,7 @@ class ERP_OMD_Admin
         $project_notes = [];
         $project_rates = [];
         $project_cost_rows = [];
+        $project_revenue_rows = [];
         $project_financial = null;
         $project_financials_by_project = [];
         if (! empty($_GET['id'])) {
@@ -481,6 +494,7 @@ class ERP_OMD_Admin
                 $project_notes = $this->project_notes->for_project((int) $project['id']);
                 $project_rates = $this->project_rates->for_project((int) $project['id']);
                 $project_cost_rows = $this->project_costs->for_project((int) $project['id']);
+                $project_revenue_rows = $this->project_revenues->for_project((int) $project['id']);
                 $project_financial = $this->project_financial_service->rebuild_for_project((int) $project['id']);
                 $project_financials_by_project[(int) $project['id']] = $project_financial;
             }
@@ -514,6 +528,7 @@ class ERP_OMD_Admin
             'client_id' => (int) ($_GET['client_id'] ?? 0),
             'manager_id' => (int) ($_GET['manager_id'] ?? 0),
             'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
         ];
         $projects = array_values(array_filter($projects, function ($project_row) use ($project_filters) {
             if ($project_filters['search'] !== '') {
@@ -535,6 +550,12 @@ class ERP_OMD_Admin
             if ($project_filters['status'] !== '' && (string) ($project_row['status'] ?? '') !== $project_filters['status']) {
                 return false;
             }
+            if ($project_filters['month'] !== '') {
+                $project_month_source = (string) (($project_row['start_date'] ?? '') !== '' ? ($project_row['start_date'] ?? '') : ($project_row['created_at'] ?? ''));
+                if (substr($project_month_source, 0, 7) !== $project_filters['month']) {
+                    return false;
+                }
+            }
 
             return true;
         }));
@@ -555,6 +576,7 @@ class ERP_OMD_Admin
             'project_id' => $_GET['project_id'] ?? '',
             'status' => $_GET['status'] ?? '',
             'entry_date' => $_GET['entry_date'] ?? '',
+            'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
         ];
         if (! $can_select_any_employee && $current_employee) {
             $filters['employee_id'] = (string) $current_employee['id'];
@@ -580,6 +602,11 @@ class ERP_OMD_Admin
                 }
 
                 return false;
+            }));
+        }
+        if (! empty($filters['month'])) {
+            $time_entries = array_values(array_filter($time_entries, function ($time_row) use ($filters) {
+                return strpos((string) ($time_row['entry_date'] ?? ''), (string) $filters['month']) === 0;
             }));
         }
         $selected_employee_id = $entry['employee_id'] ?? ($current_employee['id'] ?? 0);
@@ -853,6 +880,33 @@ class ERP_OMD_Admin
         $top_clients_best = $this->build_top_profit_ranking($clients_report, 'client_name');
         $top_clients_worst = $this->build_top_profit_ranking($clients_report, 'client_name', false);
 
+        $trend_rows = (array) $this->reporting_service->build_report('omd_rozliczenia', [
+            'report_type' => 'omd_rozliczenia',
+            'month' => $month,
+            'tab' => 'reports',
+        ]);
+        $selected_month_summary = [
+            'revenue' => 0.0,
+            'cost' => 0.0,
+            'salary_cost' => 0.0,
+            'project_direct_cost' => 0.0,
+            'time_cost' => 0.0,
+            'fixed_cost' => 0.0,
+        ];
+        foreach ($trend_rows as $trend_row) {
+            if ((string) ($trend_row['month'] ?? '') !== $month) {
+                continue;
+            }
+
+            $selected_month_summary['revenue'] = (float) ($trend_row['active_project_budgets'] ?? 0.0) + (float) ($trend_row['time_revenue'] ?? 0.0);
+            $selected_month_summary['cost'] = (float) ($trend_row['salary_cost'] ?? 0.0) + (float) ($trend_row['project_direct_cost'] ?? 0.0) + (float) ($trend_row['time_cost'] ?? 0.0) + (float) ($trend_row['fixed_cost'] ?? 0.0);
+            $selected_month_summary['salary_cost'] = (float) ($trend_row['salary_cost'] ?? 0.0);
+            $selected_month_summary['project_direct_cost'] = (float) ($trend_row['project_direct_cost'] ?? 0.0);
+            $selected_month_summary['time_cost'] = (float) ($trend_row['time_cost'] ?? 0.0);
+            $selected_month_summary['fixed_cost'] = (float) ($trend_row['fixed_cost'] ?? 0.0);
+            break;
+        }
+
         include ERP_OMD_PATH . 'templates/admin/finances.php';
     }
 
@@ -862,6 +916,7 @@ class ERP_OMD_Admin
         foreach ($rows as $row) {
             $normalized[] = [
                 'name' => (string) ($row[$name_key] ?? '—'),
+                'client_name' => (string) ($row['client_name'] ?? ''),
                 'profit' => (float) ($row['profit'] ?? 0.0),
                 'revenue' => (float) ($row['revenue'] ?? 0.0),
                 'cost' => (float) ($row['cost'] ?? 0.0),
@@ -1741,6 +1796,47 @@ class ERP_OMD_Admin
             $this->project_financial_service->rebuild_for_project($project_id);
         }
         $this->redirect_with_notice('erp-omd-projects', 'success', __('Koszt projektu został usunięty.', 'erp-omd'), ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_save()
+    {
+        check_admin_referer('erp_omd_save_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = empty($_POST['project_revenue_id']) ? 0 : (int) $_POST['project_revenue_id'];
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($_POST['amount'] ?? 0),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
+            'revenue_date' => sanitize_text_field(wp_unslash($_POST['revenue_date'] ?? '')),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+        $errors = $this->project_financial_service->validate_project_revenue($payload);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+        }
+        if ($id) {
+            $this->project_revenues->update($id, $payload);
+            $message = __('Pozycja przychodowa projektu została zaktualizowana.', 'erp-omd');
+        } else {
+            $this->project_revenues->create($payload);
+            $message = __('Pozycja przychodowa projektu została dodana.', 'erp-omd');
+        }
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $project_id]);
+    }
+
+    private function handle_project_revenue_delete()
+    {
+        check_admin_referer('erp_omd_delete_project_revenue');
+        $this->require_capability('erp_omd_manage_projects');
+        $id = (int) ($_POST['project_revenue_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        if ($id) {
+            $this->project_revenues->delete($id);
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Pozycja przychodowa projektu została usunięta.', 'erp-omd'), ['id' => $project_id]);
     }
 
     private function handle_time_entry_save()
