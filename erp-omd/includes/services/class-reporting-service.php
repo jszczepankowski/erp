@@ -193,7 +193,7 @@ class ERP_OMD_Reporting_Service
                     }
 
                     foreach ($projects as $project) {
-                        if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony'], true)) {
+                        if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony', 'archiwum'], true)) {
                             continue;
                         }
 
@@ -955,8 +955,9 @@ class ERP_OMD_Reporting_Service
     private function get_filtered_projects(array $filters)
     {
         $projects = $this->projects->all();
+        $report_type = (string) ($filters['report_type'] ?? '');
 
-        return array_values(array_filter($projects, function ($project) use ($filters) {
+        return array_values(array_filter($projects, function ($project) use ($filters, $report_type) {
             if ($filters['project_id'] > 0 && (int) ($project['id'] ?? 0) !== $filters['project_id']) {
                 return false;
             }
@@ -978,8 +979,35 @@ class ERP_OMD_Reporting_Service
             if (($filters['mode'] ?? 'LIVE') === 'ZAMKNIETY' && ! in_array($project_status, ['zakonczony', 'archiwum'], true)) {
                 return false;
             }
+
+            if (in_array($report_type, ['projects', 'clients'], true) && ! $this->is_project_from_reporting_month($project, (string) ($filters['month'] ?? ''))) {
+                return false;
+            }
+
             return true;
         }));
+    }
+
+    private function is_project_from_reporting_month(array $project, $month)
+    {
+        if (! preg_match('/^\d{4}-\d{2}$/', (string) $month)) {
+            return true;
+        }
+
+        $start_date = (string) ($project['start_date'] ?? '');
+        $end_date = (string) ($project['end_date'] ?? '');
+        $start_month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date) === 1 ? substr($start_date, 0, 7) : '';
+        $end_month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date) === 1 ? substr($end_date, 0, 7) : '';
+
+        if ($start_month === '') {
+            return true;
+        }
+
+        if ($start_month !== (string) $month) {
+            return false;
+        }
+
+        return $end_month === '' || $end_month === (string) $month;
     }
 
     private function get_filtered_entries(array $project_ids, array $filters)
@@ -1090,7 +1118,7 @@ class ERP_OMD_Reporting_Service
 
         foreach ($projects as $project) {
             $status = (string) ($project['status'] ?? '');
-            if (! in_array($status, ['do_faktury', 'zakonczony'], true)) {
+            if (! in_array($status, ['do_faktury', 'zakonczony', 'archiwum'], true)) {
                 continue;
             }
 
