@@ -118,7 +118,6 @@
             <div id="erp-omd-project-details">
                 <hr />
                 <div class="erp-omd-form-sections">
-                    <?php if ((string) ($project['billing_type'] ?? '') === 'mixed') : ?>
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Widok 360° projektu', 'erp-omd'); ?></h3>
@@ -159,9 +158,8 @@
                             </div>
                         </div>
                     </section>
-                    <?php endif; ?>
 
-                    <section class="erp-omd-form-section">
+                    <section class="erp-omd-form-section erp-omd-project-revenue-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Pozycje przychodowe projektu', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Dodatkowe pozycje podnoszące wartość przychodu projektu (np. druk materiałów).', 'erp-omd'); ?></p>
@@ -215,7 +213,7 @@
                         </table>
                     </section>
 
-                    <section class="erp-omd-form-section">
+                    <section class="erp-omd-form-section erp-omd-project-rates-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Stawki projektowe', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Dodawanie i przegląd stawek projektowych w jednej spójnej sekcji.', 'erp-omd'); ?></p>
