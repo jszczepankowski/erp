@@ -24,5 +24,9 @@ if (($counts['render_finances_page'] ?? 0) !== 1) {
     throw new RuntimeException('Expected exactly one render_finances_page() method in ERP_OMD_Admin.');
 }
 
-echo "Assertions: 2\n";
+if (($counts['build_profit_ranking'] ?? 0) !== 1) {
+    throw new RuntimeException('Expected exactly one build_profit_ranking() method in ERP_OMD_Admin.');
+}
+
+echo "Assertions: 3\n";
 echo "Admin class duplicate-method test passed.\n";
