@@ -223,6 +223,7 @@ if (! class_exists('WP_REST_Response')) {
     {
         private $data;
         private $status;
+        private $headers = [];
 
         public function __construct($data = null, $status = 200)
         {
@@ -238,6 +239,16 @@ if (! class_exists('WP_REST_Response')) {
         public function get_status()
         {
             return $this->status;
+        }
+
+        public function header($name, $value)
+        {
+            $this->headers[(string) $name] = (string) $value;
+        }
+
+        public function get_headers()
+        {
+            return $this->headers;
         }
     }
 }
@@ -289,7 +300,18 @@ if (! class_exists('ERP_OMD_Monthly_Hours_Service')) {
     class ERP_OMD_Monthly_Hours_Service { public function suggested_hours($month) { return 168; } }
 }
 if (! class_exists('ERP_OMD_Client_Repository')) {
-    class ERP_OMD_Client_Repository { public function all() { return [['id' => 1]]; } public function find($id) { return ['id' => $id]; } }
+    class ERP_OMD_Client_Repository {
+        public function all() { return [['id' => 1], ['id' => 2], ['id' => 3]]; }
+        public function find($id) { return ['id' => $id]; }
+        public function find_paged(array $filters = [], $limit = 100, $offset = 0)
+        {
+            return array_slice($this->all(), (int) $offset, (int) $limit);
+        }
+        public function count_filtered(array $filters = [])
+        {
+            return count($this->all());
+        }
+    }
 }
 if (! class_exists('ERP_OMD_Client_Rate_Repository')) {
     class ERP_OMD_Client_Rate_Repository { public function for_client($id) { return []; } public function find($id) { return ['id' => $id, 'client_id' => 1, 'role_id' => 1, 'rate' => 100]; } }
@@ -305,10 +327,29 @@ if (! class_exists('ERP_OMD_Project_Repository')) {
             ];
         }
         public function find($id) { return ['id' => $id, 'client_id' => 1]; }
+        public function find_paged(array $filters = [], $limit = 100, $offset = 0)
+        {
+            return array_slice($this->all(), (int) $offset, (int) $limit);
+        }
+        public function count_filtered(array $filters = [])
+        {
+            return count($this->all());
+        }
     }
 }
 if (! class_exists('ERP_OMD_Estimate_Repository')) {
-    class ERP_OMD_Estimate_Repository { public function all() { return [['id' => 20]]; } public function find($id) { return ['id' => $id, 'client_id' => 1, 'status' => 'wstepny']; } }
+    class ERP_OMD_Estimate_Repository {
+        public function all() { return [['id' => 20], ['id' => 21], ['id' => 22]]; }
+        public function find($id) { return ['id' => $id, 'client_id' => 1, 'status' => 'wstepny']; }
+        public function find_paged(array $filters = [], $limit = 100, $offset = 0)
+        {
+            return array_slice($this->all(), (int) $offset, (int) $limit);
+        }
+        public function count_filtered(array $filters = [])
+        {
+            return count($this->all());
+        }
+    }
 }
 if (! class_exists('ERP_OMD_Estimate_Item_Repository')) {
     class ERP_OMD_Estimate_Item_Repository { public function for_estimate($id) { return []; } public function find($id) { return ['id' => $id, 'estimate_id' => 20]; } }
@@ -349,9 +390,19 @@ if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
         {
             return [
                 ['id' => 1, 'entry_date' => '2026-03-05', 'status' => 'submitted', 'project_id' => 10],
+                ['id' => 2, 'entry_date' => '2026-03-06', 'status' => 'approved', 'project_id' => 10],
+                ['id' => 3, 'entry_date' => '2026-03-07', 'status' => 'approved', 'project_id' => 10],
             ];
         }
         public function find($id) { return ['id' => $id, 'project_id' => 10, 'created_by_user_id' => 1, 'status' => 'submitted']; }
+        public function find_paged(array $filters = [], $limit = 100, $offset = 0)
+        {
+            return array_slice($this->all($filters), (int) $offset, (int) $limit);
+        }
+        public function count_filtered(array $filters = [])
+        {
+            return count($this->all($filters));
+        }
     }
 }
 if (! class_exists('ERP_OMD_Attachment_Repository')) {
@@ -679,6 +730,21 @@ final class RestApiTestRunner
         $this->assertSame(2, $dashboardPayload['settlement_queue']['count'], 'Dashboard endpoint should expose invoice queue count.');
         $dashboardPayloadWithInvalidMonth = $dashboardCallback(new WP_REST_Request(['month' => '2026-13']));
         $this->assertSame(gmdate('Y-m'), $dashboardPayloadWithInvalidMonth['month'], 'Dashboard endpoint should fallback to current month when out-of-range month is provided.');
+
+        $clientsPaged = $api->list_clients(new WP_REST_Request(['paged' => 1, 'page' => 2, 'per_page' => 2]));
+        $this->assertSame(200, $clientsPaged->get_status(), 'Clients endpoint should return HTTP 200 for paged response.');
+        $this->assertSame(1, count($clientsPaged->get_data()), 'Clients endpoint should return only one row on second page with per_page=2.');
+        $this->assertSame(3, $clientsPaged->get_data()[0]['id'], 'Clients endpoint should return expected row for second page.');
+        $clientHeaders = $clientsPaged->get_headers();
+        $this->assertSame('3', $clientHeaders['X-WP-Total'] ?? '', 'Clients paged response should expose X-WP-Total header.');
+        $this->assertSame('2', $clientHeaders['X-WP-TotalPages'] ?? '', 'Clients paged response should expose X-WP-TotalPages header.');
+        $this->assertSame('2', $clientHeaders['X-ERP-OMD-Page'] ?? '', 'Clients paged response should expose current page header.');
+        $this->assertSame('2', $clientHeaders['X-ERP-OMD-PerPage'] ?? '', 'Clients paged response should expose per-page header.');
+
+        $estimatesPagedWithInvalidPerPage = $api->list_estimates(new WP_REST_Request(['paged' => 1, 'page' => 1, 'per_page' => 999]));
+        $this->assertSame(3, count($estimatesPagedWithInvalidPerPage->get_data()), 'Estimates endpoint should fallback to default per_page=100 when invalid value is provided.');
+        $estimateHeaders = $estimatesPagedWithInvalidPerPage->get_headers();
+        $this->assertSame('100', $estimateHeaders['X-ERP-OMD-PerPage'] ?? '', 'Estimates paged response should clamp invalid per_page to 100.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "REST API tests passed.\n";

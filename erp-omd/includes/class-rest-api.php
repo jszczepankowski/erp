@@ -682,7 +682,24 @@ class ERP_OMD_REST_API
     public function delete_salary_history(WP_REST_Request $request) { $this->salary_history->delete((int) $request['id']); return new WP_REST_Response(null, 204); }
     public function get_monthly_hours_suggestion(WP_REST_Request $request) { return rest_ensure_response(['year_month' => (string) $request['year_month'], 'suggested_hours' => $this->monthly_hours_service->suggested_hours((string) $request['year_month'])]); }
 
-    public function list_clients() { return rest_ensure_response($this->clients->all()); }
+    public function list_clients(WP_REST_Request $request)
+    {
+        $pagination = $this->resolve_pagination($request);
+        $filters = array_filter([
+            'status' => $request->get_param('status'),
+            'search' => $request->get_param('search'),
+        ], [$this, 'is_query_filter']);
+
+        if (! $pagination['enabled']) {
+            return rest_ensure_response($this->clients->all($filters));
+        }
+
+        $offset = ($pagination['page'] - 1) * $pagination['per_page'];
+        $rows = $this->clients->find_paged($filters, $pagination['per_page'], $offset);
+        $total = $this->clients->count_filtered($filters);
+
+        return $this->paginated_response($rows, $total, $pagination['page'], $pagination['per_page']);
+    }
     public function get_client(WP_REST_Request $request) { return $this->find_or_error($this->clients->find((int) $request['id']), 'erp_omd_client_not_found', __('Client not found.', 'erp-omd')); }
     public function create_client(WP_REST_Request $request) { $payload = $this->client_project_service->prepare_client($this->sanitize_client_payload($request)); $errors = $this->client_project_service->validate_client($payload); if ($errors) { return new WP_Error('erp_omd_client_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->clients->create($payload); return new WP_REST_Response($this->clients->find($id), 201); }
     public function update_client(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->clients->find($id); if (! $existing) { return new WP_Error('erp_omd_client_not_found', __('Client not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->client_project_service->prepare_client(array_merge($existing, $this->sanitize_client_payload($request))); $errors = $this->client_project_service->validate_client($payload, $id); if ($errors) { return new WP_Error('erp_omd_client_invalid', implode(' ', $errors), ['status' => 422]); } $this->clients->update($id, $payload); return rest_ensure_response($this->clients->find($id)); }
@@ -693,16 +710,35 @@ class ERP_OMD_REST_API
     public function update_client_rate(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->client_rates->find($id); if (! $existing) { return new WP_Error('erp_omd_client_rate_not_found', __('Client rate not found.', 'erp-omd'), ['status' => 404]); } $role_id = (int) ($request->get_param('role_id') ?: $existing['role_id']); $rate = (float) ($request->get_param('rate') ?: $existing['rate']); $errors = $this->client_project_service->validate_client_rate((int) $existing['client_id'], $role_id, $rate); if ($errors) { return new WP_Error('erp_omd_client_rate_invalid', implode(' ', $errors), ['status' => 422]); } $upserted_id = $this->client_rates->upsert((int) $existing['client_id'], $role_id, $rate); if ($upserted_id !== $id) { $this->client_rates->delete($id); } return rest_ensure_response($this->client_rates->find($upserted_id)); }
     public function delete_client_rate(WP_REST_Request $request) { $this->client_rates->delete((int) $request['id']); return new WP_REST_Response(null, 204); }
 
-    public function list_estimates()
+    public function list_estimates(WP_REST_Request $request)
     {
-        $estimates = $this->estimates->all();
+        $pagination = $this->resolve_pagination($request);
+        $filters = array_filter([
+            'status' => $request->get_param('status'),
+            'client_id' => $request->get_param('client_id'),
+            'search' => $request->get_param('search'),
+        ], [$this, 'is_query_filter']);
+
+        if ($pagination['enabled']) {
+            $offset = ($pagination['page'] - 1) * $pagination['per_page'];
+            $estimates = $this->estimates->find_paged($filters, $pagination['per_page'], $offset);
+            $total = $this->estimates->count_filtered($filters);
+        } else {
+            $estimates = $this->estimates->all($filters);
+            $total = count($estimates);
+        }
+
         foreach ($estimates as &$estimate) {
             $items = $this->estimate_items->for_estimate((int) $estimate['id']);
             $estimate['totals'] = $this->estimate_service->calculate_totals($items);
         }
         unset($estimate);
 
-        return rest_ensure_response($estimates);
+        if (! $pagination['enabled']) {
+            return rest_ensure_response($estimates);
+        }
+
+        return $this->paginated_response($estimates, $total, $pagination['page'], $pagination['per_page']);
     }
 
     public function get_estimate(WP_REST_Request $request)
@@ -848,7 +884,26 @@ class ERP_OMD_REST_API
         return rest_ensure_response($result);
     }
 
-    public function list_projects() { return rest_ensure_response($this->projects->all()); }
+    public function list_projects(WP_REST_Request $request)
+    {
+        $pagination = $this->resolve_pagination($request);
+        $filters = array_filter([
+            'status' => $request->get_param('status'),
+            'client_id' => $request->get_param('client_id'),
+            'manager_id' => $request->get_param('manager_id'),
+            'search' => $request->get_param('search'),
+        ], [$this, 'is_query_filter']);
+
+        if (! $pagination['enabled']) {
+            return rest_ensure_response($this->projects->all($filters));
+        }
+
+        $offset = ($pagination['page'] - 1) * $pagination['per_page'];
+        $rows = $this->projects->find_paged($filters, $pagination['per_page'], $offset);
+        $total = $this->projects->count_filtered($filters);
+
+        return $this->paginated_response($rows, $total, $pagination['page'], $pagination['per_page']);
+    }
     public function get_project(WP_REST_Request $request) { return $this->find_or_error($this->projects->find((int) $request['id']), 'erp_omd_project_not_found', __('Project not found.', 'erp-omd')); }
     public function create_project(WP_REST_Request $request) { $payload = $this->client_project_service->prepare_project($this->sanitize_project_payload($request)); $errors = $this->client_project_service->validate_project($payload); if ($errors) { return new WP_Error('erp_omd_project_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->projects->create($payload); $this->project_financial_service->rebuild_for_project($id); return new WP_REST_Response($this->projects->find($id), 201); }
     public function update_project(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->projects->find($id); if (! $existing) { return new WP_Error('erp_omd_project_not_found', __('Project not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->client_project_service->prepare_project(array_merge($existing, $this->sanitize_project_payload($request)), $existing); $errors = $this->client_project_service->validate_project($payload, $existing); if ($errors) { return new WP_Error('erp_omd_project_invalid', implode(' ', $errors), ['status' => 422]); } $this->projects->update($id, $payload); $this->project_financial_service->rebuild_for_project($id); return rest_ensure_response($this->projects->find($id)); }
@@ -877,9 +932,20 @@ class ERP_OMD_REST_API
             'entry_date' => $request->get_param('entry_date'),
         ];
         $filters = $this->time_entry_service->get_visible_filters_for_user($current_user, array_filter($filters));
-        $entries = $this->time_entries->all(array_filter($filters, [$this, 'is_query_filter']));
+        $query_filters = array_filter($filters, [$this, 'is_query_filter']);
+        $pagination = $this->resolve_pagination($request);
 
-        return rest_ensure_response($this->time_entry_service->filter_visible_entries($entries, $current_user));
+        if (! $pagination['enabled']) {
+            $entries = $this->time_entries->all($query_filters);
+            return rest_ensure_response($this->time_entry_service->filter_visible_entries($entries, $current_user));
+        }
+
+        $offset = ($pagination['page'] - 1) * $pagination['per_page'];
+        $entries = $this->time_entries->find_paged($query_filters, $pagination['per_page'], $offset);
+        $visible_entries = $this->time_entry_service->filter_visible_entries($entries, $current_user);
+        $total = $this->time_entries->count_filtered($query_filters);
+
+        return $this->paginated_response($visible_entries, $total, $pagination['page'], $pagination['per_page']);
     }
 
     public function get_time_entry(WP_REST_Request $request)
@@ -979,12 +1045,20 @@ class ERP_OMD_REST_API
     {
         $filters = $this->reporting_service->sanitize_filters($request->get_params());
         $report_type = sanitize_key((string) ($request->get_param('report_type') ?: $filters['report_type']));
+        $cache_key = $this->build_reports_cache_key('report', $report_type, $filters);
+        $cached = $this->get_reports_cache($cache_key);
+        if ($cached !== null) {
+            return rest_ensure_response($cached);
+        }
 
-        return rest_ensure_response([
+        $payload = [
             'filters' => $filters,
             'report_type' => $report_type,
             'rows' => $this->reporting_service->build_report($report_type, $filters),
-        ]);
+        ];
+        $this->set_reports_cache($cache_key, $payload);
+
+        return rest_ensure_response($payload);
     }
 
     public function export_report_definition(WP_REST_Request $request)
@@ -999,8 +1073,15 @@ class ERP_OMD_REST_API
     {
         $filters = $this->reporting_service->sanitize_filters($request->get_params());
         $filters['tab'] = 'calendar';
+        $cache_key = $this->build_reports_cache_key('calendar', 'calendar', $filters);
+        $cached = $this->get_reports_cache($cache_key);
+        if ($cached !== null) {
+            return rest_ensure_response($cached);
+        }
+        $payload = $this->reporting_service->build_calendar($filters);
+        $this->set_reports_cache($cache_key, $payload);
 
-        return rest_ensure_response($this->reporting_service->build_calendar($filters));
+        return rest_ensure_response($payload);
     }
 
     public function list_alerts(WP_REST_Request $request)
@@ -1317,6 +1398,73 @@ class ERP_OMD_REST_API
     private function is_query_filter($value)
     {
         return $value !== '' && $value !== null;
+    }
+
+    private function resolve_pagination(WP_REST_Request $request)
+    {
+        $enabled = (int) $request->get_param('paged') === 1;
+        $page = max(1, (int) $request->get_param('page'));
+        $per_page = (int) $request->get_param('per_page');
+        if ($per_page < 1 || $per_page > 200) {
+            $per_page = 100;
+        }
+
+        return [
+            'enabled' => $enabled,
+            'page' => $page,
+            'per_page' => $per_page,
+        ];
+    }
+
+    private function paginated_response(array $rows, $total_items, $page, $per_page)
+    {
+        $total_items = max(0, (int) $total_items);
+        $per_page = max(1, (int) $per_page);
+        $total_pages = max(1, (int) ceil($total_items / $per_page));
+
+        $response = new WP_REST_Response($rows, 200);
+        $response->header('X-WP-Total', (string) $total_items);
+        $response->header('X-WP-TotalPages', (string) $total_pages);
+        $response->header('X-ERP-OMD-Page', (string) max(1, (int) $page));
+        $response->header('X-ERP-OMD-PerPage', (string) $per_page);
+
+        return $response;
+    }
+
+    private function build_reports_cache_key($scope, $report_type, array $filters)
+    {
+        $version = (string) get_option('erp_omd_reports_cache_data_version', '1');
+        $normalized = $filters;
+        ksort($normalized);
+        $payload = function_exists('wp_json_encode')
+            ? wp_json_encode([$scope, $report_type, $normalized, $version])
+            : json_encode([$scope, $report_type, $normalized, $version]);
+
+        return 'erp_omd_reports_cache_' . md5((string) $payload);
+    }
+
+    private function get_reports_cache($cache_key)
+    {
+        if (! function_exists('get_transient')) {
+            return null;
+        }
+
+        $cached = get_transient($cache_key);
+        if ($cached === false || ! is_array($cached)) {
+            return null;
+        }
+
+        return $cached;
+    }
+
+    private function set_reports_cache($cache_key, array $payload)
+    {
+        if (! function_exists('set_transient')) {
+            return;
+        }
+
+        $ttl = 15 * (defined('MINUTE_IN_SECONDS') ? MINUTE_IN_SECONDS : 60);
+        set_transient($cache_key, $payload, $ttl);
     }
 
     private function is_month_locked_for_current_user($month)
