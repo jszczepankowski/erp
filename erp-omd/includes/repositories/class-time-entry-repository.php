@@ -10,6 +10,11 @@ class ERP_OMD_Time_Entry_Repository
 
     public function all(array $filters = [])
     {
+        return $this->find_paged($filters, 1000000, 0);
+    }
+
+    public function find_paged(array $filters = [], $limit = 100, $offset = 0)
+    {
         global $wpdb;
 
         $employees_table = $wpdb->prefix . 'erp_omd_employees';
@@ -38,6 +43,9 @@ class ERP_OMD_Time_Entry_Repository
             $params[] = $filters['entry_date'];
         }
 
+        $limit = max(1, (int) $limit);
+        $offset = max(0, (int) $offset);
+
         $sql = "SELECT t.*, eu.user_login AS employee_login, p.client_id AS client_id, c.name AS client_name, p.name AS project_name, r.name AS role_name,
                 au.user_login AS approved_by_login
                 FROM {$this->table_name()} t
@@ -47,13 +55,45 @@ class ERP_OMD_Time_Entry_Repository
                 LEFT JOIN {$clients_table} c ON c.id = p.client_id
                 INNER JOIN {$roles_table} r ON r.id = t.role_id
                 LEFT JOIN {$users_table} au ON au.ID = t.approved_by_user_id
-                WHERE " . implode(' AND ', $where) . ' ORDER BY t.entry_date DESC, t.id DESC';
+                WHERE " . implode(' AND ', $where) . ' ORDER BY t.entry_date DESC, t.id DESC LIMIT %d OFFSET %d';
 
-        if ($params) {
-            return $wpdb->get_results($wpdb->prepare($sql, ...$params), ARRAY_A);
+        $params[] = $limit;
+        $params[] = $offset;
+
+        return $wpdb->get_results($wpdb->prepare($sql, ...$params), ARRAY_A);
+    }
+
+    public function count_filtered(array $filters = [])
+    {
+        global $wpdb;
+
+        $where = ['1=1'];
+        $params = [];
+
+        if (! empty($filters['employee_id'])) {
+            $where[] = 'employee_id = %d';
+            $params[] = (int) $filters['employee_id'];
+        }
+        if (! empty($filters['project_id'])) {
+            $where[] = 'project_id = %d';
+            $params[] = (int) $filters['project_id'];
+        }
+        if (! empty($filters['status'])) {
+            $where[] = 'status = %s';
+            $params[] = (string) $filters['status'];
+        }
+        if (! empty($filters['entry_date'])) {
+            $where[] = 'entry_date = %s';
+            $params[] = (string) $filters['entry_date'];
         }
 
-        return $wpdb->get_results($sql, ARRAY_A);
+        if ($params) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare("SELECT COUNT(*) FROM {$this->table_name()} WHERE " . implode(' AND ', $where), ...$params)
+            );
+        }
+
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name()} WHERE " . implode(' AND ', $where));
     }
 
     public function find($id)
