@@ -422,6 +422,8 @@
                 <h2><?php esc_html_e('Lista kosztorysów', 'erp-omd'); ?></h2>
                 <form method="get" class="erp-omd-filter-form">
                     <input type="hidden" name="page" value="erp-omd-estimates" />
+                    <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($estimate_filters['per_page'] ?? 100)); ?>">
+                    <input type="hidden" name="page_num" value="1">
                     <input type="month" name="month" value="<?php echo esc_attr($estimate_filters['month'] ?? ''); ?>">
                     <button class="button" type="submit"><?php esc_html_e('Ustaw miesiąc', 'erp-omd'); ?></button>
                 </form>
@@ -429,9 +431,17 @@
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-estimates" />
                 <input type="hidden" name="month" value="<?php echo esc_attr($estimate_filters['month'] ?? ''); ?>">
+                <input type="hidden" name="page_num" value="1">
                 <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj kosztorysu, klienta, projektu…', 'erp-omd'); ?>" value="<?php echo esc_attr($estimate_filters['search'] ?? ''); ?>">
                 <select name="client_id"><option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option><?php foreach ($clients as $client_row) : ?><option value="<?php echo esc_attr($client_row['id']); ?>" <?php selected((int) ($estimate_filters['client_id'] ?? 0), (int) $client_row['id']); ?>><?php echo esc_html($client_row['name']); ?></option><?php endforeach; ?></select>
                 <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['wstepny', 'do_akceptacji', 'zaakceptowany'] as $status_option) : ?><option value="<?php echo esc_attr($status_option); ?>" <?php selected($estimate_filters['status'] ?? '', $status_option); ?>><?php echo esc_html($status_option); ?></option><?php endforeach; ?></select>
+                <select name="per_page">
+                    <?php foreach ([25, 50, 100, 200] as $estimate_per_page_option) : ?>
+                        <option value="<?php echo esc_attr((string) $estimate_per_page_option); ?>" <?php selected((int) ($estimate_filters['per_page'] ?? 100), $estimate_per_page_option); ?>>
+                            <?php echo esc_html((string) $estimate_per_page_option . ' / strona'); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
             <form method="post" id="erp-omd-bulk-estimates-form">
@@ -502,5 +512,31 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            <?php if (($estimate_pagination['total_pages'] ?? 1) > 1) : ?>
+                <div class="tablenav bottom">
+                    <div class="tablenav-pages">
+                        <?php
+                        $estimate_base_args = [
+                            'page' => 'erp-omd-estimates',
+                            'search' => (string) ($estimate_filters['search'] ?? ''),
+                            'status' => (string) ($estimate_filters['status'] ?? ''),
+                            'client_id' => (int) ($estimate_filters['client_id'] ?? 0),
+                            'month' => (string) ($estimate_filters['month'] ?? ''),
+                            'per_page' => (int) ($estimate_filters['per_page'] ?? 100),
+                        ];
+                        $estimate_current_page = (int) ($estimate_pagination['page_num'] ?? 1);
+                        $estimate_total_pages = (int) ($estimate_pagination['total_pages'] ?? 1);
+                        ?>
+                        <span class="displaying-num"><?php echo esc_html((string) ((int) ($estimate_pagination['total_items'] ?? 0))); ?></span>
+                        <?php if ($estimate_current_page > 1) : ?>
+                            <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($estimate_base_args, ['page_num' => $estimate_current_page - 1]), admin_url('admin.php'))); ?>">&laquo;</a>
+                        <?php endif; ?>
+                        <span class="paging-input"><?php echo esc_html((string) $estimate_current_page . ' / ' . (string) $estimate_total_pages); ?></span>
+                        <?php if ($estimate_current_page < $estimate_total_pages) : ?>
+                            <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($estimate_base_args, ['page_num' => $estimate_current_page + 1]), admin_url('admin.php'))); ?>">&raquo;</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
     </section>
 </div>

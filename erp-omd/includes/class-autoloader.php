@@ -20,7 +20,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Client_Rate_Repository' => 'includes/repositories/class-client-rate-repository.php',
         'ERP_OMD_Project_Repository' => 'includes/repositories/class-project-repository.php',
         'ERP_OMD_Project_Request_Repository' => 'includes/repositories/class-project-request-repository.php',
-        'ERP_OMD_Estimate_Repository' => 'includes/repositories/class-estimate-repository.php',
+        'ERP_OMD_Estimate_Repository' => 'includes/repositories/class-estimate-repository-v2.php',
         'ERP_OMD_Estimate_Item_Repository' => 'includes/repositories/class-estimate-item-repository.php',
         'ERP_OMD_Estimate_Audit_Repository' => 'includes/repositories/class-estimate-audit-repository.php',
         'ERP_OMD_Project_Note_Repository' => 'includes/repositories/class-project-note-repository.php',
@@ -39,7 +39,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Estimate_Service' => 'includes/services/class-estimate-service.php',
         'ERP_OMD_Time_Entry_Service' => 'includes/services/class-time-entry-service.php',
         'ERP_OMD_Project_Financial_Service' => 'includes/services/class-project-financial-service.php',
-        'ERP_OMD_Reporting_Service' => 'includes/services/class-reporting-service.php',
+        'ERP_OMD_Reporting_Service' => 'includes/services/class-reporting-service-v2.php',
         'ERP_OMD_Alert_Service' => 'includes/services/class-alert-service.php',
         'ERP_OMD_Period_Service' => 'includes/services/class-omd-period-service.php',
     ];
