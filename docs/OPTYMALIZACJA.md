@@ -284,13 +284,14 @@ Wynik z: `php tests/reporting-benchmark-12m.php`
 | Metryka | Wartość |
 |---|---:|
 | `rows` | 12 |
-| `elapsed_ms` | 22.73 |
+| `elapsed_ms` | 23.28 |
 | `salary_for_employee_calls` | 25 |
 | `project_cost_for_project_calls` | 80 |
 | `time_entries_all_calls` | 1 |
 
 ### Kolejny etap roadmapy (po T1.2.2)
 - **T3.1 (backup tylko tabel ERP):** ROZPOCZĘTY — backup DB ograniczony do tabel z prefiksem `${wpdb->prefix}erp_omd_` (bez zrzutu pełnej bazy przez `SHOW TABLES` → wszystkie tabele).
+- **T2.2 (modularizacja admin JS):** ROZPOCZĘTY — wydzielenie inicjalizacji narzędzi tabel i kosztów stałych do osobnych funkcji (`initTableTools`, `initFixedCosts`) jako pierwszy krok dekompozycji `admin.js`.
 
 #### T3.1 — DoD / walidacja
 - backup zawiera wyłącznie tabele zaczynające się od `${wpdb->prefix}erp_omd_`,
