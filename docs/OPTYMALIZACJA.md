@@ -275,3 +275,4 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
 
 ### Realizacja kroków (T1.2.2)
 - **Krok 1/3:** WYKONANY — benchmark 12M uruchamiany po każdej iteracji + doprecyzowanie zakresu dat dla batch direct costs do realnego końca miesiąca (bez stałego `-31`).
+- **Krok 2/3:** WYKONANY — preagregacja miesięczna kosztów bezpośrednich po stronie SQL (`SUM(amount)` grupowane per `project_id + month`) i wykorzystanie agregatów bez dodatkowego sumowania rekord-po-rekordzie w PHP.

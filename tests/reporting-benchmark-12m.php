@@ -47,6 +47,7 @@ if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
     class ERP_OMD_Project_Cost_Repository {
         public int $forProjectCalls = 0;
         public int $forProjectsInDateRangeCalls = 0;
+        public int $sumByProjectAndMonthInDateRangeCalls = 0;
         public function __construct(private array $rows) {}
         public function for_project($projectId) { $this->forProjectCalls++; return $this->rows[(int) $projectId] ?? []; }
         public function for_projects_in_date_range(array $projectIds, $dateFrom, $dateTo)
@@ -64,6 +65,24 @@ if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
                 }
             }
             return $out;
+        }
+        public function sum_by_project_and_month_in_date_range(array $projectIds, $dateFrom, $dateTo)
+        {
+            $this->sumByProjectAndMonthInDateRangeCalls++;
+            $bucket = [];
+            foreach ($this->for_projects_in_date_range($projectIds, $dateFrom, $dateTo) as $row) {
+                $projectId = (int) ($row['project_id'] ?? 0);
+                $month = substr((string) ($row['cost_date'] ?? ''), 0, 7);
+                if ($projectId <= 0 || $month === '') {
+                    continue;
+                }
+                $key = $month . ':' . $projectId;
+                if (! isset($bucket[$key])) {
+                    $bucket[$key] = ['project_id' => $projectId, 'cost_month' => $month, 'amount_sum' => 0.0];
+                }
+                $bucket[$key]['amount_sum'] += (float) ($row['amount'] ?? 0.0);
+            }
+            return array_values($bucket);
         }
     }
 }
@@ -165,6 +184,7 @@ $result = [
     'salary_for_employee_calls' => $salaryRepo->forEmployeeCalls,
     'project_cost_for_project_calls' => $projectCostRepo->forProjectCalls,
     'project_cost_for_projects_in_date_range_calls' => $projectCostRepo->forProjectsInDateRangeCalls,
+    'project_cost_sum_by_project_and_month_calls' => $projectCostRepo->sumByProjectAndMonthInDateRangeCalls,
     'time_entries_all_calls' => $timeRepo->allCalls,
 ];
 
