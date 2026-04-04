@@ -268,8 +268,9 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
   - **T1.1.3:** ZREALIZOWANE (UI spięte z backend pagination + testy kontraktowe REST + testy repozytoriów paginacji).
   - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
   - **T1.2.2:** ZREALIZOWANE (prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem + ujednolicenie logiki filtrowania wpisów + batchowe pobranie historii wynagrodzeń (`for_employees`) + batchowa agregacja kosztów bezpośrednich per `project_id + month` + jednorazowe pobranie listy projektów i reuse dla całej osi 12M).
+  - **T2.1:** W TRAKCIE (wydzielenie wspólnego helpera front JS `dedupeProjectRequestDateFields` do `assets/js/front-shared.js` i podpięcie go na dashboardzie managera/pracownika; kolejne kroki: wynoszenie tabs/tables/collapsible do dedykowanych assetów manager/worker).
 - **Następny krok wykonawczy (najbliższe wdrożenie):**
-  1. finalna decyzja statusowa dla **T2.1** (Front JS refactor),
+  1. kontynuacja **T2.1**: wyniesienie logiki tabs/tables/collapsible z inline `<script>` do `front-manager.js` i `front-worker.js`,
   2. po formalnym zamknięciu bloku 1) przejście do decyzji „implementować czy zostawić jako parking” dla bloku 2).
 
 ### Realizacja kroków (T1.2.2)
