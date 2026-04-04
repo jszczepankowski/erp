@@ -168,3 +168,9 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
   2. potem pełny `P2`,
   3. potem `P3`,
   4. na końcu `P4/P5`.
+
+## 9) Podsumowanie kroku (dla kolejnych chatów)
+- **Bieżący krok:** `WB-P5-HF-02` (stabilizacja/hotfix) — domknięcie walidatorów checklisty LIVE -> DO_ROZLICZENIA w `ERP_OMD_Period_Service` (weryfikacja sygnałów + meta liczników blokujących).
+- **Szacowana liczba kroków do domknięcia (orientacyjnie): ~2**
+  1. Dopracowanie pełnego flow UI Admin dla korekt i filtrowanych widoków audytu.
+  2. Dokończenie frontendowych komponentów/UX dla `dashboard-v1` (backend contract jest gotowy).
