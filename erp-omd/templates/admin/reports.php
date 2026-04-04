@@ -87,7 +87,7 @@
                                 </div>
                             <?php endif; ?>
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="dashboard-queue-limit"><?php esc_html_e('Limit kolejki dashboardu', 'erp-omd'); ?></label>
+                                <label for="dashboard-queue-limit"><?php esc_html_e('Wiersze do exportu CSV', 'erp-omd'); ?></label>
                                 <input id="dashboard-queue-limit" type="number" min="1" max="100" name="dashboard_queue_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['queue_limit'] ?? 25)); ?>" />
                             </div>
                         </div>

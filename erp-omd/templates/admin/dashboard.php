@@ -109,7 +109,7 @@
 
         <div class="erp-omd-dashboard-section erp-omd-dashboard-visuals-section" data-section-id="visuals">
             <div class="erp-omd-section-header">
-                <h2><?php esc_html_e('Wizualizacje dashboardu', 'erp-omd'); ?></h2>
+                <h2><?php esc_html_e('Szybkie podsumowanie', 'erp-omd'); ?></h2>
             </div>
             <div class="erp-omd-dashboard-visuals">
                 <div class="erp-omd-card erp-omd-chart-card">
