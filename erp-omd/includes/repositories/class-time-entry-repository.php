@@ -34,6 +34,10 @@ class ERP_OMD_Time_Entry_Repository
             $where[] = 't.project_id = %d';
             $params[] = (int) $filters['project_id'];
         }
+        if (! empty($filters['client_id'])) {
+            $where[] = 'p.client_id = %d';
+            $params[] = (int) $filters['client_id'];
+        }
         if (! empty($filters['status'])) {
             $where[] = 't.status = %s';
             $params[] = $filters['status'];
@@ -41,6 +45,10 @@ class ERP_OMD_Time_Entry_Repository
         if (! empty($filters['entry_date'])) {
             $where[] = 't.entry_date = %s';
             $params[] = $filters['entry_date'];
+        }
+        if (! empty($filters['month']) && preg_match('/^\d{4}-\d{2}$/', (string) $filters['month']) === 1) {
+            $where[] = 't.entry_date LIKE %s';
+            $params[] = (string) $filters['month'] . '%';
         }
 
         $limit = max(1, (int) $limit);
@@ -67,33 +75,42 @@ class ERP_OMD_Time_Entry_Repository
     {
         global $wpdb;
 
+        $projects_table = $wpdb->prefix . 'erp_omd_projects';
         $where = ['1=1'];
         $params = [];
 
         if (! empty($filters['employee_id'])) {
-            $where[] = 'employee_id = %d';
+            $where[] = 't.employee_id = %d';
             $params[] = (int) $filters['employee_id'];
         }
         if (! empty($filters['project_id'])) {
-            $where[] = 'project_id = %d';
+            $where[] = 't.project_id = %d';
             $params[] = (int) $filters['project_id'];
         }
+        if (! empty($filters['client_id'])) {
+            $where[] = 'p.client_id = %d';
+            $params[] = (int) $filters['client_id'];
+        }
         if (! empty($filters['status'])) {
-            $where[] = 'status = %s';
+            $where[] = 't.status = %s';
             $params[] = (string) $filters['status'];
         }
         if (! empty($filters['entry_date'])) {
-            $where[] = 'entry_date = %s';
+            $where[] = 't.entry_date = %s';
             $params[] = (string) $filters['entry_date'];
         }
-
-        if ($params) {
-            return (int) $wpdb->get_var(
-                $wpdb->prepare("SELECT COUNT(*) FROM {$this->table_name()} WHERE " . implode(' AND ', $where), ...$params)
-            );
+        if (! empty($filters['month']) && preg_match('/^\d{4}-\d{2}$/', (string) $filters['month']) === 1) {
+            $where[] = 't.entry_date LIKE %s';
+            $params[] = (string) $filters['month'] . '%';
         }
 
-        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name()} WHERE " . implode(' AND ', $where));
+        $sql = "SELECT COUNT(*) FROM {$this->table_name()} t INNER JOIN {$projects_table} p ON p.id = t.project_id WHERE " . implode(' AND ', $where);
+
+        if ($params) {
+            return (int) $wpdb->get_var($wpdb->prepare($sql, ...$params));
+        }
+
+        return (int) $wpdb->get_var($sql);
     }
 
     public function find($id)
