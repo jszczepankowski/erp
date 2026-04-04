@@ -90,20 +90,11 @@
                                 <label for="dashboard-queue-limit"><?php esc_html_e('Limit kolejki dashboardu', 'erp-omd'); ?></label>
                                 <input id="dashboard-queue-limit" type="number" min="1" max="100" name="dashboard_queue_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['queue_limit'] ?? 25)); ?>" />
                             </div>
-                            <?php if ($report_filters['report_type'] === 'time_entries') : ?>
-                                <div class="erp-omd-form-field">
-                                    <label for="report-per-page"><?php esc_html_e('Wierszy na stronę', 'erp-omd'); ?></label>
-                                    <select id="report-per-page" name="per_page">
-                                        <?php foreach ([25, 50, 100] as $per_page_option) : ?>
-                                            <option value="<?php echo esc_attr((string) $per_page_option); ?>" <?php selected((int) ($report_filters['per_page'] ?? 25), $per_page_option); ?>><?php echo esc_html((string) $per_page_option); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            <?php endif; ?>
                         </div>
                     </section>
                 </div>
                 <div class="erp-omd-form-actions">
+                    <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
                     <input type="hidden" name="page_num" value="1" />
                     <button class="button button-primary" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
                 </div>
