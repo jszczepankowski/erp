@@ -9,21 +9,86 @@ class ERP_OMD_Estimate_Repository
         return $wpdb->prefix . 'erp_omd_estimates';
     }
 
-    public function all()
+    public function all(array $filters = [])
+    {
+        return $this->find_paged($filters, 1000000, 0);
+    }
+
+    public function find_paged(array $filters = [], $limit = 100, $offset = 0)
     {
         global $wpdb;
 
         $clients_table = $wpdb->prefix . 'erp_omd_clients';
         $projects_table = $wpdb->prefix . 'erp_omd_projects';
+        $where = ['1=1'];
+        $params = [];
+
+        if (! empty($filters['status'])) {
+            $where[] = 'e.status = %s';
+            $params[] = (string) $filters['status'];
+        }
+        if (! empty($filters['client_id'])) {
+            $where[] = 'e.client_id = %d';
+            $params[] = (int) $filters['client_id'];
+        }
+        if (! empty($filters['search'])) {
+            $like = '%' . $wpdb->esc_like((string) $filters['search']) . '%';
+            $where[] = '(e.name LIKE %s OR c.name LIKE %s OR p.name LIKE %s)';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $limit = max(1, (int) $limit);
+        $offset = max(0, (int) $offset);
+        $params[] = $limit;
+        $params[] = $offset;
 
         return $wpdb->get_results(
-            "SELECT e.*, c.name AS client_name, p.id AS project_id, p.name AS project_name
+            $wpdb->prepare(
+                "SELECT e.*, c.name AS client_name, p.id AS project_id, p.name AS project_name
             FROM {$this->table_name()} e
             INNER JOIN {$clients_table} c ON c.id = e.client_id
             LEFT JOIN {$projects_table} p ON p.estimate_id = e.id
-            ORDER BY e.created_at DESC, e.id DESC",
+            WHERE " . implode(' AND ', $where) . " ORDER BY e.created_at DESC, e.id DESC LIMIT %d OFFSET %d",
+                ...$params
+            ),
             ARRAY_A
         );
+    }
+
+    public function count_filtered(array $filters = [])
+    {
+        global $wpdb;
+
+        $clients_table = $wpdb->prefix . 'erp_omd_clients';
+        $projects_table = $wpdb->prefix . 'erp_omd_projects';
+        $where = ['1=1'];
+        $params = [];
+
+        if (! empty($filters['status'])) {
+            $where[] = 'e.status = %s';
+            $params[] = (string) $filters['status'];
+        }
+        if (! empty($filters['client_id'])) {
+            $where[] = 'e.client_id = %d';
+            $params[] = (int) $filters['client_id'];
+        }
+        if (! empty($filters['search'])) {
+            $like = '%' . $wpdb->esc_like((string) $filters['search']) . '%';
+            $where[] = '(e.name LIKE %s OR c.name LIKE %s OR p.name LIKE %s)';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $sql = "SELECT COUNT(*) FROM {$this->table_name()} e INNER JOIN {$clients_table} c ON c.id = e.client_id LEFT JOIN {$projects_table} p ON p.estimate_id = e.id WHERE " . implode(' AND ', $where);
+
+        if ($params !== []) {
+            return (int) $wpdb->get_var($wpdb->prepare($sql, ...$params));
+        }
+
+        return (int) $wpdb->get_var($sql);
     }
 
     public function find($id)
