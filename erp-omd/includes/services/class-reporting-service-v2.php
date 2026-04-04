@@ -174,46 +174,18 @@ class ERP_OMD_Reporting_Service
                     }
                 }
                 $prefetched_entries = $this->prefetch_entries_for_months($filters, $months, $month_ranges);
+                $entry_metrics_by_month = $this->build_entry_metrics_index_by_month($prefetched_entries, $filters, $months);
                 $direct_cost_index = $this->build_direct_cost_index_by_month_and_project(array_keys($all_project_ids), $months);
                 foreach ($months as $month) {
-                    $month_filters = $filters;
-                    $month_filters['month'] = $month;
                     $projects = (array) ($projects_by_month[$month] ?? []);
-                    $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
-                    $entries = $this->filter_entries_from_pool($prefetched_entries, $project_ids, $month_filters);
                     $salary_cost = (float) ($salary_cost_by_month[$month] ?? 0.0);
                     $direct_cost = 0.0;
-                    $active_budgets = 0.0;
-                    $active_budget_project_ids = [];
-                    $time_revenue = 0.0;
-                    $time_cost = 0.0;
-                    $month_date = DateTimeImmutable::createFromFormat('Y-m-d', $month . '-01');
-                    $month_start = $month_date ? $month_date->format('Y-m-01') : '';
-                    $month_end = $month_date ? $month_date->format('Y-m-t') : '';
-
-                    foreach ($projects as $project) {
-                        if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony', 'archiwum'], true)) {
-                            continue;
-                        }
-
-                        $close_month = (string) ($project['operational_close_month'] ?? '');
-                        if (preg_match('/^\d{4}-\d{2}$/', $close_month) !== 1) {
-                            continue;
-                        }
-
-                        if ($close_month !== $month) {
-                            continue;
-                        }
-
-                        $active_budget_project_ids[] = (int) ($project['id'] ?? 0);
-                        $active_budgets += (float) ($project['budget'] ?? 0);
-                    }
-
-                    foreach ($entries as $entry) {
-                        $hours = (float) ($entry['hours'] ?? 0);
-                        $time_revenue += $hours * (float) ($entry['rate_snapshot'] ?? 0);
-                        $time_cost += $hours * (float) ($entry['cost_snapshot'] ?? 0);
-                    }
+                    $active_budget_metrics = $this->build_active_budget_metrics_for_month($projects, $month);
+                    $active_budgets = (float) ($active_budget_metrics['active_budgets'] ?? 0.0);
+                    $active_budget_project_ids = (array) ($active_budget_metrics['project_ids'] ?? []);
+                    $entry_metrics = (array) ($entry_metrics_by_month[$month] ?? []);
+                    $time_revenue = (float) ($entry_metrics['time_revenue'] ?? 0.0);
+                    $time_cost = (float) ($entry_metrics['time_cost'] ?? 0.0);
 
                     $direct_cost_project_ids = array_values(array_unique(array_filter($active_budget_project_ids, static function ($project_id) {
                         return (int) $project_id > 0;
@@ -1002,37 +974,7 @@ class ERP_OMD_Reporting_Service
         $allow_non_approved = $report_type === 'time_entries' || $tab === 'calendar';
 
         return array_values(array_filter($entries, function ($entry) use ($project_ids, $filters, $allow_non_approved) {
-            if ($project_ids !== [] && ! in_array((int) ($entry['project_id'] ?? 0), $project_ids, true)) {
-                return false;
-            }
-            if ($filters['employee_id'] > 0 && (int) ($entry['employee_id'] ?? 0) !== $filters['employee_id']) {
-                return false;
-            }
-            if ($filters['project_id'] > 0 && (int) ($entry['project_id'] ?? 0) !== $filters['project_id']) {
-                return false;
-            }
-            if (! $allow_non_approved && (string) ($entry['status'] ?? '') !== 'approved') {
-                return false;
-            }
-            if (
-                $allow_non_approved
-                && $filters['status'] !== ''
-                && $this->isTimeEntryStatusFilter($filters['status'])
-                && (string) ($entry['status'] ?? '') !== $filters['status']
-            ) {
-                return false;
-            }
-            if (
-                $allow_non_approved
-                && $filters['status'] === ''
-                && (string) ($entry['status'] ?? '') !== 'approved'
-            ) {
-                return false;
-            }
-            if ($filters['month'] !== '' && strpos((string) ($entry['entry_date'] ?? ''), $filters['month']) !== 0) {
-                return false;
-            }
-            return true;
+            return $this->entry_matches_filters((array) $entry, $project_ids, $filters, $allow_non_approved);
         }));
     }
 
@@ -1063,6 +1005,106 @@ class ERP_OMD_Reporting_Service
         });
 
         return (array) $this->time_entries->all($entry_filters);
+    }
+
+    private function build_entry_metrics_index_by_month(array $entries, array $filters, array $months)
+    {
+        $allowed_months = array_fill_keys(array_map('strval', $months), true);
+        $entry_metrics_by_month = [];
+        foreach ($months as $month) {
+            $entry_metrics_by_month[(string) $month] = $this->emptyEntryMetrics();
+        }
+
+        $report_type = (string) ($filters['report_type'] ?? '');
+        $tab = (string) ($filters['tab'] ?? '');
+        $allow_non_approved = $report_type === 'time_entries' || $tab === 'calendar';
+        $metric_filters = $filters;
+        $metric_filters['month'] = '';
+
+        foreach ($entries as $entry) {
+            $entry_month = substr((string) ($entry['entry_date'] ?? ''), 0, 7);
+            if ($entry_month === '' || ! isset($allowed_months[$entry_month])) {
+                continue;
+            }
+
+            if (! $this->entry_matches_filters((array) $entry, [], $metric_filters, $allow_non_approved)) {
+                continue;
+            }
+
+            $hours = (float) ($entry['hours'] ?? 0.0);
+            $entry_metrics_by_month[$entry_month]['hours'] += $hours;
+            $entry_metrics_by_month[$entry_month]['entries_count']++;
+            $entry_metrics_by_month[$entry_month]['time_revenue'] += $hours * (float) ($entry['rate_snapshot'] ?? 0.0);
+            $entry_metrics_by_month[$entry_month]['time_cost'] += $hours * (float) ($entry['cost_snapshot'] ?? 0.0);
+        }
+
+        return $entry_metrics_by_month;
+    }
+
+    private function build_active_budget_metrics_for_month(array $projects, $month)
+    {
+        $active_budget_project_ids = [];
+        $active_budgets = 0.0;
+
+        foreach ($projects as $project) {
+            if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony', 'archiwum'], true)) {
+                continue;
+            }
+
+            $close_month = (string) ($project['operational_close_month'] ?? '');
+            if (preg_match('/^\d{4}-\d{2}$/', $close_month) !== 1 || $close_month !== (string) $month) {
+                continue;
+            }
+
+            $project_id = (int) ($project['id'] ?? 0);
+            if ($project_id <= 0) {
+                continue;
+            }
+
+            $active_budget_project_ids[] = $project_id;
+            $active_budgets += (float) ($project['budget'] ?? 0.0);
+        }
+
+        return [
+            'active_budgets' => $active_budgets,
+            'project_ids' => $active_budget_project_ids,
+        ];
+    }
+
+    private function entry_matches_filters(array $entry, array $project_ids, array $filters, $allow_non_approved)
+    {
+        if ($project_ids !== [] && ! in_array((int) ($entry['project_id'] ?? 0), $project_ids, true)) {
+            return false;
+        }
+        if ($filters['employee_id'] > 0 && (int) ($entry['employee_id'] ?? 0) !== (int) $filters['employee_id']) {
+            return false;
+        }
+        if ($filters['project_id'] > 0 && (int) ($entry['project_id'] ?? 0) !== (int) $filters['project_id']) {
+            return false;
+        }
+        if (! $allow_non_approved && (string) ($entry['status'] ?? '') !== 'approved') {
+            return false;
+        }
+        if (
+            $allow_non_approved
+            && $filters['status'] !== ''
+            && $this->isTimeEntryStatusFilter($filters['status'])
+            && (string) ($entry['status'] ?? '') !== (string) $filters['status']
+        ) {
+            return false;
+        }
+        if (
+            $allow_non_approved
+            && $filters['status'] === ''
+            && (string) ($entry['status'] ?? '') !== 'approved'
+        ) {
+            return false;
+        }
+        if ($filters['month'] !== '' && strpos((string) ($entry['entry_date'] ?? ''), (string) $filters['month']) !== 0) {
+            return false;
+        }
+
+        return true;
     }
 
     private function get_entry_metrics_by_project(array $project_ids, array $filters)
@@ -1133,28 +1175,65 @@ class ERP_OMD_Reporting_Service
             $index[(string) $month] = [];
         }
 
-        foreach ($project_ids as $project_id) {
-            $project_id = (int) $project_id;
-            if ($project_id <= 0) {
-                continue;
-            }
+        $project_ids = array_values(array_unique(array_filter(array_map('intval', $project_ids), static function ($project_id) {
+            return (int) $project_id > 0;
+        })));
+        if ($project_ids === []) {
+            return $index;
+        }
 
-            foreach ((array) $this->project_costs->for_project($project_id) as $row) {
-                $cost_date = (string) ($row['cost_date'] ?? '');
-                if (preg_match('/^\d{4}-\d{2}/', $cost_date) !== 1) {
+        $first_month = (string) min($months);
+        $last_month = (string) max($months);
+        $month_ranges = $this->build_month_ranges([$first_month, $last_month]);
+        $range_start = (string) ($month_ranges[$first_month]['from'] ?? ($first_month . '-01'));
+        $range_end = (string) ($month_ranges[$last_month]['to'] ?? ($last_month . '-31'));
+
+        if (method_exists($this->project_costs, 'sum_by_project_and_month_in_date_range')) {
+            $rows = (array) $this->project_costs->sum_by_project_and_month_in_date_range(
+                $project_ids,
+                $range_start,
+                $range_end
+            );
+            foreach ($rows as $row) {
+                $project_id = (int) ($row['project_id'] ?? 0);
+                $month = (string) ($row['cost_month'] ?? '');
+                if ($project_id <= 0 || ! isset($allowed_months[$month])) {
                     continue;
                 }
-
-                $month = substr($cost_date, 0, 7);
-                if (! isset($allowed_months[$month])) {
-                    continue;
-                }
-
                 if (! isset($index[$month][$project_id])) {
                     $index[$month][$project_id] = 0.0;
                 }
-                $index[$month][$project_id] += (float) ($row['amount'] ?? 0.0);
+                $index[$month][$project_id] += (float) ($row['amount_sum'] ?? 0.0);
             }
+
+            return $index;
+        }
+
+        $rows = [];
+        if (method_exists($this->project_costs, 'for_projects_in_date_range')) {
+            $rows = (array) $this->project_costs->for_projects_in_date_range($project_ids, $range_start, $range_end);
+        } else {
+            foreach ($project_ids as $project_id) {
+                $rows = array_merge($rows, (array) $this->project_costs->for_project((int) $project_id));
+            }
+        }
+
+        foreach ($rows as $row) {
+            $project_id = (int) ($row['project_id'] ?? 0);
+            $cost_date = (string) ($row['cost_date'] ?? '');
+            if ($project_id <= 0 || preg_match('/^\d{4}-\d{2}/', $cost_date) !== 1) {
+                continue;
+            }
+
+            $month = substr($cost_date, 0, 7);
+            if (! isset($allowed_months[$month])) {
+                continue;
+            }
+
+            if (! isset($index[$month][$project_id])) {
+                $index[$month][$project_id] = 0.0;
+            }
+            $index[$month][$project_id] += (float) ($row['amount'] ?? 0.0);
         }
 
         return $index;
@@ -1203,6 +1282,24 @@ class ERP_OMD_Reporting_Service
             }
 
             $salary_rows = (array) $this->salary_history->for_employee($employee_id);
+            $normalized_salary_rows = [];
+            foreach ($salary_rows as $salary_row) {
+                $valid_from = (string) ($salary_row['valid_from'] ?? '');
+                if ($valid_from === '') {
+                    continue;
+                }
+
+                $valid_to = (string) ($salary_row['valid_to'] ?? '');
+                $normalized_salary_rows[] = [
+                    'valid_from' => $valid_from,
+                    'effective_to' => $valid_to !== '' ? $valid_to : '9999-12-31',
+                    'monthly_salary' => (float) ($salary_row['monthly_salary'] ?? 0.0),
+                ];
+            }
+            usort($normalized_salary_rows, static function ($left, $right) {
+                return strcmp((string) ($right['valid_from'] ?? ''), (string) ($left['valid_from'] ?? ''));
+            });
+
             foreach ($months as $month) {
                 $month_key = (string) $month;
                 $month_start = (string) ($month_ranges[$month_key]['from'] ?? '');
@@ -1210,15 +1307,11 @@ class ERP_OMD_Reporting_Service
                 if ($month_start === '' || $month_end === '') {
                     continue;
                 }
-                foreach ($salary_rows as $salary_row) {
-                    $valid_from = (string) ($salary_row['valid_from'] ?? '');
-                    $valid_to = (string) ($salary_row['valid_to'] ?? '');
-                    $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
-                    if ($valid_from === '') {
-                        continue;
-                    }
-
-                    if ($valid_from <= $month_end && $effective_to >= $month_start) {
+                foreach ($normalized_salary_rows as $salary_row) {
+                    if (
+                        (string) ($salary_row['valid_from'] ?? '') <= $month_end
+                        && (string) ($salary_row['effective_to'] ?? '') >= $month_start
+                    ) {
                         $index[(string) $month] += (float) ($salary_row['monthly_salary'] ?? 0.0);
                         break;
                     }

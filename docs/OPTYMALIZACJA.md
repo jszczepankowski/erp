@@ -267,8 +267,12 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
   - **T1.1.2:** ZREALIZOWANE (SQL pagination + count dla kluczowych list admin/front).
   - **T1.1.3:** ZREALIZOWANE (UI spięte z backend pagination + testy kontraktowe REST + testy repozytoriów paginacji).
   - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
-  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M).
+  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem zamiast filtrowania per miesiąc + ujednolicenie logiki filtrowania wpisów w jednej metodzie + normalizacja wyboru historii wynagrodzeń per miesiąc przez jednoznaczny wybór rekordu o najnowszym `valid_from` + zbiorczy odczyt kosztów bezpośrednich dla zakresu 12M zamiast `for_project` per projekt).
 - **Następny krok wykonawczy (najbliższe wdrożenie):**
   1. benchmark ścieżki raportowej 12M (przed/po dla kolejnych iteracji T1.2.2) — skrypt referencyjny: `php tests/reporting-benchmark-12m.php`,
-  2. dalsze ograniczenie złożoności pętli/duplikacji logiki w `omd_rozliczenia` (jednolite lookupy i mniej warunków rozproszonych),
+  2. dalsze ograniczenie złożoności pętli/duplikacji logiki w `omd_rozliczenia` (jednolite lookupy i mniej warunków rozproszonych; kolejny kandydat: preagregacja miesięczna po stronie SQL dla direct costs i salary history),
   3. porównanie metryk po wdrożeniu (czas raportu 12M, liczba zapytań SQL, stabilność bez timeoutów).
+
+### Realizacja kroków (T1.2.2)
+- **Krok 1/3:** WYKONANY — benchmark 12M uruchamiany po każdej iteracji + doprecyzowanie zakresu dat dla batch direct costs do realnego końca miesiąca (bez stałego `-31`).
+- **Krok 2/3:** WYKONANY — preagregacja miesięczna kosztów bezpośrednich po stronie SQL (`SUM(amount)` grupowane per `project_id + month`) i wykorzystanie agregatów bez dodatkowego sumowania rekord-po-rekordzie w PHP.
