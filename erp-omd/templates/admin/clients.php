@@ -254,11 +254,19 @@
             <h2><?php esc_html_e('Lista klientów', 'erp-omd'); ?></h2>
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-clients" />
+                <input type="hidden" name="page_num" value="1" />
                 <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj klienta, firmy, NIP, email…', 'erp-omd'); ?>" value="<?php echo esc_attr($client_filters['search'] ?? ''); ?>" />
                 <select name="status">
                     <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
                     <option value="active" <?php selected($client_filters['status'] ?? '', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
                     <option value="inactive" <?php selected($client_filters['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
+                </select>
+                <select name="per_page">
+                    <?php foreach ([25, 50, 100, 200] as $client_per_page_option) : ?>
+                        <option value="<?php echo esc_attr((string) $client_per_page_option); ?>" <?php selected((int) ($client_filters['per_page'] ?? 100), $client_per_page_option); ?>>
+                            <?php echo esc_html((string) $client_per_page_option . ' / strona'); ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
@@ -318,5 +326,29 @@
                 <?php endif; ?>
                 </tbody>
             </table>
+            <?php if (($client_pagination['total_pages'] ?? 1) > 1) : ?>
+                <div class="tablenav bottom">
+                    <div class="tablenav-pages">
+                        <?php
+                        $client_base_args = [
+                            'page' => 'erp-omd-clients',
+                            'search' => (string) ($client_filters['search'] ?? ''),
+                            'status' => (string) ($client_filters['status'] ?? ''),
+                            'per_page' => (int) ($client_filters['per_page'] ?? 100),
+                        ];
+                        $client_current_page = (int) ($client_pagination['page_num'] ?? 1);
+                        $client_total_pages = (int) ($client_pagination['total_pages'] ?? 1);
+                        ?>
+                        <span class="displaying-num"><?php echo esc_html((string) ((int) ($client_pagination['total_items'] ?? 0))); ?></span>
+                        <?php if ($client_current_page > 1) : ?>
+                            <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($client_base_args, ['page_num' => $client_current_page - 1]), admin_url('admin.php'))); ?>">&laquo;</a>
+                        <?php endif; ?>
+                        <span class="paging-input"><?php echo esc_html((string) $client_current_page . ' / ' . (string) $client_total_pages); ?></span>
+                        <?php if ($client_current_page < $client_total_pages) : ?>
+                            <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($client_base_args, ['page_num' => $client_current_page + 1]), admin_url('admin.php'))); ?>">&raquo;</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
     </section>
 </div>
