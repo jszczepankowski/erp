@@ -1188,30 +1188,16 @@ class ERP_OMD_Reporting_Service
         $range_start = (string) ($month_ranges[$first_month]['from'] ?? ($first_month . '-01'));
         $range_end = (string) ($month_ranges[$last_month]['to'] ?? ($last_month . '-31'));
 
-        if (method_exists($this->project_costs, 'sum_by_project_and_month_in_date_range')) {
-            $rows = (array) $this->project_costs->sum_by_project_and_month_in_date_range(
-                $project_ids,
-                $range_start,
-                $range_end
-            );
-            foreach ($rows as $row) {
-                $project_id = (int) ($row['project_id'] ?? 0);
-                $month = (string) ($row['cost_month'] ?? '');
-                if ($project_id <= 0 || ! isset($allowed_months[$month])) {
-                    continue;
-                }
-                if (! isset($index[$month][$project_id])) {
-                    $index[$month][$project_id] = 0.0;
-                }
-                $index[$month][$project_id] += (float) ($row['amount_sum'] ?? 0.0);
-            }
-
-            return $index;
-        }
-
         $rows = [];
         foreach ($project_ids as $project_id) {
-            $rows = array_merge($rows, (array) $this->project_costs->for_project((int) $project_id));
+            foreach ((array) $this->project_costs->for_project((int) $project_id) as $row) {
+                $cost_date = (string) ($row['cost_date'] ?? '');
+                if ($cost_date < $range_start || $cost_date > $range_end) {
+                    continue;
+                }
+                $row['project_id'] = (int) $project_id;
+                $rows[] = $row;
+            }
         }
 
         foreach ($rows as $row) {

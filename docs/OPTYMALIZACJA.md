@@ -284,10 +284,9 @@ Wynik z: `php tests/reporting-benchmark-12m.php`
 | Metryka | Wartość |
 |---|---:|
 | `rows` | 12 |
-| `elapsed_ms` | 20.91 |
+| `elapsed_ms` | 25.22 |
 | `salary_for_employee_calls` | 25 |
-| `project_cost_for_project_calls` | 0 |
-| `project_cost_sum_by_project_and_month_calls` | 1 |
+| `project_cost_for_project_calls` | 80 |
 | `time_entries_all_calls` | 1 |
 
 ### Kolejny etap roadmapy (po T1.2.2)

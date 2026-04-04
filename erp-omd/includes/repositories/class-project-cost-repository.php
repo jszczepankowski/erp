@@ -25,50 +25,6 @@ class ERP_OMD_Project_Cost_Repository
         );
     }
 
-    public function sum_by_project_and_month_in_date_range(array $project_ids, $date_from, $date_to)
-    {
-        global $wpdb;
-
-        $project_ids = array_values(array_unique(array_map('intval', $project_ids)));
-        if ($project_ids === []) {
-            return [];
-        }
-
-        $placeholders = implode(',', array_fill(0, count($project_ids), '%d'));
-        $query = "SELECT project_id, DATE_FORMAT(cost_date, '%%Y-%%m') AS cost_month, SUM(amount) AS amount_sum
-            FROM {$this->table_name()}
-            WHERE project_id IN ({$placeholders})
-              AND cost_date >= %s
-              AND cost_date <= %s
-            GROUP BY project_id, cost_month
-            ORDER BY cost_month DESC, project_id ASC";
-        $params = array_merge($project_ids, [(string) $date_from, (string) $date_to]);
-
-        return $wpdb->get_results($wpdb->prepare($query, ...$params), ARRAY_A);
-    }
-
-    public function sum_by_project_and_month_in_date_range(array $project_ids, $date_from, $date_to)
-    {
-        global $wpdb;
-
-        $project_ids = array_values(array_unique(array_map('intval', $project_ids)));
-        if ($project_ids === []) {
-            return [];
-        }
-
-        $placeholders = implode(',', array_fill(0, count($project_ids), '%d'));
-        $query = "SELECT project_id, DATE_FORMAT(cost_date, '%%Y-%%m') AS cost_month, SUM(amount) AS amount_sum
-            FROM {$this->table_name()}
-            WHERE project_id IN ({$placeholders})
-              AND cost_date >= %s
-              AND cost_date <= %s
-            GROUP BY project_id, cost_month
-            ORDER BY cost_month DESC, project_id ASC";
-        $params = array_merge($project_ids, [(string) $date_from, (string) $date_to]);
-
-        return $wpdb->get_results($wpdb->prepare($query, ...$params), ARRAY_A);
-    }
-
     public function find($id)
     {
         global $wpdb;
