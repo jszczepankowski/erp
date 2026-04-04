@@ -73,7 +73,7 @@ if (! class_exists('ERP_OMD_Project_Financial_Service')) {
     }
 }
 
-require_once __DIR__ . '/../erp-omd/includes/services/class-reporting-service.php';
+require_once __DIR__ . '/../erp-omd/includes/services/class-reporting-service-v2.php';
 
 $projects = [];
 $clients = [];
