@@ -267,8 +267,34 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
   - **T1.1.2:** ZREALIZOWANE (SQL pagination + count dla kluczowych list admin/front).
   - **T1.1.3:** ZREALIZOWANE (UI spięte z backend pagination + testy kontraktowe REST + testy repozytoriów paginacji).
   - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
-  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M).
+  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem zamiast filtrowania per miesiąc + ujednolicenie logiki filtrowania wpisów w jednej metodzie + normalizacja wyboru historii wynagrodzeń per miesiąc przez jednoznaczny wybór rekordu o najnowszym `valid_from` + zbiorczy odczyt kosztów bezpośrednich dla zakresu 12M zamiast `for_project` per projekt).
 - **Następny krok wykonawczy (najbliższe wdrożenie):**
   1. benchmark ścieżki raportowej 12M (przed/po dla kolejnych iteracji T1.2.2) — skrypt referencyjny: `php tests/reporting-benchmark-12m.php`,
-  2. dalsze ograniczenie złożoności pętli/duplikacji logiki w `omd_rozliczenia` (jednolite lookupy i mniej warunków rozproszonych),
+  2. dalsze ograniczenie złożoności pętli/duplikacji logiki w `omd_rozliczenia` (jednolite lookupy i mniej warunków rozproszonych; kolejny kandydat: preagregacja miesięczna po stronie SQL dla direct costs i salary history),
   3. porównanie metryk po wdrożeniu (czas raportu 12M, liczba zapytań SQL, stabilność bez timeoutów).
+
+### Realizacja kroków (T1.2.2)
+- **Krok 1/3:** WYKONANY — benchmark 12M uruchamiany po każdej iteracji + doprecyzowanie zakresu dat dla batch direct costs do realnego końca miesiąca (bez stałego `-31`).
+- **Krok 2/3:** WYKONANY — preagregacja miesięczna kosztów bezpośrednich po stronie SQL (`SUM(amount)` grupowane per `project_id + month`) i wykorzystanie agregatów bez dodatkowego sumowania rekord-po-rekordzie w PHP.
+- **Krok 3/3:** WYKONANY — porównanie metryk po wdrożeniu (snapshot benchmarku 12M + call counts repozytoriów, poniżej).
+
+#### Snapshot metryk 12M (2026-04-04, UTC)
+Wynik z: `php tests/reporting-benchmark-12m.php`
+
+| Metryka | Wartość |
+|---|---:|
+| `rows` | 12 |
+| `elapsed_ms` | 22.73 |
+| `salary_for_employee_calls` | 25 |
+| `project_cost_for_project_calls` | 80 |
+| `time_entries_all_calls` | 1 |
+
+### Kolejny etap roadmapy (po T1.2.2)
+- **T3.1 (backup tylko tabel ERP):** ROZPOCZĘTY — backup DB ograniczony do tabel z prefiksem `${wpdb->prefix}erp_omd_` (bez zrzutu pełnej bazy przez `SHOW TABLES` → wszystkie tabele).
+
+#### T3.1 — DoD / walidacja
+- backup zawiera wyłącznie tabele zaczynające się od `${wpdb->prefix}erp_omd_`,
+- tabele spoza ERP (`posts`, `options`, `users`, itd.) nie są dołączane do dumpa,
+- test referencyjny: `php tests/cron-backup-table-filter-test.php`,
+- test zakresu dumpa SQL: `php tests/cron-backup-dump-scope-test.php`,
+- odtwarzanie udokumentowane: `docs/ODTWARZANIE_BACKUPU_ERP.md`.
