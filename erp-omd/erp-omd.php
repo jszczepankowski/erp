@@ -38,3 +38,13 @@ function erp_omd()
 add_action('plugins_loaded', static function () {
     erp_omd()->boot();
 });
+
+function erp_omd_reports_cache_bump_version()
+{
+    if (! function_exists('get_option') || ! function_exists('update_option')) {
+        return;
+    }
+
+    $version = (int) get_option('erp_omd_reports_cache_data_version', 1);
+    update_option('erp_omd_reports_cache_data_version', (string) max(1, $version + 1), false);
+}
