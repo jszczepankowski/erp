@@ -161,6 +161,10 @@ class ERP_OMD_Time_Entry_Repository
             ['%d', '%d', '%d', '%f', '%s', '%s', '%s', '%f', '%f', '%d', '%d', '%s', '%s', '%s']
         );
 
+        if (function_exists('erp_omd_reports_cache_bump_version')) {
+            erp_omd_reports_cache_bump_version();
+        }
+
         return (int) $wpdb->insert_id;
     }
 
@@ -168,7 +172,7 @@ class ERP_OMD_Time_Entry_Repository
     {
         global $wpdb;
 
-        return $wpdb->update(
+        $updated = $wpdb->update(
             $this->table_name(),
             [
                 'employee_id' => $data['employee_id'],
@@ -188,12 +192,23 @@ class ERP_OMD_Time_Entry_Repository
             ['%d', '%d', '%d', '%f', '%s', '%s', '%s', '%f', '%f', '%d', '%s', '%s'],
             ['%d']
         );
+
+        if ($updated !== false && function_exists('erp_omd_reports_cache_bump_version')) {
+            erp_omd_reports_cache_bump_version();
+        }
+
+        return $updated;
     }
 
     public function delete($id)
     {
         global $wpdb;
-        return $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
+        $deleted = $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
+        if ($deleted !== false && function_exists('erp_omd_reports_cache_bump_version')) {
+            erp_omd_reports_cache_bump_version();
+        }
+
+        return $deleted;
     }
 
 

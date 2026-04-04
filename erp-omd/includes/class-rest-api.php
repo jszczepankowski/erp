@@ -1045,12 +1045,20 @@ class ERP_OMD_REST_API
     {
         $filters = $this->reporting_service->sanitize_filters($request->get_params());
         $report_type = sanitize_key((string) ($request->get_param('report_type') ?: $filters['report_type']));
+        $cache_key = $this->build_reports_cache_key('report', $report_type, $filters);
+        $cached = $this->get_reports_cache($cache_key);
+        if ($cached !== null) {
+            return rest_ensure_response($cached);
+        }
 
-        return rest_ensure_response([
+        $payload = [
             'filters' => $filters,
             'report_type' => $report_type,
             'rows' => $this->reporting_service->build_report($report_type, $filters),
-        ]);
+        ];
+        $this->set_reports_cache($cache_key, $payload);
+
+        return rest_ensure_response($payload);
     }
 
     public function export_report_definition(WP_REST_Request $request)
@@ -1065,8 +1073,15 @@ class ERP_OMD_REST_API
     {
         $filters = $this->reporting_service->sanitize_filters($request->get_params());
         $filters['tab'] = 'calendar';
+        $cache_key = $this->build_reports_cache_key('calendar', 'calendar', $filters);
+        $cached = $this->get_reports_cache($cache_key);
+        if ($cached !== null) {
+            return rest_ensure_response($cached);
+        }
+        $payload = $this->reporting_service->build_calendar($filters);
+        $this->set_reports_cache($cache_key, $payload);
 
-        return rest_ensure_response($this->reporting_service->build_calendar($filters));
+        return rest_ensure_response($payload);
     }
 
     public function list_alerts(WP_REST_Request $request)
@@ -1414,6 +1429,42 @@ class ERP_OMD_REST_API
         $response->header('X-ERP-OMD-PerPage', (string) $per_page);
 
         return $response;
+    }
+
+    private function build_reports_cache_key($scope, $report_type, array $filters)
+    {
+        $version = (string) get_option('erp_omd_reports_cache_data_version', '1');
+        $normalized = $filters;
+        ksort($normalized);
+        $payload = function_exists('wp_json_encode')
+            ? wp_json_encode([$scope, $report_type, $normalized, $version])
+            : json_encode([$scope, $report_type, $normalized, $version]);
+
+        return 'erp_omd_reports_cache_' . md5((string) $payload);
+    }
+
+    private function get_reports_cache($cache_key)
+    {
+        if (! function_exists('get_transient')) {
+            return null;
+        }
+
+        $cached = get_transient($cache_key);
+        if ($cached === false || ! is_array($cached)) {
+            return null;
+        }
+
+        return $cached;
+    }
+
+    private function set_reports_cache($cache_key, array $payload)
+    {
+        if (! function_exists('set_transient')) {
+            return;
+        }
+
+        $ttl = 15 * (defined('MINUTE_IN_SECONDS') ? MINUTE_IN_SECONDS : 60);
+        set_transient($cache_key, $payload, $ttl);
     }
 
     private function is_month_locked_for_current_user($month)
