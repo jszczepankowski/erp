@@ -284,7 +284,7 @@ Wynik z: `php tests/reporting-benchmark-12m.php`
 | Metryka | Wartość |
 |---|---:|
 | `rows` | 12 |
-| `elapsed_ms` | 25.22 |
+| `elapsed_ms` | 22.73 |
 | `salary_for_employee_calls` | 25 |
 | `project_cost_for_project_calls` | 80 |
 | `time_entries_all_calls` | 1 |
@@ -296,4 +296,5 @@ Wynik z: `php tests/reporting-benchmark-12m.php`
 - backup zawiera wyłącznie tabele zaczynające się od `${wpdb->prefix}erp_omd_`,
 - tabele spoza ERP (`posts`, `options`, `users`, itd.) nie są dołączane do dumpa,
 - test referencyjny: `php tests/cron-backup-table-filter-test.php`,
+- test zakresu dumpa SQL: `php tests/cron-backup-dump-scope-test.php`,
 - odtwarzanie udokumentowane: `docs/ODTWARZANIE_BACKUPU_ERP.md`.
