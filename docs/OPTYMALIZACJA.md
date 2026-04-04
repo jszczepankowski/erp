@@ -265,10 +265,10 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
 - **Postęp bloku 1) OPTYMALIZACJA:**
   - **T1.1.1:** ZREALIZOWANE (SQL pagination + count dla time entries wdrożone).
   - **T1.1.2:** ZREALIZOWANE (SQL pagination + count dla kluczowych list admin/front).
-  - **T1.1.3:** W TRAKCIE DOMKNIĘCIA (UI jest spięte z backend pagination, dopinamy testy regresji i kontrakty REST).
+  - **T1.1.3:** ZREALIZOWANE (UI spięte z backend pagination + testy kontraktowe REST + testy repozytoriów paginacji).
   - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
   - **T1.2.2:** NASTĘPNY AKTYWNY ETAP (prefetch/index danych do rozliczeń miesięcznych).
 - **Następny krok wykonawczy (najbliższe wdrożenie):**
-  1. domknięcie testów automatycznych dla paginacji repozytoriów i REST,
-  2. benchmark ścieżki raportowej 12M (baseline przed T1.2.2),
-  3. implementacja T1.2.2 (prefetch/index `omd_rozliczenia`) i ponowny pomiar.
+  1. benchmark ścieżki raportowej 12M (baseline przed T1.2.2),
+  2. implementacja T1.2.2 (prefetch/index `omd_rozliczenia`),
+  3. porównanie metryk po wdrożeniu (czas raportu 12M, liczba zapytań SQL, stabilność bez timeoutów).
