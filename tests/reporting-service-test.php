@@ -88,8 +88,13 @@ if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
     class ERP_OMD_Project_Cost_Repository
     {
         private $costs;
+        public $for_project_calls = 0;
         public function __construct(array $costs) { $this->costs = $costs; }
-        public function for_project($project_id) { return $this->costs[(int) $project_id] ?? []; }
+        public function for_project($project_id)
+        {
+            $this->for_project_calls++;
+            return $this->costs[(int) $project_id] ?? [];
+        }
     }
 }
 
@@ -97,8 +102,13 @@ if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
     class ERP_OMD_Time_Entry_Repository
     {
         private $entries;
+        public $all_calls = 0;
         public function __construct(array $entries) { $this->entries = $entries; }
-        public function all(array $filters = []) { return $this->entries; }
+        public function all(array $filters = [])
+        {
+            $this->all_calls++;
+            return $this->entries;
+        }
     }
 }
 
@@ -164,6 +174,8 @@ final class ReportingServiceTestRunner
             ])
         );
         $salaryRepository = $this->readPrivateProperty($service, 'salary_history');
+        $projectCostRepository = $this->readPrivateProperty($service, 'project_costs');
+        $timeEntryRepository = $this->readPrivateProperty($service, 'time_entries');
 
         $filters = $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03']);
         $this->assertSame('projects', $filters['report_type'], 'Project report should remain selected.');
@@ -229,6 +241,9 @@ final class ReportingServiceTestRunner
         $submittedTimeEntries = $service->build_report('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'status' => 'submitted']));
         $this->assertSame(1, count($submittedTimeEntries), 'Time entries report should allow explicit submitted filter for workflow views.');
 
+        $salaryCallsBeforeSettlement = $salaryRepository->for_employee_calls;
+        $projectCostCallsBeforeSettlement = $projectCostRepository->for_project_calls;
+        $timeEntryCallsBeforeSettlement = $timeEntryRepository->all_calls;
         $omdSettlement = $service->build_omd_settlement_report($filters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
         $this->assertSame('2026-03', $omdSettlement[11]['month'], 'OMD settlement report should end with selected month.');
@@ -238,7 +253,9 @@ final class ReportingServiceTestRunner
         $this->assertSame(5230.0, $omdSettlement[11]['operational_result'], 'OMD settlement should expose operational result before controlling overhead.');
         $this->assertSame(19000.0, $omdSettlement[11]['controlling_overhead'], 'OMD settlement should expose controlling overhead components.');
         $this->assertSame(-13770.0, $omdSettlement[11]['controlling_result'], 'OMD settlement should expose controlling result after overhead.');
-        $this->assertSame(2, $salaryRepository->for_employee_calls, 'OMD settlement should prefetch salary history once per employee for 12M range.');
+        $this->assertSame(2, $salaryRepository->for_employee_calls - $salaryCallsBeforeSettlement, 'OMD settlement should prefetch salary history once per employee for 12M range.');
+        $this->assertSame(2, $projectCostRepository->for_project_calls - $projectCostCallsBeforeSettlement, 'OMD settlement should prefetch direct costs once per project for 12M range.');
+        $this->assertSame(1, $timeEntryRepository->all_calls - $timeEntryCallsBeforeSettlement, 'OMD settlement should prefetch time entries once for 12M range.');
 
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame('2026-03', $calendar['month'], 'Calendar should be built for requested month.');
