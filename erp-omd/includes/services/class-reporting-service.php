@@ -1060,6 +1060,31 @@ class ERP_OMD_Reporting_Service
         return (array) $this->time_entries->all($entry_filters);
     }
 
+    private function prefetch_entries_for_months(array $filters, array $months)
+    {
+        if ($months === []) {
+            return [];
+        }
+
+        $month_start = (string) min($months) . '-01';
+        $month_end_dt = DateTimeImmutable::createFromFormat('Y-m-d', (string) max($months) . '-01');
+        $month_end = $month_end_dt ? $month_end_dt->format('Y-m-t') : '';
+
+        $entry_filters = [
+            'employee_id' => (int) ($filters['employee_id'] ?? 0),
+            'project_id' => (int) ($filters['project_id'] ?? 0),
+            'client_id' => (int) ($filters['client_id'] ?? 0),
+            'status' => (string) ($filters['status'] ?? ''),
+            'entry_date_from' => $month_start,
+            'entry_date_to' => $month_end,
+        ];
+        $entry_filters = array_filter($entry_filters, static function ($value) {
+            return $value !== '' && $value !== null && $value !== 0;
+        });
+
+        return (array) $this->time_entries->all($entry_filters);
+    }
+
     private function get_entry_metrics_by_project(array $project_ids, array $filters)
     {
         $entries = $this->get_filtered_entries($project_ids, $filters);
