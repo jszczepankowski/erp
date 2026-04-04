@@ -435,10 +435,85 @@
         applyFiltersAndSort();
     };
 
+    var setupEstimateItemsForm = function (options) {
+        var settings = options || {};
+        var removeItemLabel = settings.removeItemLabel || 'Usuń pozycję';
+        var itemsContainer = document.getElementById('erp-omd-front-estimate-items');
+        var addButton = document.getElementById('erp-omd-front-add-item');
+        var netNode = document.getElementById('erp-omd-front-estimate-net');
+        var taxNode = document.getElementById('erp-omd-front-estimate-tax');
+        var grossNode = document.getElementById('erp-omd-front-estimate-gross');
+
+        if (!itemsContainer || !addButton || !netNode || !taxNode || !grossNode) {
+            return;
+        }
+
+        var formatAmount = function (value) { return Number(value || 0).toFixed(2); };
+        var updateTotals = function () {
+            var net = 0;
+            itemsContainer.querySelectorAll('.erp-omd-front-estimate-item-row').forEach(function (row) {
+                var qtyInput = row.querySelector('input[name="item_qty[]"]');
+                var priceInput = row.querySelector('input[name="item_price[]"]');
+                var qty = parseFloat(qtyInput ? qtyInput.value : '0');
+                var price = parseFloat(priceInput ? priceInput.value : '0');
+                net += qty * price;
+            });
+            var tax = net * 0.23;
+            var gross = net + tax;
+            netNode.textContent = formatAmount(net);
+            taxNode.textContent = formatAmount(tax);
+            grossNode.textContent = formatAmount(gross);
+        };
+
+        var bindRow = function (row) {
+            row.querySelectorAll('input').forEach(function (input) {
+                input.addEventListener('input', updateTotals);
+            });
+            var removeButton = row.querySelector('.erp-omd-front-remove-item');
+            if (removeButton) {
+                removeButton.addEventListener('click', function () {
+                    if (itemsContainer.querySelectorAll('.erp-omd-front-estimate-item-row').length <= 1) {
+                        return;
+                    }
+                    row.remove();
+                    updateTotals();
+                });
+            }
+        };
+
+        var firstRow = itemsContainer.querySelector('.erp-omd-front-estimate-item-row');
+        if (firstRow) {
+            bindRow(firstRow);
+        }
+
+        addButton.addEventListener('click', function () {
+            var row = itemsContainer.querySelector('.erp-omd-front-estimate-item-row');
+            if (!row) {
+                return;
+            }
+            var clone = row.cloneNode(true);
+            clone.querySelectorAll('input[type="text"], textarea').forEach(function (node) { node.value = ''; });
+            clone.querySelectorAll('input[type="number"]').forEach(function (node) {
+                node.value = node.name === 'item_qty[]' ? '1' : '0';
+            });
+            if (!clone.querySelector('.erp-omd-front-remove-item')) {
+                var removeWrap = document.createElement('div');
+                removeWrap.className = 'erp-omd-front-inline-actions';
+                removeWrap.innerHTML = '<button type="button" class="erp-omd-front-button erp-omd-front-button-ghost erp-omd-front-remove-item">' + removeItemLabel + '</button>';
+                clone.appendChild(removeWrap);
+            }
+            itemsContainer.appendChild(clone);
+            bindRow(clone);
+            updateTotals();
+        });
+        updateTotals();
+    };
+
     window.erpOmdFrontManager = window.erpOmdFrontManager || {};
     window.erpOmdFrontManager.setupTabs = setupManagerTabs;
     window.erpOmdFrontManager.setupTableEnhancements = setupTableEnhancements;
     window.erpOmdFrontManager.setupProjectsTableFilters = setupProjectsTableFilters;
     window.erpOmdFrontManager.setupManagerTimeEntryForm = setupManagerTimeEntryForm;
     window.erpOmdFrontManager.setupApprovalQueueFilters = setupApprovalQueueFilters;
+    window.erpOmdFrontManager.setupEstimateItemsForm = setupEstimateItemsForm;
 }(window, document));
