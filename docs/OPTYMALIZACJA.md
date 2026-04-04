@@ -276,3 +276,17 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
 ### Realizacja kroków (T1.2.2)
 - **Krok 1/3:** WYKONANY — benchmark 12M uruchamiany po każdej iteracji + doprecyzowanie zakresu dat dla batch direct costs do realnego końca miesiąca (bez stałego `-31`).
 - **Krok 2/3:** WYKONANY — preagregacja miesięczna kosztów bezpośrednich po stronie SQL (`SUM(amount)` grupowane per `project_id + month`) i wykorzystanie agregatów bez dodatkowego sumowania rekord-po-rekordzie w PHP.
+- **Krok 3/3:** WYKONANY — porównanie metryk po wdrożeniu (snapshot benchmarku 12M + call counts repozytoriów, poniżej).
+
+#### Snapshot metryk 12M (2026-04-04, UTC)
+Wynik z: `php tests/reporting-benchmark-12m.php`
+
+| Metryka | Wartość |
+|---|---:|
+| `rows` | 12 |
+| `elapsed_ms` | 31.02 |
+| `salary_for_employee_calls` | 25 |
+| `project_cost_for_project_calls` | 0 |
+| `project_cost_for_projects_in_date_range_calls` | 1 |
+| `project_cost_sum_by_project_and_month_calls` | 1 |
+| `time_entries_all_calls` | 1 |
