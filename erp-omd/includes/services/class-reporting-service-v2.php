@@ -1257,13 +1257,17 @@ class ERP_OMD_Reporting_Service
         }
 
         $employees = (array) $this->employees->all();
+        $employee_ids = [];
         foreach ($employees as $employee) {
             $employee_id = (int) ($employee['id'] ?? 0);
-            if ($employee_id <= 0) {
-                continue;
+            if ($employee_id > 0) {
+                $employee_ids[] = $employee_id;
             }
+        }
 
-            $salary_rows = (array) $this->salary_history->for_employee($employee_id);
+        $salary_rows_by_employee = $this->get_salary_rows_by_employee($employee_ids);
+        foreach ($employee_ids as $employee_id) {
+            $salary_rows = (array) ($salary_rows_by_employee[$employee_id] ?? []);
             $normalized_salary_rows = [];
             foreach ($salary_rows as $salary_row) {
                 $valid_from = (string) ($salary_row['valid_from'] ?? '');
@@ -1302,6 +1306,40 @@ class ERP_OMD_Reporting_Service
         }
 
         return $index;
+    }
+
+    private function get_salary_rows_by_employee(array $employee_ids)
+    {
+        $employee_ids = array_values(array_unique(array_map('intval', $employee_ids)));
+        $employee_ids = array_values(array_filter($employee_ids, static function ($employee_id) {
+            return $employee_id > 0;
+        }));
+        if ($employee_ids === []) {
+            return [];
+        }
+
+        $grouped = [];
+        if (method_exists($this->salary_history, 'for_employees')) {
+            $rows = (array) $this->salary_history->for_employees($employee_ids);
+            foreach ($rows as $row) {
+                $employee_id = (int) ($row['employee_id'] ?? 0);
+                if ($employee_id <= 0) {
+                    continue;
+                }
+                if (! isset($grouped[$employee_id])) {
+                    $grouped[$employee_id] = [];
+                }
+                $grouped[$employee_id][] = $row;
+            }
+
+            return $grouped;
+        }
+
+        foreach ($employee_ids as $employee_id) {
+            $grouped[$employee_id] = (array) $this->salary_history->for_employee($employee_id);
+        }
+
+        return $grouped;
     }
 
     private function build_fixed_cost_index_by_month(array $months, array $month_ranges = [])
