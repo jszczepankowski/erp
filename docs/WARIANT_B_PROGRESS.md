@@ -168,3 +168,8 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
   2. potem pełny `P2`,
   3. potem `P3`,
   4. na końcu `P4/P5`.
+
+## 9) Podsumowanie kroku (dla kolejnych chatów)
+- **Bieżący krok:** `WB-P5-HF-03` (stabilizacja/hotfix) — dopięte filtrowanie widoków audytu korekt (`/adjustments`: month/entity_type/entity_id/adjustment_type/changed_by/reason/limit).
+- **Szacowana liczba kroków do domknięcia (orientacyjnie): ~1**
+  1. Dokończenie frontendowych komponentów/UX dla `dashboard-v1` (backend contract jest gotowy).
