@@ -431,17 +431,11 @@
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-estimates" />
                 <input type="hidden" name="month" value="<?php echo esc_attr($estimate_filters['month'] ?? ''); ?>">
+                <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($estimate_filters['per_page'] ?? 100)); ?>">
                 <input type="hidden" name="page_num" value="1">
                 <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj kosztorysu, klienta, projektu…', 'erp-omd'); ?>" value="<?php echo esc_attr($estimate_filters['search'] ?? ''); ?>">
                 <select name="client_id"><option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option><?php foreach ($clients as $client_row) : ?><option value="<?php echo esc_attr($client_row['id']); ?>" <?php selected((int) ($estimate_filters['client_id'] ?? 0), (int) $client_row['id']); ?>><?php echo esc_html($client_row['name']); ?></option><?php endforeach; ?></select>
                 <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['wstepny', 'do_akceptacji', 'zaakceptowany'] as $status_option) : ?><option value="<?php echo esc_attr($status_option); ?>" <?php selected($estimate_filters['status'] ?? '', $status_option); ?>><?php echo esc_html($status_option); ?></option><?php endforeach; ?></select>
-                <select name="per_page">
-                    <?php foreach ([25, 50, 100, 200] as $estimate_per_page_option) : ?>
-                        <option value="<?php echo esc_attr((string) $estimate_per_page_option); ?>" <?php selected((int) ($estimate_filters['per_page'] ?? 100), $estimate_per_page_option); ?>>
-                            <?php echo esc_html((string) $estimate_per_page_option . ' / strona'); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
             <form method="post" id="erp-omd-bulk-estimates-form">

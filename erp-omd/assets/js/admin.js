@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+const initTableTools = () => {
   const currentPage = new URLSearchParams(window.location.search).get('page') || '';
   const paginatedPages = new Set([
     'erp-omd-clients',
@@ -189,7 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
     table.dataset.tableIndex = String(tableIndex);
     applyTableView();
   });
+};
 
+const initFixedCosts = () => {
   const fixedCostBody = document.querySelector('tbody[data-fixed-cost-body="1"]');
   const addFixedCostButton = document.getElementById('erp-omd-add-fixed-cost-row');
 
@@ -242,7 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+};
 
+const initInlineAutoSave = () => {
   const inlineAutoSaveConfig = {
     debounceMs: 700,
     inputSelectors:
@@ -391,6 +395,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const currentPage = new URLSearchParams(window.location.search).get('page') || '';
+  initTableTools();
+  initFixedCosts();
+  initInlineAutoSave();
 
   document.querySelectorAll('.erp-omd-quick-hours-button').forEach((button) => {
     button.addEventListener('click', () => {

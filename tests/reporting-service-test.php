@@ -254,7 +254,7 @@ final class ReportingServiceTestRunner
         $this->assertSame(19000.0, $omdSettlement[11]['controlling_overhead'], 'OMD settlement should expose controlling overhead components.');
         $this->assertSame(-13770.0, $omdSettlement[11]['controlling_result'], 'OMD settlement should expose controlling result after overhead.');
         $this->assertSame(2, $salaryRepository->for_employee_calls - $salaryCallsBeforeSettlement, 'OMD settlement should prefetch salary history once per employee for 12M range.');
-        $this->assertSame(2, $projectCostRepository->for_project_calls - $projectCostCallsBeforeSettlement, 'OMD settlement should prefetch direct costs once per project for 12M range.');
+        $this->assertSame(2, $projectCostRepository->for_project_calls - $projectCostCallsBeforeSettlement, 'OMD settlement should prefetch direct costs once per project for the 12M range fallback path.');
         $this->assertSame(1, $timeEntryRepository->all_calls - $timeEntryCallsBeforeSettlement, 'OMD settlement should prefetch time entries once for 12M range.');
 
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
