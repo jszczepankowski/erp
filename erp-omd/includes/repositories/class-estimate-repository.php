@@ -213,6 +213,44 @@ class ERP_OMD_Estimate_Repository
         return (int) $wpdb->get_var($sql);
     }
 
+    public function count_filtered(array $filters = [])
+    {
+        global $wpdb;
+
+        $clients_table = $wpdb->prefix . 'erp_omd_clients';
+        $projects_table = $wpdb->prefix . 'erp_omd_projects';
+        $where = ['1=1'];
+        $params = [];
+
+        if (! empty($filters['status'])) {
+            $where[] = 'e.status = %s';
+            $params[] = (string) $filters['status'];
+        }
+        if (! empty($filters['client_id'])) {
+            $where[] = 'e.client_id = %d';
+            $params[] = (int) $filters['client_id'];
+        }
+        if (! empty($filters['search'])) {
+            $like = '%' . $wpdb->esc_like((string) $filters['search']) . '%';
+            $where[] = '(e.name LIKE %s OR c.name LIKE %s OR p.name LIKE %s)';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+        if (! empty($filters['month']) && preg_match('/^\d{4}-\d{2}$/', (string) $filters['month']) === 1) {
+            $where[] = 'e.created_at LIKE %s';
+            $params[] = (string) $filters['month'] . '%';
+        }
+
+        $sql = "SELECT COUNT(*) FROM {$this->table_name()} e INNER JOIN {$clients_table} c ON c.id = e.client_id LEFT JOIN {$projects_table} p ON p.estimate_id = e.id WHERE " . implode(' AND ', $where);
+
+        if ($params !== []) {
+            return (int) $wpdb->get_var($wpdb->prepare($sql, ...$params));
+        }
+
+        return (int) $wpdb->get_var($sql);
+    }
+
     public function find($id)
     {
         global $wpdb;
