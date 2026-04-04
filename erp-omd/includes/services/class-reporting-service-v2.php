@@ -1265,7 +1265,24 @@ class ERP_OMD_Reporting_Service
             }
 
             $salary_rows = (array) $this->salary_history->for_employee($employee_id);
-            $normalized_salary_rows = $this->normalize_salary_rows_for_month_index($salary_rows);
+            $normalized_salary_rows = [];
+            foreach ($salary_rows as $salary_row) {
+                $valid_from = (string) ($salary_row['valid_from'] ?? '');
+                if ($valid_from === '') {
+                    continue;
+                }
+
+                $valid_to = (string) ($salary_row['valid_to'] ?? '');
+                $normalized_salary_rows[] = [
+                    'valid_from' => $valid_from,
+                    'effective_to' => $valid_to !== '' ? $valid_to : '9999-12-31',
+                    'monthly_salary' => (float) ($salary_row['monthly_salary'] ?? 0.0),
+                ];
+            }
+            usort($normalized_salary_rows, static function ($left, $right) {
+                return strcmp((string) ($right['valid_from'] ?? ''), (string) ($left['valid_from'] ?? ''));
+            });
+
             foreach ($months as $month) {
                 $month_key = (string) $month;
                 $month_start = (string) ($month_ranges[$month_key]['from'] ?? '');
@@ -1273,163 +1290,19 @@ class ERP_OMD_Reporting_Service
                 if ($month_start === '' || $month_end === '') {
                     continue;
                 }
-                $index[(string) $month] += $this->resolve_month_salary_from_intervals($normalized_salary_rows, $month_start, $month_end);
+                foreach ($normalized_salary_rows as $salary_row) {
+                    if (
+                        (string) ($salary_row['valid_from'] ?? '') <= $month_end
+                        && (string) ($salary_row['effective_to'] ?? '') >= $month_start
+                    ) {
+                        $index[(string) $month] += (float) ($salary_row['monthly_salary'] ?? 0.0);
+                        break;
+                    }
+                }
             }
         }
 
         return $index;
-    }
-
-    private function normalize_salary_rows_for_month_index(array $salary_rows)
-    {
-        $normalized = [];
-        foreach ($salary_rows as $salary_row) {
-            $valid_from = (string) ($salary_row['valid_from'] ?? '');
-            if ($valid_from === '') {
-                continue;
-            }
-
-            $valid_to = (string) ($salary_row['valid_to'] ?? '');
-            $normalized[] = [
-                'valid_from' => $valid_from,
-                'effective_to' => $valid_to !== '' ? $valid_to : '9999-12-31',
-                'monthly_salary' => (float) ($salary_row['monthly_salary'] ?? 0.0),
-            ];
-        }
-
-        usort($normalized, static function ($left, $right) {
-            return strcmp((string) ($right['valid_from'] ?? ''), (string) ($left['valid_from'] ?? ''));
-        });
-
-        return $normalized;
-    }
-
-    private function resolve_month_salary_from_intervals(array $salary_rows, $month_start, $month_end)
-    {
-        foreach ($salary_rows as $salary_row) {
-            if (
-                (string) ($salary_row['valid_from'] ?? '') <= (string) $month_end
-                && (string) ($salary_row['effective_to'] ?? '') >= (string) $month_start
-            ) {
-                return (float) ($salary_row['monthly_salary'] ?? 0.0);
-            }
-        }
-
-        return 0.0;
-    }
-
-    private function normalize_salary_rows_for_month_index(array $salary_rows)
-    {
-        $normalized = [];
-        foreach ($salary_rows as $salary_row) {
-            $valid_from = (string) ($salary_row['valid_from'] ?? '');
-            if ($valid_from === '') {
-                continue;
-            }
-
-            $valid_to = (string) ($salary_row['valid_to'] ?? '');
-            $normalized[] = [
-                'valid_from' => $valid_from,
-                'effective_to' => $valid_to !== '' ? $valid_to : '9999-12-31',
-                'monthly_salary' => (float) ($salary_row['monthly_salary'] ?? 0.0),
-            ];
-        }
-
-        usort($normalized, static function ($left, $right) {
-            return strcmp((string) ($right['valid_from'] ?? ''), (string) ($left['valid_from'] ?? ''));
-        });
-
-        return $normalized;
-    }
-
-    private function resolve_month_salary_from_intervals(array $salary_rows, $month_start, $month_end)
-    {
-        foreach ($salary_rows as $salary_row) {
-            if (
-                (string) ($salary_row['valid_from'] ?? '') <= (string) $month_end
-                && (string) ($salary_row['effective_to'] ?? '') >= (string) $month_start
-            ) {
-                return (float) ($salary_row['monthly_salary'] ?? 0.0);
-            }
-        }
-
-        return 0.0;
-    }
-
-    private function normalize_salary_rows(array $salary_rows)
-    {
-        $normalized = [];
-        foreach ($salary_rows as $salary_row) {
-            $valid_from = (string) ($salary_row['valid_from'] ?? '');
-            if ($valid_from === '') {
-                continue;
-            }
-
-            $valid_to = (string) ($salary_row['valid_to'] ?? '');
-            $normalized[] = [
-                'valid_from' => $valid_from,
-                'effective_to' => $valid_to !== '' ? $valid_to : '9999-12-31',
-                'monthly_salary' => (float) ($salary_row['monthly_salary'] ?? 0.0),
-            ];
-        }
-
-        usort($normalized, static function ($left, $right) {
-            return strcmp((string) ($right['valid_from'] ?? ''), (string) ($left['valid_from'] ?? ''));
-        });
-
-        return $normalized;
-    }
-
-    private function resolve_month_salary(array $salary_rows, $month_start, $month_end)
-    {
-        foreach ($salary_rows as $salary_row) {
-            if (
-                (string) ($salary_row['valid_from'] ?? '') <= (string) $month_end
-                && (string) ($salary_row['effective_to'] ?? '') >= (string) $month_start
-            ) {
-                return (float) ($salary_row['monthly_salary'] ?? 0.0);
-            }
-        }
-
-        return 0.0;
-    }
-
-    private function normalize_salary_rows(array $salary_rows)
-    {
-        $normalized = [];
-        foreach ($salary_rows as $salary_row) {
-            $valid_from = (string) ($salary_row['valid_from'] ?? '');
-            if ($valid_from === '') {
-                continue;
-            }
-
-            $valid_to = (string) ($salary_row['valid_to'] ?? '');
-            $normalized[] = [
-                'valid_from' => $valid_from,
-                'effective_to' => $valid_to !== '' ? $valid_to : '9999-12-31',
-                'monthly_salary' => (float) ($salary_row['monthly_salary'] ?? 0.0),
-            ];
-        }
-
-        usort($normalized, static function ($left, $right) {
-            return strcmp((string) ($right['valid_from'] ?? ''), (string) ($left['valid_from'] ?? ''));
-        });
-
-        return $normalized;
-    }
-
-    private function resolve_month_salary(array $salary_rows, $month_start, $month_end)
-    {
-        foreach ($salary_rows as $salary_row) {
-            if (
-                (string) ($salary_row['valid_from'] ?? '') <= (string) $month_end
-                && (string) ($salary_row['effective_to'] ?? '') >= (string) $month_start
-            ) {
-                return (float) ($salary_row['monthly_salary'] ?? 0.0);
-            }
-        }
-
-        return 0.0;
     }
 
     private function build_fixed_cost_index_by_month(array $months, array $month_ranges = [])
