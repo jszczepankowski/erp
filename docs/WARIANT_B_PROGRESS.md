@@ -170,6 +170,6 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
   4. na końcu `P4/P5`.
 
 ## 9) Podsumowanie kroku (dla kolejnych chatów)
-- **Bieżący krok:** `WB-P5-HF-04` (stabilizacja/hotfix) — dodany frontendowy podgląd `dashboard-v1` w panelu raportów (status miesiąca, akcje statusowe, checklista, korekty).
+- **Bieżący krok:** `WB-P5-HF-05` (stabilizacja/hotfix) — rozszerzony podgląd `dashboard-v1` w panelu raportów o kontrolki UX (mode/scope + ręczne odświeżenie bez reloadu strony).
 - **Szacowana liczba kroków do domknięcia (orientacyjnie): ~0**
   1. Etap stabilizacji Wariantu B v1 uznajemy za domknięty; kolejne kroki to utrzymanie/iteracyjne usprawnienia.

@@ -405,6 +405,9 @@ const initDashboardV1Preview = () => {
 
   const statusNode = previewNode.querySelector('[data-dashboard-v1-status="1"]');
   const gridNode = previewNode.querySelector('[data-dashboard-v1-grid="1"]');
+  const modeNode = previewNode.querySelector('[data-dashboard-v1-mode="1"]');
+  const scopeNode = previewNode.querySelector('[data-dashboard-v1-scope="1"]');
+  const refreshNode = previewNode.querySelector('[data-dashboard-v1-refresh="1"]');
   const monthStatusNode = previewNode.querySelector(
     '[data-dashboard-v1-month-status="1"]'
   );
@@ -419,6 +422,9 @@ const initDashboardV1Preview = () => {
   if (
     !(statusNode instanceof HTMLElement) ||
     !(gridNode instanceof HTMLElement) ||
+    !(modeNode instanceof HTMLSelectElement) ||
+    !(scopeNode instanceof HTMLSelectElement) ||
+    !(refreshNode instanceof HTMLButtonElement) ||
     !(monthStatusNode instanceof HTMLElement) ||
     !(actionsNode instanceof HTMLElement) ||
     !(checklistNode instanceof HTMLElement) ||
@@ -437,10 +443,6 @@ const initDashboardV1Preview = () => {
   }
 
   const month = String(previewNode.dataset.month || '').trim();
-  const endpoint = `${String(erpOmdAdminData.restUrl).replace(
-    /\/$/,
-    ''
-  )}/dashboard-v1?month=${encodeURIComponent(month)}`;
   const headers = {};
   if (erpOmdAdminData.restNonce) {
     headers['X-WP-Nonce'] = String(erpOmdAdminData.restNonce);
@@ -453,14 +455,27 @@ const initDashboardV1Preview = () => {
     listNode.appendChild(item);
   };
 
-  fetch(endpoint, { headers })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((payload) => {
+  const fetchPreview = () => {
+    const endpoint = `${String(erpOmdAdminData.restUrl).replace(
+      /\/$/,
+      ''
+    )}/dashboard-v1?month=${encodeURIComponent(month)}&mode=${encodeURIComponent(
+      modeNode.value
+    )}&profitability_scope=${encodeURIComponent(scopeNode.value)}`;
+
+    statusNode.hidden = false;
+    statusNode.textContent = 'Ładowanie podglądu dashboard-v1…';
+    gridNode.hidden = true;
+    refreshNode.disabled = true;
+
+    fetch(endpoint, { headers })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((payload) => {
       statusNode.hidden = true;
       gridNode.hidden = false;
 
@@ -510,13 +525,22 @@ const initDashboardV1Preview = () => {
           adjustmentsNode.appendChild(item);
         });
       }
-    })
-    .catch(() => {
-      statusNode.hidden = false;
-      statusNode.textContent =
-        'Nie udało się pobrać podglądu dashboard-v1. Sprawdź uprawnienia i konfigurację REST API.';
-      gridNode.hidden = true;
-    });
+      })
+      .catch(() => {
+        statusNode.hidden = false;
+        statusNode.textContent =
+          'Nie udało się pobrać podglądu dashboard-v1. Sprawdź uprawnienia i konfigurację REST API.';
+        gridNode.hidden = true;
+      })
+      .finally(() => {
+        refreshNode.disabled = false;
+      });
+  };
+
+  refreshNode.addEventListener('click', fetchPreview);
+  modeNode.addEventListener('change', fetchPreview);
+  scopeNode.addEventListener('change', fetchPreview);
+  fetchPreview();
 };
 
 const initAdminInteractions = (currentPage) => {

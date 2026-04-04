@@ -1577,6 +1577,20 @@
     color: #9a3412;
 }
 
+.erp-omd-admin .erp-omd-dashboard-v1-preview-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 12px;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-controls label {
+    display: grid;
+    gap: 4px;
+    min-width: 180px;
+}
+
 .erp-omd-admin .erp-omd-dashboard-v1-preview-grid {
     margin-top: 16px;
     display: grid;

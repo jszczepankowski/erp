@@ -108,6 +108,24 @@
                     <p class="description"><?php esc_html_e('Szybki podgląd gotowości miesiąca, kolejnych akcji statusowych i ostatnich korekt.', 'erp-omd'); ?></p>
                 </div>
             </div>
+            <div class="erp-omd-dashboard-v1-preview-controls">
+                <label>
+                    <?php esc_html_e('Tryb', 'erp-omd'); ?>
+                    <select data-dashboard-v1-mode="1">
+                        <option value="LIVE"><?php esc_html_e('LIVE', 'erp-omd'); ?></option>
+                        <option value="DO_ROZLICZENIA"><?php esc_html_e('DO_ROZLICZENIA', 'erp-omd'); ?></option>
+                        <option value="ZAMKNIETY"><?php esc_html_e('ZAMKNIETY', 'erp-omd'); ?></option>
+                    </select>
+                </label>
+                <label>
+                    <?php esc_html_e('Scope rentowności', 'erp-omd'); ?>
+                    <select data-dashboard-v1-scope="1">
+                        <option value="project"><?php esc_html_e('Projekt', 'erp-omd'); ?></option>
+                        <option value="client"><?php esc_html_e('Klient', 'erp-omd'); ?></option>
+                    </select>
+                </label>
+                <button type="button" class="button button-secondary" data-dashboard-v1-refresh="1"><?php esc_html_e('Odśwież', 'erp-omd'); ?></button>
+            </div>
             <div class="erp-omd-dashboard-v1-preview-status" data-dashboard-v1-status="1"><?php esc_html_e('Ładowanie podglądu dashboard-v1…', 'erp-omd'); ?></div>
             <div class="erp-omd-dashboard-v1-preview-grid" data-dashboard-v1-grid="1" hidden>
                 <div class="erp-omd-dashboard-v1-preview-card">
