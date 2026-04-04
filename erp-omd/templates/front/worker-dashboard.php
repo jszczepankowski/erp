@@ -288,6 +288,7 @@
                         <input type="hidden" name="erp_omd_front" value="worker">
                         <input type="hidden" name="selected_date" value="<?php echo esc_attr($selected_day); ?>">
                         <input type="hidden" name="tab" value="<?php echo esc_attr((string) ($worker_filters['tab'] ?? 'wpisy')); ?>">
+                        <input type="hidden" name="page_num" value="1">
                         <div>
                             <label for="erp-omd-front-filter-date"><?php esc_html_e('Data', 'erp-omd'); ?></label>
                             <input id="erp-omd-front-filter-date" type="date" name="entry_date" value="<?php echo esc_attr((string) ($worker_filters['entry_date'] ?? '')); ?>">
@@ -348,6 +349,16 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <div>
+                            <label for="erp-omd-front-filter-per-page"><?php esc_html_e('Wiersze', 'erp-omd'); ?></label>
+                            <select id="erp-omd-front-filter-per-page" name="per_page">
+                                <?php foreach ([25, 50, 100, 200] as $worker_per_page_option) : ?>
+                                    <option value="<?php echo esc_attr((string) $worker_per_page_option); ?>" <?php selected((int) ($worker_filters['per_page'] ?? 25), $worker_per_page_option); ?>>
+                                        <?php echo esc_html((string) $worker_per_page_option . ' / strona'); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <div class="erp-omd-front-inline-actions">
                             <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
                             <a href="<?php echo esc_url($front_worker_url); ?>" class="erp-omd-front-button"><?php esc_html_e('Reset', 'erp-omd'); ?></a>
@@ -355,7 +366,7 @@
                     </form>
 
                     <div class="erp-omd-front-table-wrap">
-                        <table class="erp-omd-front-table" data-table-enhanced="1">
+                        <table class="erp-omd-front-table">
                             <thead>
                                 <tr>
                                     <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
@@ -414,6 +425,34 @@
                             </tbody>
                         </table>
                     </div>
+                    <?php if (($worker_time_pagination['total_pages'] ?? 1) > 1) : ?>
+                        <div class="erp-omd-front-inline-actions">
+                            <?php
+                            $worker_pagination_base_args = [
+                                'erp_omd_front' => 'worker',
+                                'selected_date' => $selected_day,
+                                'tab' => (string) ($worker_filters['tab'] ?? 'wpisy'),
+                                'entry_date' => (string) ($worker_filters['entry_date'] ?? ''),
+                                'calendar_month' => (string) ($worker_filters['calendar_month'] ?? ''),
+                                'client_id' => (int) ($worker_filters['client_id'] ?? 0),
+                                'project_id' => (int) ($worker_filters['project_id'] ?? 0),
+                                'status' => (string) ($worker_filters['status'] ?? ''),
+                                'focus' => (string) ($worker_filters['focus'] ?? 'month'),
+                                'per_page' => (int) ($worker_filters['per_page'] ?? 25),
+                            ];
+                            $worker_current_page = (int) ($worker_time_pagination['page_num'] ?? 1);
+                            $worker_total_pages = (int) ($worker_time_pagination['total_pages'] ?? 1);
+                            ?>
+                            <span><?php echo esc_html(sprintf(__('Wyniki: %d', 'erp-omd'), (int) ($worker_time_pagination['total_items'] ?? 0))); ?></span>
+                            <?php if ($worker_current_page > 1) : ?>
+                                <a class="erp-omd-front-button erp-omd-front-button-small" href="<?php echo esc_url(add_query_arg(array_merge($worker_pagination_base_args, ['page_num' => $worker_current_page - 1]), $front_worker_url)); ?>">&laquo;</a>
+                            <?php endif; ?>
+                            <span><?php echo esc_html((string) $worker_current_page . ' / ' . (string) $worker_total_pages); ?></span>
+                            <?php if ($worker_current_page < $worker_total_pages) : ?>
+                                <a class="erp-omd-front-button erp-omd-front-button-small" href="<?php echo esc_url(add_query_arg(array_merge($worker_pagination_base_args, ['page_num' => $worker_current_page + 1]), $front_worker_url)); ?>">&raquo;</a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </article>
             </div>
 

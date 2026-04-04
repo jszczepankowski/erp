@@ -1,4 +1,4 @@
-# [OPTYMALIZACJA] — backlog techniczny (Etap 1 i Etap 2)
+# [OPTYMALIZACJA] — backlog techniczny + roadmapa produktowa
 
 Dokument roboczy ustaleń do realizacji i wdrożenia.
 
@@ -6,12 +6,13 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
 - Przyspieszenie działania pluginu przy dużych wolumenach danych.
 - Uproszczenie utrzymania kodu (mniej duplikacji, mniejsza złożoność UI/JS).
 - Ograniczenie ryzyka regresji przy kolejnych wdrożeniach.
+- Przełożenie wydajności i automatyzacji na mierzalny wynik biznesowy.
 
 ---
 
-## ETAP 1 — Wydajność danych i skalowanie
+## 1) OPTYMALIZACJA (najwyższy ROI operacyjny)
 
-### EPIC 1.1 — SQL pagination + count API dla list
+### A. SQL pagination + count API (P0)
 
 #### T1.1.1 TimeEntryRepository: paginacja SQL
 **Zakres**
@@ -25,7 +26,9 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
 - brak regresji w miejscach korzystających z `all()`,
 - min. 1 test repozytorium dla paginacji i count.
 
-**Priorytet**: P0
+**Efekt biznesowy**
+- szybsze ekrany managerów,
+- krótszy czas pracy na operacjach masowych.
 
 ---
 
@@ -39,25 +42,26 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
 - całkowita liczba rekordów jest spójna z filtrami,
 - paginacja UI działa z backendowym źródłem danych.
 
-**Priorytet**: P0
-
 ---
 
 #### T1.1.3 Podpięcie paginacji backendowej do ekranów
 **Zakres**
 - Admin: klienci, kosztorysy, projekty, wnioski, czas pracy, raporty.
 - Front: projekty, kosztorysy, czas pracy.
+- Integracja z *istniejącą* paginacją UI (bez duplikowania logiki):
+  - backend dostarcza tylko dane strony + `total_count`,
+  - aktualne kontrolki paginacji na froncie/adminie pozostają źródłem interakcji użytkownika,
+  - adapter mapuje obecne parametry (`page`, `per_page`, filtry, sortowanie) na zapytanie SQL.
 
 **DoD**
 - nawigacja stron nie wymaga ładowania pełnej tabeli do DOM,
 - zachowane opcje 25/50/100/200,
-- brak regresji filtrów/sortowania.
-
-**Priorytet**: P0
+- brak regresji filtrów/sortowania,
+- brak drugiego, równoległego mechanizmu paginacji w JS/PHP (jeden wspólny flow UI → API → SQL).
 
 ---
 
-### EPIC 1.2 — Optymalizacja raportowania
+### B. Cache raportów po filtrach + poprawna invalidacja (P0)
 
 #### T1.2.1 Cache wyników raportów po filtrach
 **Zakres**
@@ -72,121 +76,199 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
 - kolejne odczyty raportu są szybsze,
 - po zmianie danych cache nie zwraca starych wartości.
 
-**Priorytet**: P0
+**Efekt biznesowy**
+- dashboardy i raporty działają „instant”,
+- stabilne doświadczenie użytkownika przy dużych wolumenach.
 
 ---
 
-#### T1.2.2 Ograniczenie złożoności `omd_rozliczenia`
+### C. Ograniczenie złożoności `omd_rozliczenia` (P1)
+
+#### T1.2.2 Prefetch/index danych do rozliczeń miesięcznych
+**Co rozumiemy przez „ograniczenie złożoności”**
+- redukcja liczby zagnieżdżonych pętli i powtarzanych zapytań w `omd_rozliczenia`,
+- przeniesienie ciężaru z obliczeń „w locie” na preagregację i słowniki indeksowane po kluczach (`project_id`, `employee_id`, `month`),
+- jeden przebieg danych na raport zamiast wielu przebiegów po tych samych rekordach.
+
 **Zakres**
 - prefetch/index danych do wyliczeń miesięcznych (zamiast wielokrotnych pętli),
+- batchowe pobieranie danych źródłowych i mapowanie do struktur lookup,
 - przygotowanie pod snapshoty miesięczne (jeśli potrzebne).
 
 **DoD**
-- ta sama logika biznesowa,
-- zauważalny spadek czasu budowania raportu 12M.
+- ta sama logika biznesowa i te same wyniki finansowe jak przed zmianą,
+- ograniczenie liczby zapytań SQL w ścieżce raportu 12M,
+- zauważalny spadek czasu budowania raportu 12M,
+- brak timeoutów na danych historycznych referencyjnych.
 
-**Priorytet**: P1
+**Efekt biznesowy**
+- mniej timeoutów i sporów o liczby,
+- stabilna analiza za długi okres.
 
 ---
 
-### EPIC 1.3 — Monitoring wydajności
+### D. Refaktor front/admin JS (P1-P2)
 
-#### T1.3.1 Lekki profiler (tryb dev)
+#### T2.1 Front JS refactor (inline → assety)
 **Zakres**
-- liczba zapytań + czas renderu kluczowych ekranów.
-- aktywacja tylko w debug/dev.
+- przeniesienie JS z template do `assets/js/front-manager.js` i `assets/js/front-worker.js`,
+- zachowanie funkcjonalności 1:1 (tabs, filtry, tabele, paginacja).
 
 **DoD**
-- możliwość porównania przed/po dla optymalizacji.
-
-**Priorytet**: P2
+- minimalny inline JS,
+- brak regresji zachowania ekranów front.
 
 ---
 
-## ETAP 2 — Utrzymanie, porządek kodu i mniej regresji
-
-### EPIC 2.1 — Front JS refactor (inline → assety)
-
-#### T2.1.1 Manager dashboard: przeniesienie JS do `assets/js/front-manager.js`
+#### T2.2 Modularizacja admin JS
 **Zakres**
-- wyciągnięcie skryptów inline do pliku asset,
-- zachowanie 1:1 funkcjonalności (tabs, filtry, tabele, paginacja).
-
-**DoD**
-- minimalny inline JS w template,
-- brak regresji zachowania manager front.
-
-**Priorytet**: P1
-
----
-
-#### T2.1.2 Worker dashboard: przeniesienie JS do `assets/js/front-worker.js`
-**Zakres**
-- analogiczna refaktoryzacja dla worker front.
-
-**DoD**
-- 1:1 funkcjonalność,
-- prostszy i krótszy template worker.
-
-**Priorytet**: P1
-
----
-
-### EPIC 2.2 — Modularizacja admin JS
-
-#### T2.2.1 Podział `admin.js` na moduły
-**Proponowane moduły**
-- `admin-table-tools.js`
-- `admin-fixed-costs.js`
-- `admin-collapsible.js`
-- `admin-form-sync.js`
+- podział `admin.js` na moduły (`admin-table-tools.js`, `admin-fixed-costs.js`, `admin-collapsible.js`, `admin-form-sync.js`),
+- opcjonalnie wspólny silnik tabel dla front/admin.
 
 **DoD**
 - entrypoint inicjuje moduły,
 - mniejsza odpowiedzialność pojedynczych plików,
 - testy manualne bez regresji.
 
+**Efekt biznesowy**
+- szybsze wdrażanie zmian UX,
+- mniej regresji i tańsze utrzymanie.
+
+---
+
+### E. Backupy: przejście na backup tylko tabel ERP
+
+#### T3.1 Zmiana zakresu backupu
+**Zakres**
+- odejście od backupu „wszystkie tabele” (`SHOW TABLES`),
+- backup wyłącznie tabel z prefiksami ERP OMD,
+- opcjonalnie snapshot różnicowy / przyrostowy.
+
+**DoD**
+- backup obejmuje wyłącznie dane systemu ERP OMD,
+- odtwarzanie jest udokumentowane i testowalne,
+- mniejszy rozmiar i czas backupu.
+
+**Priorytet**: P1
+
+**Efekt biznesowy**
+- krótsze backupy,
+- niższe koszty storage,
+- mniejsze ryzyko operacyjne.
+
+---
+
+## 2) NOWE FUNKCJE (wartość użytkowa i przychodowa) — PARKING DOKUMENTACYJNY
+
+### A. „Control Tower” dla managera (daily cockpit)
+**Zakres**
+- ekran „Dziś/Tydzień” z blokami:
+  - projekty z ryzykiem marży,
+  - wpisy do akceptacji,
+  - odchylenie godzin vs plan.
+- wykorzystanie istniejących alertów, metryk i danych finansowych.
+
+**Efekt**
+- mniej ręcznego przeklikiwania,
+- szybsze decyzje operacyjne.
+
 **Priorytet**: P1
 
 ---
 
-#### T2.2.2 Wspólny silnik tabel (front/admin)
+### B. Automatyczny „invoice draft” (z akceptacją)
 **Zakres**
-- wspólny utility dla: sort/search/pagination,
-- adaptery dla selektorów CSS front i admin.
+- rozszerzenie raportu „projekty do faktury” o generację draftu faktury,
+- eksport: CSV/PDF,
+- webhook API do narzędzia księgowego.
 
-**DoD**
-- jedna logika tabel utrzymywana w jednym miejscu,
-- uproszczone poprawki błędów.
+**Efekt**
+- skrócenie czasu od delivery do fakturowania,
+- mniejsze ryzyko pomyłek manualnych.
+
+**Priorytet**: P1
+
+---
+
+### C. Plan vs wykonanie (capacity + profitability)
+**Zakres**
+- planowane godziny vs wykorzystanie,
+- marża planowana vs rzeczywista per projekt/klient,
+- wykorzystanie danych `monthly_hours` i time trackingu.
+
+**Efekt**
+- lepsze decyzje sprzedażowe i staffingowe.
+
+**Priorytet**: P1-P2
+
+---
+
+### D. Powiadomienia „akcji wymagających uwagi”
+**Zakres**
+- rozszerzenie notyfikacji cron o:
+  - projekty przekraczające próg marży/budżetu,
+  - wnioski/projekty bez ownera.
+
+**Efekt**
+- mniej manualnego nadzoru,
+- wcześniejsze wykrywanie problemów.
 
 **Priorytet**: P2
 
 ---
 
-### EPIC 2.3 — Porządek menu i konfiguracji UI
-
-#### T2.3.1 Dopracowanie separatorów submenu
+### E. Rozszerzony workflow wniosków projektowych
 **Zakres**
-- utrzymać obecny podział sekcji,
-- dopracować semantykę/a11y separatorów i stylowanie.
+- SLA statusów i automatyczne assignmenty ownerów,
+- wykorzystanie istniejącego request lifecycle z FRONT planu.
 
-**DoD**
-- separatory nie są traktowane jak normalne akcje,
-- czytelność menu pozostaje wysoka.
+**Efekt**
+- krótszy lead time od potrzeby do startu projektu.
 
-**Priorytet**: P3
+**Priorytet**: P2
 
 ---
 
-## Kolejność realizacji
-1. **Etap 1 (P0):** T1.1.1 → T1.1.2 → T1.1.3 → T1.2.1
-2. **Etap 1 (P1/P2):** T1.2.2 → T1.3.1
-3. **Etap 2 (P1):** T2.1.1 → T2.1.2 → T2.2.1
-4. **Etap 2 (P2/P3):** T2.2.2 → T2.3.1
+## 3) KIERUNEK ROZWOJU (produktowo-biznesowy, 12–24 mies.) — PARKING DOKUMENTACYJNY
+
+### Kierunek 1: ERP OMD jako „Operating System” agencji
+**Teza**
+- rozwój z ewidencji czasu do platformy operacyjnej: staffing, rentowność, cashflow operacyjny.
+
+### Kierunek 2: API-first + integracje
+**Teza**
+- wykorzystać warstwę REST, feature flags i SLO,
+- budować oficjalne integracje: księgowość, BI, komunikatory, CRM.
+
+### Kierunek 3: „Performance as a feature”
+**Teza**
+- przejść z ogólnego SLO raportów do SLA per ekran,
+- mierzyć KPI użytkowe: czas akceptacji, czas fakturowania, utilization.
+
+### Kierunek 4: Front operacyjny jako główne UI dzienne
+**Teza**
+- doprowadzić do sytuacji, gdzie ~80% codziennych akcji odbywa się poza wp-admin,
+- utrzymać brak duplikacji logiki i spójność warstw.
+
+---
+
+## Kolejność realizacji (rekomendacja)
+1. **Aktywny zakres (teraz):** cały blok **1) OPTYMALIZACJA**.
+2. **Poza zakresem implementacyjnym (na teraz):** bloki **2) NOWE FUNKCJE** i **3) KIERUNEK ROZWOJU** pozostają dokumentacyjne.
 
 ---
 
 ## Status
 - **Dokument zatwierdzony do realizacji:** TAK
 - **Tryb pracy:** iteracyjny (wdrożenia etapowe)
-- **Następny krok:** rozpoczęcie T1.1.1
+- **Data aktualizacji statusu:** 2026-04-04
+- **Postęp bloku 1) OPTYMALIZACJA:**
+  - **T1.1.1:** ZREALIZOWANE (SQL pagination + count dla time entries wdrożone).
+  - **T1.1.2:** ZREALIZOWANE (SQL pagination + count dla kluczowych list admin/front).
+  - **T1.1.3:** ZREALIZOWANE (UI spięte z backend pagination + testy kontraktowe REST + testy repozytoriów paginacji).
+  - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
+  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M).
+- **Następny krok wykonawczy (najbliższe wdrożenie):**
+  1. benchmark ścieżki raportowej 12M (przed/po dla kolejnych iteracji T1.2.2),
+  2. dalsze ograniczenie złożoności pętli/duplikacji logiki w `omd_rozliczenia` (jednolite lookupy i mniej warunków rozproszonych),
+  3. porównanie metryk po wdrożeniu (czas raportu 12M, liczba zapytań SQL, stabilność bez timeoutów).
