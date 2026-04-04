@@ -19,6 +19,28 @@ class ERP_OMD_Salary_History_Repository
         );
     }
 
+    public function for_employees(array $employee_ids)
+    {
+        global $wpdb;
+
+        $employee_ids = array_values(array_unique(array_map('intval', $employee_ids)));
+        $employee_ids = array_values(array_filter($employee_ids, static function ($employee_id) {
+            return $employee_id > 0;
+        }));
+
+        if ($employee_ids === []) {
+            return [];
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($employee_ids), '%d'));
+        $query = $wpdb->prepare(
+            "SELECT * FROM {$this->table_name()} WHERE employee_id IN ($placeholders) ORDER BY employee_id ASC, valid_from DESC, id DESC",
+            ...$employee_ids
+        );
+
+        return $wpdb->get_results($query, ARRAY_A);
+    }
+
     public function find($id)
     {
         global $wpdb;

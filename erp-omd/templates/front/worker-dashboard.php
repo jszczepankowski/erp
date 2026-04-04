@@ -619,65 +619,16 @@
         </section>
     </main>
 
+    <script src="<?php echo esc_url(ERP_OMD_URL . 'assets/js/front-shared.js?ver=' . ERP_OMD_VERSION); ?>"></script>
+    <script src="<?php echo esc_url(ERP_OMD_URL . 'assets/js/front-worker.js?ver=' . ERP_OMD_VERSION); ?>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            var dedupeProjectRequestDateFields = function () {
-                document.querySelectorAll('form.erp-omd-front-form').forEach(function (formNode) {
-                    if (!formNode.querySelector('[name="brief"]')) {
-                        return;
-                    }
-
-                    ['start_date', 'end_date'].forEach(function (fieldName) {
-                        var fieldNodes = Array.from(formNode.querySelectorAll('input[name="' + fieldName + '"]'));
-                        if (fieldNodes.length <= 1) {
-                            return;
-                        }
-
-                        fieldNodes.slice(1).forEach(function (fieldNode) {
-                            var rowNode = fieldNode.closest('.erp-omd-front-form-row');
-                            if (rowNode) {
-                                rowNode.remove();
-                                return;
-                            }
-                            fieldNode.remove();
-                        });
-                    });
-                });
-            };
-
-            dedupeProjectRequestDateFields();
-
-            var setupWorkerTabs = function () {
-                var storageKey = 'erp_omd_front_worker_active_tab';
-                var allowedTabs = ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski'];
-                var defaultTab = 'wpisy';
-                var params = new URLSearchParams(window.location.search);
-                var urlTab = params.get('tab');
-                var storedTab = localStorage.getItem(storageKey);
-                var activeTab = allowedTabs.indexOf(urlTab) !== -1
-                    ? urlTab
-                    : (allowedTabs.indexOf(storedTab) !== -1 ? storedTab : defaultTab);
-
-                localStorage.setItem(storageKey, activeTab);
-
-                if (allowedTabs.indexOf(urlTab) === -1) {
-                    params.set('tab', activeTab);
-                    history.replaceState({}, '', window.location.pathname + '?' + params.toString());
-                }
-
-                document.querySelectorAll('[data-worker-tab-pane]').forEach(function (panel) {
-                    panel.hidden = panel.getAttribute('data-worker-tab-pane') !== activeTab;
-                });
-
-                document.querySelectorAll('[data-worker-tab-button]').forEach(function (button) {
-                    var isActive = button.getAttribute('data-worker-tab-button') === activeTab;
-                    button.classList.toggle('erp-omd-front-button-primary', isActive);
-                    button.classList.toggle('erp-omd-front-button-ghost', !isActive);
-                    button.setAttribute('aria-current', isActive ? 'page' : 'false');
-                });
-            };
-
-            setupWorkerTabs();
+            if (window.erpOmdFrontShared && typeof window.erpOmdFrontShared.dedupeProjectRequestDateFields === 'function') {
+                window.erpOmdFrontShared.dedupeProjectRequestDateFields();
+            }
+            if (window.erpOmdFrontWorker && typeof window.erpOmdFrontWorker.setupTabs === 'function') {
+                window.erpOmdFrontWorker.setupTabs();
+            }
 
             var setupCollapsibleSections = function () {
                 var storagePrefix = 'erp_omd_front_worker_section_';

@@ -1188,77 +1188,16 @@
             </div>
         </section>
     </main>
+    <script src="<?php echo esc_url(ERP_OMD_URL . 'assets/js/front-shared.js?ver=' . ERP_OMD_VERSION); ?>"></script>
+    <script src="<?php echo esc_url(ERP_OMD_URL . 'assets/js/front-manager.js?ver=' . ERP_OMD_VERSION); ?>"></script>
     <script>
     (function () {
-        var dedupeProjectRequestDateFields = function () {
-            document.querySelectorAll('form.erp-omd-front-form').forEach(function (formNode) {
-                if (!formNode.querySelector('[name="brief"]')) {
-                    return;
-                }
-
-                ['start_date', 'end_date'].forEach(function (fieldName) {
-                    var fieldNodes = Array.from(formNode.querySelectorAll('input[name="' + fieldName + '"]'));
-                    if (fieldNodes.length <= 1) {
-                        return;
-                    }
-
-                    fieldNodes.slice(1).forEach(function (fieldNode) {
-                        var rowNode = fieldNode.closest('.erp-omd-front-form-row');
-                        if (rowNode) {
-                            rowNode.remove();
-                            return;
-                        }
-                        fieldNode.remove();
-                    });
-                });
-            });
-        };
-
-        dedupeProjectRequestDateFields();
-
-        var setupManagerTabs = function () {
-            var storageKey = 'erp_omd_front_manager_active_tab';
-            var allowedTabs = ['dodaj-wpis', 'wpisy-godzin', 'projekty', 'kosztorysy', 'akceptacje', 'wnioski'];
-            var params = new URLSearchParams(window.location.search);
-            var urlTab = params.get('manager_tab');
-            var storedTab = localStorage.getItem(storageKey);
-            var activeTab = allowedTabs.indexOf(urlTab) !== -1 ? urlTab : (allowedTabs.indexOf(storedTab) !== -1 ? storedTab : 'projekty');
-
-            localStorage.setItem(storageKey, activeTab);
-            if (allowedTabs.indexOf(urlTab) === -1) {
-                params.set('manager_tab', activeTab);
-                history.replaceState({}, '', window.location.pathname + '?' + params.toString() + window.location.hash);
-            }
-
-            document.querySelectorAll('[data-manager-tab-pane]').forEach(function (panel) {
-                panel.hidden = panel.getAttribute('data-manager-tab-pane') !== activeTab;
-            });
-
-            document.querySelectorAll('[data-manager-tab-button]').forEach(function (button) {
-                var isActive = button.getAttribute('data-manager-tab-button') === activeTab;
-                button.classList.toggle('erp-omd-front-button-primary', isActive);
-                button.classList.toggle('erp-omd-front-button-ghost', !isActive);
-                button.setAttribute('aria-current', isActive ? 'page' : 'false');
-                button.addEventListener('click', function () {
-                    var nextTab = button.getAttribute('data-manager-tab-button');
-                    if (allowedTabs.indexOf(nextTab) === -1) {
-                        return;
-                    }
-                    localStorage.setItem(storageKey, nextTab);
-                    params.set('manager_tab', nextTab);
-                    history.replaceState({}, '', window.location.pathname + '?' + params.toString() + window.location.hash);
-                    document.querySelectorAll('[data-manager-tab-pane]').forEach(function (panel) {
-                        panel.hidden = panel.getAttribute('data-manager-tab-pane') !== nextTab;
-                    });
-                    document.querySelectorAll('[data-manager-tab-button]').forEach(function (candidate) {
-                        var candidateActive = candidate.getAttribute('data-manager-tab-button') === nextTab;
-                        candidate.classList.toggle('erp-omd-front-button-primary', candidateActive);
-                        candidate.classList.toggle('erp-omd-front-button-ghost', !candidateActive);
-                        candidate.setAttribute('aria-current', candidateActive ? 'page' : 'false');
-                    });
-                });
-            });
-        };
+        if (window.erpOmdFrontShared && typeof window.erpOmdFrontShared.dedupeProjectRequestDateFields === 'function') {
+            window.erpOmdFrontShared.dedupeProjectRequestDateFields();
+        }
+        if (window.erpOmdFrontManager && typeof window.erpOmdFrontManager.setupTabs === 'function') {
+            window.erpOmdFrontManager.setupTabs();
+        }
 
         var setupTableEnhancements = function () {
             var parseSortableValue = function (value) {
@@ -1638,7 +1577,6 @@
             applyFiltersAndSort();
         };
 
-        setupManagerTabs();
         setupTableEnhancements();
         setupProjectsTableFilters();
         setupManagerTimeEntryForm();
