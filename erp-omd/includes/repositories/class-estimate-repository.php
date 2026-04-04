@@ -38,6 +38,10 @@ class ERP_OMD_Estimate_Repository
             $params[] = $like;
             $params[] = $like;
         }
+        if (! empty($filters['month']) && preg_match('/^\d{4}-\d{2}$/', (string) $filters['month']) === 1) {
+            $where[] = 'e.created_at LIKE %s';
+            $params[] = (string) $filters['month'] . '%';
+        }
 
         $limit = max(1, (int) $limit);
         $offset = max(0, (int) $offset);
@@ -80,6 +84,10 @@ class ERP_OMD_Estimate_Repository
             $params[] = $like;
             $params[] = $like;
             $params[] = $like;
+        }
+        if (! empty($filters['month']) && preg_match('/^\d{4}-\d{2}$/', (string) $filters['month']) === 1) {
+            $where[] = 'e.created_at LIKE %s';
+            $params[] = (string) $filters['month'] . '%';
         }
 
         $sql = "SELECT COUNT(*) FROM {$this->table_name()} e INNER JOIN {$clients_table} c ON c.id = e.client_id LEFT JOIN {$projects_table} p ON p.estimate_id = e.id WHERE " . implode(' AND ', $where);

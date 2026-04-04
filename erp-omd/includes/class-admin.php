@@ -611,7 +611,37 @@ class ERP_OMD_Admin
                 ? ($estimate_project_alerts[(int) ($linked_project['id'] ?? 0)] ?? [])
                 : [];
         }
-        $estimates = $this->estimates->all();
+        $estimate_filters = [
+            'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
+            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'client_id' => (int) ($_GET['client_id'] ?? 0),
+            'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
+            'page_num' => max(1, (int) ($_GET['page_num'] ?? 1)),
+            'per_page' => (int) ($_GET['per_page'] ?? 100),
+        ];
+        if (! in_array($estimate_filters['per_page'], [25, 50, 100, 200], true)) {
+            $estimate_filters['per_page'] = 100;
+        }
+        $estimate_query_filters = array_filter([
+            'search' => $estimate_filters['search'],
+            'status' => $estimate_filters['status'],
+            'client_id' => $estimate_filters['client_id'],
+            'month' => $estimate_filters['month'],
+        ], [$this, 'is_query_filter']);
+        $estimate_pagination = [
+            'total_items' => $this->estimates->count_filtered($estimate_query_filters),
+            'per_page' => $estimate_filters['per_page'],
+            'page_num' => $estimate_filters['page_num'],
+        ];
+        $estimate_pagination['total_pages'] = max(1, (int) ceil($estimate_pagination['total_items'] / max(1, $estimate_pagination['per_page'])));
+        if ($estimate_pagination['page_num'] > $estimate_pagination['total_pages']) {
+            $estimate_pagination['page_num'] = $estimate_pagination['total_pages'];
+        }
+        $estimates = $this->estimates->find_paged(
+            $estimate_query_filters,
+            $estimate_pagination['per_page'],
+            ($estimate_pagination['page_num'] - 1) * $estimate_pagination['per_page']
+        );
         foreach ($estimates as &$estimate_row) {
             $estimate_row_items = $this->estimate_items->for_estimate((int) $estimate_row['id']);
             $estimate_row_totals = $this->estimate_service->calculate_totals($estimate_row_items);
@@ -623,38 +653,6 @@ class ERP_OMD_Admin
                 : [];
         }
         unset($estimate_row);
-        $estimate_filters = [
-            'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
-            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
-            'client_id' => (int) ($_GET['client_id'] ?? 0),
-            'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
-        ];
-        $estimates = array_values(array_filter($estimates, function ($estimate_row) use ($estimate_filters) {
-            if ($estimate_filters['search'] !== '') {
-                $haystack = strtolower(implode(' ', [
-                    (string) ($estimate_row['name'] ?? ''),
-                    (string) ($estimate_row['client_name'] ?? ''),
-                    (string) ($estimate_row['project_name'] ?? ''),
-                ]));
-                if (strpos($haystack, strtolower($estimate_filters['search'])) === false) {
-                    return false;
-                }
-            }
-            if ($estimate_filters['status'] !== '' && (string) ($estimate_row['status'] ?? '') !== $estimate_filters['status']) {
-                return false;
-            }
-            if ($estimate_filters['client_id'] > 0 && (int) ($estimate_row['client_id'] ?? 0) !== $estimate_filters['client_id']) {
-                return false;
-            }
-            if ($estimate_filters['month'] !== '') {
-                $estimate_month = substr((string) ($estimate_row['created_at'] ?? ''), 0, 7);
-                if ($estimate_month !== $estimate_filters['month']) {
-                    return false;
-                }
-            }
-
-            return true;
-        }));
         $clients = $this->clients->all();
         include ERP_OMD_PATH . 'templates/admin/estimates.php';
     }
