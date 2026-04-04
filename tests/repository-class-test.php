@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 $repositoryFiles = [
     __DIR__ . '/../erp-omd/includes/repositories/class-estimate-repository.php',
+    __DIR__ . '/../erp-omd/includes/repositories/class-estimate-repository-v2.php',
     __DIR__ . '/../erp-omd/includes/repositories/class-client-repository.php',
     __DIR__ . '/../erp-omd/includes/repositories/class-project-repository.php',
     __DIR__ . '/../erp-omd/includes/repositories/class-time-entry-repository.php',

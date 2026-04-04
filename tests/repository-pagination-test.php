@@ -42,7 +42,7 @@ final class FakeWpdb
 
 $GLOBALS['wpdb'] = new FakeWpdb();
 
-require_once __DIR__ . '/../erp-omd/includes/repositories/class-estimate-repository.php';
+require_once __DIR__ . '/../erp-omd/includes/repositories/class-estimate-repository-v2.php';
 require_once __DIR__ . '/../erp-omd/includes/repositories/class-time-entry-repository.php';
 
 final class RepositoryPaginationTestRunner
