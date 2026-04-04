@@ -46,8 +46,25 @@ if (! class_exists('ERP_OMD_Salary_History_Repository')) {
 if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
     class ERP_OMD_Project_Cost_Repository {
         public int $forProjectCalls = 0;
+        public int $forProjectsInDateRangeCalls = 0;
         public function __construct(private array $rows) {}
         public function for_project($projectId) { $this->forProjectCalls++; return $this->rows[(int) $projectId] ?? []; }
+        public function for_projects_in_date_range(array $projectIds, $dateFrom, $dateTo)
+        {
+            $this->forProjectsInDateRangeCalls++;
+            $out = [];
+            foreach ($projectIds as $projectId) {
+                foreach (($this->rows[(int) $projectId] ?? []) as $row) {
+                    $costDate = (string) ($row['cost_date'] ?? '');
+                    if ($costDate < (string) $dateFrom || $costDate > (string) $dateTo) {
+                        continue;
+                    }
+                    $row['project_id'] = (int) $projectId;
+                    $out[] = $row;
+                }
+            }
+            return $out;
+        }
     }
 }
 if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
@@ -147,6 +164,7 @@ $result = [
     'elapsed_ms' => round($elapsedMs, 2),
     'salary_for_employee_calls' => $salaryRepo->forEmployeeCalls,
     'project_cost_for_project_calls' => $projectCostRepo->forProjectCalls,
+    'project_cost_for_projects_in_date_range_calls' => $projectCostRepo->forProjectsInDateRangeCalls,
     'time_entries_all_calls' => $timeRepo->allCalls,
 ];
 
