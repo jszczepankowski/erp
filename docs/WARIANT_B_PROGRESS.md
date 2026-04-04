@@ -168,3 +168,10 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
   2. potem pełny `P2`,
   3. potem `P3`,
   4. na końcu `P4/P5`.
+
+## 9) Podsumowanie kroku (dla kolejnych chatów)
+- **Bieżący krok:** `WB-P5-HF-01` (stabilizacja/hotfix) — naprawa regresji testu `project-financial-service-test.php` po zmianie sygnatury `ERP_OMD_Project_Financial_Service` + ujednolicenie wersji w `README.md`.
+- **Szacowana liczba kroków do domknięcia (orientacyjnie): ~3**
+  1. Domknięcie pełnych walidatorów checklisty LIVE -> DO_ROZLICZENIA (jeśli pozostają skróty/warunki tymczasowe).
+  2. Dopracowanie pełnego flow UI Admin dla korekt i filtrowanych widoków audytu.
+  3. Dokończenie frontendowych komponentów/UX dla `dashboard-v1` (backend contract jest gotowy).
