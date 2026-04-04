@@ -284,9 +284,8 @@ Wynik z: `php tests/reporting-benchmark-12m.php`
 | Metryka | Wartość |
 |---|---:|
 | `rows` | 12 |
-| `elapsed_ms` | 31.02 |
+| `elapsed_ms` | 19.66 |
 | `salary_for_employee_calls` | 25 |
 | `project_cost_for_project_calls` | 0 |
-| `project_cost_for_projects_in_date_range_calls` | 1 |
 | `project_cost_sum_by_project_and_month_calls` | 1 |
 | `time_entries_all_calls` | 1 |

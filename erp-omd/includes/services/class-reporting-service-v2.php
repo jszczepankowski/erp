@@ -1210,12 +1210,8 @@ class ERP_OMD_Reporting_Service
         }
 
         $rows = [];
-        if (method_exists($this->project_costs, 'for_projects_in_date_range')) {
-            $rows = (array) $this->project_costs->for_projects_in_date_range($project_ids, $range_start, $range_end);
-        } else {
-            foreach ($project_ids as $project_id) {
-                $rows = array_merge($rows, (array) $this->project_costs->for_project((int) $project_id));
-            }
+        foreach ($project_ids as $project_id) {
+            $rows = array_merge($rows, (array) $this->project_costs->for_project((int) $project_id));
         }
 
         foreach ($rows as $row) {
