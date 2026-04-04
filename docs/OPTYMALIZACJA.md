@@ -267,11 +267,11 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
   - **T1.1.2:** ZREALIZOWANE (SQL pagination + count dla kluczowych list admin/front).
   - **T1.1.3:** ZREALIZOWANE (UI spięte z backend pagination + testy kontraktowe REST + testy repozytoriów paginacji).
   - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
-  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem zamiast filtrowania per miesiąc + ujednolicenie logiki filtrowania wpisów w jednej metodzie + normalizacja wyboru historii wynagrodzeń per miesiąc przez jednoznaczny wybór rekordu o najnowszym `valid_from` + zbiorczy odczyt kosztów bezpośrednich dla zakresu 12M zamiast `for_project` per projekt).
+  - **T1.2.2:** ZREALIZOWANE (prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem + ujednolicenie logiki filtrowania wpisów + batchowe pobranie historii wynagrodzeń (`for_employees`) + batchowa agregacja kosztów bezpośrednich per `project_id + month` + jednorazowe pobranie listy projektów i reuse dla całej osi 12M).
+  - **T2.1:** ZREALIZOWANE (wydzielenie wspólnych helperów front JS do `assets/js/front-shared.js` (`dedupeProjectRequestDateFields`, `setupCollapsibleSections`) + wyniesienie logiki tabs, tabel, filtrów oraz helperów formularzy manager/worker do dedykowanych assetów `assets/js/front-manager.js` i `assets/js/front-worker.js`).
 - **Następny krok wykonawczy (najbliższe wdrożenie):**
-  1. benchmark ścieżki raportowej 12M (przed/po dla kolejnych iteracji T1.2.2) — skrypt referencyjny: `php tests/reporting-benchmark-12m.php`,
-  2. dalsze ograniczenie złożoności pętli/duplikacji logiki w `omd_rozliczenia` (jednolite lookupy i mniej warunków rozproszonych; kolejny kandydat: preagregacja miesięczna po stronie SQL dla direct costs i salary history),
-  3. porównanie metryk po wdrożeniu (czas raportu 12M, liczba zapytań SQL, stabilność bez timeoutów).
+  1. formalne zamknięcie bloku 1) OPTYMALIZACJA,
+  2. przejście do decyzji „implementować czy zostawić jako parking” dla bloku 2).
 
 ### Realizacja kroków (T1.2.2)
 - **Krok 1/3:** WYKONANY — benchmark 12M uruchamiany po każdej iteracji + doprecyzowanie zakresu dat dla batch direct costs do realnego końca miesiąca (bez stałego `-31`).
@@ -284,14 +284,17 @@ Wynik z: `php tests/reporting-benchmark-12m.php`
 | Metryka | Wartość |
 |---|---:|
 | `rows` | 12 |
-| `elapsed_ms` | 23.28 |
-| `salary_for_employee_calls` | 25 |
-| `project_cost_for_project_calls` | 80 |
+| `elapsed_ms` | 23.27 |
+| `projects_all_calls` | 1 |
+| `salary_for_employee_calls` | 0 |
+| `salary_for_employees_calls` | 1 |
+| `project_cost_for_project_calls` | 0 |
+| `project_cost_sum_by_project_and_month_calls` | 1 |
 | `time_entries_all_calls` | 1 |
 
 ### Kolejny etap roadmapy (po T1.2.2)
-- **T3.1 (backup tylko tabel ERP):** ROZPOCZĘTY — backup DB ograniczony do tabel z prefiksem `${wpdb->prefix}erp_omd_` (bez zrzutu pełnej bazy przez `SHOW TABLES` → wszystkie tabele).
-- **T2.2 (modularizacja admin JS):** ROZPOCZĘTY — wydzielenie inicjalizacji narzędzi tabel, kosztów stałych, autosave inline i interakcji UI do osobnych funkcji (`initTableTools`, `initFixedCosts`, `initInlineAutoSave`, `initAdminInteractions`) jako kolejny krok dekompozycji `admin.js`.
+- **T3.1 (backup tylko tabel ERP):** ZREALIZOWANY — backup DB ograniczony do tabel z prefiksem `${wpdb->prefix}erp_omd_`, testy zakresu dumpa przechodzą, odtwarzanie udokumentowane.
+- **T2.2 (modularizacja admin JS):** ZREALIZOWANY — `admin.js` podzielony na moduły (`admin-table-tools.js`, `admin-fixed-costs.js`, `admin-collapsible.js`, `admin-form-sync.js`) z centralnym entrypointem inicjalizującym.
 
 #### T3.1 — DoD / walidacja
 - backup zawiera wyłącznie tabele zaczynające się od `${wpdb->prefix}erp_omd_`,

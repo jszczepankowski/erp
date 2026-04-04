@@ -619,314 +619,35 @@
         </section>
     </main>
 
+    <script src="<?php echo esc_url(ERP_OMD_URL . 'assets/js/front-shared.js?ver=' . ERP_OMD_VERSION); ?>"></script>
+    <script src="<?php echo esc_url(ERP_OMD_URL . 'assets/js/front-worker.js?ver=' . ERP_OMD_VERSION); ?>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            var dedupeProjectRequestDateFields = function () {
-                document.querySelectorAll('form.erp-omd-front-form').forEach(function (formNode) {
-                    if (!formNode.querySelector('[name="brief"]')) {
-                        return;
-                    }
-
-                    ['start_date', 'end_date'].forEach(function (fieldName) {
-                        var fieldNodes = Array.from(formNode.querySelectorAll('input[name="' + fieldName + '"]'));
-                        if (fieldNodes.length <= 1) {
-                            return;
-                        }
-
-                        fieldNodes.slice(1).forEach(function (fieldNode) {
-                            var rowNode = fieldNode.closest('.erp-omd-front-form-row');
-                            if (rowNode) {
-                                rowNode.remove();
-                                return;
-                            }
-                            fieldNode.remove();
-                        });
-                    });
-                });
-            };
-
-            dedupeProjectRequestDateFields();
-
-            var setupWorkerTabs = function () {
-                var storageKey = 'erp_omd_front_worker_active_tab';
-                var allowedTabs = ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski'];
-                var defaultTab = 'wpisy';
-                var params = new URLSearchParams(window.location.search);
-                var urlTab = params.get('tab');
-                var storedTab = localStorage.getItem(storageKey);
-                var activeTab = allowedTabs.indexOf(urlTab) !== -1
-                    ? urlTab
-                    : (allowedTabs.indexOf(storedTab) !== -1 ? storedTab : defaultTab);
-
-                localStorage.setItem(storageKey, activeTab);
-
-                if (allowedTabs.indexOf(urlTab) === -1) {
-                    params.set('tab', activeTab);
-                    history.replaceState({}, '', window.location.pathname + '?' + params.toString());
-                }
-
-                document.querySelectorAll('[data-worker-tab-pane]').forEach(function (panel) {
-                    panel.hidden = panel.getAttribute('data-worker-tab-pane') !== activeTab;
-                });
-
-                document.querySelectorAll('[data-worker-tab-button]').forEach(function (button) {
-                    var isActive = button.getAttribute('data-worker-tab-button') === activeTab;
-                    button.classList.toggle('erp-omd-front-button-primary', isActive);
-                    button.classList.toggle('erp-omd-front-button-ghost', !isActive);
-                    button.setAttribute('aria-current', isActive ? 'page' : 'false');
-                });
-            };
-
-            setupWorkerTabs();
-
-            var setupCollapsibleSections = function () {
-                var storagePrefix = 'erp_omd_front_worker_section_';
-                document.querySelectorAll('[data-collapsible-section]').forEach(function (panel) {
-                    var sectionKey = panel.getAttribute('data-collapsible-section');
-                    if (!sectionKey) {
-                        return;
-                    }
-
-                    var headerNode = panel.querySelector(':scope > .erp-omd-front-section-heading');
-                    if (!headerNode) {
-                        var heading = panel.querySelector(':scope > h2, :scope > h3');
-                        if (!heading) {
-                            return;
-                        }
-                        headerNode = document.createElement('div');
-                        headerNode.className = 'erp-omd-front-collapsible-header';
-                        heading.parentNode.insertBefore(headerNode, heading);
-                        headerNode.appendChild(heading);
-                    }
-
-                    if (headerNode.querySelector('.erp-omd-front-collapse-toggle')) {
-                        return;
-                    }
-
-                    var contentNodes = Array.from(panel.children).filter(function (child) {
-                        return child !== headerNode;
-                    });
-
-                    var toggle = document.createElement('button');
-                    toggle.type = 'button';
-                    toggle.className = 'erp-omd-front-collapse-toggle';
-                    headerNode.appendChild(toggle);
-
-                    var storageKey = storagePrefix + sectionKey;
-                    var isCollapsed = localStorage.getItem(storageKey) === '1';
-                    var applyState = function () {
-                        contentNodes.forEach(function (node) {
-                            node.hidden = isCollapsed;
-                        });
-                        toggle.textContent = isCollapsed ? '<?php echo esc_js(__('Rozwiń', 'erp-omd')); ?>' : '<?php echo esc_js(__('Zwiń', 'erp-omd')); ?>';
-                        panel.classList.toggle('erp-omd-front-panel-collapsed', isCollapsed);
-                    };
-
-                    toggle.addEventListener('click', function () {
-                        isCollapsed = !isCollapsed;
-                        localStorage.setItem(storageKey, isCollapsed ? '1' : '0');
-                        applyState();
-                    });
-
-                    applyState();
-                });
-            };
-
-            setupCollapsibleSections();
-
-            var setupWorkerTablePagination = function () {
-                document.querySelectorAll('table[data-table-enhanced="1"]').forEach(function (table) {
-                    var tbody = table.querySelector('tbody');
-                    if (!tbody) {
-                        return;
-                    }
-
-                    var allRows = Array.from(tbody.querySelectorAll('tr'));
-                    if (allRows.length === 0) {
-                        return;
-                    }
-
-                    var wrap = table.closest('.erp-omd-front-table-wrap');
-                    if (!wrap) {
-                        return;
-                    }
-
-                    var controls = document.createElement('div');
-                    controls.className = 'erp-omd-front-table-tools';
-                    controls.innerHTML =
-                        '<label class="erp-omd-front-table-size">' +
-                            '<span><?php echo esc_js(__('Widok:', 'erp-omd')); ?></span>' +
-                            '<select class="erp-omd-front-table-size-select">' +
-                                '<option value="25">25</option>' +
-                                '<option value="50">50</option>' +
-                                '<option value="100" selected>100</option>' +
-                                '<option value="200">200</option>' +
-                            '</select>' +
-                        '</label>' +
-                        '<div class="erp-omd-front-table-pagination">' +
-                            '<button type="button" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-table-prev">←</button>' +
-                            '<span class="erp-omd-front-table-page-meta">1/1</span>' +
-                            '<button type="button" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-table-next">→</button>' +
-                        '</div>' +
-                        '<span class="erp-omd-front-table-results"></span>';
-                    wrap.parentNode.insertBefore(controls, wrap);
-
-                    var pageSizeSelect = controls.querySelector('.erp-omd-front-table-size-select');
-                    var paginationMeta = controls.querySelector('.erp-omd-front-table-page-meta');
-                    var paginationPrev = controls.querySelector('.erp-omd-front-table-prev');
-                    var paginationNext = controls.querySelector('.erp-omd-front-table-next');
-                    var resultsNode = controls.querySelector('.erp-omd-front-table-results');
-                    var currentPage = 1;
-                    var pageSize = 100;
-
-                    var applyPagination = function () {
-                        var pagesCount = Math.max(1, Math.ceil(allRows.length / pageSize));
-                        currentPage = Math.max(1, Math.min(currentPage, pagesCount));
-                        var start = (currentPage - 1) * pageSize;
-                        var end = start + pageSize;
-
-                        allRows.forEach(function (row, index) {
-                            row.hidden = index < start || index >= end;
-                        });
-
-                        if (paginationMeta) {
-                            paginationMeta.textContent = currentPage + '/' + pagesCount;
-                        }
-                        if (paginationPrev) {
-                            paginationPrev.disabled = currentPage <= 1;
-                        }
-                        if (paginationNext) {
-                            paginationNext.disabled = currentPage >= pagesCount;
-                        }
-                        if (resultsNode) {
-                            resultsNode.textContent = '<?php echo esc_js(__('Wiersze:', 'erp-omd')); ?> ' + allRows.length;
-                        }
-                    };
-
-                    if (pageSizeSelect) {
-                        pageSizeSelect.addEventListener('change', function () {
-                            pageSize = Number(pageSizeSelect.value) || 100;
-                            currentPage = 1;
-                            applyPagination();
-                        });
-                    }
-                    if (paginationPrev) {
-                        paginationPrev.addEventListener('click', function () {
-                            currentPage -= 1;
-                            applyPagination();
-                        });
-                    }
-                    if (paginationNext) {
-                        paginationNext.addEventListener('click', function () {
-                            currentPage += 1;
-                            applyPagination();
-                        });
-                    }
-
-                    applyPagination();
-                });
-            };
-
-            setupWorkerTablePagination();
-
-            var hoursInput = document.getElementById('erp-omd-front-hours');
-            var clientInput = document.getElementById('erp-omd-front-client');
-            var projectInput = document.getElementById('erp-omd-front-project');
-            var roleInput = document.getElementById('erp-omd-front-role');
-            var descriptionInput = document.getElementById('erp-omd-front-description');
-
-            var syncProjectOptions = function () {
-                if (!clientInput || !projectInput) {
-                    return;
-                }
-
-                var selectedClientId = clientInput.value;
-                var requiresClient = clientInput.getAttribute('data-project-requires-client') === '1';
-                var hasClient = selectedClientId !== '' && selectedClientId !== '0';
-                var hasVisibleSelectedOption = false;
-
-                if (requiresClient) {
-                    projectInput.disabled = !hasClient;
-                }
-
-                Array.prototype.forEach.call(projectInput.options, function (option) {
-                    if (option.value === '') {
-                        option.hidden = false;
-                        return;
-                    }
-
-                    var optionClientId = option.getAttribute('data-client-id') || '';
-                    var visible = requiresClient
-                        ? hasClient && optionClientId === selectedClientId
-                        : selectedClientId === '' || optionClientId === selectedClientId;
-                    option.hidden = !visible;
-
-                    if (visible && option.selected) {
-                        hasVisibleSelectedOption = true;
-                    }
-                });
-
-                if (!hasVisibleSelectedOption) {
-                    projectInput.value = '';
-                }
-
-                syncRoleAvailability();
-            };
-
-            var syncRoleAvailability = function () {
-                if (!projectInput || !roleInput) {
-                    return;
-                }
-
-                var hasProject = projectInput.value !== '' && projectInput.value !== '0';
-                roleInput.disabled = !hasProject;
-
-                if (!hasProject) {
-                    roleInput.value = '';
-                }
-            };
-
-            if (clientInput) {
-                syncProjectOptions();
-                clientInput.addEventListener('change', syncProjectOptions);
+            if (window.erpOmdFrontShared && typeof window.erpOmdFrontShared.dedupeProjectRequestDateFields === 'function') {
+                window.erpOmdFrontShared.dedupeProjectRequestDateFields();
+            }
+            if (window.erpOmdFrontWorker && typeof window.erpOmdFrontWorker.setupTabs === 'function') {
+                window.erpOmdFrontWorker.setupTabs();
             }
 
-            if (projectInput) {
-                syncRoleAvailability();
-                projectInput.addEventListener('change', syncRoleAvailability);
+            if (window.erpOmdFrontShared && typeof window.erpOmdFrontShared.setupCollapsibleSections === 'function') {
+                window.erpOmdFrontShared.setupCollapsibleSections({
+                    storagePrefix: 'erp_omd_front_worker_section_',
+                    collapsedLabel: '<?php echo esc_js(__('Rozwiń', 'erp-omd')); ?>',
+                    expandedLabel: '<?php echo esc_js(__('Zwiń', 'erp-omd')); ?>'
+                });
             }
 
-            document.querySelectorAll('.erp-omd-front-quick-hours-button').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    if (hoursInput) {
-                        hoursInput.value = button.getAttribute('data-hours');
-                        hoursInput.focus();
-                    }
+            if (window.erpOmdFrontWorker && typeof window.erpOmdFrontWorker.setupTablePagination === 'function') {
+                window.erpOmdFrontWorker.setupTablePagination({
+                    viewLabel: '<?php echo esc_js(__('Widok:', 'erp-omd')); ?>',
+                    rowsLabel: '<?php echo esc_js(__('Wiersze:', 'erp-omd')); ?>'
                 });
-            });
+            }
 
-            document.querySelectorAll('.erp-omd-front-template-button').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    if (clientInput) {
-                        clientInput.value = button.getAttribute('data-client-id');
-                        syncProjectOptions();
-                    }
-                    if (projectInput) {
-                        projectInput.value = button.getAttribute('data-project-id');
-                        syncRoleAvailability();
-                    }
-                    if (roleInput) {
-                        roleInput.value = button.getAttribute('data-role-id');
-                    }
-                    if (hoursInput) {
-                        hoursInput.value = button.getAttribute('data-hours');
-                    }
-                    if (descriptionInput) {
-                        descriptionInput.value = button.getAttribute('data-description');
-                        descriptionInput.focus();
-                    }
-                });
-            });
+            if (window.erpOmdFrontWorker && typeof window.erpOmdFrontWorker.setupEntryFormHelpers === 'function') {
+                window.erpOmdFrontWorker.setupEntryFormHelpers();
+            }
         });
     </script>
     <?php wp_footer(); ?>
