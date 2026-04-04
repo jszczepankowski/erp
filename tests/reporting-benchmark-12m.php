@@ -46,8 +46,32 @@ if (! class_exists('ERP_OMD_Salary_History_Repository')) {
 if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
     class ERP_OMD_Project_Cost_Repository {
         public int $forProjectCalls = 0;
+        public int $sumByProjectAndMonthInDateRangeCalls = 0;
         public function __construct(private array $rows) {}
         public function for_project($projectId) { $this->forProjectCalls++; return $this->rows[(int) $projectId] ?? []; }
+        public function sum_by_project_and_month_in_date_range(array $projectIds, $dateFrom, $dateTo)
+        {
+            $this->sumByProjectAndMonthInDateRangeCalls++;
+            $bucket = [];
+            foreach ($projectIds as $projectId) {
+                foreach (($this->rows[(int) $projectId] ?? []) as $row) {
+                    $costDate = (string) ($row['cost_date'] ?? '');
+                    if ($costDate < (string) $dateFrom || $costDate > (string) $dateTo) {
+                        continue;
+                    }
+                    $month = substr($costDate, 0, 7);
+                    if ($month === '') {
+                        continue;
+                    }
+                    $key = $month . ':' . (int) $projectId;
+                    if (! isset($bucket[$key])) {
+                        $bucket[$key] = ['project_id' => (int) $projectId, 'cost_month' => $month, 'amount_sum' => 0.0];
+                    }
+                    $bucket[$key]['amount_sum'] += (float) ($row['amount'] ?? 0.0);
+                }
+            }
+            return array_values($bucket);
+        }
     }
 }
 if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
@@ -147,6 +171,7 @@ $result = [
     'elapsed_ms' => round($elapsedMs, 2),
     'salary_for_employee_calls' => $salaryRepo->forEmployeeCalls,
     'project_cost_for_project_calls' => $projectCostRepo->forProjectCalls,
+    'project_cost_sum_by_project_and_month_calls' => $projectCostRepo->sumByProjectAndMonthInDateRangeCalls,
     'time_entries_all_calls' => $timeRepo->allCalls,
 ];
 
