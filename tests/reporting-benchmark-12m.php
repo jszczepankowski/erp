@@ -28,7 +28,11 @@ if (! function_exists('wp_list_pluck')) {
 }
 
 if (! class_exists('ERP_OMD_Project_Repository')) {
-    class ERP_OMD_Project_Repository { public function __construct(private array $rows) {} public function all() { return $this->rows; } }
+    class ERP_OMD_Project_Repository {
+        public int $allCalls = 0;
+        public function __construct(private array $rows) {}
+        public function all() { $this->allCalls++; return $this->rows; }
+    }
 }
 if (! class_exists('ERP_OMD_Client_Repository')) {
     class ERP_OMD_Client_Repository { public function __construct(private array $rows) {} public function all() { return $this->rows; } }
@@ -164,8 +168,9 @@ $salaryRepo = new ERP_OMD_Salary_History_Repository($salary);
 $projectCostRepo = new ERP_OMD_Project_Cost_Repository($projectCosts);
 $timeRepo = new ERP_OMD_Time_Entry_Repository($timeEntries);
 
+$projectRepo = new ERP_OMD_Project_Repository($projects);
 $service = new ERP_OMD_Reporting_Service(
-    new ERP_OMD_Project_Repository($projects),
+    $projectRepo,
     new ERP_OMD_Client_Repository($clients),
     new ERP_OMD_Employee_Repository($employees),
     $salaryRepo,
@@ -182,6 +187,7 @@ $elapsedMs = (microtime(true) - $start) * 1000;
 $result = [
     'rows' => count($rows),
     'elapsed_ms' => round($elapsedMs, 2),
+    'projects_all_calls' => $projectRepo->allCalls,
     'salary_for_employee_calls' => $salaryRepo->forEmployeeCalls,
     'salary_for_employees_calls' => $salaryRepo->forEmployeesCalls,
     'project_cost_for_project_calls' => $projectCostRepo->forProjectCalls,
