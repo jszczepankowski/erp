@@ -101,6 +101,31 @@
             </form>
         </section>
 
+        <section class="erp-omd-card erp-omd-dashboard-v1-preview" data-dashboard-v1-preview="1" data-month="<?php echo esc_attr($report_filters['month']); ?>">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h2><?php esc_html_e('Dashboard v1 — podgląd operacyjny', 'erp-omd'); ?></h2>
+                    <p class="description"><?php esc_html_e('Szybki podgląd gotowości miesiąca, kolejnych akcji statusowych i ostatnich korekt.', 'erp-omd'); ?></p>
+                </div>
+            </div>
+            <div class="erp-omd-dashboard-v1-preview-status" data-dashboard-v1-status="1"><?php esc_html_e('Ładowanie podglądu dashboard-v1…', 'erp-omd'); ?></div>
+            <div class="erp-omd-dashboard-v1-preview-grid" data-dashboard-v1-grid="1" hidden>
+                <div class="erp-omd-dashboard-v1-preview-card">
+                    <h3><?php esc_html_e('Status miesiąca', 'erp-omd'); ?></h3>
+                    <p data-dashboard-v1-month-status="1">—</p>
+                    <ul data-dashboard-v1-actions="1"></ul>
+                </div>
+                <div class="erp-omd-dashboard-v1-preview-card">
+                    <h3><?php esc_html_e('Checklista gotowości', 'erp-omd'); ?></h3>
+                    <ul data-dashboard-v1-checklist="1"></ul>
+                </div>
+                <div class="erp-omd-dashboard-v1-preview-card">
+                    <h3><?php esc_html_e('Ostatnie korekty', 'erp-omd'); ?></h3>
+                    <ul data-dashboard-v1-adjustments="1"></ul>
+                </div>
+            </div>
+        </section>
+
         <?php if ($report_filters['tab'] === 'reports') : ?>
             <section class="erp-omd-card">
                 <div class="erp-omd-section-header">

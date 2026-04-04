@@ -211,6 +211,8 @@ class ERP_OMD_Admin
         wp_localize_script('erp-omd-admin', 'erpOmdAdminData', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'inlineProjectNonce' => wp_create_nonce('erp_omd_inline_project_update'),
+            'restUrl' => esc_url_raw(rest_url('erp-omd/v1/')),
+            'restNonce' => wp_create_nonce('wp_rest'),
         ]);
         wp_enqueue_media();
     }

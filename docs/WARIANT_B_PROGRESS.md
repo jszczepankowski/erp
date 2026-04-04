@@ -168,3 +168,8 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
   2. potem pełny `P2`,
   3. potem `P3`,
   4. na końcu `P4/P5`.
+
+## 9) Podsumowanie kroku (dla kolejnych chatów)
+- **Bieżący krok:** `WB-P5-HF-04` (stabilizacja/hotfix) — dodany frontendowy podgląd `dashboard-v1` w panelu raportów (status miesiąca, akcje statusowe, checklista, korekty).
+- **Szacowana liczba kroków do domknięcia (orientacyjnie): ~0**
+  1. Etap stabilizacji Wariantu B v1 uznajemy za domknięty; kolejne kroki to utrzymanie/iteracyjne usprawnienia.
