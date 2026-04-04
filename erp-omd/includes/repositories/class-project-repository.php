@@ -16,25 +16,97 @@ class ERP_OMD_Project_Repository
         return $wpdb->prefix . 'erp_omd_project_managers';
     }
 
-    public function all()
+    public function all(array $filters = [])
+    {
+        return $this->find_paged($filters, 1000000, 0);
+    }
+
+    public function find_paged(array $filters = [], $limit = 100, $offset = 0)
     {
         global $wpdb;
 
         $clients_table = $wpdb->prefix . 'erp_omd_clients';
         $employees_table = $wpdb->prefix . 'erp_omd_employees';
         $users_table = $wpdb->users;
+        $where = ['1=1'];
+        $params = [];
+
+        if (! empty($filters['client_id'])) {
+            $where[] = 'p.client_id = %d';
+            $params[] = (int) $filters['client_id'];
+        }
+        if (! empty($filters['status'])) {
+            $where[] = 'p.status = %s';
+            $params[] = (string) $filters['status'];
+        }
+        if (! empty($filters['manager_id'])) {
+            $where[] = 'p.manager_id = %d';
+            $params[] = (int) $filters['manager_id'];
+        }
+        if (! empty($filters['search'])) {
+            $like = '%' . $wpdb->esc_like((string) $filters['search']) . '%';
+            $where[] = '(p.name LIKE %s OR p.brief LIKE %s OR c.name LIKE %s)';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $limit = max(1, (int) $limit);
+        $offset = max(0, (int) $offset);
+        $params[] = $limit;
+        $params[] = $offset;
 
         $projects = $wpdb->get_results(
-            "SELECT p.*, c.name AS client_name, u.user_login AS manager_login
+            $wpdb->prepare(
+                "SELECT p.*, c.name AS client_name, u.user_login AS manager_login
             FROM {$this->table_name()} p
             INNER JOIN {$clients_table} c ON c.id = p.client_id
             LEFT JOIN {$employees_table} e ON e.id = p.manager_id
             LEFT JOIN {$users_table} u ON u.ID = e.user_id
-            ORDER BY p.created_at DESC, p.id DESC",
+            WHERE " . implode(' AND ', $where) . " ORDER BY p.created_at DESC, p.id DESC LIMIT %d OFFSET %d",
+                ...$params
+            ),
             ARRAY_A
         );
 
         return $this->enrich_projects($projects);
+    }
+
+    public function count_filtered(array $filters = [])
+    {
+        global $wpdb;
+
+        $clients_table = $wpdb->prefix . 'erp_omd_clients';
+        $where = ['1=1'];
+        $params = [];
+
+        if (! empty($filters['client_id'])) {
+            $where[] = 'p.client_id = %d';
+            $params[] = (int) $filters['client_id'];
+        }
+        if (! empty($filters['status'])) {
+            $where[] = 'p.status = %s';
+            $params[] = (string) $filters['status'];
+        }
+        if (! empty($filters['manager_id'])) {
+            $where[] = 'p.manager_id = %d';
+            $params[] = (int) $filters['manager_id'];
+        }
+        if (! empty($filters['search'])) {
+            $like = '%' . $wpdb->esc_like((string) $filters['search']) . '%';
+            $where[] = '(p.name LIKE %s OR p.brief LIKE %s OR c.name LIKE %s)';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $sql = "SELECT COUNT(*) FROM {$this->table_name()} p INNER JOIN {$clients_table} c ON c.id = p.client_id WHERE " . implode(' AND ', $where);
+
+        if ($params !== []) {
+            return (int) $wpdb->get_var($wpdb->prepare($sql, ...$params));
+        }
+
+        return (int) $wpdb->get_var($sql);
     }
 
     public function find($id)

@@ -46,6 +46,10 @@ class ERP_OMD_Salary_History_Repository
             ['%d', '%f', '%f', '%f', '%s', '%s', '%s', '%s']
         );
 
+        if (function_exists('erp_omd_reports_cache_bump_version')) {
+            erp_omd_reports_cache_bump_version();
+        }
+
         return (int) $wpdb->insert_id;
     }
 
@@ -53,7 +57,7 @@ class ERP_OMD_Salary_History_Repository
     {
         global $wpdb;
 
-        return $wpdb->update(
+        $updated = $wpdb->update(
             $this->table_name(),
             [
                 'monthly_salary' => $data['monthly_salary'],
@@ -67,13 +71,24 @@ class ERP_OMD_Salary_History_Repository
             ['%f', '%f', '%f', '%s', '%s', '%s'],
             ['%d']
         );
+
+        if ($updated !== false && function_exists('erp_omd_reports_cache_bump_version')) {
+            erp_omd_reports_cache_bump_version();
+        }
+
+        return $updated;
     }
 
     public function delete($id)
     {
         global $wpdb;
 
-        return $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
+        $deleted = $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
+        if ($deleted !== false && function_exists('erp_omd_reports_cache_bump_version')) {
+            erp_omd_reports_cache_bump_version();
+        }
+
+        return $deleted;
     }
 
     public function overlaps($employee_id, $valid_from, $valid_to, $exclude_id = null)

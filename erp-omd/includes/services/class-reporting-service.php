@@ -157,13 +157,30 @@ class ERP_OMD_Reporting_Service
                 for ($offset = 11; $offset >= 0; $offset--) {
                     $months[] = $anchor->modify('-' . $offset . ' month')->format('Y-m');
                 }
+                $salary_cost_by_month = $this->build_salary_cost_index_by_month($months);
+                $fixed_cost_by_month = $this->build_fixed_cost_index_by_month($months);
+                $projects_by_month = [];
+                $all_project_ids = [];
                 foreach ($months as $month) {
                     $month_filters = $filters;
                     $month_filters['month'] = $month;
-                    $projects = $this->get_filtered_projects($month_filters);
+                    $projects_by_month[$month] = $this->get_filtered_projects($month_filters);
+                    foreach ((array) $projects_by_month[$month] as $project_row) {
+                        $project_id = (int) ($project_row['id'] ?? 0);
+                        if ($project_id > 0) {
+                            $all_project_ids[$project_id] = true;
+                        }
+                    }
+                }
+                $prefetched_entries = $this->prefetch_entries_for_months($filters, $months);
+                $direct_cost_index = $this->build_direct_cost_index_by_month_and_project(array_keys($all_project_ids), $months);
+                foreach ($months as $month) {
+                    $month_filters = $filters;
+                    $month_filters['month'] = $month;
+                    $projects = (array) ($projects_by_month[$month] ?? []);
                     $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
-                    $entries = $this->get_filtered_entries($project_ids, $month_filters);
-                    $salary_cost = 0.0;
+                    $entries = $this->filter_entries_from_pool($prefetched_entries, $project_ids, $month_filters);
+                    $salary_cost = (float) ($salary_cost_by_month[$month] ?? 0.0);
                     $direct_cost = 0.0;
                     $active_budgets = 0.0;
                     $active_budget_project_ids = [];
@@ -172,29 +189,6 @@ class ERP_OMD_Reporting_Service
                     $month_date = DateTimeImmutable::createFromFormat('Y-m-d', $month . '-01');
                     $month_start = $month_date ? $month_date->format('Y-m-01') : '';
                     $month_end = $month_date ? $month_date->format('Y-m-t') : '';
-
-                    if ($month_start !== '' && $month_end !== '') {
-                        foreach ($this->employees->all() as $employee) {
-                            $employee_id = (int) ($employee['id'] ?? 0);
-                            if ($employee_id <= 0) {
-                                continue;
-                            }
-
-                            foreach ($this->salary_history->for_employee($employee_id) as $salary_row) {
-                                $valid_from = (string) ($salary_row['valid_from'] ?? '');
-                                $valid_to = (string) ($salary_row['valid_to'] ?? '');
-                                $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
-                                if ($valid_from === '') {
-                                    continue;
-                                }
-
-                                if ($valid_from <= $month_end && $effective_to >= $month_start) {
-                                    $salary_cost += (float) ($salary_row['monthly_salary'] ?? 0.0);
-                                    break;
-                                }
-                            }
-                        }
-                    }
 
                     foreach ($projects as $project) {
                         if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony', 'archiwum'], true)) {
@@ -223,35 +217,11 @@ class ERP_OMD_Reporting_Service
                     $direct_cost_project_ids = array_values(array_unique(array_filter($active_budget_project_ids, static function ($project_id) {
                         return (int) $project_id > 0;
                     })));
-                    foreach ($this->get_direct_cost_metrics_by_project($direct_cost_project_ids, $month) as $project_cost) {
-                        $direct_cost += (float) $project_cost;
+                    foreach ($direct_cost_project_ids as $project_id) {
+                        $direct_cost += (float) ($direct_cost_index[$month][(int) $project_id] ?? 0.0);
                     }
 
-                    $fixed_cost = 0.0;
-                    if ($month_start !== '' && $month_end !== '') {
-                        $fixed_items = (array) get_option('erp_omd_fixed_monthly_cost_items', []);
-                        foreach ($fixed_items as $item) {
-                            if (! is_array($item) || empty($item['active'])) {
-                                continue;
-                            }
-
-                            $amount = max(0.0, (float) ($item['amount'] ?? 0));
-                            if ($amount <= 0) {
-                                continue;
-                            }
-
-                            $valid_from = (string) ($item['valid_from'] ?? '');
-                            $valid_to = (string) ($item['valid_to'] ?? '');
-                            $effective_from = $valid_from !== '' ? $valid_from : '0001-01-01';
-                            $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
-                            if ($effective_from <= $month_end && $effective_to >= $month_start) {
-                                $fixed_cost += $amount;
-                            }
-                        }
-                    }
-                    if ($fixed_cost <= 0) {
-                        $fixed_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
-                    }
+                    $fixed_cost = (float) ($fixed_cost_by_month[$month] ?? 0.0);
                     $hourly_profit = $time_revenue - $time_cost;
                     $operational_result = ($active_budgets + $hourly_profit) - $direct_cost;
                     $controlling_overhead = $salary_cost + $fixed_cost;
@@ -1021,6 +991,11 @@ class ERP_OMD_Reporting_Service
     private function get_filtered_entries(array $project_ids, array $filters)
     {
         $entries = $this->time_entries->all([]);
+        return $this->filter_entries_from_pool((array) $entries, $project_ids, $filters);
+    }
+
+    private function filter_entries_from_pool(array $entries, array $project_ids, array $filters)
+    {
         $report_type = (string) ($filters['report_type'] ?? '');
         $tab = (string) ($filters['tab'] ?? '');
         $allow_non_approved = $report_type === 'time_entries' || $tab === 'calendar';
@@ -1058,6 +1033,31 @@ class ERP_OMD_Reporting_Service
             }
             return true;
         }));
+    }
+
+    private function prefetch_entries_for_months(array $filters, array $months)
+    {
+        if ($months === []) {
+            return [];
+        }
+
+        $month_start = (string) min($months) . '-01';
+        $month_end_dt = DateTimeImmutable::createFromFormat('Y-m-d', (string) max($months) . '-01');
+        $month_end = $month_end_dt ? $month_end_dt->format('Y-m-t') : '';
+
+        $entry_filters = [
+            'employee_id' => (int) ($filters['employee_id'] ?? 0),
+            'project_id' => (int) ($filters['project_id'] ?? 0),
+            'client_id' => (int) ($filters['client_id'] ?? 0),
+            'status' => (string) ($filters['status'] ?? ''),
+            'entry_date_from' => $month_start,
+            'entry_date_to' => $month_end,
+        ];
+        $entry_filters = array_filter($entry_filters, static function ($value) {
+            return $value !== '' && $value !== null && $value !== 0;
+        });
+
+        return (array) $this->time_entries->all($entry_filters);
     }
 
     private function get_entry_metrics_by_project(array $project_ids, array $filters)
@@ -1120,6 +1120,41 @@ class ERP_OMD_Reporting_Service
         return $metrics;
     }
 
+    private function build_direct_cost_index_by_month_and_project(array $project_ids, array $months)
+    {
+        $index = [];
+        $allowed_months = array_fill_keys(array_map('strval', $months), true);
+        foreach ($months as $month) {
+            $index[(string) $month] = [];
+        }
+
+        foreach ($project_ids as $project_id) {
+            $project_id = (int) $project_id;
+            if ($project_id <= 0) {
+                continue;
+            }
+
+            foreach ((array) $this->project_costs->for_project($project_id) as $row) {
+                $cost_date = (string) ($row['cost_date'] ?? '');
+                if (preg_match('/^\d{4}-\d{2}/', $cost_date) !== 1) {
+                    continue;
+                }
+
+                $month = substr($cost_date, 0, 7);
+                if (! isset($allowed_months[$month])) {
+                    continue;
+                }
+
+                if (! isset($index[$month][$project_id])) {
+                    $index[$month][$project_id] = 0.0;
+                }
+                $index[$month][$project_id] += (float) ($row['amount'] ?? 0.0);
+            }
+        }
+
+        return $index;
+    }
+
     private function get_project_budget_profit_by_month(array $projects)
     {
         $metrics = [];
@@ -1143,6 +1178,90 @@ class ERP_OMD_Reporting_Service
         }
 
         return $metrics;
+    }
+
+    private function build_salary_cost_index_by_month(array $months)
+    {
+        $index = [];
+        foreach ($months as $month) {
+            $index[(string) $month] = 0.0;
+        }
+
+        $employees = (array) $this->employees->all();
+        foreach ($employees as $employee) {
+            $employee_id = (int) ($employee['id'] ?? 0);
+            if ($employee_id <= 0) {
+                continue;
+            }
+
+            $salary_rows = (array) $this->salary_history->for_employee($employee_id);
+            foreach ($months as $month) {
+                $month_date = DateTimeImmutable::createFromFormat('Y-m-d', (string) $month . '-01');
+                if (! $month_date) {
+                    continue;
+                }
+
+                $month_start = $month_date->format('Y-m-01');
+                $month_end = $month_date->format('Y-m-t');
+                foreach ($salary_rows as $salary_row) {
+                    $valid_from = (string) ($salary_row['valid_from'] ?? '');
+                    $valid_to = (string) ($salary_row['valid_to'] ?? '');
+                    $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
+                    if ($valid_from === '') {
+                        continue;
+                    }
+
+                    if ($valid_from <= $month_end && $effective_to >= $month_start) {
+                        $index[(string) $month] += (float) ($salary_row['monthly_salary'] ?? 0.0);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $index;
+    }
+
+    private function build_fixed_cost_index_by_month(array $months)
+    {
+        $index = [];
+        $fixed_items = (array) get_option('erp_omd_fixed_monthly_cost_items', []);
+        $default_fixed_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
+
+        foreach ($months as $month) {
+            $month_key = (string) $month;
+            $month_date = DateTimeImmutable::createFromFormat('Y-m-d', $month_key . '-01');
+            if (! $month_date) {
+                $index[$month_key] = $default_fixed_cost;
+                continue;
+            }
+
+            $month_start = $month_date->format('Y-m-01');
+            $month_end = $month_date->format('Y-m-t');
+            $fixed_cost = 0.0;
+            foreach ($fixed_items as $item) {
+                if (! is_array($item) || empty($item['active'])) {
+                    continue;
+                }
+
+                $amount = max(0.0, (float) ($item['amount'] ?? 0));
+                if ($amount <= 0) {
+                    continue;
+                }
+
+                $valid_from = (string) ($item['valid_from'] ?? '');
+                $valid_to = (string) ($item['valid_to'] ?? '');
+                $effective_from = $valid_from !== '' ? $valid_from : '0001-01-01';
+                $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
+                if ($effective_from <= $month_end && $effective_to >= $month_start) {
+                    $fixed_cost += $amount;
+                }
+            }
+
+            $index[$month_key] = $fixed_cost > 0 ? $fixed_cost : $default_fixed_cost;
+        }
+
+        return $index;
     }
 
     private function emptyEntryMetrics()

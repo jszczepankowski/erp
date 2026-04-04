@@ -36,5 +36,42 @@ function erp_omd()
 }
 
 add_action('plugins_loaded', static function () {
+    erp_omd_invalidate_plugin_opcache();
     erp_omd()->boot();
 });
+
+function erp_omd_reports_cache_bump_version()
+{
+    if (! function_exists('get_option') || ! function_exists('update_option')) {
+        return;
+    }
+
+    $version = (int) get_option('erp_omd_reports_cache_data_version', 1);
+    update_option('erp_omd_reports_cache_data_version', (string) max(1, $version + 1), false);
+}
+
+function erp_omd_invalidate_plugin_opcache()
+{
+    if (! function_exists('opcache_invalidate')) {
+        return;
+    }
+
+    $paths = [
+        ERP_OMD_PATH . 'includes/class-autoloader.php',
+        ERP_OMD_PATH . 'includes/class-plugin.php',
+        ERP_OMD_PATH . 'includes/class-admin.php',
+        ERP_OMD_PATH . 'includes/class-frontend.php',
+        ERP_OMD_PATH . 'includes/class-rest-api.php',
+    ];
+
+    $repository_files = glob(ERP_OMD_PATH . 'includes/repositories/*.php');
+    if (is_array($repository_files)) {
+        $paths = array_merge($paths, $repository_files);
+    }
+
+    foreach ($paths as $path) {
+        if (is_string($path) && $path !== '' && file_exists($path)) {
+            @opcache_invalidate($path, true);
+        }
+    }
+}
