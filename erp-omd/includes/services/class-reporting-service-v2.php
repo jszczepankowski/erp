@@ -974,37 +974,7 @@ class ERP_OMD_Reporting_Service
         $allow_non_approved = $report_type === 'time_entries' || $tab === 'calendar';
 
         return array_values(array_filter($entries, function ($entry) use ($project_ids, $filters, $allow_non_approved) {
-            if ($project_ids !== [] && ! in_array((int) ($entry['project_id'] ?? 0), $project_ids, true)) {
-                return false;
-            }
-            if ($filters['employee_id'] > 0 && (int) ($entry['employee_id'] ?? 0) !== $filters['employee_id']) {
-                return false;
-            }
-            if ($filters['project_id'] > 0 && (int) ($entry['project_id'] ?? 0) !== $filters['project_id']) {
-                return false;
-            }
-            if (! $allow_non_approved && (string) ($entry['status'] ?? '') !== 'approved') {
-                return false;
-            }
-            if (
-                $allow_non_approved
-                && $filters['status'] !== ''
-                && $this->isTimeEntryStatusFilter($filters['status'])
-                && (string) ($entry['status'] ?? '') !== $filters['status']
-            ) {
-                return false;
-            }
-            if (
-                $allow_non_approved
-                && $filters['status'] === ''
-                && (string) ($entry['status'] ?? '') !== 'approved'
-            ) {
-                return false;
-            }
-            if ($filters['month'] !== '' && strpos((string) ($entry['entry_date'] ?? ''), $filters['month']) !== 0) {
-                return false;
-            }
-            return true;
+            return $this->entry_matches_filters((array) $entry, $project_ids, $filters, $allow_non_approved);
         }));
     }
 
@@ -1048,9 +1018,8 @@ class ERP_OMD_Reporting_Service
         $report_type = (string) ($filters['report_type'] ?? '');
         $tab = (string) ($filters['tab'] ?? '');
         $allow_non_approved = $report_type === 'time_entries' || $tab === 'calendar';
-        $employee_id = (int) ($filters['employee_id'] ?? 0);
-        $project_id = (int) ($filters['project_id'] ?? 0);
-        $status = (string) ($filters['status'] ?? '');
+        $metric_filters = $filters;
+        $metric_filters['month'] = '';
 
         foreach ($entries as $entry) {
             $entry_month = substr((string) ($entry['entry_date'] ?? ''), 0, 7);
@@ -1058,28 +1027,7 @@ class ERP_OMD_Reporting_Service
                 continue;
             }
 
-            if ($employee_id > 0 && (int) ($entry['employee_id'] ?? 0) !== $employee_id) {
-                continue;
-            }
-            if ($project_id > 0 && (int) ($entry['project_id'] ?? 0) !== $project_id) {
-                continue;
-            }
-            if (! $allow_non_approved && (string) ($entry['status'] ?? '') !== 'approved') {
-                continue;
-            }
-            if (
-                $allow_non_approved
-                && $status !== ''
-                && $this->isTimeEntryStatusFilter($status)
-                && (string) ($entry['status'] ?? '') !== $status
-            ) {
-                continue;
-            }
-            if (
-                $allow_non_approved
-                && $status === ''
-                && (string) ($entry['status'] ?? '') !== 'approved'
-            ) {
+            if (! $this->entry_matches_filters((array) $entry, [], $metric_filters, $allow_non_approved)) {
                 continue;
             }
 
@@ -1121,6 +1069,42 @@ class ERP_OMD_Reporting_Service
             'active_budgets' => $active_budgets,
             'project_ids' => $active_budget_project_ids,
         ];
+    }
+
+    private function entry_matches_filters(array $entry, array $project_ids, array $filters, $allow_non_approved)
+    {
+        if ($project_ids !== [] && ! in_array((int) ($entry['project_id'] ?? 0), $project_ids, true)) {
+            return false;
+        }
+        if ($filters['employee_id'] > 0 && (int) ($entry['employee_id'] ?? 0) !== (int) $filters['employee_id']) {
+            return false;
+        }
+        if ($filters['project_id'] > 0 && (int) ($entry['project_id'] ?? 0) !== (int) $filters['project_id']) {
+            return false;
+        }
+        if (! $allow_non_approved && (string) ($entry['status'] ?? '') !== 'approved') {
+            return false;
+        }
+        if (
+            $allow_non_approved
+            && $filters['status'] !== ''
+            && $this->isTimeEntryStatusFilter($filters['status'])
+            && (string) ($entry['status'] ?? '') !== (string) $filters['status']
+        ) {
+            return false;
+        }
+        if (
+            $allow_non_approved
+            && $filters['status'] === ''
+            && (string) ($entry['status'] ?? '') !== 'approved'
+        ) {
+            return false;
+        }
+        if ($filters['month'] !== '' && strpos((string) ($entry['entry_date'] ?? ''), (string) $filters['month']) !== 0) {
+            return false;
+        }
+
+        return true;
     }
 
     private function get_entry_metrics_by_project(array $project_ids, array $filters)

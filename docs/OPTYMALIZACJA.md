@@ -267,7 +267,7 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
   - **T1.1.2:** ZREALIZOWANE (SQL pagination + count dla kluczowych list admin/front).
   - **T1.1.3:** ZREALIZOWANE (UI spięte z backend pagination + testy kontraktowe REST + testy repozytoriów paginacji).
   - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
-  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem zamiast filtrowania per miesiąc).
+  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem zamiast filtrowania per miesiąc + ujednolicenie logiki filtrowania wpisów w jednej metodzie).
 - **Następny krok wykonawczy (najbliższe wdrożenie):**
   1. benchmark ścieżki raportowej 12M (przed/po dla kolejnych iteracji T1.2.2) — skrypt referencyjny: `php tests/reporting-benchmark-12m.php`,
   2. dalsze ograniczenie złożoności pętli/duplikacji logiki w `omd_rozliczenia` (jednolite lookupy i mniej warunków rozproszonych; kolejny kandydat: redukcja pętli salary history do indeksu przedziałów),
