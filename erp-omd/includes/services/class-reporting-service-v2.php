@@ -157,8 +157,9 @@ class ERP_OMD_Reporting_Service
                 for ($offset = 11; $offset >= 0; $offset--) {
                     $months[] = $anchor->modify('-' . $offset . ' month')->format('Y-m');
                 }
-                $salary_cost_by_month = $this->build_salary_cost_index_by_month($months);
-                $fixed_cost_by_month = $this->build_fixed_cost_index_by_month($months);
+                $month_ranges = $this->build_month_ranges($months);
+                $salary_cost_by_month = $this->build_salary_cost_index_by_month($months, $month_ranges);
+                $fixed_cost_by_month = $this->build_fixed_cost_index_by_month($months, $month_ranges);
                 $projects_by_month = [];
                 $all_project_ids = [];
                 foreach ($months as $month) {
@@ -172,7 +173,7 @@ class ERP_OMD_Reporting_Service
                         }
                     }
                 }
-                $prefetched_entries = $this->prefetch_entries_for_months($filters, $months);
+                $prefetched_entries = $this->prefetch_entries_for_months($filters, $months, $month_ranges);
                 $direct_cost_index = $this->build_direct_cost_index_by_month_and_project(array_keys($all_project_ids), $months);
                 foreach ($months as $month) {
                     $month_filters = $filters;
@@ -1035,15 +1036,19 @@ class ERP_OMD_Reporting_Service
         }));
     }
 
-    private function prefetch_entries_for_months(array $filters, array $months)
+    private function prefetch_entries_for_months(array $filters, array $months, array $month_ranges = [])
     {
         if ($months === []) {
             return [];
         }
 
-        $month_start = (string) min($months) . '-01';
-        $month_end_dt = DateTimeImmutable::createFromFormat('Y-m-d', (string) max($months) . '-01');
-        $month_end = $month_end_dt ? $month_end_dt->format('Y-m-t') : '';
+        if ($month_ranges === []) {
+            $month_ranges = $this->build_month_ranges($months);
+        }
+        $first_month = (string) min($months);
+        $last_month = (string) max($months);
+        $month_start = (string) ($month_ranges[$first_month]['from'] ?? ($first_month . '-01'));
+        $month_end = (string) ($month_ranges[$last_month]['to'] ?? '');
 
         $entry_filters = [
             'employee_id' => (int) ($filters['employee_id'] ?? 0),
@@ -1180,11 +1185,14 @@ class ERP_OMD_Reporting_Service
         return $metrics;
     }
 
-    private function build_salary_cost_index_by_month(array $months)
+    private function build_salary_cost_index_by_month(array $months, array $month_ranges = [])
     {
         $index = [];
         foreach ($months as $month) {
             $index[(string) $month] = 0.0;
+        }
+        if ($month_ranges === []) {
+            $month_ranges = $this->build_month_ranges($months);
         }
 
         $employees = (array) $this->employees->all();
@@ -1196,13 +1204,12 @@ class ERP_OMD_Reporting_Service
 
             $salary_rows = (array) $this->salary_history->for_employee($employee_id);
             foreach ($months as $month) {
-                $month_date = DateTimeImmutable::createFromFormat('Y-m-d', (string) $month . '-01');
-                if (! $month_date) {
+                $month_key = (string) $month;
+                $month_start = (string) ($month_ranges[$month_key]['from'] ?? '');
+                $month_end = (string) ($month_ranges[$month_key]['to'] ?? '');
+                if ($month_start === '' || $month_end === '') {
                     continue;
                 }
-
-                $month_start = $month_date->format('Y-m-01');
-                $month_end = $month_date->format('Y-m-t');
                 foreach ($salary_rows as $salary_row) {
                     $valid_from = (string) ($salary_row['valid_from'] ?? '');
                     $valid_to = (string) ($salary_row['valid_to'] ?? '');
@@ -1222,22 +1229,23 @@ class ERP_OMD_Reporting_Service
         return $index;
     }
 
-    private function build_fixed_cost_index_by_month(array $months)
+    private function build_fixed_cost_index_by_month(array $months, array $month_ranges = [])
     {
         $index = [];
         $fixed_items = (array) get_option('erp_omd_fixed_monthly_cost_items', []);
         $default_fixed_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
+        if ($month_ranges === []) {
+            $month_ranges = $this->build_month_ranges($months);
+        }
 
         foreach ($months as $month) {
             $month_key = (string) $month;
-            $month_date = DateTimeImmutable::createFromFormat('Y-m-d', $month_key . '-01');
-            if (! $month_date) {
+            $month_start = (string) ($month_ranges[$month_key]['from'] ?? '');
+            $month_end = (string) ($month_ranges[$month_key]['to'] ?? '');
+            if ($month_start === '' || $month_end === '') {
                 $index[$month_key] = $default_fixed_cost;
                 continue;
             }
-
-            $month_start = $month_date->format('Y-m-01');
-            $month_end = $month_date->format('Y-m-t');
             $fixed_cost = 0.0;
             foreach ($fixed_items as $item) {
                 if (! is_array($item) || empty($item['active'])) {
@@ -1262,6 +1270,25 @@ class ERP_OMD_Reporting_Service
         }
 
         return $index;
+    }
+
+    private function build_month_ranges(array $months)
+    {
+        $ranges = [];
+        foreach ($months as $month) {
+            $month_key = (string) $month;
+            $month_date = DateTimeImmutable::createFromFormat('Y-m-d', $month_key . '-01');
+            if (! $month_date) {
+                continue;
+            }
+
+            $ranges[$month_key] = [
+                'from' => $month_date->format('Y-m-01'),
+                'to' => $month_date->format('Y-m-t'),
+            ];
+        }
+
+        return $ranges;
     }
 
     private function emptyEntryMetrics()
