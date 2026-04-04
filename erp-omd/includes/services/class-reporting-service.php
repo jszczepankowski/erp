@@ -157,13 +157,15 @@ class ERP_OMD_Reporting_Service
                 for ($offset = 11; $offset >= 0; $offset--) {
                     $months[] = $anchor->modify('-' . $offset . ' month')->format('Y-m');
                 }
+                $salary_cost_by_month = $this->build_salary_cost_index_by_month($months);
+                $fixed_cost_by_month = $this->build_fixed_cost_index_by_month($months);
                 foreach ($months as $month) {
                     $month_filters = $filters;
                     $month_filters['month'] = $month;
                     $projects = $this->get_filtered_projects($month_filters);
                     $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
                     $entries = $this->get_filtered_entries($project_ids, $month_filters);
-                    $salary_cost = 0.0;
+                    $salary_cost = (float) ($salary_cost_by_month[$month] ?? 0.0);
                     $direct_cost = 0.0;
                     $active_budgets = 0.0;
                     $active_budget_project_ids = [];
@@ -172,29 +174,6 @@ class ERP_OMD_Reporting_Service
                     $month_date = DateTimeImmutable::createFromFormat('Y-m-d', $month . '-01');
                     $month_start = $month_date ? $month_date->format('Y-m-01') : '';
                     $month_end = $month_date ? $month_date->format('Y-m-t') : '';
-
-                    if ($month_start !== '' && $month_end !== '') {
-                        foreach ($this->employees->all() as $employee) {
-                            $employee_id = (int) ($employee['id'] ?? 0);
-                            if ($employee_id <= 0) {
-                                continue;
-                            }
-
-                            foreach ($this->salary_history->for_employee($employee_id) as $salary_row) {
-                                $valid_from = (string) ($salary_row['valid_from'] ?? '');
-                                $valid_to = (string) ($salary_row['valid_to'] ?? '');
-                                $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
-                                if ($valid_from === '') {
-                                    continue;
-                                }
-
-                                if ($valid_from <= $month_end && $effective_to >= $month_start) {
-                                    $salary_cost += (float) ($salary_row['monthly_salary'] ?? 0.0);
-                                    break;
-                                }
-                            }
-                        }
-                    }
 
                     foreach ($projects as $project) {
                         if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony', 'archiwum'], true)) {
@@ -227,31 +206,7 @@ class ERP_OMD_Reporting_Service
                         $direct_cost += (float) $project_cost;
                     }
 
-                    $fixed_cost = 0.0;
-                    if ($month_start !== '' && $month_end !== '') {
-                        $fixed_items = (array) get_option('erp_omd_fixed_monthly_cost_items', []);
-                        foreach ($fixed_items as $item) {
-                            if (! is_array($item) || empty($item['active'])) {
-                                continue;
-                            }
-
-                            $amount = max(0.0, (float) ($item['amount'] ?? 0));
-                            if ($amount <= 0) {
-                                continue;
-                            }
-
-                            $valid_from = (string) ($item['valid_from'] ?? '');
-                            $valid_to = (string) ($item['valid_to'] ?? '');
-                            $effective_from = $valid_from !== '' ? $valid_from : '0001-01-01';
-                            $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
-                            if ($effective_from <= $month_end && $effective_to >= $month_start) {
-                                $fixed_cost += $amount;
-                            }
-                        }
-                    }
-                    if ($fixed_cost <= 0) {
-                        $fixed_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
-                    }
+                    $fixed_cost = (float) ($fixed_cost_by_month[$month] ?? 0.0);
                     $hourly_profit = $time_revenue - $time_cost;
                     $operational_result = ($active_budgets + $hourly_profit) - $direct_cost;
                     $controlling_overhead = $salary_cost + $fixed_cost;
@@ -1143,6 +1098,90 @@ class ERP_OMD_Reporting_Service
         }
 
         return $metrics;
+    }
+
+    private function build_salary_cost_index_by_month(array $months)
+    {
+        $index = [];
+        foreach ($months as $month) {
+            $index[(string) $month] = 0.0;
+        }
+
+        $employees = (array) $this->employees->all();
+        foreach ($employees as $employee) {
+            $employee_id = (int) ($employee['id'] ?? 0);
+            if ($employee_id <= 0) {
+                continue;
+            }
+
+            $salary_rows = (array) $this->salary_history->for_employee($employee_id);
+            foreach ($months as $month) {
+                $month_date = DateTimeImmutable::createFromFormat('Y-m-d', (string) $month . '-01');
+                if (! $month_date) {
+                    continue;
+                }
+
+                $month_start = $month_date->format('Y-m-01');
+                $month_end = $month_date->format('Y-m-t');
+                foreach ($salary_rows as $salary_row) {
+                    $valid_from = (string) ($salary_row['valid_from'] ?? '');
+                    $valid_to = (string) ($salary_row['valid_to'] ?? '');
+                    $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
+                    if ($valid_from === '') {
+                        continue;
+                    }
+
+                    if ($valid_from <= $month_end && $effective_to >= $month_start) {
+                        $index[(string) $month] += (float) ($salary_row['monthly_salary'] ?? 0.0);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $index;
+    }
+
+    private function build_fixed_cost_index_by_month(array $months)
+    {
+        $index = [];
+        $fixed_items = (array) get_option('erp_omd_fixed_monthly_cost_items', []);
+        $default_fixed_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
+
+        foreach ($months as $month) {
+            $month_key = (string) $month;
+            $month_date = DateTimeImmutable::createFromFormat('Y-m-d', $month_key . '-01');
+            if (! $month_date) {
+                $index[$month_key] = $default_fixed_cost;
+                continue;
+            }
+
+            $month_start = $month_date->format('Y-m-01');
+            $month_end = $month_date->format('Y-m-t');
+            $fixed_cost = 0.0;
+            foreach ($fixed_items as $item) {
+                if (! is_array($item) || empty($item['active'])) {
+                    continue;
+                }
+
+                $amount = max(0.0, (float) ($item['amount'] ?? 0));
+                if ($amount <= 0) {
+                    continue;
+                }
+
+                $valid_from = (string) ($item['valid_from'] ?? '');
+                $valid_to = (string) ($item['valid_to'] ?? '');
+                $effective_from = $valid_from !== '' ? $valid_from : '0001-01-01';
+                $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
+                if ($effective_from <= $month_end && $effective_to >= $month_start) {
+                    $fixed_cost += $amount;
+                }
+            }
+
+            $index[$month_key] = $fixed_cost > 0 ? $fixed_cost : $default_fixed_cost;
+        }
+
+        return $index;
     }
 
     private function emptyEntryMetrics()

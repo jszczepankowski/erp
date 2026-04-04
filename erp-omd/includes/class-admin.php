@@ -533,45 +533,47 @@ class ERP_OMD_Admin
         }
         $client_profit_totals = $this->build_client_profit_totals();
         $client_alerts = $this->index_alerts_by_entity('client');
-        $clients = $this->clients->all();
+        $client_filters = [
+            'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
+            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'page_num' => max(1, (int) ($_GET['page_num'] ?? 1)),
+            'per_page' => (int) ($_GET['per_page'] ?? 100),
+        ];
+        if (! in_array($client_filters['per_page'], [25, 50, 100, 200], true)) {
+            $client_filters['per_page'] = 100;
+        }
+        $client_query_filters = array_filter([
+            'search' => $client_filters['search'],
+            'status' => $client_filters['status'],
+        ], [$this, 'is_query_filter']);
+        $client_pagination = [
+            'total_items' => $this->clients->count_filtered($client_query_filters),
+            'per_page' => $client_filters['per_page'],
+            'page_num' => $client_filters['page_num'],
+        ];
+        $client_pagination['total_pages'] = max(1, (int) ceil($client_pagination['total_items'] / max(1, $client_pagination['per_page'])));
+        if ($client_pagination['page_num'] > $client_pagination['total_pages']) {
+            $client_pagination['page_num'] = $client_pagination['total_pages'];
+        }
+        $clients = $this->clients->find_paged(
+            $client_query_filters,
+            $client_pagination['per_page'],
+            ($client_pagination['page_num'] - 1) * $client_pagination['per_page']
+        );
         foreach ($clients as &$client_row) {
             $client_row['total_profit'] = (float) ($client_profit_totals[(int) $client_row['id']] ?? 0);
             $client_row['alerts'] = $client_alerts[(int) $client_row['id']] ?? [];
         }
         unset($client_row);
-        if ($selected_client) {
-            foreach ($clients as $client_row) {
-                if ((int) $client_row['id'] === (int) $selected_client['id']) {
-                    $selected_client['account_manager_login'] = $client_row['account_manager_login'] ?? '';
-                    break;
-                }
-            }
-        }
-        $client_filters = [
-            'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
-            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
-        ];
-        $clients = array_values(array_filter($clients, function ($client_row) use ($client_filters) {
-            if ($client_filters['search'] !== '') {
-                $haystack = strtolower(implode(' ', [
-                    (string) ($client_row['name'] ?? ''),
-                    (string) ($client_row['company'] ?? ''),
-                    (string) ($client_row['nip'] ?? ''),
-                    (string) ($client_row['email'] ?? ''),
-                    (string) ($client_row['city'] ?? ''),
-                ]));
-                if (strpos($haystack, strtolower($client_filters['search'])) === false) {
-                    return false;
-                }
-            }
-            if ($client_filters['status'] !== '' && (string) ($client_row['status'] ?? '') !== $client_filters['status']) {
-                return false;
-            }
-
-            return true;
-        }));
         $roles = $this->roles->all();
         $employees_for_select = $this->employees->all();
+        if ($selected_client) {
+            $employee_logins = [];
+            foreach ($employees_for_select as $employee_row) {
+                $employee_logins[(int) ($employee_row['id'] ?? 0)] = (string) ($employee_row['user_login'] ?? '');
+            }
+            $selected_client['account_manager_login'] = $employee_logins[(int) ($selected_client['account_manager_id'] ?? 0)] ?? '';
+        }
         include ERP_OMD_PATH . 'templates/admin/clients.php';
     }
 
@@ -609,7 +611,37 @@ class ERP_OMD_Admin
                 ? ($estimate_project_alerts[(int) ($linked_project['id'] ?? 0)] ?? [])
                 : [];
         }
-        $estimates = $this->estimates->all();
+        $estimate_filters = [
+            'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
+            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
+            'client_id' => (int) ($_GET['client_id'] ?? 0),
+            'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
+            'page_num' => max(1, (int) ($_GET['page_num'] ?? 1)),
+            'per_page' => (int) ($_GET['per_page'] ?? 100),
+        ];
+        if (! in_array($estimate_filters['per_page'], [25, 50, 100, 200], true)) {
+            $estimate_filters['per_page'] = 100;
+        }
+        $estimate_query_filters = array_filter([
+            'search' => $estimate_filters['search'],
+            'status' => $estimate_filters['status'],
+            'client_id' => $estimate_filters['client_id'],
+            'month' => $estimate_filters['month'],
+        ], [$this, 'is_query_filter']);
+        $estimate_pagination = [
+            'total_items' => $this->estimates->count_filtered($estimate_query_filters),
+            'per_page' => $estimate_filters['per_page'],
+            'page_num' => $estimate_filters['page_num'],
+        ];
+        $estimate_pagination['total_pages'] = max(1, (int) ceil($estimate_pagination['total_items'] / max(1, $estimate_pagination['per_page'])));
+        if ($estimate_pagination['page_num'] > $estimate_pagination['total_pages']) {
+            $estimate_pagination['page_num'] = $estimate_pagination['total_pages'];
+        }
+        $estimates = $this->estimates->find_paged(
+            $estimate_query_filters,
+            $estimate_pagination['per_page'],
+            ($estimate_pagination['page_num'] - 1) * $estimate_pagination['per_page']
+        );
         foreach ($estimates as &$estimate_row) {
             $estimate_row_items = $this->estimate_items->for_estimate((int) $estimate_row['id']);
             $estimate_row_totals = $this->estimate_service->calculate_totals($estimate_row_items);
@@ -621,38 +653,6 @@ class ERP_OMD_Admin
                 : [];
         }
         unset($estimate_row);
-        $estimate_filters = [
-            'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
-            'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
-            'client_id' => (int) ($_GET['client_id'] ?? 0),
-            'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
-        ];
-        $estimates = array_values(array_filter($estimates, function ($estimate_row) use ($estimate_filters) {
-            if ($estimate_filters['search'] !== '') {
-                $haystack = strtolower(implode(' ', [
-                    (string) ($estimate_row['name'] ?? ''),
-                    (string) ($estimate_row['client_name'] ?? ''),
-                    (string) ($estimate_row['project_name'] ?? ''),
-                ]));
-                if (strpos($haystack, strtolower($estimate_filters['search'])) === false) {
-                    return false;
-                }
-            }
-            if ($estimate_filters['status'] !== '' && (string) ($estimate_row['status'] ?? '') !== $estimate_filters['status']) {
-                return false;
-            }
-            if ($estimate_filters['client_id'] > 0 && (int) ($estimate_row['client_id'] ?? 0) !== $estimate_filters['client_id']) {
-                return false;
-            }
-            if ($estimate_filters['month'] !== '') {
-                $estimate_month = substr((string) ($estimate_row['created_at'] ?? ''), 0, 7);
-                if ($estimate_month !== $estimate_filters['month']) {
-                    return false;
-                }
-            }
-
-            return true;
-        }));
         $clients = $this->clients->all();
         include ERP_OMD_PATH . 'templates/admin/estimates.php';
     }
@@ -772,6 +772,13 @@ class ERP_OMD_Admin
             'entry_date' => $_GET['entry_date'] ?? '',
             'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
         ];
+        $pagination = [
+            'page_num' => max(1, (int) ($_GET['page_num'] ?? 1)),
+            'per_page' => (int) ($_GET['per_page'] ?? 100),
+        ];
+        if (! in_array($pagination['per_page'], [25, 50, 100, 200], true)) {
+            $pagination['per_page'] = 100;
+        }
         if (! $can_select_any_employee && $current_employee) {
             $filters['employee_id'] = (string) $current_employee['id'];
         }
@@ -786,22 +793,18 @@ class ERP_OMD_Admin
         $projects_for_time = $this->projects->all();
         $clients_for_time = $this->clients->all();
         $roles = $this->roles->all();
-        $time_entries = $this->time_entry_service->filter_visible_entries($this->time_entries->all(array_diff_key($filters, ['client_id' => ''])), $current_user);
-        if (! empty($filters['client_id'])) {
-            $time_entries = array_values(array_filter($time_entries, function ($time_row) use ($filters, $projects_for_time) {
-                foreach ($projects_for_time as $project_row) {
-                    if ((int) ($project_row['id'] ?? 0) === (int) ($time_row['project_id'] ?? 0)) {
-                        return (int) ($project_row['client_id'] ?? 0) === (int) $filters['client_id'];
-                    }
-                }
-
-                return false;
-            }));
-        }
-        if (! empty($filters['month'])) {
-            $time_entries = array_values(array_filter($time_entries, function ($time_row) use ($filters) {
-                return strpos((string) ($time_row['entry_date'] ?? ''), (string) $filters['month']) === 0;
-            }));
+        $query_filters = array_filter($filters, [$this, 'is_query_filter']);
+        $total_time_entries = $this->time_entries->count_filtered($query_filters);
+        $time_entries = $this->time_entries->find_paged(
+            $query_filters,
+            $pagination['per_page'],
+            ($pagination['page_num'] - 1) * $pagination['per_page']
+        );
+        $time_entries = $this->time_entry_service->filter_visible_entries($time_entries, $current_user);
+        $pagination['total_items'] = $total_time_entries;
+        $pagination['total_pages'] = max(1, (int) ceil($total_time_entries / max(1, $pagination['per_page'])));
+        if ($pagination['page_num'] > $pagination['total_pages']) {
+            $pagination['page_num'] = $pagination['total_pages'];
         }
         $selected_employee_id = $entry['employee_id'] ?? ($current_employee['id'] ?? 0);
         $selected_time_client_id = 0;
@@ -817,6 +820,11 @@ class ERP_OMD_Admin
         }
         $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
         include ERP_OMD_PATH . 'templates/admin/time-entries.php';
+    }
+
+    private function is_query_filter($value)
+    {
+        return $value !== '' && $value !== null;
     }
 
     public function render_settings()
