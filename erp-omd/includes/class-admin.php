@@ -772,6 +772,13 @@ class ERP_OMD_Admin
             'entry_date' => $_GET['entry_date'] ?? '',
             'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
         ];
+        $pagination = [
+            'page_num' => max(1, (int) ($_GET['page_num'] ?? 1)),
+            'per_page' => (int) ($_GET['per_page'] ?? 100),
+        ];
+        if (! in_array($pagination['per_page'], [25, 50, 100, 200], true)) {
+            $pagination['per_page'] = 100;
+        }
         if (! $can_select_any_employee && $current_employee) {
             $filters['employee_id'] = (string) $current_employee['id'];
         }
@@ -786,22 +793,18 @@ class ERP_OMD_Admin
         $projects_for_time = $this->projects->all();
         $clients_for_time = $this->clients->all();
         $roles = $this->roles->all();
-        $time_entries = $this->time_entry_service->filter_visible_entries($this->time_entries->all(array_diff_key($filters, ['client_id' => ''])), $current_user);
-        if (! empty($filters['client_id'])) {
-            $time_entries = array_values(array_filter($time_entries, function ($time_row) use ($filters, $projects_for_time) {
-                foreach ($projects_for_time as $project_row) {
-                    if ((int) ($project_row['id'] ?? 0) === (int) ($time_row['project_id'] ?? 0)) {
-                        return (int) ($project_row['client_id'] ?? 0) === (int) $filters['client_id'];
-                    }
-                }
-
-                return false;
-            }));
-        }
-        if (! empty($filters['month'])) {
-            $time_entries = array_values(array_filter($time_entries, function ($time_row) use ($filters) {
-                return strpos((string) ($time_row['entry_date'] ?? ''), (string) $filters['month']) === 0;
-            }));
+        $query_filters = array_filter($filters, [$this, 'is_query_filter']);
+        $total_time_entries = $this->time_entries->count_filtered($query_filters);
+        $time_entries = $this->time_entries->find_paged(
+            $query_filters,
+            $pagination['per_page'],
+            ($pagination['page_num'] - 1) * $pagination['per_page']
+        );
+        $time_entries = $this->time_entry_service->filter_visible_entries($time_entries, $current_user);
+        $pagination['total_items'] = $total_time_entries;
+        $pagination['total_pages'] = max(1, (int) ceil($total_time_entries / max(1, $pagination['per_page'])));
+        if ($pagination['page_num'] > $pagination['total_pages']) {
+            $pagination['page_num'] = $pagination['total_pages'];
         }
         $selected_employee_id = $entry['employee_id'] ?? ($current_employee['id'] ?? 0);
         $selected_time_client_id = 0;
@@ -817,6 +820,11 @@ class ERP_OMD_Admin
         }
         $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
         include ERP_OMD_PATH . 'templates/admin/time-entries.php';
+    }
+
+    private function is_query_filter($value)
+    {
+        return $value !== '' && $value !== null;
     }
 
     public function render_settings()
