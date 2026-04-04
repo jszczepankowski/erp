@@ -1199,161 +1199,15 @@
             window.erpOmdFrontManager.setupTabs();
         }
 
-        var setupTableEnhancements = function () {
-            var parseSortableValue = function (value) {
-                var normalized = (value || '').replace(/\s+/g, ' ').trim();
-                var numeric = normalized.replace(',', '.').replace(/[^\d.-]/g, '');
-                return numeric !== '' && !Number.isNaN(Number(numeric)) ? Number(numeric) : normalized.toLowerCase();
-            };
-
-            document.querySelectorAll('table[data-table-enhanced="1"]').forEach(function (table) {
-                var tbody = table.querySelector('tbody');
-                if (!tbody) {
-                    return;
-                }
-
-                var allRows = Array.from(tbody.querySelectorAll('tr'));
-                if (allRows.length === 0) {
-                    return;
-                }
-
-                var wrap = table.closest('.erp-omd-front-table-wrap');
-                var controls = document.createElement('div');
-                controls.className = 'erp-omd-front-table-tools';
-                controls.innerHTML =
-                    '<label class="erp-omd-front-table-search">' +
-                        '<span><?php echo esc_js(__('Szukaj:', 'erp-omd')); ?></span>' +
-                        '<input type="search" class="erp-omd-front-table-search-input" placeholder="<?php echo esc_js(__('np. klient / projekt / status', 'erp-omd')); ?>">' +
-                    '</label>' +
-                    '<label class="erp-omd-front-table-size">' +
-                        '<span><?php echo esc_js(__('Widok:', 'erp-omd')); ?></span>' +
-                        '<select class="erp-omd-front-table-size-select">' +
-                            '<option value="25">25</option>' +
-                            '<option value="50">50</option>' +
-                            '<option value="100" selected>100</option>' +
-                            '<option value="200">200</option>' +
-                        '</select>' +
-                    '</label>' +
-                    '<div class="erp-omd-front-table-pagination">' +
-                        '<button type="button" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-table-prev">←</button>' +
-                        '<span class="erp-omd-front-table-page-meta">1/1</span>' +
-                        '<button type="button" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-table-next">→</button>' +
-                    '</div>' +
-                    '<span class="erp-omd-front-table-results"></span>';
-                if (wrap) {
-                    wrap.parentNode.insertBefore(controls, wrap);
-                }
-
-                var searchInput = controls.querySelector('.erp-omd-front-table-search-input');
-                var resultsNode = controls.querySelector('.erp-omd-front-table-results');
-                var pageSizeSelect = controls.querySelector('.erp-omd-front-table-size-select');
-                var paginationMeta = controls.querySelector('.erp-omd-front-table-page-meta');
-                var paginationPrev = controls.querySelector('.erp-omd-front-table-prev');
-                var paginationNext = controls.querySelector('.erp-omd-front-table-next');
-                var activeSort = { index: -1, dir: 'asc' };
-                var currentPage = 1;
-                var pageSize = 100;
-
-                var applyView = function () {
-                    var query = ((searchInput && searchInput.value) || '').toLowerCase().trim();
-                    var visibleRows = [];
-
-                    allRows.forEach(function (row) {
-                        var matches = query === '' || row.textContent.toLowerCase().indexOf(query) !== -1;
-                        row.hidden = !matches;
-                        if (matches) {
-                            visibleRows.push(row);
-                        }
-                    });
-
-                    if (activeSort.index >= 0) {
-                        visibleRows.sort(function (rowA, rowB) {
-                            var cellA = rowA.children[activeSort.index];
-                            var cellB = rowB.children[activeSort.index];
-                            var valueA = parseSortableValue(cellA ? cellA.textContent : '');
-                            var valueB = parseSortableValue(cellB ? cellB.textContent : '');
-                            if (valueA === valueB) {
-                                return 0;
-                            }
-                            var comparison = valueA > valueB ? 1 : -1;
-                            return activeSort.dir === 'asc' ? comparison : -comparison;
-                        });
-                        visibleRows.forEach(function (row) {
-                            tbody.appendChild(row);
-                        });
-                    }
-
-                    var pagesCount = Math.max(1, Math.ceil(visibleRows.length / pageSize));
-                    currentPage = Math.min(currentPage, pagesCount);
-                    currentPage = Math.max(1, currentPage);
-                    var start = (currentPage - 1) * pageSize;
-                    var end = start + pageSize;
-
-                    visibleRows.forEach(function (row, index) {
-                        row.hidden = index < start || index >= end;
-                    });
-
-                    if (paginationMeta) {
-                        paginationMeta.textContent = currentPage + '/' + pagesCount;
-                    }
-                    if (paginationPrev) {
-                        paginationPrev.disabled = currentPage <= 1;
-                    }
-                    if (paginationNext) {
-                        paginationNext.disabled = currentPage >= pagesCount;
-                    }
-
-                    resultsNode.textContent = '<?php echo esc_js(__('Widoczne wiersze:', 'erp-omd')); ?> ' + visibleRows.length + '/' + allRows.length;
-                };
-
-                table.querySelectorAll('thead th').forEach(function (header, index) {
-                    if (header.textContent.trim() === '<?php echo esc_js(__('Akcja', 'erp-omd')); ?>' || header.textContent.trim() === '<?php echo esc_js(__('Akcje', 'erp-omd')); ?>') {
-                        return;
-                    }
-                    header.classList.add('erp-omd-front-table-th-sortable');
-                    header.addEventListener('click', function () {
-                        if (activeSort.index === index) {
-                            activeSort.dir = activeSort.dir === 'asc' ? 'desc' : 'asc';
-                        } else {
-                            activeSort.index = index;
-                            activeSort.dir = 'asc';
-                        }
-                        table.querySelectorAll('thead th').forEach(function (th) {
-                            th.removeAttribute('data-sort-dir');
-                        });
-                        header.setAttribute('data-sort-dir', activeSort.dir);
-                        applyView();
-                    });
-                });
-
-                if (searchInput) {
-                    searchInput.addEventListener('input', function () {
-                        currentPage = 1;
-                        applyView();
-                    });
-                }
-                    if (pageSizeSelect) {
-                        pageSizeSelect.addEventListener('change', function () {
-                            pageSize = Number(pageSizeSelect.value) || 100;
-                            currentPage = 1;
-                            applyView();
-                        });
-                    }
-                if (paginationPrev) {
-                    paginationPrev.addEventListener('click', function () {
-                        currentPage -= 1;
-                        applyView();
-                    });
-                }
-                if (paginationNext) {
-                    paginationNext.addEventListener('click', function () {
-                        currentPage += 1;
-                        applyView();
-                    });
-                }
-                applyView();
+        if (window.erpOmdFrontManager && typeof window.erpOmdFrontManager.setupTableEnhancements === 'function') {
+            window.erpOmdFrontManager.setupTableEnhancements({
+                searchLabel: '<?php echo esc_js(__('Szukaj:', 'erp-omd')); ?>',
+                searchPlaceholder: '<?php echo esc_js(__('np. klient / projekt / status', 'erp-omd')); ?>',
+                viewLabel: '<?php echo esc_js(__('Widok:', 'erp-omd')); ?>',
+                visibleRowsLabel: '<?php echo esc_js(__('Widoczne wiersze:', 'erp-omd')); ?>',
+                actionHeaders: ['<?php echo esc_js(__('Akcja', 'erp-omd')); ?>', '<?php echo esc_js(__('Akcje', 'erp-omd')); ?>']
             });
-        };
+        }
 
         var setupProjectsTableFilters = function () {
             var table = document.querySelector('table[data-projects-table="1"]');
@@ -1577,7 +1431,6 @@
             applyFiltersAndSort();
         };
 
-        setupTableEnhancements();
         setupProjectsTableFilters();
         setupManagerTimeEntryForm();
         setupApprovalQueueFilters();
