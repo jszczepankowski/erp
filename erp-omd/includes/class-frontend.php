@@ -619,6 +619,8 @@ class ERP_OMD_Frontend
             'tab' => sanitize_key(wp_unslash($_GET['tab'] ?? 'wpisy')),
             'calendar_month' => sanitize_text_field(wp_unslash($_GET['calendar_month'] ?? gmdate('Y-m'))),
             'selected_date' => sanitize_text_field(wp_unslash($_GET['selected_date'] ?? '')),
+            'page_num' => max(1, (int) ($_GET['page_num'] ?? 1)),
+            'per_page' => (int) ($_GET['per_page'] ?? 25),
         ];
         if ($worker_filters['project_id'] <= 0) {
             $worker_filters['project_id'] = 0;
@@ -637,6 +639,9 @@ class ERP_OMD_Frontend
         }
         if (! preg_match('/^\d{4}-\d{2}$/', $worker_filters['calendar_month'])) {
             $worker_filters['calendar_month'] = gmdate('Y-m');
+        }
+        if (! in_array($worker_filters['per_page'], [25, 50, 100, 200], true)) {
+            $worker_filters['per_page'] = 25;
         }
         if ($worker_filters['selected_date'] !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $worker_filters['selected_date'])) {
             $worker_filters['selected_date'] = '';
@@ -712,24 +717,38 @@ class ERP_OMD_Frontend
                 $user
             )
         );
-        $time_entries = $this->time_entries->all(array_filter([
+        $time_query_filters = [
             'employee_id' => (int) $employee['id'],
             'project_id' => $worker_filters['project_id'],
             'status' => $worker_filters['status'],
             'entry_date' => $worker_filters['entry_date'],
-        ]));
-        $time_entries = $this->time_entry_service->filter_visible_entries($time_entries, $user);
-        if ($worker_filters['client_id'] > 0) {
-            $time_entries = array_values(
-                array_filter(
-                    $time_entries,
-                    static function ($entry) use ($worker_filters) {
-                        return (int) ($entry['client_id'] ?? 0) === (int) $worker_filters['client_id'];
-                    }
-                )
-            );
+            'client_id' => $worker_filters['client_id'],
+        ];
+        if ($worker_filters['entry_date'] === '') {
+            $focus_range = $this->resolve_worker_focus_date_range($worker_filters);
+            if ($focus_range !== null) {
+                $time_query_filters['entry_date_from'] = $focus_range['from'];
+                $time_query_filters['entry_date_to'] = $focus_range['to'];
+            }
         }
-        $time_entries = $this->filter_worker_entries_by_focus($time_entries, $worker_filters);
+        $time_query_filters = array_filter($time_query_filters, static function ($value) {
+            return $value !== '' && $value !== null && $value !== 0;
+        });
+        $worker_time_pagination = [
+            'total_items' => $this->time_entries->count_filtered($time_query_filters),
+            'per_page' => $worker_filters['per_page'],
+            'page_num' => $worker_filters['page_num'],
+        ];
+        $worker_time_pagination['total_pages'] = max(1, (int) ceil($worker_time_pagination['total_items'] / max(1, $worker_time_pagination['per_page'])));
+        if ($worker_time_pagination['page_num'] > $worker_time_pagination['total_pages']) {
+            $worker_time_pagination['page_num'] = $worker_time_pagination['total_pages'];
+        }
+        $time_entries = $this->time_entries->find_paged(
+            $time_query_filters,
+            $worker_time_pagination['per_page'],
+            ($worker_time_pagination['page_num'] - 1) * $worker_time_pagination['per_page']
+        );
+        $time_entries = $this->time_entry_service->filter_visible_entries($time_entries, $user);
 
         $calendar_data = $this->reporting_service->build_calendar([
             'employee_id' => (int) $employee['id'],
@@ -838,6 +857,32 @@ class ERP_OMD_Frontend
         }
 
         return $templates;
+    }
+
+    private function resolve_worker_focus_date_range(array $worker_filters)
+    {
+        $focus = (string) ($worker_filters['focus'] ?? 'month');
+        if ($focus === 'all') {
+            return null;
+        }
+
+        $today = new DateTimeImmutable(current_time('Y-m-d'));
+        if ($focus === 'today') {
+            $start = $today;
+            $end = $today;
+        } elseif ($focus === 'week') {
+            $start = $today->modify('monday this week');
+            $end = $start->modify('+6 days');
+        } else {
+            $month = (string) ($worker_filters['calendar_month'] ?? gmdate('Y-m'));
+            $start = new DateTimeImmutable($month . '-01');
+            $end = $start->modify('last day of this month');
+        }
+
+        return [
+            'from' => $start->format('Y-m-d'),
+            'to' => $end->format('Y-m-d'),
+        ];
     }
 
     private function filter_worker_entries_by_focus(array $entries, array $worker_filters)

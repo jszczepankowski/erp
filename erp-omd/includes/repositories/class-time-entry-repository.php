@@ -50,6 +50,14 @@ class ERP_OMD_Time_Entry_Repository
             $where[] = 't.entry_date LIKE %s';
             $params[] = (string) $filters['month'] . '%';
         }
+        if (! empty($filters['entry_date_from'])) {
+            $where[] = 't.entry_date >= %s';
+            $params[] = (string) $filters['entry_date_from'];
+        }
+        if (! empty($filters['entry_date_to'])) {
+            $where[] = 't.entry_date <= %s';
+            $params[] = (string) $filters['entry_date_to'];
+        }
 
         $limit = max(1, (int) $limit);
         $offset = max(0, (int) $offset);
@@ -102,6 +110,14 @@ class ERP_OMD_Time_Entry_Repository
         if (! empty($filters['month']) && preg_match('/^\d{4}-\d{2}$/', (string) $filters['month']) === 1) {
             $where[] = 't.entry_date LIKE %s';
             $params[] = (string) $filters['month'] . '%';
+        }
+        if (! empty($filters['entry_date_from'])) {
+            $where[] = 't.entry_date >= %s';
+            $params[] = (string) $filters['entry_date_from'];
+        }
+        if (! empty($filters['entry_date_to'])) {
+            $where[] = 't.entry_date <= %s';
+            $params[] = (string) $filters['entry_date_to'];
         }
 
         $sql = "SELECT COUNT(*) FROM {$this->table_name()} t INNER JOIN {$projects_table} p ON p.id = t.project_id WHERE " . implode(' AND ', $where);
