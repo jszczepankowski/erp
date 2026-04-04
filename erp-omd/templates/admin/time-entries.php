@@ -114,6 +114,7 @@
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-time" />
                 <input type="hidden" name="month" value="<?php echo esc_attr($filters['month'] ?? ''); ?>" />
+                <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($pagination['per_page'] ?? 100)); ?>" />
                 <input type="hidden" name="page_num" value="1" />
                 <input type="date" name="entry_date" value="<?php echo esc_attr($filters['entry_date'] ?? ''); ?>" />
                 <?php if ($can_select_any_employee) : ?>
@@ -122,11 +123,6 @@
                 <select id="time-filter-client" name="client_id" data-project-target="#time-filter-project"><option value=""><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option><?php foreach ($clients_for_time as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((string) ($filters['client_id'] ?? ''), (string) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select>
                 <select id="time-filter-project" name="project_id"><option value=""><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option><?php foreach ($projects_for_time as $project_item) : ?><option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr($project_item['client_id']); ?>" <?php selected((string) ($filters['project_id'] ?? ''), (string) $project_item['id']); ?>><?php echo esc_html($project_item['name']); ?></option><?php endforeach; ?></select>
                 <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['submitted', 'approved', 'rejected'] as $time_status) : ?><option value="<?php echo esc_attr($time_status); ?>" <?php selected((string) ($filters['status'] ?? ''), $time_status); ?>><?php echo esc_html($this->time_status_label($time_status)); ?></option><?php endforeach; ?></select>
-                <select name="per_page">
-                    <?php foreach ([25, 50, 100, 200] as $size_option) : ?>
-                        <option value="<?php echo esc_attr((string) $size_option); ?>" <?php selected((int) ($pagination['per_page'] ?? 100), $size_option); ?>><?php echo esc_html((string) $size_option . ' / strona'); ?></option>
-                    <?php endforeach; ?>
-                </select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
             <form method="post" id="erp-omd-bulk-time-entries-form">
