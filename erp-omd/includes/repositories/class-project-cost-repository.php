@@ -25,6 +25,34 @@ class ERP_OMD_Project_Cost_Repository
         );
     }
 
+    public function sum_by_project_and_month_in_date_range(array $project_ids, $date_from, $date_to)
+    {
+        global $wpdb;
+
+        $project_ids = array_values(array_unique(array_map('intval', $project_ids)));
+        $project_ids = array_values(array_filter($project_ids, static function ($project_id) {
+            return $project_id > 0;
+        }));
+        $date_from = (string) $date_from;
+        $date_to = (string) $date_to;
+
+        if ($project_ids === [] || $date_from === '' || $date_to === '') {
+            return [];
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($project_ids), '%d'));
+        $query = $wpdb->prepare(
+            "SELECT project_id, DATE_FORMAT(cost_date, '%%Y-%%m') AS cost_month, SUM(amount) AS amount_sum
+            FROM {$this->table_name()}
+            WHERE project_id IN ($placeholders)
+              AND cost_date BETWEEN %s AND %s
+            GROUP BY project_id, cost_month",
+            ...array_merge($project_ids, [$date_from, $date_to])
+        );
+
+        return $wpdb->get_results($query, ARRAY_A);
+    }
+
     public function find($id)
     {
         global $wpdb;
