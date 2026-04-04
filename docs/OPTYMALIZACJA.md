@@ -267,8 +267,8 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
   - **T1.1.2:** ZREALIZOWANE (SQL pagination + count dla kluczowych list admin/front).
   - **T1.1.3:** ZREALIZOWANE (UI spięte z backend pagination + testy kontraktowe REST + testy repozytoriów paginacji).
   - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
-  - **T1.2.2:** NASTĘPNY AKTYWNY ETAP (prefetch/index danych do rozliczeń miesięcznych).
+  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych i historii wynagrodzeń dla trendu 12M).
 - **Następny krok wykonawczy (najbliższe wdrożenie):**
-  1. benchmark ścieżki raportowej 12M (baseline przed T1.2.2),
-  2. implementacja T1.2.2 (prefetch/index `omd_rozliczenia`),
+  1. benchmark ścieżki raportowej 12M (przed/po dla kolejnych iteracji T1.2.2),
+  2. rozszerzenie prefetch/index na pozostałe ścieżki `omd_rozliczenia` (wpisy czasu + koszty bez wielokrotnego skanowania),
   3. porównanie metryk po wdrożeniu (czas raportu 12M, liczba zapytań SQL, stabilność bez timeoutów).

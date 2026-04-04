@@ -74,8 +74,13 @@ if (! class_exists('ERP_OMD_Salary_History_Repository')) {
     class ERP_OMD_Salary_History_Repository
     {
         private $rows;
+        public $for_employee_calls = 0;
         public function __construct(array $rows) { $this->rows = $rows; }
-        public function for_employee($employee_id) { return $this->rows[(int) $employee_id] ?? []; }
+        public function for_employee($employee_id)
+        {
+            $this->for_employee_calls++;
+            return $this->rows[(int) $employee_id] ?? [];
+        }
     }
 }
 
@@ -158,6 +163,7 @@ final class ReportingServiceTestRunner
                 11 => ['revenue' => 5000.0, 'cost' => 490.0, 'profit' => 4510.0, 'margin' => 90.2, 'budget_usage' => 9.8],
             ])
         );
+        $salaryRepository = $this->readPrivateProperty($service, 'salary_history');
 
         $filters = $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03']);
         $this->assertSame('projects', $filters['report_type'], 'Project report should remain selected.');
@@ -232,6 +238,7 @@ final class ReportingServiceTestRunner
         $this->assertSame(5230.0, $omdSettlement[11]['operational_result'], 'OMD settlement should expose operational result before controlling overhead.');
         $this->assertSame(19000.0, $omdSettlement[11]['controlling_overhead'], 'OMD settlement should expose controlling overhead components.');
         $this->assertSame(-13770.0, $omdSettlement[11]['controlling_result'], 'OMD settlement should expose controlling result after overhead.');
+        $this->assertSame(2, $salaryRepository->for_employee_calls, 'OMD settlement should prefetch salary history once per employee for 12M range.');
 
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame('2026-03', $calendar['month'], 'Calendar should be built for requested month.');
@@ -295,6 +302,14 @@ final class ReportingServiceTestRunner
         if ($expected !== $actual) {
             throw new RuntimeException($message . ' Expected: ' . var_export($expected, true) . ' Actual: ' . var_export($actual, true));
         }
+    }
+
+    private function readPrivateProperty($object, string $property)
+    {
+        $reflection = new ReflectionObject($object);
+        $prop = $reflection->getProperty($property);
+        $prop->setAccessible(true);
+        return $prop->getValue($object);
     }
 }
 
