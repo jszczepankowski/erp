@@ -148,6 +148,7 @@ class ERP_OMD_Cron_Manager
         global $wpdb;
 
         $tables = $wpdb->get_col('SHOW TABLES');
+        $tables = self::filter_erp_tables((array) $tables, (string) $wpdb->prefix);
         if (empty($tables)) {
             return '';
         }
@@ -190,6 +191,24 @@ class ERP_OMD_Cron_Manager
         }
 
         return $dump;
+    }
+
+    private static function filter_erp_tables(array $tables, $db_prefix)
+    {
+        $allowed_prefixes = [
+            (string) $db_prefix . 'erp_omd_',
+        ];
+
+        return array_values(array_filter($tables, static function ($table) use ($allowed_prefixes) {
+            $table_name = (string) $table;
+            foreach ($allowed_prefixes as $allowed_prefix) {
+                if ($allowed_prefix !== '' && strpos($table_name, $allowed_prefix) === 0) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
     }
 
     private static function prune_old_backups($backup_dir, $keep_count)
