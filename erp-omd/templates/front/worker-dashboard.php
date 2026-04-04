@@ -366,7 +366,7 @@
                     </form>
 
                     <div class="erp-omd-front-table-wrap">
-                        <table class="erp-omd-front-table" data-table-enhanced="1">
+                        <table class="erp-omd-front-table">
                             <thead>
                                 <tr>
                                     <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
