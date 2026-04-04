@@ -268,10 +268,10 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
   - **T1.1.3:** ZREALIZOWANE (UI spięte z backend pagination + testy kontraktowe REST + testy repozytoriów paginacji).
   - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
   - **T1.2.2:** ZREALIZOWANE (prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem + ujednolicenie logiki filtrowania wpisów + batchowe pobranie historii wynagrodzeń (`for_employees`) + batchowa agregacja kosztów bezpośrednich per `project_id + month` + jednorazowe pobranie listy projektów i reuse dla całej osi 12M).
-  - **T2.1:** W TRAKCIE (wydzielenie wspólnych helperów front JS do `assets/js/front-shared.js` (`dedupeProjectRequestDateFields`, `setupCollapsibleSections`) + wyniesienie logiki tabs, tabel, filtrów oraz formularza pozycji kosztorysu do dedykowanych assetów `assets/js/front-manager.js` i `assets/js/front-worker.js`; kolejny krok: domknięcie pozostałego inline helpera focus mode po stronie worker).
+  - **T2.1:** ZREALIZOWANE (wydzielenie wspólnych helperów front JS do `assets/js/front-shared.js` (`dedupeProjectRequestDateFields`, `setupCollapsibleSections`) + wyniesienie logiki tabs, tabel, filtrów oraz helperów formularzy manager/worker do dedykowanych assetów `assets/js/front-manager.js` i `assets/js/front-worker.js`).
 - **Następny krok wykonawczy (najbliższe wdrożenie):**
-  1. kontynuacja **T2.1**: wyniesienie pozostałego inline helpera focus mode do `front-worker.js`,
-  2. po formalnym zamknięciu bloku 1) przejście do decyzji „implementować czy zostawić jako parking” dla bloku 2).
+  1. formalne zamknięcie bloku 1) OPTYMALIZACJA,
+  2. przejście do decyzji „implementować czy zostawić jako parking” dla bloku 2).
 
 ### Realizacja kroków (T1.2.2)
 - **Krok 1/3:** WYKONANY — benchmark 12M uruchamiany po każdej iteracji + doprecyzowanie zakresu dat dla batch direct costs do realnego końca miesiąca (bez stałego `-31`).
