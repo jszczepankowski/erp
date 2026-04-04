@@ -405,6 +405,183 @@ const initDashboardV1Preview = () => {
 
   const statusNode = previewNode.querySelector('[data-dashboard-v1-status="1"]');
   const gridNode = previewNode.querySelector('[data-dashboard-v1-grid="1"]');
+  const monthNode = previewNode.querySelector('[data-dashboard-v1-month="1"]');
+  const modeNode = previewNode.querySelector('[data-dashboard-v1-mode="1"]');
+  const scopeNode = previewNode.querySelector('[data-dashboard-v1-scope="1"]');
+  const refreshNode = previewNode.querySelector('[data-dashboard-v1-refresh="1"]');
+  const monthStatusNode = previewNode.querySelector(
+    '[data-dashboard-v1-month-status="1"]'
+  );
+  const actionsNode = previewNode.querySelector('[data-dashboard-v1-actions="1"]');
+  const checklistNode = previewNode.querySelector(
+    '[data-dashboard-v1-checklist="1"]'
+  );
+  const adjustmentsNode = previewNode.querySelector(
+    '[data-dashboard-v1-adjustments="1"]'
+  );
+
+  if (
+    !(statusNode instanceof HTMLElement) ||
+    !(gridNode instanceof HTMLElement) ||
+    !(monthNode instanceof HTMLInputElement) ||
+    !(modeNode instanceof HTMLSelectElement) ||
+    !(scopeNode instanceof HTMLSelectElement) ||
+    !(refreshNode instanceof HTMLButtonElement) ||
+    !(monthStatusNode instanceof HTMLElement) ||
+    !(actionsNode instanceof HTMLElement) ||
+    !(checklistNode instanceof HTMLElement) ||
+    !(adjustmentsNode instanceof HTMLElement)
+  ) {
+    return;
+  }
+
+  if (
+    typeof erpOmdAdminData === 'undefined' ||
+    !erpOmdAdminData ||
+    !erpOmdAdminData.restUrl
+  ) {
+    statusNode.textContent = 'Nie udało się załadować dashboard-v1 (brak konfiguracji REST).';
+    return;
+  }
+
+  const fallbackMonth = String(previewNode.dataset.month || '').trim();
+  const headers = {};
+  if (erpOmdAdminData.restNonce) {
+    headers['X-WP-Nonce'] = String(erpOmdAdminData.restNonce);
+  }
+
+  const renderEmptyList = (listNode, message) => {
+    listNode.innerHTML = '';
+    const item = document.createElement('li');
+    item.textContent = message;
+    listNode.appendChild(item);
+  };
+
+  let activeController = null;
+  let activeRequestId = 0;
+
+  const fetchPreview = () => {
+    if (activeController instanceof AbortController) {
+      activeController.abort();
+    }
+    activeController = new AbortController();
+    activeRequestId += 1;
+    const requestId = activeRequestId;
+
+    const endpoint = `${String(erpOmdAdminData.restUrl).replace(
+      /\/$/,
+      ''
+    )}/dashboard-v1?month=${encodeURIComponent(
+      monthNode.value || fallbackMonth
+    )}&mode=${encodeURIComponent(
+      modeNode.value
+    )}&profitability_scope=${encodeURIComponent(scopeNode.value)}`;
+
+    statusNode.hidden = false;
+    statusNode.textContent = 'Ładowanie podglądu dashboard-v1…';
+    gridNode.hidden = true;
+    refreshNode.disabled = true;
+
+    const timeoutHandle = window.setTimeout(() => {
+      if (activeController instanceof AbortController) {
+        activeController.abort();
+      }
+    }, 12000);
+
+    fetch(endpoint, { headers, signal: activeController.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((payload) => {
+      if (requestId !== activeRequestId) {
+        return;
+      }
+      statusNode.hidden = true;
+      gridNode.hidden = false;
+
+      monthStatusNode.textContent = `${payload?.period_status || '—'} (${payload?.month || monthNode.value || fallbackMonth})`;
+
+      actionsNode.innerHTML = '';
+      const statusActions = Array.isArray(payload?.status_actions)
+        ? payload.status_actions
+        : [];
+      if (statusActions.length === 0) {
+        renderEmptyList(actionsNode, 'Brak dostępnych akcji statusu.');
+      } else {
+        statusActions.forEach((action) => {
+          const item = document.createElement('li');
+          const label = action?.label || action?.to_status || '—';
+          const state = action?.enabled ? 'aktywna' : 'zablokowana';
+          item.textContent = `${label} (${state})`;
+          actionsNode.appendChild(item);
+        });
+      }
+
+      checklistNode.innerHTML = '';
+      const checks = payload?.readiness_checklist?.checks || {};
+      const checkEntries = Object.entries(checks);
+      if (checkEntries.length === 0) {
+        renderEmptyList(checklistNode, 'Brak danych checklisty.');
+      } else {
+        checkEntries.forEach(([key, passed]) => {
+          const item = document.createElement('li');
+          item.textContent = `${passed ? '✅' : '⛔'} ${key}`;
+          checklistNode.appendChild(item);
+        });
+      }
+
+      adjustmentsNode.innerHTML = '';
+      const adjustmentItems = Array.isArray(payload?.adjustments?.items)
+        ? payload.adjustments.items
+        : [];
+      if (adjustmentItems.length === 0) {
+        renderEmptyList(adjustmentsNode, 'Brak korekt dla wybranego miesiąca.');
+      } else {
+        adjustmentItems.slice(0, 5).forEach((row) => {
+          const item = document.createElement('li');
+          const entity = row?.entity_type || '—';
+          const reason = row?.reason || '—';
+          item.textContent = `${entity}: ${reason}`;
+          adjustmentsNode.appendChild(item);
+        });
+      }
+      })
+      .catch((error) => {
+        if (requestId !== activeRequestId || error?.name === 'AbortError') {
+          return;
+        }
+        statusNode.hidden = false;
+        statusNode.textContent =
+          'Nie udało się pobrać podglądu dashboard-v1. Sprawdź uprawnienia i konfigurację REST API.';
+        gridNode.hidden = true;
+      })
+      .finally(() => {
+        window.clearTimeout(timeoutHandle);
+        if (requestId !== activeRequestId) {
+          return;
+        }
+        refreshNode.disabled = false;
+      });
+  };
+
+  refreshNode.addEventListener('click', fetchPreview);
+  monthNode.addEventListener('change', fetchPreview);
+  modeNode.addEventListener('change', fetchPreview);
+  scopeNode.addEventListener('change', fetchPreview);
+  fetchPreview();
+};
+
+const initDashboardV1Preview = () => {
+  const previewNode = document.querySelector('[data-dashboard-v1-preview="1"]');
+  if (!(previewNode instanceof HTMLElement)) {
+    return;
+  }
+
+  const statusNode = previewNode.querySelector('[data-dashboard-v1-status="1"]');
+  const gridNode = previewNode.querySelector('[data-dashboard-v1-grid="1"]');
   const modeNode = previewNode.querySelector('[data-dashboard-v1-mode="1"]');
   const scopeNode = previewNode.querySelector('[data-dashboard-v1-scope="1"]');
   const refreshNode = previewNode.querySelector('[data-dashboard-v1-refresh="1"]');

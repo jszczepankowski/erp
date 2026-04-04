@@ -110,6 +110,10 @@
             </div>
             <div class="erp-omd-dashboard-v1-preview-controls">
                 <label>
+                    <?php esc_html_e('Miesiąc', 'erp-omd'); ?>
+                    <input type="month" value="<?php echo esc_attr($report_filters['month']); ?>" data-dashboard-v1-month="1" />
+                </label>
+                <label>
                     <?php esc_html_e('Tryb', 'erp-omd'); ?>
                     <select data-dashboard-v1-mode="1">
                         <option value="LIVE"><?php esc_html_e('LIVE', 'erp-omd'); ?></option>
