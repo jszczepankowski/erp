@@ -160,27 +160,22 @@ class ERP_OMD_Reporting_Service
                 $month_ranges = $this->build_month_ranges($months);
                 $salary_cost_by_month = $this->build_salary_cost_index_by_month($months, $month_ranges);
                 $fixed_cost_by_month = $this->build_fixed_cost_index_by_month($months, $month_ranges);
-                $projects_by_month = [];
+                $projects = $this->get_filtered_projects($filters);
                 $all_project_ids = [];
-                foreach ($months as $month) {
-                    $month_filters = $filters;
-                    $month_filters['month'] = $month;
-                    $projects_by_month[$month] = $this->get_filtered_projects($month_filters);
-                    foreach ((array) $projects_by_month[$month] as $project_row) {
-                        $project_id = (int) ($project_row['id'] ?? 0);
-                        if ($project_id > 0) {
-                            $all_project_ids[$project_id] = true;
-                        }
+                foreach ((array) $projects as $project_row) {
+                    $project_id = (int) ($project_row['id'] ?? 0);
+                    if ($project_id > 0) {
+                        $all_project_ids[$project_id] = true;
                     }
                 }
+                $active_budget_metrics_by_month = $this->build_active_budget_metrics_index_by_month($projects, $months);
                 $prefetched_entries = $this->prefetch_entries_for_months($filters, $months, $month_ranges);
                 $entry_metrics_by_month = $this->build_entry_metrics_index_by_month($prefetched_entries, $filters, $months);
                 $direct_cost_index = $this->build_direct_cost_index_by_month_and_project(array_keys($all_project_ids), $months);
                 foreach ($months as $month) {
-                    $projects = (array) ($projects_by_month[$month] ?? []);
                     $salary_cost = (float) ($salary_cost_by_month[$month] ?? 0.0);
                     $direct_cost = 0.0;
-                    $active_budget_metrics = $this->build_active_budget_metrics_for_month($projects, $month);
+                    $active_budget_metrics = (array) ($active_budget_metrics_by_month[$month] ?? []);
                     $active_budgets = (float) ($active_budget_metrics['active_budgets'] ?? 0.0);
                     $active_budget_project_ids = (array) ($active_budget_metrics['project_ids'] ?? []);
                     $entry_metrics = (array) ($entry_metrics_by_month[$month] ?? []);
@@ -1041,18 +1036,24 @@ class ERP_OMD_Reporting_Service
         return $entry_metrics_by_month;
     }
 
-    private function build_active_budget_metrics_for_month(array $projects, $month)
+    private function build_active_budget_metrics_index_by_month(array $projects, array $months)
     {
-        $active_budget_project_ids = [];
-        $active_budgets = 0.0;
+        $index = [];
+        foreach ($months as $month) {
+            $index[(string) $month] = [
+                'active_budgets' => 0.0,
+                'project_ids' => [],
+            ];
+        }
 
+        $allowed_months = array_fill_keys(array_map('strval', $months), true);
         foreach ($projects as $project) {
             if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony', 'archiwum'], true)) {
                 continue;
             }
 
             $close_month = (string) ($project['operational_close_month'] ?? '');
-            if (preg_match('/^\d{4}-\d{2}$/', $close_month) !== 1 || $close_month !== (string) $month) {
+            if (preg_match('/^\d{4}-\d{2}$/', $close_month) !== 1 || ! isset($allowed_months[$close_month])) {
                 continue;
             }
 
@@ -1061,14 +1062,11 @@ class ERP_OMD_Reporting_Service
                 continue;
             }
 
-            $active_budget_project_ids[] = $project_id;
-            $active_budgets += (float) ($project['budget'] ?? 0.0);
+            $index[$close_month]['project_ids'][] = $project_id;
+            $index[$close_month]['active_budgets'] += (float) ($project['budget'] ?? 0.0);
         }
 
-        return [
-            'active_budgets' => $active_budgets,
-            'project_ids' => $active_budget_project_ids,
-        ];
+        return $index;
     }
 
     private function entry_matches_filters(array $entry, array $project_ids, array $filters, $allow_non_approved)
@@ -1188,6 +1186,23 @@ class ERP_OMD_Reporting_Service
         $range_start = (string) ($month_ranges[$first_month]['from'] ?? ($first_month . '-01'));
         $range_end = (string) ($month_ranges[$last_month]['to'] ?? ($last_month . '-31'));
 
+        if (method_exists($this->project_costs, 'sum_by_project_and_month_in_date_range')) {
+            $rows = (array) $this->project_costs->sum_by_project_and_month_in_date_range($project_ids, $range_start, $range_end);
+            foreach ($rows as $row) {
+                $project_id = (int) ($row['project_id'] ?? 0);
+                $month = (string) ($row['cost_month'] ?? '');
+                if ($project_id <= 0 || ! isset($allowed_months[$month])) {
+                    continue;
+                }
+                if (! isset($index[$month][$project_id])) {
+                    $index[$month][$project_id] = 0.0;
+                }
+                $index[$month][$project_id] += (float) ($row['amount_sum'] ?? 0.0);
+            }
+
+            return $index;
+        }
+
         $rows = [];
         foreach ($project_ids as $project_id) {
             foreach ((array) $this->project_costs->for_project((int) $project_id) as $row) {
@@ -1257,13 +1272,17 @@ class ERP_OMD_Reporting_Service
         }
 
         $employees = (array) $this->employees->all();
+        $employee_ids = [];
         foreach ($employees as $employee) {
             $employee_id = (int) ($employee['id'] ?? 0);
-            if ($employee_id <= 0) {
-                continue;
+            if ($employee_id > 0) {
+                $employee_ids[] = $employee_id;
             }
+        }
 
-            $salary_rows = (array) $this->salary_history->for_employee($employee_id);
+        $salary_rows_by_employee = $this->get_salary_rows_by_employee($employee_ids);
+        foreach ($employee_ids as $employee_id) {
+            $salary_rows = (array) ($salary_rows_by_employee[$employee_id] ?? []);
             $normalized_salary_rows = [];
             foreach ($salary_rows as $salary_row) {
                 $valid_from = (string) ($salary_row['valid_from'] ?? '');
@@ -1302,6 +1321,40 @@ class ERP_OMD_Reporting_Service
         }
 
         return $index;
+    }
+
+    private function get_salary_rows_by_employee(array $employee_ids)
+    {
+        $employee_ids = array_values(array_unique(array_map('intval', $employee_ids)));
+        $employee_ids = array_values(array_filter($employee_ids, static function ($employee_id) {
+            return $employee_id > 0;
+        }));
+        if ($employee_ids === []) {
+            return [];
+        }
+
+        $grouped = [];
+        if (method_exists($this->salary_history, 'for_employees')) {
+            $rows = (array) $this->salary_history->for_employees($employee_ids);
+            foreach ($rows as $row) {
+                $employee_id = (int) ($row['employee_id'] ?? 0);
+                if ($employee_id <= 0) {
+                    continue;
+                }
+                if (! isset($grouped[$employee_id])) {
+                    $grouped[$employee_id] = [];
+                }
+                $grouped[$employee_id][] = $row;
+            }
+
+            return $grouped;
+        }
+
+        foreach ($employee_ids as $employee_id) {
+            $grouped[$employee_id] = (array) $this->salary_history->for_employee($employee_id);
+        }
+
+        return $grouped;
     }
 
     private function build_fixed_cost_index_by_month(array $months, array $month_ranges = [])
