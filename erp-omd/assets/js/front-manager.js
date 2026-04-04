@@ -209,7 +209,236 @@
         });
     };
 
+    var setupProjectsTableFilters = function (options) {
+        var settings = options || {};
+        var actionHeader = settings.actionHeader || 'Akcja';
+        var table = document.querySelector('table[data-projects-table="1"]');
+        if (!table) {
+            return;
+        }
+
+        var tbody = table.querySelector('tbody');
+        if (!tbody) {
+            return;
+        }
+
+        var rows = Array.from(tbody.querySelectorAll('tr'));
+        var form = document.querySelector('[data-project-table-filters="1"]');
+        if (!form || rows.length === 0) {
+            return;
+        }
+
+        var clientFilter = form.querySelector('[data-project-filter="client"]');
+        var statusFilter = form.querySelector('[data-project-filter="status"]');
+        var billingTypeFilter = form.querySelector('[data-project-filter="billing-type"]');
+        var sortState = { index: -1, dir: 'asc' };
+
+        var applyFiltersAndSort = function () {
+            var selectedClient = clientFilter ? clientFilter.value : '';
+            var selectedStatus = statusFilter ? statusFilter.value : '';
+            var selectedBillingType = billingTypeFilter ? billingTypeFilter.value : '';
+            var visibleRows = [];
+
+            rows.forEach(function (row) {
+                var matchesClient = selectedClient === '' || row.getAttribute('data-client') === selectedClient;
+                var matchesStatus = selectedStatus === '' || row.getAttribute('data-status') === selectedStatus;
+                var matchesBillingType = selectedBillingType === '' || row.getAttribute('data-billing-type') === selectedBillingType;
+                var isVisible = matchesClient && matchesStatus && matchesBillingType;
+                row.hidden = !isVisible;
+                if (isVisible) {
+                    visibleRows.push(row);
+                }
+            });
+
+            if (sortState.index >= 0) {
+                visibleRows.sort(function (rowA, rowB) {
+                    var cellA = rowA.children[sortState.index];
+                    var cellB = rowB.children[sortState.index];
+                    var valueA = (cellA ? cellA.textContent : '').trim().toLowerCase();
+                    var valueB = (cellB ? cellB.textContent : '').trim().toLowerCase();
+                    var numericA = Number(valueA.replace(',', '.').replace(/[^\d.-]/g, ''));
+                    var numericB = Number(valueB.replace(',', '.').replace(/[^\d.-]/g, ''));
+                    var comparableA = Number.isNaN(numericA) ? valueA : numericA;
+                    var comparableB = Number.isNaN(numericB) ? valueB : numericB;
+                    if (comparableA === comparableB) {
+                        return 0;
+                    }
+                    var comparison = comparableA > comparableB ? 1 : -1;
+                    return sortState.dir === 'asc' ? comparison : -comparison;
+                });
+                visibleRows.forEach(function (row) {
+                    tbody.appendChild(row);
+                });
+            }
+        };
+
+        table.querySelectorAll('thead th').forEach(function (header, index) {
+            if (header.textContent.trim() === actionHeader) {
+                return;
+            }
+            header.classList.add('erp-omd-front-table-th-sortable');
+            header.addEventListener('click', function () {
+                if (sortState.index === index) {
+                    sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortState.index = index;
+                    sortState.dir = 'asc';
+                }
+                table.querySelectorAll('thead th').forEach(function (th) {
+                    th.removeAttribute('data-sort-dir');
+                });
+                header.setAttribute('data-sort-dir', sortState.dir);
+                applyFiltersAndSort();
+            });
+        });
+
+        [clientFilter, statusFilter, billingTypeFilter].forEach(function (filterField) {
+            if (!filterField) {
+                return;
+            }
+            filterField.addEventListener('change', applyFiltersAndSort);
+        });
+
+        applyFiltersAndSort();
+    };
+
+    var setupManagerTimeEntryForm = function () {
+        var clientInput = document.getElementById('erp-omd-manager-time-client');
+        var projectInput = document.getElementById('erp-omd-manager-time-project');
+        if (!clientInput || !projectInput) {
+            return;
+        }
+
+        var syncProjectOptions = function () {
+            var selectedClientId = clientInput.value;
+            var hasVisibleSelectedOption = false;
+
+            Array.prototype.forEach.call(projectInput.options, function (option) {
+                if (option.value === '') {
+                    option.hidden = false;
+                    return;
+                }
+
+                var optionClientId = option.getAttribute('data-client-id') || '';
+                var visible = selectedClientId !== '' && optionClientId === selectedClientId;
+                option.hidden = !visible;
+
+                if (visible && option.selected) {
+                    hasVisibleSelectedOption = true;
+                }
+            });
+
+            if (!hasVisibleSelectedOption) {
+                projectInput.value = '';
+            }
+        };
+
+        clientInput.addEventListener('change', syncProjectOptions);
+        syncProjectOptions();
+    };
+
+    var setupApprovalQueueFilters = function (options) {
+        var settings = options || {};
+        var actionsHeader = settings.actionsHeader || 'Akcje';
+        var table = document.querySelector('table[data-approval-queue-table="1"]');
+        var form = document.querySelector('[data-approval-queue-filters="1"]');
+        if (!table || !form) {
+            return;
+        }
+
+        var tbody = table.querySelector('tbody');
+        if (!tbody) {
+            return;
+        }
+
+        var rows = Array.from(tbody.querySelectorAll('tr'));
+        if (rows.length === 0) {
+            return;
+        }
+
+        var employeeFilter = form.querySelector('[data-queue-filter="employee"]');
+        var projectFilter = form.querySelector('[data-queue-filter="project"]');
+        var roleFilter = form.querySelector('[data-queue-filter="role"]');
+        var sortState = { index: -1, dir: 'asc' };
+
+        var parseComparableValue = function (value) {
+            var normalized = (value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            var numeric = normalized.replace(',', '.').replace(/[^\d.-]/g, '');
+            if (numeric !== '' && !Number.isNaN(Number(numeric))) {
+                return Number(numeric);
+            }
+            return normalized;
+        };
+
+        var applyFiltersAndSort = function () {
+            var selectedEmployee = employeeFilter ? employeeFilter.value : '';
+            var selectedProject = projectFilter ? projectFilter.value : '';
+            var selectedRole = roleFilter ? roleFilter.value : '';
+            var visibleRows = [];
+
+            rows.forEach(function (row) {
+                var matchesEmployee = selectedEmployee === '' || row.getAttribute('data-queue-employee') === selectedEmployee;
+                var matchesProject = selectedProject === '' || row.getAttribute('data-queue-project') === selectedProject;
+                var matchesRole = selectedRole === '' || row.getAttribute('data-queue-role') === selectedRole;
+                var isVisible = matchesEmployee && matchesProject && matchesRole;
+                row.hidden = !isVisible;
+                if (isVisible) {
+                    visibleRows.push(row);
+                }
+            });
+
+            if (sortState.index >= 0) {
+                visibleRows.sort(function (rowA, rowB) {
+                    var cellA = rowA.children[sortState.index];
+                    var cellB = rowB.children[sortState.index];
+                    var valueA = parseComparableValue(cellA ? cellA.textContent : '');
+                    var valueB = parseComparableValue(cellB ? cellB.textContent : '');
+                    if (valueA === valueB) {
+                        return 0;
+                    }
+                    var comparison = valueA > valueB ? 1 : -1;
+                    return sortState.dir === 'asc' ? comparison : -comparison;
+                });
+                visibleRows.forEach(function (row) {
+                    tbody.appendChild(row);
+                });
+            }
+        };
+
+        table.querySelectorAll('thead th').forEach(function (header, index) {
+            if (header.textContent.trim() === actionsHeader) {
+                return;
+            }
+            header.classList.add('erp-omd-front-table-th-sortable');
+            header.addEventListener('click', function () {
+                if (sortState.index === index) {
+                    sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortState.index = index;
+                    sortState.dir = 'asc';
+                }
+                table.querySelectorAll('thead th').forEach(function (th) {
+                    th.removeAttribute('data-sort-dir');
+                });
+                header.setAttribute('data-sort-dir', sortState.dir);
+                applyFiltersAndSort();
+            });
+        });
+
+        [employeeFilter, projectFilter, roleFilter].forEach(function (filterField) {
+            if (!filterField) {
+                return;
+            }
+            filterField.addEventListener('change', applyFiltersAndSort);
+        });
+
+        applyFiltersAndSort();
+    };
+
     window.erpOmdFrontManager = window.erpOmdFrontManager || {};
     window.erpOmdFrontManager.setupTabs = setupManagerTabs;
     window.erpOmdFrontManager.setupTableEnhancements = setupTableEnhancements;
+    window.erpOmdFrontManager.setupProjectsTableFilters = setupProjectsTableFilters;
+    window.erpOmdFrontManager.setupManagerTimeEntryForm = setupManagerTimeEntryForm;
+    window.erpOmdFrontManager.setupApprovalQueueFilters = setupApprovalQueueFilters;
 }(window, document));
