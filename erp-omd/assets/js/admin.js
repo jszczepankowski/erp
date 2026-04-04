@@ -397,11 +397,7 @@ const initInlineAutoSave = () => {
   });
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  const currentPage = new URLSearchParams(window.location.search).get('page') || '';
-  initTableTools();
-  initFixedCosts();
-  initInlineAutoSave();
+const initAdminInteractions = (currentPage) => {
 
   document.querySelectorAll('.erp-omd-quick-hours-button').forEach((button) => {
     button.addEventListener('click', () => {
@@ -646,4 +642,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     renderState();
   });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const currentPage = new URLSearchParams(window.location.search).get('page') || '';
+  initTableTools();
+  initFixedCosts();
+  initInlineAutoSave();
+  initAdminInteractions(currentPage);
 });

@@ -291,7 +291,7 @@ Wynik z: `php tests/reporting-benchmark-12m.php`
 
 ### Kolejny etap roadmapy (po T1.2.2)
 - **T3.1 (backup tylko tabel ERP):** ROZPOCZĘTY — backup DB ograniczony do tabel z prefiksem `${wpdb->prefix}erp_omd_` (bez zrzutu pełnej bazy przez `SHOW TABLES` → wszystkie tabele).
-- **T2.2 (modularizacja admin JS):** ROZPOCZĘTY — wydzielenie inicjalizacji narzędzi tabel, kosztów stałych i autosave inline do osobnych funkcji (`initTableTools`, `initFixedCosts`, `initInlineAutoSave`) jako kolejny krok dekompozycji `admin.js`.
+- **T2.2 (modularizacja admin JS):** ROZPOCZĘTY — wydzielenie inicjalizacji narzędzi tabel, kosztów stałych, autosave inline i interakcji UI do osobnych funkcji (`initTableTools`, `initFixedCosts`, `initInlineAutoSave`, `initAdminInteractions`) jako kolejny krok dekompozycji `admin.js`.
 
 #### T3.1 — DoD / walidacja
 - backup zawiera wyłącznie tabele zaczynające się od `${wpdb->prefix}erp_omd_`,
