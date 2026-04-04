@@ -254,19 +254,13 @@
             <h2><?php esc_html_e('Lista klientów', 'erp-omd'); ?></h2>
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-clients" />
+                <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($client_filters['per_page'] ?? 100)); ?>" />
                 <input type="hidden" name="page_num" value="1" />
                 <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj klienta, firmy, NIP, email…', 'erp-omd'); ?>" value="<?php echo esc_attr($client_filters['search'] ?? ''); ?>" />
                 <select name="status">
                     <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
                     <option value="active" <?php selected($client_filters['status'] ?? '', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
                     <option value="inactive" <?php selected($client_filters['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
-                </select>
-                <select name="per_page">
-                    <?php foreach ([25, 50, 100, 200] as $client_per_page_option) : ?>
-                        <option value="<?php echo esc_attr((string) $client_per_page_option); ?>" <?php selected((int) ($client_filters['per_page'] ?? 100), $client_per_page_option); ?>>
-                            <?php echo esc_html((string) $client_per_page_option . ' / strona'); ?>
-                        </option>
-                    <?php endforeach; ?>
                 </select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>

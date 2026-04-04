@@ -25,6 +25,27 @@ class ERP_OMD_Project_Cost_Repository
         );
     }
 
+    public function for_projects_in_date_range(array $project_ids, $date_from, $date_to)
+    {
+        global $wpdb;
+
+        $project_ids = array_values(array_unique(array_map('intval', $project_ids)));
+        if ($project_ids === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($project_ids), '%d'));
+        $query = "SELECT *
+            FROM {$this->table_name()}
+            WHERE project_id IN ({$placeholders})
+              AND cost_date >= %s
+              AND cost_date <= %s
+            ORDER BY cost_date DESC, id DESC";
+        $params = array_merge($project_ids, [(string) $date_from, (string) $date_to]);
+
+        return $wpdb->get_results($wpdb->prepare($query, ...$params), ARRAY_A);
+    }
+
     public function find($id)
     {
         global $wpdb;
