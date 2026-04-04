@@ -51,6 +51,10 @@ class ERP_OMD_Project_Cost_Repository
             ['%d', '%f', '%s', '%s', '%d', '%s', '%s']
         );
 
+        if (function_exists('erp_omd_reports_cache_bump_version')) {
+            erp_omd_reports_cache_bump_version();
+        }
+
         return (int) $wpdb->insert_id;
     }
 
@@ -58,7 +62,7 @@ class ERP_OMD_Project_Cost_Repository
     {
         global $wpdb;
 
-        return $wpdb->update(
+        $updated = $wpdb->update(
             $this->table_name(),
             [
                 'amount' => $data['amount'],
@@ -70,12 +74,23 @@ class ERP_OMD_Project_Cost_Repository
             ['%f', '%s', '%s', '%s'],
             ['%d']
         );
+
+        if ($updated !== false && function_exists('erp_omd_reports_cache_bump_version')) {
+            erp_omd_reports_cache_bump_version();
+        }
+
+        return $updated;
     }
 
     public function delete($id)
     {
         global $wpdb;
 
-        return $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
+        $deleted = $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
+        if ($deleted !== false && function_exists('erp_omd_reports_cache_bump_version')) {
+            erp_omd_reports_cache_bump_version();
+        }
+
+        return $deleted;
     }
 }

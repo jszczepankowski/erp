@@ -9,21 +9,78 @@ class ERP_OMD_Client_Repository
         return $wpdb->prefix . 'erp_omd_clients';
     }
 
-    public function all()
+    public function all(array $filters = [])
+    {
+        return $this->find_paged($filters, 1000000, 0);
+    }
+
+    public function find_paged(array $filters = [], $limit = 100, $offset = 0)
     {
         global $wpdb;
 
         $employees_table = $wpdb->prefix . 'erp_omd_employees';
         $users_table = $wpdb->users;
 
-        return $wpdb->get_results(
-            "SELECT c.*, u.user_login AS account_manager_login
+        $where = ['1=1'];
+        $params = [];
+
+        if (! empty($filters['status'])) {
+            $where[] = 'c.status = %s';
+            $params[] = (string) $filters['status'];
+        }
+
+        if (! empty($filters['search'])) {
+            $like = '%' . $wpdb->esc_like((string) $filters['search']) . '%';
+            $where[] = '(c.name LIKE %s OR c.company LIKE %s OR c.nip LIKE %s OR c.email LIKE %s)';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $limit = max(1, (int) $limit);
+        $offset = max(0, (int) $offset);
+
+        $sql = "SELECT c.*, u.user_login AS account_manager_login
             FROM {$this->table_name()} c
             LEFT JOIN {$employees_table} e ON e.id = c.account_manager_id
             LEFT JOIN {$users_table} u ON u.ID = e.user_id
-            ORDER BY c.name ASC",
-            ARRAY_A
-        );
+            WHERE " . implode(' AND ', $where) . ' ORDER BY c.name ASC LIMIT %d OFFSET %d';
+
+        $params[] = $limit;
+        $params[] = $offset;
+
+        return $wpdb->get_results($wpdb->prepare($sql, ...$params), ARRAY_A);
+    }
+
+    public function count_filtered(array $filters = [])
+    {
+        global $wpdb;
+
+        $where = ['1=1'];
+        $params = [];
+
+        if (! empty($filters['status'])) {
+            $where[] = 'status = %s';
+            $params[] = (string) $filters['status'];
+        }
+
+        if (! empty($filters['search'])) {
+            $like = '%' . $wpdb->esc_like((string) $filters['search']) . '%';
+            $where[] = '(name LIKE %s OR company LIKE %s OR nip LIKE %s OR email LIKE %s)';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $sql = "SELECT COUNT(*) FROM {$this->table_name()} WHERE " . implode(' AND ', $where);
+
+        if ($params !== []) {
+            return (int) $wpdb->get_var($wpdb->prepare($sql, ...$params));
+        }
+
+        return (int) $wpdb->get_var($sql);
     }
 
     public function find($id)
