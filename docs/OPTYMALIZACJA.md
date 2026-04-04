@@ -269,9 +269,12 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
   - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
   - **T1.2.2:** ZREALIZOWANE (prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem + ujednolicenie logiki filtrowania wpisów + batchowe pobranie historii wynagrodzeń (`for_employees`) + batchowa agregacja kosztów bezpośrednich per `project_id + month` + jednorazowe pobranie listy projektów i reuse dla całej osi 12M).
   - **T2.1:** ZREALIZOWANE (wydzielenie wspólnych helperów front JS do `assets/js/front-shared.js` (`dedupeProjectRequestDateFields`, `setupCollapsibleSections`) + wyniesienie logiki tabs, tabel, filtrów oraz helperów formularzy manager/worker do dedykowanych assetów `assets/js/front-manager.js` i `assets/js/front-worker.js`).
+  - **T2.2:** ZREALIZOWANE (`admin.js` podzielony na moduły i inicjalizowany przez entrypoint).
+  - **T3.1:** ZREALIZOWANE (backup wyłącznie tabel ERP + testy zakresu dumpa + dokumentacja odtwarzania).
+- **Status bloku 1) OPTYMALIZACJA:** ZAMKNIĘTY
 - **Następny krok wykonawczy (najbliższe wdrożenie):**
-  1. formalne zamknięcie bloku 1) OPTYMALIZACJA,
-  2. przejście do decyzji „implementować czy zostawić jako parking” dla bloku 2).
+  1. decyzja wykonawcza dla bloku 2) NOWE FUNKCJE (wdrażać czy zostawić jako parking),
+  2. potwierdzenie zakresu na kolejny sprint (poza optymalizacją bazową).
 
 ### Realizacja kroków (T1.2.2)
 - **Krok 1/3:** WYKONANY — benchmark 12M uruchamiany po każdej iteracji + doprecyzowanie zakresu dat dla batch direct costs do realnego końca miesiąca (bez stałego `-31`).
