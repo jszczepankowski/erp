@@ -246,10 +246,7 @@ const initFixedCosts = () => {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  initTableTools();
-  initFixedCosts();
-
+const initInlineAutoSave = () => {
   const inlineAutoSaveConfig = {
     debounceMs: 700,
     inputSelectors:
@@ -398,6 +395,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const currentPage = new URLSearchParams(window.location.search).get('page') || '';
+  initTableTools();
+  initFixedCosts();
+  initInlineAutoSave();
 
   document.querySelectorAll('.erp-omd-quick-hours-button').forEach((button) => {
     button.addEventListener('click', () => {
