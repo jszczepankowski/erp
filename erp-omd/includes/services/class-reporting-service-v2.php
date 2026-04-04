@@ -1175,13 +1175,34 @@ class ERP_OMD_Reporting_Service
             $index[(string) $month] = [];
         }
 
-        foreach ($project_ids as $project_id) {
-            $project_id = (int) $project_id;
+        $project_ids = array_values(array_unique(array_filter(array_map('intval', $project_ids), static function ($project_id) {
+            return (int) $project_id > 0;
+        })));
+        if ($project_ids === []) {
+            return $index;
+        }
+
+        $rows = [];
+        if (method_exists($this->project_costs, 'for_projects_in_date_range')) {
+            $first_month = (string) min($months);
+            $last_month = (string) max($months);
+            $rows = (array) $this->project_costs->for_projects_in_date_range(
+                $project_ids,
+                $first_month . '-01',
+                $last_month . '-31'
+            );
+        } else {
+            foreach ($project_ids as $project_id) {
+                $rows = array_merge($rows, (array) $this->project_costs->for_project((int) $project_id));
+            }
+        }
+
+        foreach ($rows as $row) {
+            $project_id = (int) ($row['project_id'] ?? 0);
             if ($project_id <= 0) {
                 continue;
             }
 
-            foreach ((array) $this->project_costs->for_project($project_id) as $row) {
                 $cost_date = (string) ($row['cost_date'] ?? '');
                 if (preg_match('/^\d{4}-\d{2}/', $cost_date) !== 1) {
                     continue;
@@ -1196,7 +1217,6 @@ class ERP_OMD_Reporting_Service
                     $index[$month][$project_id] = 0.0;
                 }
                 $index[$month][$project_id] += (float) ($row['amount'] ?? 0.0);
-            }
         }
 
         return $index;
@@ -1258,6 +1278,44 @@ class ERP_OMD_Reporting_Service
         }
 
         return $index;
+    }
+
+    private function normalize_salary_rows(array $salary_rows)
+    {
+        $normalized = [];
+        foreach ($salary_rows as $salary_row) {
+            $valid_from = (string) ($salary_row['valid_from'] ?? '');
+            if ($valid_from === '') {
+                continue;
+            }
+
+            $valid_to = (string) ($salary_row['valid_to'] ?? '');
+            $normalized[] = [
+                'valid_from' => $valid_from,
+                'effective_to' => $valid_to !== '' ? $valid_to : '9999-12-31',
+                'monthly_salary' => (float) ($salary_row['monthly_salary'] ?? 0.0),
+            ];
+        }
+
+        usort($normalized, static function ($left, $right) {
+            return strcmp((string) ($right['valid_from'] ?? ''), (string) ($left['valid_from'] ?? ''));
+        });
+
+        return $normalized;
+    }
+
+    private function resolve_month_salary(array $salary_rows, $month_start, $month_end)
+    {
+        foreach ($salary_rows as $salary_row) {
+            if (
+                (string) ($salary_row['valid_from'] ?? '') <= (string) $month_end
+                && (string) ($salary_row['effective_to'] ?? '') >= (string) $month_start
+            ) {
+                return (float) ($salary_row['monthly_salary'] ?? 0.0);
+            }
+        }
+
+        return 0.0;
     }
 
     private function normalize_salary_rows(array $salary_rows)
