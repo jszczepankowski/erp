@@ -1186,10 +1186,13 @@ class ERP_OMD_Reporting_Service
         if (method_exists($this->project_costs, 'for_projects_in_date_range')) {
             $first_month = (string) min($months);
             $last_month = (string) max($months);
+            $month_ranges = $this->build_month_ranges([$first_month, $last_month]);
+            $range_start = (string) ($month_ranges[$first_month]['from'] ?? ($first_month . '-01'));
+            $range_end = (string) ($month_ranges[$last_month]['to'] ?? ($last_month . '-31'));
             $rows = (array) $this->project_costs->for_projects_in_date_range(
                 $project_ids,
-                $first_month . '-01',
-                $last_month . '-31'
+                $range_start,
+                $range_end
             );
         } else {
             foreach ($project_ids as $project_id) {

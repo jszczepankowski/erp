@@ -272,3 +272,6 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
   1. benchmark ścieżki raportowej 12M (przed/po dla kolejnych iteracji T1.2.2) — skrypt referencyjny: `php tests/reporting-benchmark-12m.php`,
   2. dalsze ograniczenie złożoności pętli/duplikacji logiki w `omd_rozliczenia` (jednolite lookupy i mniej warunków rozproszonych; kolejny kandydat: preagregacja miesięczna po stronie SQL dla direct costs i salary history),
   3. porównanie metryk po wdrożeniu (czas raportu 12M, liczba zapytań SQL, stabilność bez timeoutów).
+
+### Realizacja kroków (T1.2.2)
+- **Krok 1/3:** WYKONANY — benchmark 12M uruchamiany po każdej iteracji + doprecyzowanie zakresu dat dla batch direct costs do realnego końca miesiąca (bez stałego `-31`).
