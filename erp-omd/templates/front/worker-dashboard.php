@@ -638,100 +638,12 @@
                 });
             }
 
-            var setupWorkerTablePagination = function () {
-                document.querySelectorAll('table[data-table-enhanced="1"]').forEach(function (table) {
-                    var tbody = table.querySelector('tbody');
-                    if (!tbody) {
-                        return;
-                    }
-
-                    var allRows = Array.from(tbody.querySelectorAll('tr'));
-                    if (allRows.length === 0) {
-                        return;
-                    }
-
-                    var wrap = table.closest('.erp-omd-front-table-wrap');
-                    if (!wrap) {
-                        return;
-                    }
-
-                    var controls = document.createElement('div');
-                    controls.className = 'erp-omd-front-table-tools';
-                    controls.innerHTML =
-                        '<label class="erp-omd-front-table-size">' +
-                            '<span><?php echo esc_js(__('Widok:', 'erp-omd')); ?></span>' +
-                            '<select class="erp-omd-front-table-size-select">' +
-                                '<option value="25">25</option>' +
-                                '<option value="50">50</option>' +
-                                '<option value="100" selected>100</option>' +
-                                '<option value="200">200</option>' +
-                            '</select>' +
-                        '</label>' +
-                        '<div class="erp-omd-front-table-pagination">' +
-                            '<button type="button" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-table-prev">←</button>' +
-                            '<span class="erp-omd-front-table-page-meta">1/1</span>' +
-                            '<button type="button" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-table-next">→</button>' +
-                        '</div>' +
-                        '<span class="erp-omd-front-table-results"></span>';
-                    wrap.parentNode.insertBefore(controls, wrap);
-
-                    var pageSizeSelect = controls.querySelector('.erp-omd-front-table-size-select');
-                    var paginationMeta = controls.querySelector('.erp-omd-front-table-page-meta');
-                    var paginationPrev = controls.querySelector('.erp-omd-front-table-prev');
-                    var paginationNext = controls.querySelector('.erp-omd-front-table-next');
-                    var resultsNode = controls.querySelector('.erp-omd-front-table-results');
-                    var currentPage = 1;
-                    var pageSize = 100;
-
-                    var applyPagination = function () {
-                        var pagesCount = Math.max(1, Math.ceil(allRows.length / pageSize));
-                        currentPage = Math.max(1, Math.min(currentPage, pagesCount));
-                        var start = (currentPage - 1) * pageSize;
-                        var end = start + pageSize;
-
-                        allRows.forEach(function (row, index) {
-                            row.hidden = index < start || index >= end;
-                        });
-
-                        if (paginationMeta) {
-                            paginationMeta.textContent = currentPage + '/' + pagesCount;
-                        }
-                        if (paginationPrev) {
-                            paginationPrev.disabled = currentPage <= 1;
-                        }
-                        if (paginationNext) {
-                            paginationNext.disabled = currentPage >= pagesCount;
-                        }
-                        if (resultsNode) {
-                            resultsNode.textContent = '<?php echo esc_js(__('Wiersze:', 'erp-omd')); ?> ' + allRows.length;
-                        }
-                    };
-
-                    if (pageSizeSelect) {
-                        pageSizeSelect.addEventListener('change', function () {
-                            pageSize = Number(pageSizeSelect.value) || 100;
-                            currentPage = 1;
-                            applyPagination();
-                        });
-                    }
-                    if (paginationPrev) {
-                        paginationPrev.addEventListener('click', function () {
-                            currentPage -= 1;
-                            applyPagination();
-                        });
-                    }
-                    if (paginationNext) {
-                        paginationNext.addEventListener('click', function () {
-                            currentPage += 1;
-                            applyPagination();
-                        });
-                    }
-
-                    applyPagination();
+            if (window.erpOmdFrontWorker && typeof window.erpOmdFrontWorker.setupTablePagination === 'function') {
+                window.erpOmdFrontWorker.setupTablePagination({
+                    viewLabel: '<?php echo esc_js(__('Widok:', 'erp-omd')); ?>',
+                    rowsLabel: '<?php echo esc_js(__('Wiersze:', 'erp-omd')); ?>'
                 });
-            };
-
-            setupWorkerTablePagination();
+            }
 
             var hoursInput = document.getElementById('erp-omd-front-hours');
             var clientInput = document.getElementById('erp-omd-front-client');
