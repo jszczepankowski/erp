@@ -1582,60 +1582,13 @@
         setupManagerTimeEntryForm();
         setupApprovalQueueFilters();
 
-        var setupCollapsibleSections = function () {
-            var storagePrefix = 'erp_omd_front_manager_section_';
-            document.querySelectorAll('[data-collapsible-section]').forEach(function (panel) {
-                var sectionKey = panel.getAttribute('data-collapsible-section');
-                if (!sectionKey) {
-                    return;
-                }
-
-                var headerNode = panel.querySelector(':scope > .erp-omd-front-section-heading');
-                if (!headerNode) {
-                    var heading = panel.querySelector(':scope > h2, :scope > h3');
-                    if (!heading) {
-                        return;
-                    }
-                    headerNode = document.createElement('div');
-                    headerNode.className = 'erp-omd-front-collapsible-header';
-                    heading.parentNode.insertBefore(headerNode, heading);
-                    headerNode.appendChild(heading);
-                }
-
-                if (headerNode.querySelector('.erp-omd-front-collapse-toggle')) {
-                    return;
-                }
-
-                var contentNodes = Array.from(panel.children).filter(function (child) {
-                    return child !== headerNode;
-                });
-
-                var toggle = document.createElement('button');
-                toggle.type = 'button';
-                toggle.className = 'erp-omd-front-collapse-toggle';
-                headerNode.appendChild(toggle);
-
-                var storageKey = storagePrefix + sectionKey;
-                var isCollapsed = localStorage.getItem(storageKey) === '1';
-                var applyState = function () {
-                    contentNodes.forEach(function (node) {
-                        node.hidden = isCollapsed;
-                    });
-                    toggle.textContent = isCollapsed ? '<?php echo esc_js(__('Rozwiń', 'erp-omd')); ?>' : '<?php echo esc_js(__('Zwiń', 'erp-omd')); ?>';
-                    panel.classList.toggle('erp-omd-front-panel-collapsed', isCollapsed);
-                };
-
-                toggle.addEventListener('click', function () {
-                    isCollapsed = !isCollapsed;
-                    localStorage.setItem(storageKey, isCollapsed ? '1' : '0');
-                    applyState();
-                });
-
-                applyState();
+        if (window.erpOmdFrontShared && typeof window.erpOmdFrontShared.setupCollapsibleSections === 'function') {
+            window.erpOmdFrontShared.setupCollapsibleSections({
+                storagePrefix: 'erp_omd_front_manager_section_',
+                collapsedLabel: '<?php echo esc_js(__('Rozwiń', 'erp-omd')); ?>',
+                expandedLabel: '<?php echo esc_js(__('Zwiń', 'erp-omd')); ?>'
             });
-        };
-
-        setupCollapsibleSections();
+        }
 
         var itemsContainer = document.getElementById('erp-omd-front-estimate-items');
         var addButton = document.getElementById('erp-omd-front-add-item');
