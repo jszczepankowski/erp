@@ -267,7 +267,7 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
   - **T1.1.2:** ZREALIZOWANE (SQL pagination + count dla kluczowych list admin/front).
   - **T1.1.3:** ZREALIZOWANE (UI spięte z backend pagination + testy kontraktowe REST + testy repozytoriów paginacji).
   - **T1.2.1:** ZREALIZOWANE (cache raportów po filtrach + invalidacja przez bump wersji).
-  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem zamiast filtrowania per miesiąc + ujednolicenie logiki filtrowania wpisów w jednej metodzie + normalizacja wyboru historii wynagrodzeń per miesiąc przez jednoznaczny wybór rekordu o najnowszym `valid_from` + zbiorczy odczyt kosztów bezpośrednich dla zakresu 12M zamiast `for_project` per projekt).
+  - **T1.2.2:** W TRAKCIE (wdrożony prefetch/index kosztów stałych, historii wynagrodzeń, wpisów czasu i kosztów bezpośrednich dla trendu 12M + agregacja wpisów czasu jednym przebiegiem zamiast filtrowania per miesiąc + ujednolicenie logiki filtrowania wpisów w jednej metodzie + normalizacja wyboru historii wynagrodzeń per miesiąc przez jednoznaczny wybór rekordu o najnowszym `valid_from` + zbiorczy odczyt kosztów bezpośrednich dla zakresu 12M zamiast `for_project` per projekt + batchowy odczyt historii wynagrodzeń jednym zapytaniem `for_employees` zamiast pętli `for_employee`).
 - **Następny krok wykonawczy (najbliższe wdrożenie):**
   1. benchmark ścieżki raportowej 12M (przed/po dla kolejnych iteracji T1.2.2) — skrypt referencyjny: `php tests/reporting-benchmark-12m.php`,
   2. dalsze ograniczenie złożoności pętli/duplikacji logiki w `omd_rozliczenia` (jednolite lookupy i mniej warunków rozproszonych; kolejny kandydat: preagregacja miesięczna po stronie SQL dla direct costs i salary history),
@@ -291,7 +291,7 @@ Wynik z: `php tests/reporting-benchmark-12m.php`
 
 ### Kolejny etap roadmapy (po T1.2.2)
 - **T3.1 (backup tylko tabel ERP):** ROZPOCZĘTY — backup DB ograniczony do tabel z prefiksem `${wpdb->prefix}erp_omd_` (bez zrzutu pełnej bazy przez `SHOW TABLES` → wszystkie tabele).
-- **T2.2 (modularizacja admin JS):** ROZPOCZĘTY — wydzielenie inicjalizacji narzędzi tabel, kosztów stałych, autosave inline i interakcji UI do osobnych funkcji (`initTableTools`, `initFixedCosts`, `initInlineAutoSave`, `initAdminInteractions`) jako kolejny krok dekompozycji `admin.js`.
+- **T2.2 (modularizacja admin JS):** ZREALIZOWANY — `admin.js` podzielony na moduły (`admin-table-tools.js`, `admin-fixed-costs.js`, `admin-collapsible.js`, `admin-form-sync.js`) z centralnym entrypointem inicjalizującym.
 
 #### T3.1 — DoD / walidacja
 - backup zawiera wyłącznie tabele zaczynające się od `${wpdb->prefix}erp_omd_`,

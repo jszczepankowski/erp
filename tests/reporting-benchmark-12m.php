@@ -39,8 +39,21 @@ if (! class_exists('ERP_OMD_Employee_Repository')) {
 if (! class_exists('ERP_OMD_Salary_History_Repository')) {
     class ERP_OMD_Salary_History_Repository {
         public int $forEmployeeCalls = 0;
+        public int $forEmployeesCalls = 0;
         public function __construct(private array $rows) {}
         public function for_employee($employeeId) { $this->forEmployeeCalls++; return $this->rows[(int) $employeeId] ?? []; }
+        public function for_employees(array $employeeIds)
+        {
+            $this->forEmployeesCalls++;
+            $result = [];
+            foreach ($employeeIds as $employeeId) {
+                foreach (($this->rows[(int) $employeeId] ?? []) as $row) {
+                    $row['employee_id'] = (int) $employeeId;
+                    $result[] = $row;
+                }
+            }
+            return $result;
+        }
     }
 }
 if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
@@ -170,6 +183,7 @@ $result = [
     'rows' => count($rows),
     'elapsed_ms' => round($elapsedMs, 2),
     'salary_for_employee_calls' => $salaryRepo->forEmployeeCalls,
+    'salary_for_employees_calls' => $salaryRepo->forEmployeesCalls,
     'project_cost_for_project_calls' => $projectCostRepo->forProjectCalls,
     'project_cost_sum_by_project_and_month_calls' => $projectCostRepo->sumByProjectAndMonthInDateRangeCalls,
     'time_entries_all_calls' => $timeRepo->allCalls,
