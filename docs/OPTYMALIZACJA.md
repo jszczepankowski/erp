@@ -296,4 +296,5 @@ Wynik z: `php tests/reporting-benchmark-12m.php`
 #### T3.1 — DoD / walidacja
 - backup zawiera wyłącznie tabele zaczynające się od `${wpdb->prefix}erp_omd_`,
 - tabele spoza ERP (`posts`, `options`, `users`, itd.) nie są dołączane do dumpa,
-- test referencyjny: `php tests/cron-backup-table-filter-test.php`.
+- test referencyjny: `php tests/cron-backup-table-filter-test.php`,
+- odtwarzanie udokumentowane: `docs/ODTWARZANIE_BACKUPU_ERP.md`.
