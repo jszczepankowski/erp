@@ -170,6 +170,6 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
   4. na końcu `P4/P5`.
 
 ## 9) Podsumowanie kroku (dla kolejnych chatów)
-- **Bieżący krok:** `WB-P5-HF-10` (stabilizacja/hotfix) — podgląd `dashboard-v1` pokazuje źródło danych (LIVE/CACHE/BRAK DANYCH) dla szybszej diagnostyki operacyjnej.
+- **Bieżący krok:** `WB-P5-HF-11` (stabilizacja/hotfix) — źródło danych w podglądzie `dashboard-v1` ma dodatkowo kolorystyczny stan UI (live/cache/brak danych).
 - **Szacowana liczba kroków do domknięcia (orientacyjnie): ~0**
   1. Etap stabilizacji Wariantu B v1 uznajemy za domknięty; kolejne kroki to utrzymanie/iteracyjne usprawnienia.
