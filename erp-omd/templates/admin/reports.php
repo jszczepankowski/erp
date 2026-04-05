@@ -132,7 +132,10 @@
                 <button type="button" class="button" data-dashboard-v1-clear-cache="1"><?php esc_html_e('Wyczyść cache', 'erp-omd'); ?></button>
             </div>
             <div class="erp-omd-dashboard-v1-preview-status" data-dashboard-v1-status="1" role="status" aria-live="polite"><?php esc_html_e('Ładowanie podglądu dashboard-v1…', 'erp-omd'); ?></div>
-            <p class="description" data-dashboard-v1-updated-at="1"></p>
+            <p class="description">
+                <span data-dashboard-v1-updated-at="1"></span>
+                <span class="erp-omd-dashboard-v1-source-badge" data-dashboard-v1-source="1"><?php esc_html_e('LIVE', 'erp-omd'); ?></span>
+            </p>
             <div class="erp-omd-dashboard-v1-preview-grid" data-dashboard-v1-grid="1" hidden>
                 <div class="erp-omd-dashboard-v1-preview-card">
                     <h3><?php esc_html_e('Status miesiąca', 'erp-omd'); ?></h3>
