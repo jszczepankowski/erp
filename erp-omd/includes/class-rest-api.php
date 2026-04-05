@@ -148,9 +148,18 @@ class ERP_OMD_REST_API
         ]);
         register_rest_route('erp-omd/v1', '/adjustments', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
+                $limit = (int) $request->get_param('limit');
+                if ($limit > 0) {
+                    $limit = max(1, min(200, $limit));
+                }
                 $filters = [
                     'month' => sanitize_text_field((string) $request->get_param('month')),
                     'entity_type' => sanitize_text_field((string) $request->get_param('entity_type')),
+                    'entity_id' => (int) $request->get_param('entity_id'),
+                    'adjustment_type' => sanitize_text_field((string) $request->get_param('adjustment_type')),
+                    'changed_by' => (int) $request->get_param('changed_by'),
+                    'reason' => sanitize_text_field((string) $request->get_param('reason')),
+                    'limit' => $limit,
                 ];
 
                 return rest_ensure_response($this->adjustment_audit->all(array_filter($filters)));
