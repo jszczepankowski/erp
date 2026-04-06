@@ -397,6 +397,263 @@ const initInlineAutoSave = () => {
   });
 };
 
+const initDashboardV1Preview = () => {
+  const previewNode = document.querySelector('[data-dashboard-v1-preview="1"]');
+  if (!(previewNode instanceof HTMLElement)) {
+    return;
+  }
+
+  const statusNode = previewNode.querySelector('[data-dashboard-v1-status="1"]');
+  const gridNode = previewNode.querySelector('[data-dashboard-v1-grid="1"]');
+  const monthNode = previewNode.querySelector('[data-dashboard-v1-month="1"]');
+  const modeNode = previewNode.querySelector('[data-dashboard-v1-mode="1"]');
+  const scopeNode = previewNode.querySelector('[data-dashboard-v1-scope="1"]');
+  const refreshNode = previewNode.querySelector('[data-dashboard-v1-refresh="1"]');
+  const clearCacheNode = previewNode.querySelector(
+    '[data-dashboard-v1-clear-cache="1"]'
+  );
+  const monthStatusNode = previewNode.querySelector(
+    '[data-dashboard-v1-month-status="1"]'
+  );
+  const actionsNode = previewNode.querySelector('[data-dashboard-v1-actions="1"]');
+  const checklistNode = previewNode.querySelector(
+    '[data-dashboard-v1-checklist="1"]'
+  );
+  const adjustmentsNode = previewNode.querySelector(
+    '[data-dashboard-v1-adjustments="1"]'
+  );
+  const updatedAtNode = previewNode.querySelector(
+    '[data-dashboard-v1-updated-at="1"]'
+  );
+  const sourceNode = previewNode.querySelector('[data-dashboard-v1-source="1"]');
+  const countersNode = previewNode.querySelector('[data-dashboard-v1-counters="1"]');
+
+  if (
+    !(statusNode instanceof HTMLElement) ||
+    !(gridNode instanceof HTMLElement) ||
+    !(monthNode instanceof HTMLInputElement) ||
+    !(modeNode instanceof HTMLSelectElement) ||
+    !(scopeNode instanceof HTMLSelectElement) ||
+    !(refreshNode instanceof HTMLButtonElement) ||
+    !(clearCacheNode instanceof HTMLButtonElement) ||
+    !(monthStatusNode instanceof HTMLElement) ||
+    !(actionsNode instanceof HTMLElement) ||
+    !(checklistNode instanceof HTMLElement) ||
+    !(adjustmentsNode instanceof HTMLElement) ||
+    !(updatedAtNode instanceof HTMLElement) ||
+    !(sourceNode instanceof HTMLElement) ||
+    !(countersNode instanceof HTMLElement)
+  ) {
+    return;
+  }
+
+  if (
+    typeof erpOmdAdminData === 'undefined' ||
+    !erpOmdAdminData ||
+    !erpOmdAdminData.restUrl
+  ) {
+    statusNode.textContent = 'Nie udało się załadować dashboard-v1 (brak konfiguracji REST).';
+    return;
+  }
+
+  const fallbackMonth = String(previewNode.dataset.month || '').trim();
+  const headers = {};
+  if (erpOmdAdminData.restNonce) {
+    headers['X-WP-Nonce'] = String(erpOmdAdminData.restNonce);
+  }
+
+  const renderEmptyList = (listNode, message) => {
+    listNode.innerHTML = '';
+    const item = document.createElement('li');
+    item.textContent = message;
+    listNode.appendChild(item);
+  };
+  const setSourceState = (label, state) => {
+    sourceNode.textContent = label;
+    sourceNode.classList.remove(
+      'erp-omd-dashboard-v1-source-badge-live',
+      'erp-omd-dashboard-v1-source-badge-cache',
+      'erp-omd-dashboard-v1-source-badge-empty'
+    );
+    sourceNode.classList.add(`erp-omd-dashboard-v1-source-badge-${state}`);
+  };
+
+  let activeController = null;
+  let activeRequestId = 0;
+
+  const fetchPreview = () => {
+    if (activeController instanceof AbortController) {
+      activeController.abort();
+    }
+    activeController = new AbortController();
+    activeRequestId += 1;
+    const requestId = activeRequestId;
+    const cacheKey = `erp_omd_dashboard_v1_preview_${monthNode.value || fallbackMonth}_${modeNode.value}_${scopeNode.value}`;
+
+    const endpoint = `${String(erpOmdAdminData.restUrl).replace(
+      /\/$/,
+      ''
+    )}/dashboard-v1?month=${encodeURIComponent(
+      monthNode.value || fallbackMonth
+    )}&mode=${encodeURIComponent(
+      modeNode.value
+    )}&profitability_scope=${encodeURIComponent(scopeNode.value)}`;
+
+    statusNode.hidden = false;
+    statusNode.textContent = 'Ładowanie podglądu dashboard-v1…';
+    gridNode.hidden = true;
+    refreshNode.disabled = true;
+
+    const timeoutHandle = window.setTimeout(() => {
+      if (activeController instanceof AbortController) {
+        activeController.abort();
+      }
+    }, 12000);
+
+    fetch(endpoint, { headers, signal: activeController.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((payload) => {
+      if (requestId !== activeRequestId) {
+        return;
+      }
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(payload));
+      } catch (_) {
+        // ignore storage quota / privacy mode issues
+      }
+      statusNode.hidden = true;
+      gridNode.hidden = false;
+
+      monthStatusNode.textContent = `${payload?.period_status || '—'} (${payload?.month || monthNode.value || fallbackMonth})`;
+      updatedAtNode.textContent = `Ostatnia aktualizacja: ${payload?.generated_at || '—'}`;
+      setSourceState('LIVE', 'live');
+      const hasOperationalData = Boolean(payload?.data_health?.has_operational_data);
+      if (!hasOperationalData) {
+        const counters = payload?.data_health?.counters || {};
+        const countersLabel = `trend=${counters.trend_rows || 0}, projekty=${counters.project_rows || 0}, klienci=${counters.client_rows || 0}, kolejka=${counters.queue_rows || 0}, korekty=${counters.adjustment_rows || 0}, relewantne_projekty=${counters.relevant_projects || 0}`;
+        statusNode.hidden = false;
+        statusNode.textContent =
+          payload?.data_health?.hint || 'Brak danych operacyjnych dla wybranego miesiąca.';
+        countersNode.textContent = countersLabel;
+      } else {
+        statusNode.hidden = true;
+        countersNode.textContent = '';
+      }
+      actionsNode.innerHTML = '';
+      const statusActions = Array.isArray(payload?.status_actions)
+        ? payload.status_actions
+        : [];
+      if (statusActions.length === 0) {
+        renderEmptyList(actionsNode, 'Brak dostępnych akcji statusu.');
+      } else {
+        statusActions.forEach((action) => {
+          const item = document.createElement('li');
+          const label = action?.label || action?.to_status || '—';
+          const state = action?.enabled ? 'aktywna' : 'zablokowana';
+          item.textContent = `${label} (${state})`;
+          actionsNode.appendChild(item);
+        });
+      }
+
+      checklistNode.innerHTML = '';
+      const checks = payload?.readiness_checklist?.checks || {};
+      const checkEntries = Object.entries(checks);
+      if (checkEntries.length === 0) {
+        renderEmptyList(checklistNode, 'Brak danych checklisty.');
+      } else {
+        checkEntries.forEach(([key, passed]) => {
+          const item = document.createElement('li');
+          item.textContent = `${passed ? '✅' : '⛔'} ${key}`;
+          checklistNode.appendChild(item);
+        });
+      }
+
+      adjustmentsNode.innerHTML = '';
+      const adjustmentItems = Array.isArray(payload?.adjustments?.items)
+        ? payload.adjustments.items
+        : [];
+      if (adjustmentItems.length === 0) {
+        renderEmptyList(adjustmentsNode, 'Brak korekt dla wybranego miesiąca.');
+      } else {
+        adjustmentItems.slice(0, 5).forEach((row) => {
+          const item = document.createElement('li');
+          const entity = row?.entity_type || '—';
+          const reason = row?.reason || '—';
+          item.textContent = `${entity}: ${reason}`;
+          adjustmentsNode.appendChild(item);
+        });
+      }
+      })
+      .catch((error) => {
+        if (requestId !== activeRequestId || error?.name === 'AbortError') {
+          return;
+        }
+        let restored = false;
+        try {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            const payload = JSON.parse(cached);
+            monthStatusNode.textContent = `${payload?.period_status || '—'} (${payload?.month || monthNode.value || fallbackMonth})`;
+            updatedAtNode.textContent = `Tryb offline (cache): ${payload?.generated_at || '—'}`;
+            setSourceState('CACHE', 'cache');
+            const counters = payload?.data_health?.counters || {};
+            countersNode.textContent = `trend=${counters.trend_rows || 0}, projekty=${counters.project_rows || 0}, klienci=${counters.client_rows || 0}, kolejka=${counters.queue_rows || 0}, korekty=${counters.adjustment_rows || 0}, relewantne_projekty=${counters.relevant_projects || 0}`;
+            restored = true;
+          }
+        } catch (_) {
+          restored = false;
+        }
+        if (restored) {
+          statusNode.hidden = false;
+          statusNode.textContent =
+            'Nie udało się odświeżyć danych live — pokazuję ostatni zapisany snapshot.';
+          gridNode.hidden = false;
+          return;
+        }
+        statusNode.hidden = false;
+        statusNode.textContent =
+          'Nie udało się pobrać podglądu dashboard-v1. Sprawdź uprawnienia i konfigurację REST API.';
+        setSourceState('BRAK DANYCH', 'empty');
+        gridNode.hidden = true;
+      })
+      .finally(() => {
+        window.clearTimeout(timeoutHandle);
+        if (requestId !== activeRequestId) {
+          return;
+        }
+        refreshNode.disabled = false;
+      });
+  };
+
+  refreshNode.addEventListener('click', fetchPreview);
+  monthNode.addEventListener('change', fetchPreview);
+  modeNode.addEventListener('change', fetchPreview);
+  scopeNode.addEventListener('change', fetchPreview);
+  clearCacheNode.addEventListener('click', () => {
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.indexOf('erp_omd_dashboard_v1_preview_') === 0) {
+          localStorage.removeItem(key);
+        }
+      });
+      statusNode.hidden = false;
+      statusNode.textContent = 'Wyczyszczono lokalny cache snapshotów dashboard-v1.';
+      updatedAtNode.textContent = '';
+      setSourceState('LIVE', 'live');
+      countersNode.textContent = '';
+    } catch (_) {
+      statusNode.hidden = false;
+      statusNode.textContent = 'Nie udało się wyczyścić lokalnego cache.';
+    }
+  });
+  fetchPreview();
+};
+
 const initAdminInteractions = (currentPage) => {
 
   document.querySelectorAll('.erp-omd-quick-hours-button').forEach((button) => {
@@ -649,5 +906,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initTableTools();
   initFixedCosts();
   initInlineAutoSave();
+  initDashboardV1Preview();
   initAdminInteractions(currentPage);
 });
