@@ -751,6 +751,7 @@ final class RestApiTestRunner
         $this->assertSame('2026-03-20 12:00:00', $dashboardPayload['generated_at'], 'Dashboard endpoint should expose deterministic generation timestamp.');
         $this->assertSame(true, isset($dashboardPayload['data_health']['has_operational_data']), 'Dashboard endpoint should expose operational data health flag.');
         $this->assertSame(true, isset($dashboardPayload['data_health']['hint']), 'Dashboard endpoint should expose explanatory data health hint.');
+        $this->assertSame(true, isset($dashboardPayload['data_health']['counters']['trend_rows']), 'Dashboard endpoint should expose data health counters.');
         $this->assertSame(1, $dashboardPayload['applied_limits']['adjustments_items'], 'Dashboard endpoint should expose applied adjustments item limit.');
         $this->assertSame(1, $dashboardPayload['applied_limits']['queue_items'], 'Dashboard endpoint should expose applied queue item limit.');
         $this->assertSame(1, $dashboardPayload['applied_limits']['profitability_items'], 'Dashboard endpoint should expose applied profitability item limit.');

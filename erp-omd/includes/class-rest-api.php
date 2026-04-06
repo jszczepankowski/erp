@@ -266,6 +266,14 @@ class ERP_OMD_REST_API
                     }
                 }
                 $adjustment_items = $this->enrich_adjustment_rows($adjustments, $month, $adjustments_limit);
+                $data_counters = [
+                    'trend_rows' => count($trend_3m),
+                    'project_rows' => count((array) $project_rows),
+                    'client_rows' => count((array) $client_rows),
+                    'queue_rows' => $queue_rows_total,
+                    'adjustment_rows' => count((array) $adjustments),
+                    'relevant_projects' => (int) ($readiness_meta['relevant_projects'] ?? 0),
+                ];
                 $has_dashboard_data = ! empty($trend_3m)
                     || ! empty($project_rows)
                     || ! empty($client_rows)
@@ -288,6 +296,7 @@ class ERP_OMD_REST_API
                     'readiness_meta' => $readiness_meta,
                     'data_health' => [
                         'has_operational_data' => (bool) $has_dashboard_data,
+                        'counters' => $data_counters,
                         'hint' => $has_dashboard_data
                             ? __('Dashboard data loaded from current reporting sources.', 'erp-omd')
                             : __('No operational data found for this month. Add time entries/project costs or switch month/mode.', 'erp-omd'),
