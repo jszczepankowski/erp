@@ -170,6 +170,6 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
   4. na końcu `P4/P5`.
 
 ## 9) Podsumowanie kroku (dla kolejnych chatów)
-- **Bieżący krok:** `WB-P5-HF-14` (stabilizacja/hotfix) — `dashboard-v1` metric definitions rozszerzone o `data_health.*`, żeby frontend mógł pokazywać spójne tooltipy/legendę dla nowych pól diagnostycznych.
+- **Bieżący krok:** `WB-P5-HF-15` (stabilizacja/hotfix) — UI podglądu `dashboard-v1` pokazuje liczniki `data_health.counters` w osobnej linii diagnostycznej zamiast doklejania ich do komunikatu statusu.
 - **Szacowana liczba kroków do domknięcia (orientacyjnie): ~0**
   1. Etap stabilizacji Wariantu B v1 uznajemy za domknięty; kolejne kroki to utrzymanie/iteracyjne usprawnienia.

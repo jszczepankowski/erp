@@ -136,6 +136,7 @@
                 <span data-dashboard-v1-updated-at="1"></span>
                 <span class="erp-omd-dashboard-v1-source-badge erp-omd-dashboard-v1-source-badge-live" data-dashboard-v1-source="1"><?php esc_html_e('LIVE', 'erp-omd'); ?></span>
             </p>
+            <p class="description erp-omd-dashboard-v1-counters" data-dashboard-v1-counters="1"></p>
             <div class="erp-omd-dashboard-v1-preview-grid" data-dashboard-v1-grid="1" hidden>
                 <div class="erp-omd-dashboard-v1-preview-card">
                     <h3><?php esc_html_e('Status miesiąca', 'erp-omd'); ?></h3>

@@ -1636,3 +1636,9 @@
     background: #fee2e2;
     color: #991b1b;
 }
+
+.erp-omd-admin .erp-omd-dashboard-v1-counters {
+    margin-top: -4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 11px;
+}
