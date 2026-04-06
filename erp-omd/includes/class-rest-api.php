@@ -148,9 +148,18 @@ class ERP_OMD_REST_API
         ]);
         register_rest_route('erp-omd/v1', '/adjustments', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
+                $limit = (int) $request->get_param('limit');
+                if ($limit > 0) {
+                    $limit = max(1, min(200, $limit));
+                }
                 $filters = [
                     'month' => sanitize_text_field((string) $request->get_param('month')),
                     'entity_type' => sanitize_text_field((string) $request->get_param('entity_type')),
+                    'entity_id' => (int) $request->get_param('entity_id'),
+                    'adjustment_type' => sanitize_text_field((string) $request->get_param('adjustment_type')),
+                    'changed_by' => (int) $request->get_param('changed_by'),
+                    'reason' => sanitize_text_field((string) $request->get_param('reason')),
+                    'limit' => $limit,
                 ];
 
                 return rest_ensure_response($this->adjustment_audit->all(array_filter($filters)));
@@ -236,6 +245,7 @@ class ERP_OMD_REST_API
                 $queue_rows_total = count($queue_rows);
                 $queue_rows = $this->enrich_queue_rows($queue_rows, $month, $queue_limit);
                 $adjustments = $this->adjustment_audit->all(['month' => $month]);
+                $readiness_meta = (array) ($readiness_signals['_meta'] ?? []);
 
                 $source_rows = $scope === 'client' ? $client_rows : $project_rows;
                 $ranked_scope = $this->rank_profitability_rows($source_rows, $profitability_limit);
@@ -256,6 +266,12 @@ class ERP_OMD_REST_API
                     }
                 }
                 $adjustment_items = $this->enrich_adjustment_rows($adjustments, $month, $adjustments_limit);
+                $has_dashboard_data = ! empty($trend_3m)
+                    || ! empty($project_rows)
+                    || ! empty($client_rows)
+                    || $queue_rows_total > 0
+                    || count($adjustments) > 0
+                    || (int) ($readiness_meta['relevant_projects'] ?? 0) > 0;
 
                 return rest_ensure_response([
                     'api_version' => 'v1',
@@ -269,7 +285,13 @@ class ERP_OMD_REST_API
                     'mode' => $mode,
                     'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,
-                    'readiness_meta' => (array) ($readiness_signals['_meta'] ?? []),
+                    'readiness_meta' => $readiness_meta,
+                    'data_health' => [
+                        'has_operational_data' => (bool) $has_dashboard_data,
+                        'hint' => $has_dashboard_data
+                            ? __('Dashboard data loaded from current reporting sources.', 'erp-omd')
+                            : __('No operational data found for this month. Add time entries/project costs or switch month/mode.', 'erp-omd'),
+                    ],
                     'status_actions' => $this->dashboard_status_actions($period, $readiness_checklist),
                     'metric_definitions' => $this->dashboard_metric_definitions(),
                     'drilldown_links' => $this->dashboard_drilldown_links($month),

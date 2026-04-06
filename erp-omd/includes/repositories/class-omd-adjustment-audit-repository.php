@@ -58,8 +58,30 @@ class ERP_OMD_Adjustment_Audit_Repository
             $where[] = 'entity_type = %s';
             $params[] = (string) $filters['entity_type'];
         }
+        if (! empty($filters['entity_id'])) {
+            $where[] = 'entity_id = %d';
+            $params[] = (int) $filters['entity_id'];
+        }
+        if (! empty($filters['adjustment_type'])) {
+            $where[] = 'adjustment_type = %s';
+            $params[] = (string) $filters['adjustment_type'];
+        }
+        if (! empty($filters['changed_by'])) {
+            $where[] = 'changed_by = %d';
+            $params[] = (int) $filters['changed_by'];
+        }
+        if (! empty($filters['reason'])) {
+            $where[] = 'reason LIKE %s';
+            $params[] = '%' . $wpdb->esc_like((string) $filters['reason']) . '%';
+        }
 
-        $sql = "SELECT * FROM {$this->table_name()} WHERE " . implode(' AND ', $where) . ' ORDER BY changed_at DESC, id DESC';
+        $limit_clause = '';
+        if (! empty($filters['limit'])) {
+            $limit = max(1, min(200, (int) $filters['limit']));
+            $limit_clause = ' LIMIT ' . $limit;
+        }
+
+        $sql = "SELECT * FROM {$this->table_name()} WHERE " . implode(' AND ', $where) . ' ORDER BY changed_at DESC, id DESC' . $limit_clause;
         if ($params === []) {
             return $wpdb->get_results($sql, ARRAY_A);
         }
