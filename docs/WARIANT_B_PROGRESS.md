@@ -170,6 +170,6 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
   4. na końcu `P4/P5`.
 
 ## 9) Podsumowanie kroku (dla kolejnych chatów)
-- **Bieżący krok:** `WB-P5-HF-16` (stabilizacja/hotfix) — linia diagnostyczna `data_health.counters` w UI uwzględnia też `relevant_projects`, co ułatwia rozróżnienie „brak aktywności” vs „brak relewantnych projektów”.
+- **Bieżący krok:** `WB-P5-HF-18` (stabilizacja/hotfix) — naprawa kompatybilności podglądu `dashboard-v1` dla środowisk bez `AbortController` (fallback bez abort signal), aby nie zawieszał się na „Ładowanie…”.
 - **Szacowana liczba kroków do domknięcia (orientacyjnie): ~0**
   1. Etap stabilizacji Wariantu B v1 uznajemy za domknięty; kolejne kroki to utrzymanie/iteracyjne usprawnienia.
