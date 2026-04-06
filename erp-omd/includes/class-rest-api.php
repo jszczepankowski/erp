@@ -337,6 +337,9 @@ class ERP_OMD_REST_API
             'adjustments.impact' => __('Sum of (new-old) amount/hours deltas from adjustment audit rows.', 'erp-omd'),
             'adjustments.items' => __('Recent adjustment audit rows limited by adjustments_limit.', 'erp-omd'),
             'readiness_checklist.ready' => __('Boolean period-close readiness based on checklist validators.', 'erp-omd'),
+            'data_health.has_operational_data' => __('Flag indicating whether selected month has any operational dashboard data.', 'erp-omd'),
+            'data_health.counters' => __('Per-source counters used for empty-state diagnostics (trend, projects, clients, queue, adjustments, relevant_projects).', 'erp-omd'),
+            'data_health.hint' => __('Operator-facing hint explaining current data availability for selected month/mode.', 'erp-omd'),
             'applied_limits' => __('Server-applied list limits after defaulting and max clamping.', 'erp-omd'),
         ];
     }
