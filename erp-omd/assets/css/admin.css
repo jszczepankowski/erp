@@ -1642,3 +1642,8 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 11px;
 }
+
+.erp-omd-admin .erp-omd-dashboard-v1-debug {
+    margin-top: -8px;
+    color: #9a3412;
+}
