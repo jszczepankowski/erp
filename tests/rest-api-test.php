@@ -749,6 +749,8 @@ final class RestApiTestRunner
         $dashboardPayload = $dashboardCallback(new WP_REST_Request(['month' => '2026-03', 'mode' => 'ZAMKNIETY', 'profitability_scope' => 'project', 'adjustments_limit' => 1, 'queue_limit' => 1, 'profitability_limit' => 1]));
         $this->assertSame('v1', $dashboardPayload['api_version'], 'Dashboard endpoint should expose explicit contract version.');
         $this->assertSame('2026-03-20 12:00:00', $dashboardPayload['generated_at'], 'Dashboard endpoint should expose deterministic generation timestamp.');
+        $this->assertSame(true, isset($dashboardPayload['data_health']['has_operational_data']), 'Dashboard endpoint should expose operational data health flag.');
+        $this->assertSame(true, isset($dashboardPayload['data_health']['hint']), 'Dashboard endpoint should expose explanatory data health hint.');
         $this->assertSame(1, $dashboardPayload['applied_limits']['adjustments_items'], 'Dashboard endpoint should expose applied adjustments item limit.');
         $this->assertSame(1, $dashboardPayload['applied_limits']['queue_items'], 'Dashboard endpoint should expose applied queue item limit.');
         $this->assertSame(1, $dashboardPayload['applied_limits']['profitability_items'], 'Dashboard endpoint should expose applied profitability item limit.');
