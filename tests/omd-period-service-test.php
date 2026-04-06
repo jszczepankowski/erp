@@ -79,6 +79,26 @@ final class OMDPeriodServiceTestRunner
 
         $this->assertFalse($checklist['ready'], 'Checklist should be not ready when at least one validator fails.');
         $this->assertSame(['project_client_completeness'], $checklist['blockers'], 'Checklist should expose failed validator keys.');
+        $this->assertSame([], $checklist['meta'], 'Checklist should expose empty meta payload when not provided.');
+
+        $checklistWithBlockingMeta = $service->build_readiness_checklist([
+            'time_entries_finalized' => true,
+            'project_costs_verified' => true,
+            'project_client_completeness' => true,
+            'critical_settlement_locks' => true,
+            '_meta' => [
+                'submitted_or_rejected_entries' => 2,
+                'invalid_cost_rows' => 1,
+                'incomplete_relevant_projects' => 1,
+                'critical_alerts' => 1,
+            ],
+        ]);
+        $this->assertFalse($checklistWithBlockingMeta['ready'], 'Checklist should not be ready when meta indicates unresolved blockers.');
+        $this->assertSame(
+            ['time_entries_finalized', 'project_costs_verified', 'project_client_completeness', 'critical_settlement_locks'],
+            $checklistWithBlockingMeta['blockers'],
+            'Checklist should force blockers when corresponding meta counts are above zero.'
+        );
 
         $this->assertTrue(
             $service->can_transition(ERP_OMD_Period_Service::STATUS_LIVE, ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA),
