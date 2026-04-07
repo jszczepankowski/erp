@@ -1869,6 +1869,174 @@ class ERP_OMD_Admin
         exit;
     }
 
+    private function handle_adjustments_audit_export_csv()
+    {
+        check_admin_referer('erp_omd_export_adjustments_audit');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $month = sanitize_text_field((string) ($_POST['adjustment_month'] ?? ''));
+        if ($month !== '' && ! $this->is_valid_month_string($month)) {
+            $month = '';
+        }
+        $entity_type = sanitize_text_field((string) ($_POST['adjustment_entity_type'] ?? ''));
+        $adjustment_type = sanitize_text_field((string) ($_POST['adjustment_type'] ?? ''));
+        $changed_by = max(0, (int) ($_POST['adjustment_changed_by'] ?? 0));
+        $reason = sanitize_text_field((string) ($_POST['adjustment_reason'] ?? ''));
+        $limit = max(1, min(500, (int) ($_POST['adjustment_limit'] ?? 200)));
+
+        $filters = [
+            'month' => $month,
+            'entity_type' => $entity_type,
+            'adjustment_type' => $adjustment_type,
+            'changed_by' => $changed_by,
+            'reason' => $reason,
+            'limit' => $limit,
+        ];
+        $rows = (array) $this->adjustment_audit->all(array_filter($filters));
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . sanitize_file_name(sprintf('erp-omd-adjustment-audit-%s.csv', gmdate('Ymd-His'))) . '"');
+
+        $output = fopen('php://output', 'w');
+        if (! $output) {
+            wp_die(esc_html__('Nie udało się przygotować pliku audytu korekt.', 'erp-omd'));
+        }
+
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, ['id', 'month', 'entity_type', 'entity_id', 'field_name', 'old_value', 'new_value', 'adjustment_type', 'reason', 'changed_by', 'changed_at'], ';');
+        foreach ($rows as $row) {
+            fputcsv($output, [
+                (int) ($row['id'] ?? 0),
+                (string) ($row['month'] ?? ''),
+                (string) ($row['entity_type'] ?? ''),
+                (int) ($row['entity_id'] ?? 0),
+                (string) ($row['field_name'] ?? ''),
+                (string) ($row['old_value'] ?? ''),
+                (string) ($row['new_value'] ?? ''),
+                (string) ($row['adjustment_type'] ?? ''),
+                (string) ($row['reason'] ?? ''),
+                (int) ($row['changed_by'] ?? 0),
+                (string) ($row['changed_at'] ?? ''),
+            ], ';');
+        }
+
+        fclose($output);
+        exit;
+    }
+
+    private function handle_adjustments_audit_export()
+    {
+        check_admin_referer('erp_omd_export_adjustments_audit');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $month = sanitize_text_field((string) ($_POST['adjustment_month'] ?? ''));
+        if ($month !== '' && ! $this->is_valid_month_string($month)) {
+            $month = '';
+        }
+        $entity_type = sanitize_text_field((string) ($_POST['adjustment_entity_type'] ?? ''));
+        $adjustment_type = sanitize_text_field((string) ($_POST['adjustment_type'] ?? ''));
+        $changed_by = max(0, (int) ($_POST['adjustment_changed_by'] ?? 0));
+        $reason = sanitize_text_field((string) ($_POST['adjustment_reason'] ?? ''));
+        $limit = max(1, min(500, (int) ($_POST['adjustment_limit'] ?? 200)));
+
+        $filters = [
+            'month' => $month,
+            'entity_type' => $entity_type,
+            'adjustment_type' => $adjustment_type,
+            'changed_by' => $changed_by,
+            'reason' => $reason,
+            'limit' => $limit,
+        ];
+        $rows = (array) $this->adjustment_audit->all(array_filter($filters));
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . sanitize_file_name(sprintf('erp-omd-adjustment-audit-%s.csv', gmdate('Ymd-His'))) . '"');
+
+        $output = fopen('php://output', 'w');
+        if (! $output) {
+            wp_die(esc_html__('Nie udało się przygotować pliku audytu korekt.', 'erp-omd'));
+        }
+
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, ['id', 'month', 'entity_type', 'entity_id', 'field_name', 'old_value', 'new_value', 'adjustment_type', 'reason', 'changed_by', 'changed_at'], ';');
+        foreach ($rows as $row) {
+            fputcsv($output, [
+                (int) ($row['id'] ?? 0),
+                (string) ($row['month'] ?? ''),
+                (string) ($row['entity_type'] ?? ''),
+                (int) ($row['entity_id'] ?? 0),
+                (string) ($row['field_name'] ?? ''),
+                (string) ($row['old_value'] ?? ''),
+                (string) ($row['new_value'] ?? ''),
+                (string) ($row['adjustment_type'] ?? ''),
+                (string) ($row['reason'] ?? ''),
+                (int) ($row['changed_by'] ?? 0),
+                (string) ($row['changed_at'] ?? ''),
+            ], ';');
+        }
+
+        fclose($output);
+        exit;
+    }
+
+    private function handle_adjustments_audit_export()
+    {
+        check_admin_referer('erp_omd_export_adjustments_audit');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $month = sanitize_text_field((string) ($_POST['adjustment_month'] ?? ''));
+        if ($month !== '' && ! $this->is_valid_month_string($month)) {
+            $month = '';
+        }
+        $entity_type = sanitize_text_field((string) ($_POST['adjustment_entity_type'] ?? ''));
+        $adjustment_type = sanitize_text_field((string) ($_POST['adjustment_type'] ?? ''));
+        $changed_by = max(0, (int) ($_POST['adjustment_changed_by'] ?? 0));
+        $reason = sanitize_text_field((string) ($_POST['adjustment_reason'] ?? ''));
+        $limit = max(1, min(500, (int) ($_POST['adjustment_limit'] ?? 200)));
+
+        $filters = [
+            'month' => $month,
+            'entity_type' => $entity_type,
+            'adjustment_type' => $adjustment_type,
+            'changed_by' => $changed_by,
+            'reason' => $reason,
+            'limit' => $limit,
+        ];
+        $rows = (array) $this->adjustment_audit->all(array_filter($filters));
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . sanitize_file_name(sprintf('erp-omd-adjustment-audit-%s.csv', gmdate('Ymd-His'))) . '"');
+
+        $output = fopen('php://output', 'w');
+        if (! $output) {
+            wp_die(esc_html__('Nie udało się przygotować pliku audytu korekt.', 'erp-omd'));
+        }
+
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, ['id', 'month', 'entity_type', 'entity_id', 'field_name', 'old_value', 'new_value', 'adjustment_type', 'reason', 'changed_by', 'changed_at'], ';');
+        foreach ($rows as $row) {
+            fputcsv($output, [
+                (int) ($row['id'] ?? 0),
+                (string) ($row['month'] ?? ''),
+                (string) ($row['entity_type'] ?? ''),
+                (int) ($row['entity_id'] ?? 0),
+                (string) ($row['field_name'] ?? ''),
+                (string) ($row['old_value'] ?? ''),
+                (string) ($row['new_value'] ?? ''),
+                (string) ($row['adjustment_type'] ?? ''),
+                (string) ($row['reason'] ?? ''),
+                (int) ($row['changed_by'] ?? 0),
+                (string) ($row['changed_at'] ?? ''),
+            ], ';');
+        }
+
+        fclose($output);
+        exit;
+    }
+
     private function handle_project_save()
     {
         check_admin_referer('erp_omd_save_project');
