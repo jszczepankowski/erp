@@ -273,13 +273,15 @@
                             <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
                             <th><?php esc_html_e('Encja', 'erp-omd'); ?></th>
                             <th><?php esc_html_e('Pole', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Przed', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Po', 'erp-omd'); ?></th>
                             <th><?php esc_html_e('Powód', 'erp-omd'); ?></th>
                             <th><?php esc_html_e('Kto', 'erp-omd'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php if (empty($adjustment_rows)) : ?>
-                        <tr><td colspan="7"><?php esc_html_e('Brak rekordów audytu dla wybranych filtrów.', 'erp-omd'); ?></td></tr>
+                        <tr><td colspan="9"><?php esc_html_e('Brak rekordów audytu dla wybranych filtrów.', 'erp-omd'); ?></td></tr>
                     <?php else : ?>
                         <?php foreach ($adjustment_rows as $adjustment_row) : ?>
                             <tr>
@@ -288,6 +290,8 @@
                                 <td><?php echo esc_html((string) ($adjustment_row['adjustment_type'] ?? '')); ?></td>
                                 <td><?php echo esc_html(sprintf('%s #%d', (string) ($adjustment_row['entity_type'] ?? ''), (int) ($adjustment_row['entity_id'] ?? 0))); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['field_name'] ?? '')); ?></td>
+                                <td><code><?php echo esc_html(wp_trim_words((string) ($adjustment_row['old_value'] ?? ''), 10, '…')); ?></code></td>
+                                <td><code><?php echo esc_html(wp_trim_words((string) ($adjustment_row['new_value'] ?? ''), 10, '…')); ?></code></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['reason'] ?? '')); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_author_labels[(int) ($adjustment_row['changed_by'] ?? 0)] ?? ('#' . (int) ($adjustment_row['changed_by'] ?? 0)))); ?></td>
                             </tr>

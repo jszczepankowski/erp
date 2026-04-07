@@ -1848,7 +1848,7 @@ class ERP_OMD_Admin
         }
 
         fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
-        fputcsv($output, ['id', 'month', 'entity_type', 'entity_id', 'field_name', 'adjustment_type', 'reason', 'changed_by', 'changed_at'], ';');
+        fputcsv($output, ['id', 'month', 'entity_type', 'entity_id', 'field_name', 'old_value', 'new_value', 'adjustment_type', 'reason', 'changed_by', 'changed_at'], ';');
         foreach ($rows as $row) {
             fputcsv($output, [
                 (int) ($row['id'] ?? 0),
@@ -1856,6 +1856,8 @@ class ERP_OMD_Admin
                 (string) ($row['entity_type'] ?? ''),
                 (int) ($row['entity_id'] ?? 0),
                 (string) ($row['field_name'] ?? ''),
+                (string) ($row['old_value'] ?? ''),
+                (string) ($row['new_value'] ?? ''),
                 (string) ($row['adjustment_type'] ?? ''),
                 (string) ($row['reason'] ?? ''),
                 (int) ($row['changed_by'] ?? 0),

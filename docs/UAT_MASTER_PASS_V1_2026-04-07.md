@@ -47,6 +47,7 @@ Status globalny: **IN PROGRESS**
 ## Ekran 7 — Audit log korekt
 - [x] UAT-A1 rejestr i filtrowanie (automatyczny smoke + implementacja UI)
 - [x] UAT-A1 eksport CSV audytu (automatyczny smoke + implementacja backend)
+- [x] UAT-A1 widok `przed/po` (old/new) dostępny w tabeli i eksporcie CSV
 - [ ] UAT-A1 walidacja biznesowa użytkownika końcowego (manual)
 
 ## 4) Wykonane dziś dowody techniczne
