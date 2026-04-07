@@ -98,3 +98,30 @@ W nowym chacie wklej:
 - `docs/POTWIERDZENIE_USTALEŃ_V1_2026-04-01.md`
 - `docs/WARIANT_B_PROGRESS.md`
 - `docs/RAPORTY_NEW.md` (ten snapshot do wznowienia)
+- `docs/PLAN_PELNE_WDROZENIE_WARIANT_B_V1.md` (plan domknięcia 100% MUST ze specyfikacji)
+
+## 6) Audyt RAPORTY_NEW (2026-04-07) — braki i duplikaty
+
+### Co znalezione
+- **Duplikacja semantyczna:** punkty **13** i **14** dotyczą tego samego obszaru (`WB-P1-04` hardening walidacji miesiąca), tylko rozdzielają warstwę domenową i API. W praktyce to jeden pakiet prac i warto traktować je jako jeden krok z podpunktami.
+- **Niespójność nagłówka sekcji 3:** tytuł „Co robimy dalej” sugeruje backlog, ale punkty 1–51 są już zamknięte (`✅`). To utrudnia szybkie wznowienie pracy i może powodować ponowne „przerabianie” domkniętych tematów.
+- **Potencjalny brak operacyjny:** punkt **52** ma opis kolejnego etapu utrzymaniowego, ale bez jawnej checklisty wejścia/wyjścia (Definition of Done) i bez numerowanych ID zadań utrzymaniowych.
+
+### Decyzja porządkowa (od teraz)
+- Traktujemy etapy 1–51 jako **historię zamkniętych prac**.
+- Etap 52 traktujemy jako **aktywny strumień utrzymaniowy** i prowadzimy go jako osobne zadania `WB-MNT-*`.
+
+### Proponowane zadania `WB-MNT-*` (najbliższa kolejka)
+1. **WB-MNT-01 — Monitoring drift triage**
+   - Zebrać min. 7 dni próbek steady-state i potwierdzić, czy `sustained_drift_detected` generuje alerty tylko dla realnych anomalii.
+2. **WB-MNT-02 — Rollback drill**
+   - Przejść na sucho runbook rollback (flagi, komunikacja, check po rollbacku) i zapisać czasy wykonania kroków.
+3. **WB-MNT-03 — Reports perf spot-check**
+   - Zweryfikować p95 i error-rate dla najcięższych scenariuszy (`projects detail`, duże `per_page`) oraz porównać z progiem SLO.
+4. **WB-MNT-04 — Cleanup dokumentacji operacyjnej**
+   - Ujednolicić nazewnictwo „utrzymanie/stabilizacja” między `RAPORTY_NEW`, `WARIANT_B_PROGRESS`, `GO_LIVE_REPORTS_V1_CHECKLIST`.
+
+### Definition of Done dla etapu utrzymaniowego
+- Każde zadanie `WB-MNT-*` ma: wynik, datę, właściciela i link do artefaktu (log/test/notatka).
+- `docs/RAPORTY_NEW.md` aktualizowany po każdym zamkniętym `WB-MNT-*`.
+- Brak otwartych alertów krytycznych dot. raportów przez uzgodnione okno obserwacji.
