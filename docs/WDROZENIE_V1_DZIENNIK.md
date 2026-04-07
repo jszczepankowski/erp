@@ -53,8 +53,8 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — utworzono artefakt `docs/UAT_MASTER_PASS_V1_2026-04-07.md` z checklistą UAT per ekran i bieżącymi dowodami technicznymi.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — rozszerzono Audit log korekt o widok/eksport wartości `przed/po` (old/new), aby ułatwić finalne testy UAT z biznesem.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix runtime: dodano brakującą metodę `is_valid_month_string()` w `ERP_OMD_Admin` (usuniecie fatal error na ekranie Raporty/Monitoring).
-- **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix redeclare: eksport audytu korekt przepięto na metodę `handle_adjustments_audit_export_csv()` (uniknięcie kolizji nazw metody w środowiskach po merge/cherry-pick).
-- **IN PROGRESS:** ETAP 1 / KROK 1.3 — dodano twardy test `tests/admin-class-test.php` pilnujący, że legacy `handle_adjustments_audit_export()` nie wraca i że `handle_adjustments_audit_export_csv()` istnieje dokładnie raz.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix redeclare: obsługę `export_adjustments_audit` przeniesiono inline do `handle_forms()` (bez dedykowanej metody), aby wyeliminować kolizje nazw metod po merge/cherry-pick.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — dodano twardy test `tests/admin-class-test.php` pilnujący, że legacy `handle_adjustments_audit_export()` i `handle_adjustments_audit_export_csv()` nie wracają jako metody klasy.
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
 - Kolejny focus: manualny przebieg UAT ekranów 1–6 i domknięcie statusu końcowego.
 

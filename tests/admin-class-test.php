@@ -37,11 +37,11 @@ if (($counts['handle_manual_backup_action'] ?? 0) !== 0) {
 }
 
 if (($counts['handle_adjustments_audit_export'] ?? 0) !== 0) {
-    throw new RuntimeException('Legacy handle_adjustments_audit_export() should not be declared (use handle_adjustments_audit_export_csv()).');
+    throw new RuntimeException('Legacy handle_adjustments_audit_export() should not be declared (export action must be inlined in handle_forms()).');
 }
 
-if (($counts['handle_adjustments_audit_export_csv'] ?? 0) !== 1) {
-    throw new RuntimeException('handle_adjustments_audit_export_csv() should be declared exactly once.');
+if (($counts['handle_adjustments_audit_export_csv'] ?? 0) !== 0) {
+    throw new RuntimeException('handle_adjustments_audit_export_csv() should not be declared (export action must be inlined in handle_forms()).');
 }
 
 echo "Assertions: 7\n";
