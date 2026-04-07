@@ -291,6 +291,8 @@ class ERP_OMD_REST_API
                     ],
                     'month' => $month,
                     'mode' => $mode,
+                    'period_status' => (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE),
+                    'period_status_label' => $this->format_period_status_label((string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE)),
                     'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,
                     'readiness_meta' => $readiness_meta,
@@ -504,12 +506,18 @@ class ERP_OMD_REST_API
 
             $actions[] = [
                 'to_status' => $target_status,
+                'to_status_label' => $this->format_period_status_label($target_status),
                 'enabled' => $enabled,
                 'reason' => $reason,
             ];
         }
 
         return $actions;
+    }
+
+    private function format_period_status_label($status)
+    {
+        return trim(str_replace('_', ' ', (string) $status));
     }
 
     private function register_role_routes()
