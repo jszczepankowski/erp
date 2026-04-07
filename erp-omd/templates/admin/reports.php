@@ -123,6 +123,19 @@
                 </p>
                 <?php if (! empty($reports_v1_steady_state_banner['history']) && is_array($reports_v1_steady_state_banner['history'])) : ?>
                     <p><strong><?php esc_html_e('Ostatnie próbki drift (quick view)', 'erp-omd'); ?></strong></p>
+                    <?php if (isset($reports_v1_steady_state_banner['history_drift_count'], $reports_v1_steady_state_banner['history_total_count'])) : ?>
+                        <p>
+                            <?php
+                            echo esc_html(
+                                sprintf(
+                                    __('Próbki z dryfem: %1$d/%2$d', 'erp-omd'),
+                                    (int) $reports_v1_steady_state_banner['history_drift_count'],
+                                    (int) $reports_v1_steady_state_banner['history_total_count']
+                                )
+                            );
+                            ?>
+                        </p>
+                    <?php endif; ?>
                     <ul style="margin:0 0 8px 18px;">
                         <?php foreach ($reports_v1_steady_state_banner['history'] as $history_row) : ?>
                             <li>
@@ -163,7 +176,7 @@
                     <?php esc_html_e('Tryb', 'erp-omd'); ?>
                     <select data-dashboard-v1-mode="1">
                         <option value="LIVE"><?php esc_html_e('LIVE', 'erp-omd'); ?></option>
-                        <option value="DO_ROZLICZENIA"><?php esc_html_e('DO_ROZLICZENIA', 'erp-omd'); ?></option>
+                        <option value="DO_ROZLICZENIA"><?php esc_html_e('DO ROZLICZENIA', 'erp-omd'); ?></option>
                         <option value="ZAMKNIETY"><?php esc_html_e('ZAMKNIETY', 'erp-omd'); ?></option>
                     </select>
                 </label>

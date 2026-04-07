@@ -73,7 +73,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 40. ✅ **P5 steady-state UX banner (40-a)** — raporty admina pokazują baner steady-state (status drift + akcje operatorskie) oraz szybki link do runbooka/ustawień SLO.
 41. ✅ **P5 steady-state drift history (41-a)** — baner raportów pokazuje mini-historię ostatnich próbek drift (timestamp, report_type, ms, err, przekroczenie progu), żeby operator widział trend bez odpytywania API.
 42. ✅ **P5 steady-state drift-only toggle (42-a)** — baner raportów ma przełącznik „pokaż tylko próbki z dryfem / pokaż wszystkie”, żeby skrócić diagnostykę przy dużym ruchu.
-43. **Kolejny etap** — dodać licznik „dryfowych” próbek w quick view (np. `2/5`), żeby łatwiej oceniać skalę problemu.
+43. ✅ **P5 steady-state drift counter (43-a)** — quick view w banerze pokazuje licznik próbek dryfowych (`x/y`), żeby szybciej ocenić skalę problemu.
+44. **Kolejny etap** — domknąć spójność nazewnictwa statusu `DO ROZLICZENIA` we wszystkich etykietach UI (bez underscore) i dodać szybki smoke-test checklist.
 
 ## 4) Instrukcja startowa do nowego chatu
 
