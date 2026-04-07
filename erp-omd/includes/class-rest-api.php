@@ -148,9 +148,18 @@ class ERP_OMD_REST_API
         ]);
         register_rest_route('erp-omd/v1', '/adjustments', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
+                $limit = (int) $request->get_param('limit');
+                if ($limit > 0) {
+                    $limit = max(1, min(200, $limit));
+                }
                 $filters = [
                     'month' => sanitize_text_field((string) $request->get_param('month')),
                     'entity_type' => sanitize_text_field((string) $request->get_param('entity_type')),
+                    'entity_id' => (int) $request->get_param('entity_id'),
+                    'adjustment_type' => sanitize_text_field((string) $request->get_param('adjustment_type')),
+                    'changed_by' => (int) $request->get_param('changed_by'),
+                    'reason' => sanitize_text_field((string) $request->get_param('reason')),
+                    'limit' => $limit,
                 ];
 
                 return rest_ensure_response($this->adjustment_audit->all(array_filter($filters)));
@@ -236,6 +245,7 @@ class ERP_OMD_REST_API
                 $queue_rows_total = count($queue_rows);
                 $queue_rows = $this->enrich_queue_rows($queue_rows, $month, $queue_limit);
                 $adjustments = $this->adjustment_audit->all(['month' => $month]);
+                $readiness_meta = (array) ($readiness_signals['_meta'] ?? []);
 
                 $source_rows = $scope === 'client' ? $client_rows : $project_rows;
                 $ranked_scope = $this->rank_profitability_rows($source_rows, $profitability_limit);
@@ -256,6 +266,20 @@ class ERP_OMD_REST_API
                     }
                 }
                 $adjustment_items = $this->enrich_adjustment_rows($adjustments, $month, $adjustments_limit);
+                $data_counters = [
+                    'trend_rows' => count($trend_3m),
+                    'project_rows' => count((array) $project_rows),
+                    'client_rows' => count((array) $client_rows),
+                    'queue_rows' => $queue_rows_total,
+                    'adjustment_rows' => count((array) $adjustments),
+                    'relevant_projects' => (int) ($readiness_meta['relevant_projects'] ?? 0),
+                ];
+                $has_dashboard_data = ! empty($trend_3m)
+                    || ! empty($project_rows)
+                    || ! empty($client_rows)
+                    || $queue_rows_total > 0
+                    || count($adjustments) > 0
+                    || (int) ($readiness_meta['relevant_projects'] ?? 0) > 0;
 
                 return rest_ensure_response([
                     'api_version' => 'v1',
@@ -269,7 +293,14 @@ class ERP_OMD_REST_API
                     'mode' => $mode,
                     'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,
-                    'readiness_meta' => (array) ($readiness_signals['_meta'] ?? []),
+                    'readiness_meta' => $readiness_meta,
+                    'data_health' => [
+                        'has_operational_data' => (bool) $has_dashboard_data,
+                        'counters' => $data_counters,
+                        'hint' => $has_dashboard_data
+                            ? __('Dashboard data loaded from current reporting sources.', 'erp-omd')
+                            : __('No operational data found for this month. Add time entries/project costs or switch month/mode.', 'erp-omd'),
+                    ],
                     'status_actions' => $this->dashboard_status_actions($period, $readiness_checklist),
                     'metric_definitions' => $this->dashboard_metric_definitions(),
                     'drilldown_links' => $this->dashboard_drilldown_links($month),
@@ -306,6 +337,9 @@ class ERP_OMD_REST_API
             'adjustments.impact' => __('Sum of (new-old) amount/hours deltas from adjustment audit rows.', 'erp-omd'),
             'adjustments.items' => __('Recent adjustment audit rows limited by adjustments_limit.', 'erp-omd'),
             'readiness_checklist.ready' => __('Boolean period-close readiness based on checklist validators.', 'erp-omd'),
+            'data_health.has_operational_data' => __('Flag indicating whether selected month has any operational dashboard data.', 'erp-omd'),
+            'data_health.counters' => __('Per-source counters used for empty-state diagnostics (trend, projects, clients, queue, adjustments, relevant_projects).', 'erp-omd'),
+            'data_health.hint' => __('Operator-facing hint explaining current data availability for selected month/mode.', 'erp-omd'),
             'applied_limits' => __('Server-applied list limits after defaulting and max clamping.', 'erp-omd'),
         ];
     }
@@ -1510,7 +1544,10 @@ class ERP_OMD_REST_API
         $project_costs_verified = true;
         $project_client_completeness = true;
         $invalid_cost_rows = 0;
+        $invalid_cost_project_ids = [];
+        $invalid_cost_rows_details = [];
         $relevant_projects_without_cost_rows = 0;
+        $relevant_projects_without_cost_project_ids = [];
         $incomplete_relevant_projects = 0;
         $relevant_projects = 0;
         $projects = (array) $this->projects->all();
@@ -1519,6 +1556,7 @@ class ERP_OMD_REST_API
             if ($project_id <= 0) {
                 continue;
             }
+            $project_status = (string) ($project['status'] ?? '');
 
             $cost_rows = (array) $this->project_costs->for_project($project_id);
             $project_has_cost_for_month = false;
@@ -1530,9 +1568,22 @@ class ERP_OMD_REST_API
                 $project_has_cost_for_month = true;
                 $relevant_project_ids[$project_id] = true;
 
-                if ((float) ($cost_row['amount'] ?? 0) <= 0 || trim((string) ($cost_row['description'] ?? '')) === '') {
+                if (
+                    $project_status !== 'archiwum'
+                    && ((float) ($cost_row['amount'] ?? 0) <= 0 || trim((string) ($cost_row['description'] ?? '')) === '')
+                ) {
                     $invalid_cost_rows++;
                     $project_costs_verified = false;
+                    $invalid_cost_project_ids[$project_id] = true;
+                    if (count($invalid_cost_rows_details) < 10) {
+                        $invalid_cost_rows_details[] = [
+                            'project_id' => $project_id,
+                            'cost_id' => (int) ($cost_row['id'] ?? 0),
+                            'reason' => (float) ($cost_row['amount'] ?? 0) <= 0
+                                ? 'amount_non_positive'
+                                : 'description_empty',
+                        ];
+                    }
                     break;
                 }
             }
@@ -1542,10 +1593,10 @@ class ERP_OMD_REST_API
             }
             $relevant_projects++;
 
-            $project_status = (string) ($project['status'] ?? '');
             if (in_array($project_status, ['do_faktury', 'zakonczony'], true) && ! $project_has_cost_for_month) {
                 $relevant_projects_without_cost_rows++;
                 $project_costs_verified = false;
+                $relevant_projects_without_cost_project_ids[$project_id] = true;
             }
 
             if ($project_status !== 'archiwum') {
@@ -1577,7 +1628,10 @@ class ERP_OMD_REST_API
             '_meta' => [
                 'submitted_or_rejected_entries' => $submitted_or_rejected_entries,
                 'invalid_cost_rows' => $invalid_cost_rows,
+                'invalid_cost_project_ids' => array_map('intval', array_keys($invalid_cost_project_ids)),
+                'invalid_cost_rows_details' => $invalid_cost_rows_details,
                 'relevant_projects_without_cost_rows' => $relevant_projects_without_cost_rows,
+                'relevant_projects_without_cost_project_ids' => array_map('intval', array_keys($relevant_projects_without_cost_project_ids)),
                 'incomplete_relevant_projects' => $incomplete_relevant_projects,
                 'critical_alerts' => $critical_alerts,
                 'relevant_projects' => $relevant_projects,
