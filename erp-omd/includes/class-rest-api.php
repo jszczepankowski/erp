@@ -1544,7 +1544,9 @@ class ERP_OMD_REST_API
         $project_costs_verified = true;
         $project_client_completeness = true;
         $invalid_cost_rows = 0;
+        $invalid_cost_project_ids = [];
         $relevant_projects_without_cost_rows = 0;
+        $relevant_projects_without_cost_project_ids = [];
         $incomplete_relevant_projects = 0;
         $relevant_projects = 0;
         $projects = (array) $this->projects->all();
@@ -1567,6 +1569,7 @@ class ERP_OMD_REST_API
                 if ((float) ($cost_row['amount'] ?? 0) <= 0 || trim((string) ($cost_row['description'] ?? '')) === '') {
                     $invalid_cost_rows++;
                     $project_costs_verified = false;
+                    $invalid_cost_project_ids[$project_id] = true;
                     break;
                 }
             }
@@ -1580,6 +1583,7 @@ class ERP_OMD_REST_API
             if (in_array($project_status, ['do_faktury', 'zakonczony'], true) && ! $project_has_cost_for_month) {
                 $relevant_projects_without_cost_rows++;
                 $project_costs_verified = false;
+                $relevant_projects_without_cost_project_ids[$project_id] = true;
             }
 
             if ($project_status !== 'archiwum') {
@@ -1611,7 +1615,9 @@ class ERP_OMD_REST_API
             '_meta' => [
                 'submitted_or_rejected_entries' => $submitted_or_rejected_entries,
                 'invalid_cost_rows' => $invalid_cost_rows,
+                'invalid_cost_project_ids' => array_map('intval', array_keys($invalid_cost_project_ids)),
                 'relevant_projects_without_cost_rows' => $relevant_projects_without_cost_rows,
+                'relevant_projects_without_cost_project_ids' => array_map('intval', array_keys($relevant_projects_without_cost_project_ids)),
                 'incomplete_relevant_projects' => $incomplete_relevant_projects,
                 'critical_alerts' => $critical_alerts,
                 'relevant_projects' => $relevant_projects,

@@ -519,12 +519,26 @@ window.erpOmdInitDashboardV1Preview =
     if (key === 'project_costs_verified') {
       const invalidCostRows = Number(safeMeta.invalid_cost_rows || 0);
       const withoutCostRows = Number(safeMeta.relevant_projects_without_cost_rows || 0);
+      const invalidCostProjectIds = Array.isArray(safeMeta.invalid_cost_project_ids)
+        ? safeMeta.invalid_cost_project_ids.map((value) => Number(value)).filter((value) => value > 0)
+        : [];
+      const withoutCostProjectIds = Array.isArray(safeMeta.relevant_projects_without_cost_project_ids)
+        ? safeMeta.relevant_projects_without_cost_project_ids.map((value) => Number(value)).filter((value) => value > 0)
+        : [];
       const reasonParts = [];
       if (invalidCostRows > 0) {
-        reasonParts.push(`błędne wiersze kosztów: ${invalidCostRows}`);
+        reasonParts.push(
+          `błędne wiersze kosztów: ${invalidCostRows}${
+            invalidCostProjectIds.length ? ` (projekty: #${invalidCostProjectIds.join(', #')})` : ''
+          }`
+        );
       }
       if (withoutCostRows > 0) {
-        reasonParts.push(`projekty bez kosztów: ${withoutCostRows}`);
+        reasonParts.push(
+          `projekty bez kosztów: ${withoutCostRows}${
+            withoutCostProjectIds.length ? ` (projekty: #${withoutCostProjectIds.join(', #')})` : ''
+          }`
+        );
       }
       return reasonParts.join(', ');
     }
