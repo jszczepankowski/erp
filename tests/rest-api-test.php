@@ -742,6 +742,10 @@ final class RestApiTestRunner
 
         $transitionInvalid = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'LIVE']));
         $this->assertSame('erp_omd_period_transition_invalid', $transitionInvalid->get_error_code(), 'Transition endpoint should reject unsupported target statuses.');
+        $transitionReady = $transitionCallback(new WP_REST_Request(['month' => '2026-04', 'to_status' => 'DO_ROZLICZENIA']));
+        $this->assertSame('DO_ROZLICZENIA', $transitionReady['period']['status'], 'Transition endpoint should allow LIVE -> DO_ROZLICZENIA for ready month.');
+        $transitionClosed = $transitionCallback(new WP_REST_Request(['month' => '2026-04', 'to_status' => 'ZAMKNIETY']));
+        $this->assertSame('ZAMKNIETY', $transitionClosed['period']['status'], 'Transition endpoint should allow DO_ROZLICZENIA -> ZAMKNIETY.');
 
         $adjustmentsCallback = $this->findRouteCallback('/adjustments', WP_REST_Server::READABLE);
         $filteredAdjustments = $adjustmentsCallback(new WP_REST_Request([
