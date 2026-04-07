@@ -997,6 +997,50 @@ class ERP_OMD_Admin
                 (int) $report_monitoring['slo_samples_missing_to_calibration']
             );
         update_option('erp_omd_reports_v1_metrics_log', $metrics_log);
+        $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
+        $reports_v1_slo_closure = (array) get_option('erp_omd_reports_v1_slo_calibration_closure', []);
+        $reports_v1_slo_calibration_closed = ! empty($reports_v1_slo_closure['closed_at']) && ! empty($reports_v1_slo_closure['closed_by_user_id']);
+        $reports_v1_sustained_drift_window_size = 3;
+        $reports_v1_recent_metrics_samples = array_slice($metrics_log, 0, $reports_v1_sustained_drift_window_size);
+        $reports_v1_recent_generation_samples = array_values(array_map(static function ($row) {
+            return (int) ($row['generation_ms'] ?? 0);
+        }, $reports_v1_recent_metrics_samples));
+        $reports_v1_recent_error_samples = array_values(array_map(static function ($row) {
+            return ! empty($row['has_error']);
+        }, $reports_v1_recent_metrics_samples));
+        $reports_v1_sustained_generation_drift = $reports_v1_slo_calibration_closed
+            && count($reports_v1_recent_generation_samples) === $reports_v1_sustained_drift_window_size
+            && count(array_filter($reports_v1_recent_generation_samples, static function ($sample) use ($reports_v1_slo_generation_p95_max) {
+                return (int) $sample > (int) $reports_v1_slo_generation_p95_max;
+            })) === $reports_v1_sustained_drift_window_size;
+        $reports_v1_sustained_error_drift = $reports_v1_slo_calibration_closed
+            && count($reports_v1_recent_error_samples) === $reports_v1_sustained_drift_window_size
+            && count(array_filter($reports_v1_recent_error_samples)) === $reports_v1_sustained_drift_window_size;
+        $reports_v1_sustained_drift_detected = $reports_v1_sustained_generation_drift || $reports_v1_sustained_error_drift;
+        $reports_v1_steady_state_banner = [
+            'level' => 'notice-info',
+            'title' => __('Reports v1 — steady-state monitoring', 'erp-omd'),
+            'message' => __('Kalibracja SLO nie jest jeszcze formalnie zamknięta — trwały dryf będzie oceniany po closure.', 'erp-omd'),
+            'actions' => [
+                __('Dokończ decyzję/closure kalibracji w Ustawieniach.', 'erp-omd'),
+            ],
+        ];
+        if ($reports_v1_slo_calibration_closed && ! $reports_v1_sustained_drift_detected) {
+            $reports_v1_steady_state_banner['level'] = 'notice-success';
+            $reports_v1_steady_state_banner['message'] = __('Kalibracja SLO jest zamknięta, a monitoring steady-state nie wykrywa trwałego dryfu metryk.', 'erp-omd');
+            $reports_v1_steady_state_banner['actions'] = [
+                __('Kontynuuj obserwację trendu p95/error-rate i reaguj tylko przy trwałym dryfie.', 'erp-omd'),
+            ];
+        }
+        if ($reports_v1_sustained_drift_detected) {
+            $reports_v1_steady_state_banner['level'] = 'notice-warning';
+            $reports_v1_steady_state_banner['message'] = __('Wykryto trwały dryf metryk Reports v1 — uruchom playbook rollback/tuning.', 'erp-omd');
+            $reports_v1_steady_state_banner['actions'] = [
+                __('Sprawdź runbook on-call i wykonaj rollback/tuning dla ciężkich raportów.', 'erp-omd'),
+                __('Zweryfikuj system/status (reasons, recommended_actions) przed zmianą progów.', 'erp-omd'),
+            ];
+        }
+        $reports_v1_runbook_url = admin_url('admin.php?page=erp-omd-settings#reports-v1-slo-monitoring');
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $employees = $this->employees->all();
