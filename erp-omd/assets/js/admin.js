@@ -508,6 +508,40 @@ window.erpOmdInitDashboardV1Preview =
       `Relewantne projekty: ${safeCounters.relevant_projects || 0}`,
     ].join(' | ');
   };
+  const checklistLabelMap = {
+    time_entries_finalized: 'Wpisy czasu sfinalizowane',
+    project_costs_verified: 'Koszty projektowe zweryfikowane',
+    project_client_completeness: 'Kompletność klient/projekt',
+    critical_settlement_locks: 'Brak krytycznych blokad rozliczenia',
+  };
+  const buildChecklistReason = (key, meta) => {
+    const safeMeta = isObject(meta) ? meta : {};
+    if (key === 'project_costs_verified') {
+      const invalidCostRows = Number(safeMeta.invalid_cost_rows || 0);
+      const withoutCostRows = Number(safeMeta.relevant_projects_without_cost_rows || 0);
+      const reasonParts = [];
+      if (invalidCostRows > 0) {
+        reasonParts.push(`błędne wiersze kosztów: ${invalidCostRows}`);
+      }
+      if (withoutCostRows > 0) {
+        reasonParts.push(`projekty bez kosztów: ${withoutCostRows}`);
+      }
+      return reasonParts.join(', ');
+    }
+    if (key === 'time_entries_finalized') {
+      const submittedOrRejected = Number(safeMeta.submitted_or_rejected_entries || 0);
+      return submittedOrRejected > 0 ? `wpisy submitted/rejected: ${submittedOrRejected}` : '';
+    }
+    if (key === 'project_client_completeness') {
+      const incompleteProjects = Number(safeMeta.incomplete_relevant_projects || 0);
+      return incompleteProjects > 0 ? `niekompletne projekty: ${incompleteProjects}` : '';
+    }
+    if (key === 'critical_settlement_locks') {
+      const criticalAlerts = Number(safeMeta.critical_alerts || 0);
+      return criticalAlerts > 0 ? `krytyczne alerty: ${criticalAlerts}` : '';
+    }
+    return '';
+  };
   const safeGet = (value, fallback) => (typeof value === 'undefined' || value === null ? fallback : value);
   const isObject = (value) => Boolean(value) && typeof value === 'object';
 
@@ -611,13 +645,16 @@ window.erpOmdInitDashboardV1Preview =
 
       checklistNode.innerHTML = '';
       const checks = isObject(readinessChecklist.checks) ? readinessChecklist.checks : {};
+      const checklistMeta = isObject(readinessChecklist.meta) ? readinessChecklist.meta : {};
       const checkEntries = Object.entries(checks);
       if (checkEntries.length === 0) {
         renderEmptyList(checklistNode, 'Brak danych checklisty.');
       } else {
         checkEntries.forEach(([key, passed]) => {
           const item = document.createElement('li');
-          item.textContent = `${passed ? '✅' : '⛔'} ${key}`;
+          const label = safeGet(checklistLabelMap[key], key);
+          const reason = !passed ? buildChecklistReason(key, checklistMeta) : '';
+          item.textContent = `${passed ? '✅' : '⛔'} ${label}${reason ? ` — ${reason}` : ''}`;
           checklistNode.appendChild(item);
         });
       }
