@@ -121,3 +121,40 @@ Wdrożenie uznajemy za pełne, gdy jednocześnie:
 2. brak krytycznych odchyleń w security/performance,
 3. rollback jest przećwiczony i odtwarzalny,
 4. dokumentacja operacyjna jest spójna i aktualna.
+
+## 7) Potwierdzenie kompletności planu względem SPEC (MUST coverage)
+
+Tak — ten plan jest **kompletny względem MUST baseline** ze `SPECYFIKACJA_V1_WARIANT_B`, bo obejmuje wszystkie obszary wymagane do uzyskania efektu końcowego:
+- model okresów + przejścia + blokady,
+- korekty admina 72h/awaryjne + pełny audyt,
+- reguły księgowania (`approved-only`, `operational_close_month`, `archiwum`),
+- raporty operacyjne klient/projekt/czas (simple/detail + eksport),
+- dashboard v1 i warstwę controllingową OMD,
+- UAT, rollout, rollback i operacyjność utrzymaniową.
+
+Dla pełnej jednoznaczności mapujemy finalizację MUST do fal:
+- **Fala 1:** domknięcie MUST operacyjnych (audit UX + formalny UAT).
+- **Fala 2:** bezpieczeństwo/wydajność/migracje produkcyjnie bezpieczne.
+- **Fala 3:** gotowość operacyjna on-call i rollback drill.
+- **Fala 4:** finalny cleanup dokumentacji i formalne zamknięcie programu v1.
+
+## 8) Sposób prowadzenia prac „na żywo” (cross-chat)
+
+Od teraz postęp prowadzimy w jednym dzienniku: `docs/WDROZENIE_V1_DZIENNIK.md`.
+
+Zasada aktualizacji po każdym kroku:
+1. aktualny etap i krok (`ETAP`, `KROK`),
+2. status (`TODO` / `W TRAKCIE` / `DONE`),
+3. krótki wynik i co dalej,
+4. data + commit/hash.
+
+Dzięki temu można wznowić temat w dowolnym chacie bez utraty kontekstu.
+
+## 9) Efekt „po ludzku” — jak to będzie działać po wdrożeniu
+
+Po wdrożeniu praca zespołu będzie prostsza i przewidywalna:
+- **Zamykanie miesiąca:** admin przechodzi przez jasną checklistę i jednym procesem zamyka miesiąc; po zamknięciu nikt „przypadkiem” nie zmieni danych z raportów.
+- **Korekty:** jeśli trzeba coś poprawić po zamknięciu, admin robi to legalną ścieżką z obowiązkowym uzasadnieniem; zawsze wiadomo kto, co i kiedy zmienił.
+- **Raporty:** raport klienta/projektu/czasu pokazują spójne liczby i można je rozwinąć do szczegółu bez ręcznego składania danych z kilku miejsc.
+- **Dashboard:** w jednym widoku widać stan miesiąca, trend i miejsca wymagające reakcji — bez biegania po kilku ekranach.
+- **Utrzymanie:** gdy coś „zaczyna pływać”, zespół ma gotowy playbook: jak to rozpoznać, jak szybko ograniczyć wpływ i jak bezpiecznie wrócić do stabilnego stanu.

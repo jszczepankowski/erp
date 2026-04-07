@@ -99,6 +99,7 @@ W nowym chacie wklej:
 - `docs/WARIANT_B_PROGRESS.md`
 - `docs/RAPORTY_NEW.md` (ten snapshot do wznowienia)
 - `docs/PLAN_PELNE_WDROZENIE_WARIANT_B_V1.md` (plan domknięcia 100% MUST ze specyfikacji)
+- `docs/WDROZENIE_V1_DZIENNIK.md` (bieżący tracker etapów/kroków do wznowienia cross-chat)
 
 ## 6) Audyt RAPORTY_NEW (2026-04-07) — braki i duplikaty
 
