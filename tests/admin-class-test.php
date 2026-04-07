@@ -36,5 +36,13 @@ if (($counts['handle_manual_backup_action'] ?? 0) !== 0) {
     throw new RuntimeException('Manual backup handler should be inlined in handle_forms() and not declared as class method.');
 }
 
-echo "Assertions: 5\n";
+if (($counts['handle_adjustments_audit_export'] ?? 0) !== 0) {
+    throw new RuntimeException('Legacy handle_adjustments_audit_export() should not be declared (use handle_adjustments_audit_export_csv()).');
+}
+
+if (($counts['handle_adjustments_audit_export_csv'] ?? 0) !== 1) {
+    throw new RuntimeException('handle_adjustments_audit_export_csv() should be declared exactly once.');
+}
+
+echo "Assertions: 7\n";
 echo "Admin class duplicate-method test passed.\n";

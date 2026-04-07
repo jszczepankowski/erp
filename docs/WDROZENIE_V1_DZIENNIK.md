@@ -54,6 +54,7 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — rozszerzono Audit log korekt o widok/eksport wartości `przed/po` (old/new), aby ułatwić finalne testy UAT z biznesem.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix runtime: dodano brakującą metodę `is_valid_month_string()` w `ERP_OMD_Admin` (usuniecie fatal error na ekranie Raporty/Monitoring).
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix redeclare: eksport audytu korekt przepięto na metodę `handle_adjustments_audit_export_csv()` (uniknięcie kolizji nazw metody w środowiskach po merge/cherry-pick).
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — dodano twardy test `tests/admin-class-test.php` pilnujący, że legacy `handle_adjustments_audit_export()` nie wraca i że `handle_adjustments_audit_export_csv()` istnieje dokładnie raz.
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
 - Kolejny focus: manualny przebieg UAT ekranów 1–6 i domknięcie statusu końcowego.
 
