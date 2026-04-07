@@ -18,22 +18,22 @@ Status globalny: **IN PROGRESS**
 ## 3) Checklista UAT (robocza)
 
 ## Ekran 1 — Dashboard główny
-- [ ] UAT-D1 status miesiąca (manual)
-- [ ] UAT-D2 trend 3M (manual)
-- [ ] UAT-D3 top/bottom (manual)
+- [x] UAT-D1 status miesiąca (manual) — PASS (potwierdzenie użytkownika)
+- [x] UAT-D2 trend 3M (manual) — PASS (potwierdzenie użytkownika)
+- [x] UAT-D3 top/bottom (manual) — PASS (potwierdzenie użytkownika)
 - [ ] UAT-D4 korekty + drilldown (manual)
 
 ## Ekran 2 — Raport per klient
-- [ ] UAT-C1 widok prosty (manual)
-- [ ] UAT-C2 widok szczegółowy + eksport (manual)
+- [x] UAT-C1 widok prosty (manual) — PASS (potwierdzenie użytkownika)
+- [x] UAT-C2 widok szczegółowy + eksport (manual) — PASS (potwierdzenie użytkownika)
 
 ## Ekran 3 — Raport per projekt
-- [ ] UAT-P1 widok prosty (manual)
-- [ ] UAT-P2 widok szczegółowy (manual)
+- [x] UAT-P1 widok prosty (manual) — PASS (potwierdzenie użytkownika)
+- [x] UAT-P2 widok szczegółowy (manual) — PASS (potwierdzenie użytkownika)
 
 ## Ekran 4 — Raport per czas pracy
-- [ ] UAT-T1 widok prosty (manual)
-- [ ] UAT-T2 widok szczegółowy + paginacja (manual)
+- [~] UAT-T1 widok prosty (manual) — PASS WARUNKOWY (zgłoszony brak przełącznika detail; fix wdrożony, retest wymagany)
+- [~] UAT-T2 widok szczegółowy + paginacja (manual) — PASS WARUNKOWY (zgłoszona niespójność górnej paginacji i limitu CSV; fix wdrożony, retest wymagany)
 
 ## Ekran 5 — OMD rozliczenia
 - [ ] UAT-O1 definicje (manual)

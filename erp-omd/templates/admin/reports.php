@@ -79,7 +79,7 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <?php if (in_array($report_filters['report_type'], ['projects', 'clients', 'invoice'], true)) : ?>
+                            <?php if (in_array($report_filters['report_type'], ['projects', 'clients', 'invoice', 'time_entries'], true)) : ?>
                                 <div class="erp-omd-form-field erp-omd-form-field-compact">
                                     <label for="report-detail"><?php esc_html_e('Wersja raportu', 'erp-omd'); ?></label>
                                     <select id="report-detail" name="detail">
@@ -88,15 +88,16 @@
                                     </select>
                                 </div>
                             <?php endif; ?>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="dashboard-queue-limit"><?php esc_html_e('Wiersze do exportu CSV', 'erp-omd'); ?></label>
-                                <input id="dashboard-queue-limit" type="number" min="1" max="100" name="dashboard_queue_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['queue_limit'] ?? 25)); ?>" />
-                            </div>
+                            <?php if ($report_filters['report_type'] === 'time_entries') : ?>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="report-per-page"><?php esc_html_e('Wierszy na stronę', 'erp-omd'); ?></label>
+                                    <input id="report-per-page" type="number" min="10" max="200" step="5" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </section>
                 </div>
                 <div class="erp-omd-form-actions">
-                    <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
                     <input type="hidden" name="page_num" value="1" />
                     <button class="button button-primary" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
                 </div>
@@ -477,6 +478,37 @@
                         </tbody>
                     </table>
                 <?php elseif ($report_filters['report_type'] === 'time_entries') : ?>
+                    <?php if (! empty($report_pagination) && (int) ($report_pagination['total_pages'] ?? 1) > 1) : ?>
+                        <div class="tablenav top">
+                            <div class="tablenav-pages">
+                                <?php
+                                $base_args = [
+                                    'page' => 'erp-omd-reports',
+                                    'tab' => 'reports',
+                                    'report_type' => $report_filters['report_type'],
+                                    'month' => $report_filters['month'],
+                                    'client_id' => (int) $report_filters['client_id'],
+                                    'project_id' => (int) $report_filters['project_id'],
+                                    'employee_id' => (int) $report_filters['employee_id'],
+                                    'status' => $report_filters['status'],
+                                    'mode' => $report_filters['mode'],
+                                    'detail' => $report_filters['detail'],
+                                    'per_page' => (int) ($report_filters['per_page'] ?? 25),
+                                ];
+                                $current_page = (int) ($report_pagination['page_num'] ?? 1);
+                                $total_pages = (int) ($report_pagination['total_pages'] ?? 1);
+                                ?>
+                                <span class="displaying-num"><?php echo esc_html(sprintf(__('Wyniki: %d', 'erp-omd'), (int) ($report_pagination['total_items'] ?? 0))); ?></span>
+                                <?php if (! empty($report_pagination['has_prev'])) : ?>
+                                    <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['page_num' => $current_page - 1]), admin_url('admin.php'))); ?>">&laquo;</a>
+                                <?php endif; ?>
+                                <span class="paging-input"><?php echo esc_html(sprintf(__('%1$d z %2$d', 'erp-omd'), $current_page, $total_pages)); ?></span>
+                                <?php if (! empty($report_pagination['has_next'])) : ?>
+                                    <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['page_num' => $current_page + 1]), admin_url('admin.php'))); ?>">&raquo;</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Stawka klienta', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th></tr></thead>
                         <tbody>
@@ -498,7 +530,7 @@
                         </tbody>
                     </table>
                     <?php if (! empty($report_pagination) && (int) ($report_pagination['total_pages'] ?? 1) > 1) : ?>
-                        <div class="tablenav">
+                        <div class="tablenav bottom">
                             <div class="tablenav-pages">
                                 <?php
                                 $base_args = [

@@ -15,6 +15,12 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 - Monitoring techniczny: `admin.php?page=erp-omd-reports&tab=monitoring`
 - Ustawienia SLO: `admin.php?page=erp-omd-settings#reports-v1-slo-monitoring`
 
+## 2a) Zasada komunikacji testów (USTALENIE)
+
+- Każdy punkt poniżej ma status do wpisania: `PASS` / `PASS WARUNKOWY` / `FAIL`.
+- Jeśli potrzebne jest Twoje potwierdzenie, oznaczam to jawnie jako: **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]**.
+- Po każdym bloku ekranu wpisujemy wynik od razu do sekcji „Wyniki przebiegu”.
+
 ## 3) Scenariusze UAT do odhaczenia
 
 ## Ekran 1 — Dashboard v1
@@ -52,7 +58,48 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 - PASS warunkowy: brak blockerów P0, otwarte tylko poprawki UX/P2.
 - FAIL: jakikolwiek blocker P0 w danych/rozliczeniu/uprawnieniach.
 
-## 5) Notatka końcowa
+## 5) Przebieg krok po kroku (z linkami i miejscem na wynik)
+
+## Krok 1 — Dashboard v1
+- Link: `admin.php?page=erp-omd-reports&tab=monitoring` (sekcja „Dashboard v1 — podgląd operacyjny”).
+- Sprawdź: status miesiąca, checklistę gotowości, top/bottom po zmianie miesiąca i trybu.
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `PASS (potwierdzone przez użytkownika)`
+
+## Krok 2 — Raport klient
+- Link: `admin.php?page=erp-omd-reports&tab=reports&report_type=clients`.
+- Sprawdź: widok podstawowy, drilldown w szczegółach, eksport CSV.
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `PASS (potwierdzone przez użytkownika)`
+
+## Krok 3 — Raport projekt
+- Link: `admin.php?page=erp-omd-reports&tab=reports&report_type=projects`.
+- Sprawdź: direct cost, budget usage, szczegóły wpisów/kosztów/mix, eksport CSV.
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `PASS (potwierdzone przez użytkownika)`
+
+## Krok 4 — Raport czasu pracy
+- Link: `admin.php?page=erp-omd-reports&tab=reports&report_type=time_entries`.
+- Sprawdź: simple + detail, paginacja, eksport CSV.
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `PASS WARUNKOWY (zgłoszone: brak detail switchera, top paginacja, CSV limit=25)` -> `FIX WDROŻONY, WYMAGANY RETEST`
+
+## Krok 5 — OMD rozliczenia
+- Link: `admin.php?page=erp-omd-reports&tab=reports&report_type=omd_rozliczenia`.
+- Sprawdź: definicje controllingowe, zgodność wyników i eksportu.
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `...`
+
+## Krok 6 — Zarządzanie miesiącem
+- Link: `admin.php?page=erp-omd-reports&tab=monitoring` + `admin.php?page=erp-omd-settings#reports-v1-slo-monitoring`.
+- Sprawdź: przejścia statusów, blokady po zamknięciu, zachowanie ścieżki korekt.
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `...`
+
+## 6) Wyniki przebiegu (do bieżącego uzupełniania)
+
+- Krok 1 (Dashboard v1): `PASS`
+- Krok 2 (Raport klient): `PASS`
+- Krok 3 (Raport projekt): `PASS`
+- Krok 4 (Raport czasu): `PASS WARUNKOWY -> RETEST`
+- Krok 5 (OMD): `...`
+- Krok 6 (Zarządzanie miesiącem): `...`
+
+## 7) Notatka końcowa
 
 Po zakończeniu przebiegu wpisz wynik do:
 - `docs/UAT_MASTER_PASS_V1_2026-04-07.md`
