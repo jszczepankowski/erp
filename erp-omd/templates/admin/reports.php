@@ -4,9 +4,11 @@
     <nav class="nav-tab-wrapper erp-omd-nav-tabs">
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'reports' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Raporty', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'calendar'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'calendar' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kalendarz', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'monitoring'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'monitoring' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Monitoring techniczny', 'erp-omd'); ?></a>
     </nav>
 
     <div class="erp-omd-page-sections">
+        <?php if ($report_filters['tab'] !== 'monitoring') : ?>
         <section class="erp-omd-card">
             <div class="erp-omd-section-header">
                 <div>
@@ -100,6 +102,8 @@
                 </div>
             </form>
         </section>
+        <?php endif; ?>
+        <?php if ($report_filters['tab'] === 'monitoring') : ?>
         <section class="erp-omd-card">
             <div class="notice <?php echo esc_attr((string) ($reports_v1_steady_state_banner['level'] ?? 'notice-info')); ?>" style="margin:0;">
                 <p><strong><?php echo esc_html((string) ($reports_v1_steady_state_banner['title'] ?? '')); ?></strong></p>
@@ -232,6 +236,7 @@
                 </div>
             </div>
         </section>
+        <?php endif; ?>
 
         <?php if ($report_filters['tab'] === 'reports') : ?>
             <section class="erp-omd-card">
