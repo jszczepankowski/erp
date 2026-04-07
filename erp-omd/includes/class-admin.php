@@ -217,6 +217,7 @@ class ERP_OMD_Admin
             'inlineProjectNonce' => wp_create_nonce('erp_omd_inline_project_update'),
             'restUrl' => esc_url_raw(rest_url('erp-omd/v1/')),
             'restNonce' => wp_create_nonce('wp_rest'),
+            'adminReportsUrl' => esc_url_raw(admin_url('admin.php?page=erp-omd-reports')),
         ]);
         wp_enqueue_media();
     }

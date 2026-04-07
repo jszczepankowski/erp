@@ -514,6 +514,20 @@ window.erpOmdInitDashboardV1Preview =
     project_client_completeness: 'Kompletność klient/projekt',
     critical_settlement_locks: 'Brak krytycznych blokad rozliczenia',
   };
+  const adminReportsBaseUrl =
+    typeof erpOmdAdminData !== 'undefined' &&
+    erpOmdAdminData &&
+    erpOmdAdminData.adminReportsUrl
+      ? String(erpOmdAdminData.adminReportsUrl)
+      : '';
+  const buildProjectDrilldownUrl = (projectId) => {
+    if (!adminReportsBaseUrl || !projectId) {
+      return '';
+    }
+    return `${adminReportsBaseUrl}&report_type=projects&month=${encodeURIComponent(
+      monthNode.value || fallbackMonth
+    )}&project_id=${encodeURIComponent(String(projectId))}`;
+  };
   const buildChecklistReason = (key, meta) => {
     const safeMeta = isObject(meta) ? meta : {};
     if (key === 'project_costs_verified') {
@@ -555,6 +569,24 @@ window.erpOmdInitDashboardV1Preview =
       return criticalAlerts > 0 ? `krytyczne alerty: ${criticalAlerts}` : '';
     }
     return '';
+  };
+  const collectProjectIdsForCostVerification = (meta) => {
+    const safeMeta = isObject(meta) ? meta : {};
+    const ids = [];
+    const addIds = (source) => {
+      if (!Array.isArray(source)) {
+        return;
+      }
+      source.forEach((value) => {
+        const numericValue = Number(value);
+        if (numericValue > 0 && ids.indexOf(numericValue) === -1) {
+          ids.push(numericValue);
+        }
+      });
+    };
+    addIds(safeMeta.invalid_cost_project_ids);
+    addIds(safeMeta.relevant_projects_without_cost_project_ids);
+    return ids;
   };
   const safeGet = (value, fallback) => (typeof value === 'undefined' || value === null ? fallback : value);
   const isObject = (value) => Boolean(value) && typeof value === 'object';
@@ -669,6 +701,31 @@ window.erpOmdInitDashboardV1Preview =
           const label = safeGet(checklistLabelMap[key], key);
           const reason = !passed ? buildChecklistReason(key, checklistMeta) : '';
           item.textContent = `${passed ? '✅' : '⛔'} ${label}${reason ? ` — ${reason}` : ''}`;
+          if (!passed && key === 'project_costs_verified') {
+            const projectIds = collectProjectIdsForCostVerification(checklistMeta);
+            if (projectIds.length > 0) {
+              const linksWrapper = document.createElement('div');
+              linksWrapper.className = 'erp-omd-dashboard-v1-checklist-links';
+              linksWrapper.appendChild(document.createTextNode('Przejdź do projektu: '));
+              projectIds.forEach((projectId, index) => {
+                const drilldownUrl = buildProjectDrilldownUrl(projectId);
+                if (drilldownUrl) {
+                  const link = document.createElement('a');
+                  link.href = drilldownUrl;
+                  link.textContent = `#${projectId}`;
+                  link.target = '_self';
+                  linksWrapper.appendChild(link);
+                } else {
+                  linksWrapper.appendChild(document.createTextNode(`#${projectId}`));
+                }
+                if (index < projectIds.length - 1) {
+                  linksWrapper.appendChild(document.createTextNode(', '));
+                }
+              });
+              item.appendChild(document.createElement('br'));
+              item.appendChild(linksWrapper);
+            }
+          }
           checklistNode.appendChild(item);
         });
       }

@@ -1672,3 +1672,12 @@
     margin-top: -8px;
     color: #9a3412;
 }
+
+.erp-omd-admin .erp-omd-dashboard-v1-checklist-links {
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-checklist-links a {
+    font-weight: 600;
+}
