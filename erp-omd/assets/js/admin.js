@@ -943,6 +943,14 @@ window.erpOmdInitAdminInteractions =
   });
 
 document.addEventListener('DOMContentLoaded', () => {
+  const rootNode = document.body;
+  if (rootNode instanceof HTMLElement) {
+    if (rootNode.dataset.erpOmdAdminInitDone === '1') {
+      return;
+    }
+    rootNode.dataset.erpOmdAdminInitDone = '1';
+  }
+
   const currentPage = new URLSearchParams(window.location.search).get('page') || '';
   initTableTools();
   initFixedCosts();
