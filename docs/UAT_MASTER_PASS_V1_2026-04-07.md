@@ -40,9 +40,9 @@ Status globalny: **IN PROGRESS**
 - [x] UAT-O2 wyniki + eksport (manual) — PASS (potwierdzenie użytkownika)
 
 ## Ekran 6 — Zarządzanie miesiącem
-- [ ] UAT-M1 przejścia statusów (manual) — ODŁOŻONE (funkcja status transitions niedostępna w bieżącym etapie)
-- [ ] UAT-M2 blokady uprawnień (manual) — ODŁOŻONE wraz z M1
-- [ ] UAT-M3 korekty 72h vs emergency (manual) — ODŁOŻONE do momentu aktywacji pełnego flow zamknięcia miesiąca
+- [ ] UAT-M1 przejścia statusów (manual) — RETEST PO WDROŻENIU UI/API
+- [ ] UAT-M2 blokady uprawnień (manual) — RETEST PO WDROŻENIU UI/API
+- [ ] UAT-M3 korekty 72h vs emergency (manual) — RETEST PO WDROŻENIU UI/API
 
 ## Ekran 7 — Audit log korekt
 - [x] UAT-A1 rejestr i filtrowanie (automatyczny smoke + implementacja UI)
@@ -58,6 +58,6 @@ Status globalny: **IN PROGRESS**
 
 ## 5) Co dalej (następna iteracja)
 
-1. Domknąć ETAP 1 / KROK 1.3 dla ekranów 1–5 (bez blokowania przez Ekran 6).
-2. Zaplanować retest Ekranu 6 w etapie, w którym pojawi się mechanizm status transitions.
-3. Zaktualizować wpis końcowy w `docs/WDROZENIE_V1_DZIENNIK.md` z oznaczeniem „odłożone do kolejnego etapu”.
+1. Wykonać manualny retest Ekranu 6 po wdrożeniu UI/API przejść statusów.
+2. Potwierdzić blokady po zamknięciu i korekty z `reason` + audit trail.
+3. Zaktualizować wpis końcowy w `docs/WDROZENIE_V1_DZIENNIK.md` wynikiem PASS/PASS warunkowy/FAIL dla Kroku 6.

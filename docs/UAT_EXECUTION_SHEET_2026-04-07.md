@@ -88,9 +88,8 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 ## Krok 6 — Zarządzanie miesiącem
 - Link: `admin.php?page=erp-omd-reports&tab=monitoring` + `admin.php?page=erp-omd-settings#reports-v1-slo-monitoring`.
 - Sprawdź: przejścia statusów, blokady po zamknięciu, zachowanie ścieżki korekt.
-- Uwaga z retestu: test wykonany na koncie `administrator`, ale w aktualnym etapie nie ma jeszcze dostępnych akcji UI/API do zmiany statusu miesiąca.
-- Decyzja: ten punkt odkładamy do późniejszego etapu wdrożenia i wracamy do niego po udostępnieniu mechanizmu przejść statusów.
-- **[POTWIERDZONE PRZEZ UŻYTKOWNIKA]** Wynik: `ODŁOŻONE (poza bieżącym etapem; wracamy po wdrożeniu status transitions)`
+- Akcje UI dostępne: przyciski przejść statusu w `Monitoring techniczny` (Dashboard v1 preview) oraz w `Ustawienia` (sekcja „Zarządzanie statusem miesiąca”).
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `RETEST PO WDROŻENIU (admin)`
 
 ## 6) Wyniki przebiegu (do bieżącego uzupełniania)
 
@@ -99,7 +98,7 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 - Krok 3 (Raport projekt): `PASS`
 - Krok 4 (Raport czasu): `PASS (z uwagą UX o podobnym zakresie simple/detail)`
 - Krok 5 (OMD): `PASS`
-- Krok 6 (Zarządzanie miesiącem): `ODŁOŻONE -> brak dostępnej funkcji zmiany statusu w tym etapie`
+- Krok 6 (Zarządzanie miesiącem): `RETEST PO WDROŻENIU (admin)`
 
 ## 7) Notatka końcowa
 

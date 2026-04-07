@@ -9,7 +9,7 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - Aktualny etap: **ETAP 1 — MUST operacyjne (Fala 1)**
 - Aktualny krok: **KROK 1.3 — UAT Master Pass (wykonanie i raport)**
 - Status: **W TRAKCIE**
-- Następny krok: **KROK 1.3 — domknięcie UAT ekranów 1–5 oraz odłożenie Ekranu 6 do etapu ze status transitions**
+- Następny krok: **KROK 1.3 — retest Ekranu 6 po wdrożeniu UI/API status transitions + domknięcie raportu UAT**
 
 ## 2) Etapy i kroki (kanoniczna lista)
 
@@ -62,10 +62,10 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — po feedbacku dla kroku 4 wdrożono fixy: przełącznik `Podstawowa/Szczegółowa` także dla `time_entries`, górna paginacja tabeli czasu oraz `per_page` jako „Wierszy na stronę” (retest wymagany).
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — użytkownik potwierdził `PASS` dla kroku 4 (Raport czasu); pozostają kroki 5–6.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — użytkownik potwierdził `PASS` dla kroku 5 (OMD rozliczenia); pozostał krok 6.
-- **IN PROGRESS:** ETAP 1 / KROK 1.3 — użytkownik potwierdził retest kroku 6 na koncie `administrator`; brak dostępnej funkcji zamknięcia/zmiany statusu miesiąca w bieżącym etapie, test oznaczony jako `ODŁOŻONE` do kolejnej fazy.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — wdrożono UI/API dla przejść statusu miesiąca (LIVE → DO_ROZLICZENIA → ZAMKNIETY) w Monitoring + Settings; wymagany retest manualny Kroku 6 na koncie admin.
 - **PARALLEL (ETAP 2 / KROK 2.1):** przygotowano baseline wydajności raportów (`docs/REPORTING_BENCHMARK_BASELINE_2026-04-07.md`) komendą `php tests/reporting-benchmark-12m.php`.
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
-- Kolejny focus: domknięcie UAT ekranów 1–5 i zaplanowanie retestu Ekranu 6 po wdrożeniu status transitions.
+- Kolejny focus: przeprowadzić retest Kroku 6 (status transitions, blokady po zamknięciu, korekty z reason + audit trail) i domknąć ETAP 1 / KROK 1.3.
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
