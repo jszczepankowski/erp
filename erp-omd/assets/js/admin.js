@@ -613,29 +613,13 @@ window.erpOmdInitDashboardV1Preview =
   let activeController = null;
   let activeRequestId = 0;
   const supportsAbortController = typeof AbortController === 'function';
-  const submitCostCorrection = (detail) => {
+  const submitCostCorrection = (detail, nextAmountRaw, nextDescription, adjustmentReason) => {
     const costId = Number(detail && detail.cost_id ? detail.cost_id : 0);
     const costDate = String(detail && detail.cost_date ? detail.cost_date : '');
     if (costId <= 0 || !costDate) {
       setStatusState('Brak danych rekordu kosztu do korekty.', 'error', true);
       return;
     }
-    const currentAmount = String(detail && typeof detail.amount !== 'undefined' ? detail.amount : '');
-    const nextAmountRaw = window.prompt('Nowa kwota kosztu:', currentAmount);
-    if (nextAmountRaw === null) {
-      return;
-    }
-    const nextDescription = window.prompt(
-      'Nowy opis kosztu:',
-      String(detail && detail.description ? detail.description : '')
-    );
-    if (nextDescription === null) {
-      return;
-    }
-    const adjustmentReason = window.prompt(
-      'Powód korekty (wymagany dla audytu):',
-      'Korekta z dashboard-v1'
-    );
     if (!adjustmentReason || adjustmentReason.trim() === '') {
       setStatusState('Powód korekty jest wymagany.', 'error', true);
       return;
@@ -821,7 +805,55 @@ window.erpOmdInitDashboardV1Preview =
                   fixButton.className = 'button button-small';
                   fixButton.textContent = 'Skoryguj';
                   fixButton.addEventListener('click', () => {
-                    submitCostCorrection(row);
+                    const existingForm = detailsWrapper.querySelector('.erp-omd-dashboard-v1-correction-form');
+                    if (existingForm instanceof HTMLElement) {
+                      existingForm.remove();
+                      return;
+                    }
+                    const formNode = document.createElement('div');
+                    formNode.className = 'erp-omd-dashboard-v1-correction-form';
+
+                    const amountInput = document.createElement('input');
+                    amountInput.type = 'number';
+                    amountInput.step = '0.01';
+                    amountInput.value = String(typeof row.amount !== 'undefined' ? row.amount : '');
+                    amountInput.placeholder = 'Kwota';
+
+                    const descriptionInput = document.createElement('input');
+                    descriptionInput.type = 'text';
+                    descriptionInput.value = String(row.description || '');
+                    descriptionInput.placeholder = 'Opis kosztu';
+
+                    const reasonInput = document.createElement('input');
+                    reasonInput.type = 'text';
+                    reasonInput.value = 'Korekta z dashboard-v1';
+                    reasonInput.placeholder = 'Powód korekty';
+
+                    const saveButton = document.createElement('button');
+                    saveButton.type = 'button';
+                    saveButton.className = 'button button-primary button-small';
+                    saveButton.textContent = 'Zapisz';
+                    saveButton.addEventListener('click', () => {
+                      submitCostCorrection(
+                        row,
+                        amountInput.value,
+                        descriptionInput.value,
+                        reasonInput.value
+                      );
+                    });
+
+                    const cancelButton = document.createElement('button');
+                    cancelButton.type = 'button';
+                    cancelButton.className = 'button button-small';
+                    cancelButton.textContent = 'Anuluj';
+                    cancelButton.addEventListener('click', () => formNode.remove());
+
+                    formNode.appendChild(amountInput);
+                    formNode.appendChild(descriptionInput);
+                    formNode.appendChild(reasonInput);
+                    formNode.appendChild(saveButton);
+                    formNode.appendChild(cancelButton);
+                    detailsWrapper.appendChild(formNode);
                   });
                   detailsWrapper.appendChild(fixButton);
                 }

@@ -1686,3 +1686,15 @@
     margin-left: 6px;
     vertical-align: baseline;
 }
+
+.erp-omd-admin .erp-omd-dashboard-v1-correction-form {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-correction-form input {
+    min-width: 140px;
+}
