@@ -1569,3 +1569,132 @@
 .erp-omd-admin table.widefat td select[multiple] {
     min-width: 180px;
 }
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-status {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #fff7ed;
+    color: #9a3412;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-status-loading {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-status-success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-status-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-status-error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-status-info {
+    background: #e0f2fe;
+    color: #0c4a6e;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 12px;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-controls label {
+    display: grid;
+    gap: 4px;
+    min-width: 180px;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-grid {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-card {
+    border: 1px solid var(--erp-omd-border);
+    border-radius: 12px;
+    padding: 12px;
+    background: #fff;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-preview-card h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-source-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-source-badge-live {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-source-badge-cache {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-source-badge-empty {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-counters {
+    margin-top: -4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 11px;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-debug {
+    margin-top: -8px;
+    color: #9a3412;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-checklist-links {
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-checklist-links a {
+    font-weight: 600;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-checklist-links .button {
+    margin-left: 6px;
+    vertical-align: baseline;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-correction-form {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.erp-omd-admin .erp-omd-dashboard-v1-correction-form input {
+    min-width: 140px;
+}
