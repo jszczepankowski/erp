@@ -1002,6 +1002,8 @@ class ERP_OMD_Admin
         $reports_v1_slo_calibration_closed = ! empty($reports_v1_slo_closure['closed_at']) && ! empty($reports_v1_slo_closure['closed_by_user_id']);
         $reports_v1_sustained_drift_window_size = 3;
         $reports_v1_recent_metrics_samples = array_slice($metrics_log, 0, $reports_v1_sustained_drift_window_size);
+        $reports_v1_history_limit = 5;
+        $reports_v1_history_samples = array_slice($metrics_log, 0, $reports_v1_history_limit);
         $reports_v1_recent_generation_samples = array_values(array_map(static function ($row) {
             return (int) ($row['generation_ms'] ?? 0);
         }, $reports_v1_recent_metrics_samples));
@@ -1024,6 +1026,16 @@ class ERP_OMD_Admin
             'actions' => [
                 __('Dokończ decyzję/closure kalibracji w Ustawieniach.', 'erp-omd'),
             ],
+            'history' => array_values(array_map(static function ($row) use ($reports_v1_slo_generation_p95_max) {
+                $generation_ms = (int) ($row['generation_ms'] ?? 0);
+                return [
+                    'captured_at' => (string) ($row['captured_at'] ?? ''),
+                    'report_type' => (string) ($row['report_type'] ?? ''),
+                    'generation_ms' => $generation_ms,
+                    'has_error' => ! empty($row['has_error']),
+                    'generation_above_threshold' => $generation_ms > (int) $reports_v1_slo_generation_p95_max,
+                ];
+            }, $reports_v1_history_samples)),
         ];
         if ($reports_v1_slo_calibration_closed && ! $reports_v1_sustained_drift_detected) {
             $reports_v1_steady_state_banner['level'] = 'notice-success';

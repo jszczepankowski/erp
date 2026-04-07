@@ -116,6 +116,27 @@
                         <?php esc_html_e('Przejdź do runbooka / ustawień SLO', 'erp-omd'); ?>
                     </a>
                 </p>
+                <?php if (! empty($reports_v1_steady_state_banner['history']) && is_array($reports_v1_steady_state_banner['history'])) : ?>
+                    <p><strong><?php esc_html_e('Ostatnie próbki drift (quick view)', 'erp-omd'); ?></strong></p>
+                    <ul style="margin:0 0 8px 18px;">
+                        <?php foreach ($reports_v1_steady_state_banner['history'] as $history_row) : ?>
+                            <li>
+                                <?php
+                                echo esc_html(
+                                    sprintf(
+                                        '%1$s | %2$s | %3$d ms | err=%4$s | p95>%5$s',
+                                        (string) ($history_row['captured_at'] ?? '—'),
+                                        (string) ($history_row['report_type'] ?? '—'),
+                                        (int) ($history_row['generation_ms'] ?? 0),
+                                        ! empty($history_row['has_error']) ? 'yes' : 'no',
+                                        ! empty($history_row['generation_above_threshold']) ? 'yes' : 'no'
+                                    )
+                                );
+                                ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
             </div>
         </section>
 
