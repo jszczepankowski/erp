@@ -76,7 +76,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 43. ✅ **P5 steady-state drift counter (43-a)** — quick view w banerze pokazuje licznik próbek dryfowych (`x/y`), żeby szybciej ocenić skalę problemu.
 44. ✅ **P5 status naming consistency + smoke (44-a)** — etykiety UI używają formy `DO ROZLICZENIA` (bez underscore), a w raporcie jest szybka checklista smoke do lokalnej weryfikacji.
 45. ✅ **P5 shared status-label helper contract (45-a)** — dashboard-v1 zwraca `period_status_label` i `status_actions[].to_status_label`, a frontend używa tych pól jako źródła etykiet (fallback tylko awaryjnie).
-46. **Kolejny etap** — dodać dedykowany test regresji UI/API dla status-label contract (snapshot payload + smoke rendering).
+46. ✅ **P5 status-label contract regression test (46-a)** — dodany dedykowany test regresji UI/API, który pilnuje pól `period_status_label` / `to_status_label` oraz smoke renderingu `DO ROZLICZENIA`.
+47. **Kolejny etap** — finalny cleanup techniczny: usunięcie zbędnych fallbacków labeli po pełnym potwierdzeniu contractu na środowisku stage.
 
 ## 4) Instrukcja startowa do nowego chatu
 
