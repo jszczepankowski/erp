@@ -1555,6 +1555,7 @@ class ERP_OMD_REST_API
             if ($project_id <= 0) {
                 continue;
             }
+            $project_status = (string) ($project['status'] ?? '');
 
             $cost_rows = (array) $this->project_costs->for_project($project_id);
             $project_has_cost_for_month = false;
@@ -1566,7 +1567,10 @@ class ERP_OMD_REST_API
                 $project_has_cost_for_month = true;
                 $relevant_project_ids[$project_id] = true;
 
-                if ((float) ($cost_row['amount'] ?? 0) <= 0 || trim((string) ($cost_row['description'] ?? '')) === '') {
+                if (
+                    $project_status !== 'archiwum'
+                    && ((float) ($cost_row['amount'] ?? 0) <= 0 || trim((string) ($cost_row['description'] ?? '')) === '')
+                ) {
                     $invalid_cost_rows++;
                     $project_costs_verified = false;
                     $invalid_cost_project_ids[$project_id] = true;
@@ -1579,7 +1583,6 @@ class ERP_OMD_REST_API
             }
             $relevant_projects++;
 
-            $project_status = (string) ($project['status'] ?? '');
             if (in_array($project_status, ['do_faktury', 'zakonczony'], true) && ! $project_has_cost_for_month) {
                 $relevant_projects_without_cost_rows++;
                 $project_costs_verified = false;
