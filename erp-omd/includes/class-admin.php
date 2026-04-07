@@ -261,6 +261,7 @@ class ERP_OMD_Admin
             case 'accept_estimate': $this->handle_estimate_accept(); break;
             case 'export_estimate': $this->handle_estimate_export(); break;
             case 'export_report': $this->handle_report_export(); break;
+            case 'export_adjustments_audit': $this->handle_adjustments_audit_export(); break;
             case 'save_project': $this->handle_project_save(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
@@ -969,34 +970,36 @@ class ERP_OMD_Admin
         $dashboard_preview_filters = [
             'queue_limit' => $dashboard_preview_queue_limit,
         ];
-        $report_monitoring = [
-            'generation_ms' => $report_generation_ms,
-            'rows_count' => is_array($report_rows) ? count($report_rows) : 0,
-            'report_type' => (string) ($report_filters['report_type'] ?? ''),
-            'rollout' => $reports_v1_rollout,
-            'enabled' => $reports_v1_enabled,
-            'has_error' => $report_error,
-            'error_message' => $report_error_message,
-            'captured_at' => gmdate('c'),
-            'freshness_threshold_minutes' => $reports_v1_freshness_minutes,
-            'previous_metrics_age_seconds' => $previous_report_age_seconds,
-            'previous_metrics_stale' => $previous_report_age_seconds === null ? null : ($previous_report_age_seconds > $reports_v1_freshness_seconds),
-            'slo_sample_target_min' => 20,
-        ];
-        update_option('erp_omd_reports_v1_last_metrics', $report_monitoring);
         $metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
-        array_unshift($metrics_log, $report_monitoring);
-        $metrics_log = array_slice($metrics_log, 0, 20);
-        $report_monitoring['slo_sample_count'] = count($metrics_log);
-        $report_monitoring['slo_samples_missing_to_calibration'] = max(0, (int) $report_monitoring['slo_sample_target_min'] - (int) $report_monitoring['slo_sample_count']);
-        $report_monitoring['slo_calibration_decision_ready'] = (int) $report_monitoring['slo_samples_missing_to_calibration'] === 0;
-        $report_monitoring['slo_calibration_next_action'] = ! empty($report_monitoring['slo_calibration_decision_ready'])
-            ? __('Zweryfikuj rekomendowany próg p95 i zapisz finalną wartość w Ustawieniach.', 'erp-omd')
-            : sprintf(
-                __('Zbierz jeszcze %d próbek, aby domknąć kalibrację SLO.', 'erp-omd'),
-                (int) $report_monitoring['slo_samples_missing_to_calibration']
-            );
-        update_option('erp_omd_reports_v1_metrics_log', $metrics_log);
+        if ($report_filters['tab'] === 'reports' && $report_filters['report_type'] !== '') {
+            $report_monitoring = [
+                'generation_ms' => $report_generation_ms,
+                'rows_count' => is_array($report_rows) ? count($report_rows) : 0,
+                'report_type' => (string) ($report_filters['report_type'] ?? ''),
+                'rollout' => $reports_v1_rollout,
+                'enabled' => $reports_v1_enabled,
+                'has_error' => $report_error,
+                'error_message' => $report_error_message,
+                'captured_at' => gmdate('c'),
+                'freshness_threshold_minutes' => $reports_v1_freshness_minutes,
+                'previous_metrics_age_seconds' => $previous_report_age_seconds,
+                'previous_metrics_stale' => $previous_report_age_seconds === null ? null : ($previous_report_age_seconds > $reports_v1_freshness_seconds),
+                'slo_sample_target_min' => 20,
+            ];
+            update_option('erp_omd_reports_v1_last_metrics', $report_monitoring);
+            array_unshift($metrics_log, $report_monitoring);
+            $metrics_log = array_slice($metrics_log, 0, 20);
+            $report_monitoring['slo_sample_count'] = count($metrics_log);
+            $report_monitoring['slo_samples_missing_to_calibration'] = max(0, (int) $report_monitoring['slo_sample_target_min'] - (int) $report_monitoring['slo_sample_count']);
+            $report_monitoring['slo_calibration_decision_ready'] = (int) $report_monitoring['slo_samples_missing_to_calibration'] === 0;
+            $report_monitoring['slo_calibration_next_action'] = ! empty($report_monitoring['slo_calibration_decision_ready'])
+                ? __('Zweryfikuj rekomendowany próg p95 i zapisz finalną wartość w Ustawieniach.', 'erp-omd')
+                : sprintf(
+                    __('Zbierz jeszcze %d próbek, aby domknąć kalibrację SLO.', 'erp-omd'),
+                    (int) $report_monitoring['slo_samples_missing_to_calibration']
+                );
+            update_option('erp_omd_reports_v1_metrics_log', $metrics_log);
+        }
         $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
         $reports_v1_slo_closure = (array) get_option('erp_omd_reports_v1_slo_calibration_closure', []);
         $reports_v1_slo_calibration_closed = ! empty($reports_v1_slo_closure['closed_at']) && ! empty($reports_v1_slo_closure['closed_by_user_id']);
@@ -1077,6 +1080,14 @@ class ERP_OMD_Admin
             ];
         }
         $reports_v1_runbook_url = admin_url('admin.php?page=erp-omd-settings#reports-v1-slo-monitoring');
+        $reports_v1_monitoring_summary = [
+            'slo_generation_p95_max' => (int) $reports_v1_slo_generation_p95_max,
+            'freshness_minutes' => (int) $reports_v1_freshness_minutes,
+            'drift_ratio_percent' => (float) $reports_v1_history_drift_ratio_percent,
+            'calibration_closed' => (bool) $reports_v1_slo_calibration_closed,
+            'sustained_drift_detected' => (bool) $reports_v1_sustained_drift_detected,
+            'last_sample_at' => (string) ($reports_v1_history_samples[0]['captured_at'] ?? ''),
+        ];
         $reports_page_base_args = [
             'page' => 'erp-omd-reports',
             'tab' => (string) ($report_filters['tab'] ?? 'reports'),
@@ -1129,6 +1140,39 @@ class ERP_OMD_Admin
             'omd_rozliczenia' => __('Raport operacyjny OMD', 'erp-omd'),
         ];
         $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');
+        $adjustment_types = ['STANDARD', 'EMERGENCY_ADJUSTMENT'];
+        $adjustment_entity_types = ['time_entry', 'project_cost', 'project', 'other'];
+        $adjustment_filters = [
+            'month' => sanitize_text_field((string) ($_GET['adjustment_month'] ?? $report_filters['month'])),
+            'entity_type' => sanitize_text_field((string) ($_GET['adjustment_entity_type'] ?? '')),
+            'adjustment_type' => sanitize_text_field((string) ($_GET['adjustment_type'] ?? '')),
+            'changed_by' => max(0, (int) ($_GET['adjustment_changed_by'] ?? 0)),
+            'reason' => sanitize_text_field((string) ($_GET['adjustment_reason'] ?? '')),
+            'limit' => max(10, min(500, (int) ($_GET['adjustment_limit'] ?? 100))),
+        ];
+        if (! $this->is_valid_month_string($adjustment_filters['month'])) {
+            $adjustment_filters['month'] = $report_filters['month'];
+        }
+        if (! in_array($adjustment_filters['adjustment_type'], $adjustment_types, true)) {
+            $adjustment_filters['adjustment_type'] = '';
+        }
+        if (! in_array($adjustment_filters['entity_type'], $adjustment_entity_types, true)) {
+            $adjustment_filters['entity_type'] = '';
+        }
+        $can_manage_adjustments_audit = current_user_can('erp_omd_manage_settings');
+        $adjustment_rows = [];
+        if ($can_manage_adjustments_audit) {
+            $adjustment_rows = (array) $this->adjustment_audit->all(array_filter($adjustment_filters));
+        }
+        $adjustment_author_labels = [];
+        foreach ($adjustment_rows as $adjustment_row) {
+            $changed_by_id = (int) ($adjustment_row['changed_by'] ?? 0);
+            if ($changed_by_id <= 0 || isset($adjustment_author_labels[$changed_by_id])) {
+                continue;
+            }
+            $user = get_userdata($changed_by_id);
+            $adjustment_author_labels[$changed_by_id] = $user instanceof WP_User ? (string) $user->user_login : ('#' . $changed_by_id);
+        }
         include ERP_OMD_PATH . 'templates/admin/reports.php';
     }
 
@@ -1763,6 +1807,62 @@ class ERP_OMD_Admin
         fputcsv($output, $export['headers'], ';');
         foreach ($export['rows'] as $row) {
             fputcsv($output, $row, ';');
+        }
+
+        fclose($output);
+        exit;
+    }
+
+    private function handle_adjustments_audit_export()
+    {
+        check_admin_referer('erp_omd_export_adjustments_audit');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $month = sanitize_text_field((string) ($_POST['adjustment_month'] ?? ''));
+        if ($month !== '' && ! $this->is_valid_month_string($month)) {
+            $month = '';
+        }
+        $entity_type = sanitize_text_field((string) ($_POST['adjustment_entity_type'] ?? ''));
+        $adjustment_type = sanitize_text_field((string) ($_POST['adjustment_type'] ?? ''));
+        $changed_by = max(0, (int) ($_POST['adjustment_changed_by'] ?? 0));
+        $reason = sanitize_text_field((string) ($_POST['adjustment_reason'] ?? ''));
+        $limit = max(1, min(500, (int) ($_POST['adjustment_limit'] ?? 200)));
+
+        $filters = [
+            'month' => $month,
+            'entity_type' => $entity_type,
+            'adjustment_type' => $adjustment_type,
+            'changed_by' => $changed_by,
+            'reason' => $reason,
+            'limit' => $limit,
+        ];
+        $rows = (array) $this->adjustment_audit->all(array_filter($filters));
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . sanitize_file_name(sprintf('erp-omd-adjustment-audit-%s.csv', gmdate('Ymd-His'))) . '"');
+
+        $output = fopen('php://output', 'w');
+        if (! $output) {
+            wp_die(esc_html__('Nie udało się przygotować pliku audytu korekt.', 'erp-omd'));
+        }
+
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, ['id', 'month', 'entity_type', 'entity_id', 'field_name', 'old_value', 'new_value', 'adjustment_type', 'reason', 'changed_by', 'changed_at'], ';');
+        foreach ($rows as $row) {
+            fputcsv($output, [
+                (int) ($row['id'] ?? 0),
+                (string) ($row['month'] ?? ''),
+                (string) ($row['entity_type'] ?? ''),
+                (int) ($row['entity_id'] ?? 0),
+                (string) ($row['field_name'] ?? ''),
+                (string) ($row['old_value'] ?? ''),
+                (string) ($row['new_value'] ?? ''),
+                (string) ($row['adjustment_type'] ?? ''),
+                (string) ($row['reason'] ?? ''),
+                (int) ($row['changed_by'] ?? 0),
+                (string) ($row['changed_at'] ?? ''),
+            ], ';');
         }
 
         fclose($output);
