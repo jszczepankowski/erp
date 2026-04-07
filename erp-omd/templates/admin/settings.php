@@ -215,7 +215,7 @@
 
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
-                        <h3><?php esc_html_e('Reports v1 — SLO i monitoring', 'erp-omd'); ?></h3>
+                        <h3 id="reports-v1-slo-monitoring"><?php esc_html_e('Reports v1 — SLO i monitoring', 'erp-omd'); ?></h3>
                         <p><?php esc_html_e('Ustawienia i status kalibracji SLO wydzielone do osobnego boxu na końcu ekranu.', 'erp-omd'); ?></p>
                     </div>
                     <div class="erp-omd-form-grid">
