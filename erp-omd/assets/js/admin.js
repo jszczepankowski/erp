@@ -456,7 +456,11 @@ window.erpOmdInitDashboardV1Preview =
     !erpOmdAdminData ||
     !erpOmdAdminData.restUrl
   ) {
-    statusNode.textContent = 'Nie udało się załadować dashboard-v1 (brak konfiguracji REST).';
+    setStatusState(
+      'Nie udało się załadować dashboard-v1 (brak konfiguracji REST).',
+      'error',
+      true
+    );
     return;
   }
 
@@ -480,6 +484,18 @@ window.erpOmdInitDashboardV1Preview =
       'erp-omd-dashboard-v1-source-badge-empty'
     );
     sourceNode.classList.add(`erp-omd-dashboard-v1-source-badge-${state}`);
+  };
+  const setStatusState = (message, state, visible) => {
+    statusNode.textContent = message;
+    statusNode.hidden = !visible;
+    statusNode.classList.remove(
+      'erp-omd-dashboard-v1-preview-status-loading',
+      'erp-omd-dashboard-v1-preview-status-success',
+      'erp-omd-dashboard-v1-preview-status-warning',
+      'erp-omd-dashboard-v1-preview-status-error',
+      'erp-omd-dashboard-v1-preview-status-info'
+    );
+    statusNode.classList.add(`erp-omd-dashboard-v1-preview-status-${state}`);
   };
   const formatCountersLabel = (counters) => {
     const safeCounters = counters || {};
@@ -517,8 +533,8 @@ window.erpOmdInitDashboardV1Preview =
       modeNode.value
     )}&profitability_scope=${encodeURIComponent(scopeNode.value)}`;
 
-    statusNode.hidden = false;
-    statusNode.textContent = 'Ładowanie podglądu dashboard-v1…';
+    previewNode.setAttribute('aria-busy', 'true');
+    setStatusState('Ładowanie podglądu dashboard-v1…', 'loading', true);
     gridNode.hidden = true;
     refreshNode.disabled = true;
     debugNode.textContent = 'DEBUG: init start';
@@ -556,9 +572,9 @@ window.erpOmdInitDashboardV1Preview =
         ? safePayload.readiness_checklist
         : {};
       const adjustments = isObject(safePayload.adjustments) ? safePayload.adjustments : {};
-      statusNode.hidden = true;
       gridNode.hidden = false;
       debugNode.textContent = '';
+      setStatusState('Dane LIVE zostały odświeżone.', 'success', false);
 
       monthStatusNode.textContent = `${safeGet(safePayload.period_status, '—')} (${safeGet(safePayload.month, monthNode.value || fallbackMonth)})`;
       updatedAtNode.textContent = `Ostatnia aktualizacja: ${safeGet(safePayload.generated_at, '—')}`;
@@ -566,12 +582,14 @@ window.erpOmdInitDashboardV1Preview =
       const hasOperationalData = Boolean(dataHealth.has_operational_data);
       if (!hasOperationalData) {
         const counters = isObject(dataHealth.counters) ? dataHealth.counters : {};
-        statusNode.hidden = false;
-        statusNode.textContent =
-          safeGet(dataHealth.hint, 'Brak danych operacyjnych dla wybranego miesiąca.');
+        setStatusState(
+          safeGet(dataHealth.hint, 'Brak danych operacyjnych dla wybranego miesiąca.'),
+          'warning',
+          true
+        );
         countersNode.textContent = formatCountersLabel(counters);
       } else {
-        statusNode.hidden = true;
+        setStatusState('Dane LIVE zostały odświeżone.', 'success', false);
         countersNode.textContent = '';
       }
       actionsNode.innerHTML = '';
@@ -644,16 +662,20 @@ window.erpOmdInitDashboardV1Preview =
           restored = false;
         }
         if (restored) {
-          statusNode.hidden = false;
-          statusNode.textContent =
-            'Nie udało się odświeżyć danych live — pokazuję ostatni zapisany snapshot.';
+          setStatusState(
+            'Nie udało się odświeżyć danych live — pokazuję ostatni zapisany snapshot.',
+            'warning',
+            true
+          );
           debugNode.textContent = `DEBUG: ${String(safeGet(safeError.message, 'REST fetch failed'))}`;
           gridNode.hidden = false;
           return;
         }
-        statusNode.hidden = false;
-        statusNode.textContent =
-          'Nie udało się pobrać podglądu dashboard-v1. Sprawdź uprawnienia i konfigurację REST API.';
+        setStatusState(
+          'Nie udało się pobrać podglądu dashboard-v1. Sprawdź uprawnienia i konfigurację REST API.',
+          'error',
+          true
+        );
         setSourceState('BRAK DANYCH', 'empty');
         debugNode.textContent = `DEBUG: ${String(safeGet(safeError.message, 'REST fetch failed'))}`;
         gridNode.hidden = true;
@@ -663,6 +685,7 @@ window.erpOmdInitDashboardV1Preview =
         if (requestId !== activeRequestId) {
           return;
         }
+        previewNode.setAttribute('aria-busy', 'false');
         refreshNode.disabled = false;
       });
   };
@@ -678,15 +701,13 @@ window.erpOmdInitDashboardV1Preview =
           localStorage.removeItem(key);
         }
       });
-      statusNode.hidden = false;
-      statusNode.textContent = 'Wyczyszczono lokalny cache snapshotów dashboard-v1.';
+      setStatusState('Wyczyszczono lokalny cache snapshotów dashboard-v1.', 'info', true);
       updatedAtNode.textContent = '';
       setSourceState('LIVE', 'live');
       countersNode.textContent = '';
       debugNode.textContent = '';
     } catch (_) {
-      statusNode.hidden = false;
-      statusNode.textContent = 'Nie udało się wyczyścić lokalnego cache.';
+      setStatusState('Nie udało się wyczyścić lokalnego cache.', 'error', true);
       debugNode.textContent = 'DEBUG: localStorage clear failed';
     }
   });
