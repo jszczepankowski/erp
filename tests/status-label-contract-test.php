@@ -30,10 +30,13 @@ if (strpos($adminJsSource, 'safeAction.to_status_label') === false) {
     throw new RuntimeException('Admin JS should prefer to_status_label from status_actions payload.');
 }
 
+if (strpos($adminJsSource, 'formatPeriodStatusLabel') !== false) {
+    throw new RuntimeException('Admin JS should no longer rely on underscore-format fallback helper after status-label contract rollout.');
+}
+
 if (strpos($reportsTemplateSource, "esc_html_e('DO ROZLICZENIA', 'erp-omd')") === false) {
     throw new RuntimeException('Reports template should render DO ROZLICZENIA label (without underscore).');
 }
 
-echo "Assertions: 6\n";
+echo "Assertions: 7\n";
 echo "Status-label contract test passed.\n";
-
