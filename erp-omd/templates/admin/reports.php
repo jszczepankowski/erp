@@ -4,9 +4,11 @@
     <nav class="nav-tab-wrapper erp-omd-nav-tabs">
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'reports' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Raporty', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'calendar'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'calendar' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kalendarz', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'monitoring'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'monitoring' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Monitoring techniczny', 'erp-omd'); ?></a>
     </nav>
 
     <div class="erp-omd-page-sections">
+        <?php if ($report_filters['tab'] !== 'monitoring') : ?>
         <section class="erp-omd-card">
             <div class="erp-omd-section-header">
                 <div>
@@ -100,6 +102,8 @@
                 </div>
             </form>
         </section>
+        <?php endif; ?>
+        <?php if ($report_filters['tab'] === 'monitoring') : ?>
         <section class="erp-omd-card">
             <div class="notice <?php echo esc_attr((string) ($reports_v1_steady_state_banner['level'] ?? 'notice-info')); ?>" style="margin:0;">
                 <p><strong><?php echo esc_html((string) ($reports_v1_steady_state_banner['title'] ?? '')); ?></strong></p>
@@ -178,6 +182,27 @@
                 </ul>
             </div>
         </section>
+        <section class="erp-omd-card">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h2><?php esc_html_e('Reports v1 — SLO i monitoring', 'erp-omd'); ?></h2>
+                    <p class="description"><?php esc_html_e('Skrót stanu progów i monitoringu technicznego dla raportów v1.', 'erp-omd'); ?></p>
+                </div>
+                <a class="button button-secondary" href="<?php echo esc_url((string) $reports_v1_runbook_url); ?>">
+                    <?php esc_html_e('Przejdź do pełnych ustawień SLO', 'erp-omd'); ?>
+                </a>
+            </div>
+            <ul style="margin:0 0 8px 18px;">
+                <li><?php echo esc_html(sprintf(__('Próg p95: %d ms', 'erp-omd'), (int) ($reports_v1_monitoring_summary['slo_generation_p95_max'] ?? 0))); ?></li>
+                <li><?php echo esc_html(sprintf(__('Próg świeżości metryk: %d min', 'erp-omd'), (int) ($reports_v1_monitoring_summary['freshness_minutes'] ?? 0))); ?></li>
+                <li><?php echo esc_html(sprintf(__('Udział próbek z dryfem (quick view): %.2f%%', 'erp-omd'), (float) ($reports_v1_monitoring_summary['drift_ratio_percent'] ?? 0))); ?></li>
+                <li><?php echo esc_html(! empty($reports_v1_monitoring_summary['calibration_closed']) ? __('Kalibracja SLO: zamknięta', 'erp-omd') : __('Kalibracja SLO: w toku', 'erp-omd')); ?></li>
+                <li><?php echo esc_html(! empty($reports_v1_monitoring_summary['sustained_drift_detected']) ? __('Trwały dryf: wykryty', 'erp-omd') : __('Trwały dryf: brak', 'erp-omd')); ?></li>
+                <?php if (! empty($reports_v1_monitoring_summary['last_sample_at'])) : ?>
+                    <li><?php echo esc_html(sprintf(__('Ostatnia próbka: %s', 'erp-omd'), (string) $reports_v1_monitoring_summary['last_sample_at'])); ?></li>
+                <?php endif; ?>
+            </ul>
+        </section>
 
         <section class="erp-omd-card erp-omd-dashboard-v1-preview" data-dashboard-v1-preview="1" data-month="<?php echo esc_attr($report_filters['month']); ?>">
             <div class="erp-omd-section-header">
@@ -232,6 +257,7 @@
                 </div>
             </div>
         </section>
+        <?php endif; ?>
 
         <?php if ($report_filters['tab'] === 'reports') : ?>
             <section class="erp-omd-card">
