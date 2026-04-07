@@ -291,6 +291,8 @@ class ERP_OMD_REST_API
                     ],
                     'month' => $month,
                     'mode' => $mode,
+                    'period_status' => (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE),
+                    'period_status_label' => $this->format_period_status_label((string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE)),
                     'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,
                     'readiness_meta' => $readiness_meta,
@@ -499,17 +501,23 @@ class ERP_OMD_REST_API
                 && ! (bool) ($checklist['ready'] ?? false)
             ) {
                 $enabled = false;
-                $reason = __('LIVE -> DO_ROZLICZENIA requires readiness checklist == ready.', 'erp-omd');
+                $reason = __('LIVE -> DO ROZLICZENIA requires readiness checklist == ready.', 'erp-omd');
             }
 
             $actions[] = [
                 'to_status' => $target_status,
+                'to_status_label' => $this->format_period_status_label($target_status),
                 'enabled' => $enabled,
                 'reason' => $reason,
             ];
         }
 
         return $actions;
+    }
+
+    private function format_period_status_label($status)
+    {
+        return trim(str_replace('_', ' ', (string) $status));
     }
 
     private function register_role_routes()
@@ -1298,6 +1306,28 @@ class ERP_OMD_REST_API
         } else {
             $reports_v1_slo_status['generation_ms_p95_tuning_direction'] = 'keep';
         }
+        $reports_v1_drift_window_size = 3;
+        $reports_v1_recent_generation_samples = array_slice(
+            array_values(array_map(static function ($row) {
+                return (int) ($row['generation_ms'] ?? 0);
+            }, $reports_v1_metrics_log)),
+            0,
+            $reports_v1_drift_window_size
+        );
+        $reports_v1_recent_error_samples = array_slice(
+            array_values(array_map(static function ($row) {
+                return ! empty($row['has_error']);
+            }, $reports_v1_metrics_log)),
+            0,
+            $reports_v1_drift_window_size
+        );
+        $reports_v1_has_sustained_generation_drift = count($reports_v1_recent_generation_samples) === $reports_v1_drift_window_size
+            && count(array_filter($reports_v1_recent_generation_samples, static function ($sample) use ($reports_v1_slo) {
+                return (int) $sample > (int) $reports_v1_slo['generation_ms_p95_max'];
+            })) === $reports_v1_drift_window_size;
+        $reports_v1_has_sustained_error_drift = count($reports_v1_recent_error_samples) === $reports_v1_drift_window_size
+            && count(array_filter($reports_v1_recent_error_samples)) === $reports_v1_drift_window_size;
+        $reports_v1_sustained_drift_detected = $reports_v1_has_sustained_generation_drift || $reports_v1_has_sustained_error_drift;
         $reports_v1_last_metrics_age_seconds = null;
         $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
         $reports_v1_metrics_freshness_threshold_seconds = $reports_v1_metrics_freshness_minutes * 60;
@@ -1335,6 +1365,17 @@ class ERP_OMD_REST_API
             $reports_v1_slo_status['calibration_state'] = 'closed';
             $reports_v1_slo_status['calibration_next_action'] = 'Calibration formally closed. Keep monitoring SLO trends and reopen only when sustained drift appears.';
         }
+        $reports_v1_sustained_drift_evaluation_enabled = $reports_v1_slo_calibration_closed;
+        if (! $reports_v1_sustained_drift_evaluation_enabled) {
+            $reports_v1_has_sustained_generation_drift = false;
+            $reports_v1_has_sustained_error_drift = false;
+            $reports_v1_sustained_drift_detected = false;
+        }
+        $reports_v1_slo_status['sustained_drift_window_size'] = $reports_v1_drift_window_size;
+        $reports_v1_slo_status['sustained_drift_evaluation_enabled'] = $reports_v1_sustained_drift_evaluation_enabled;
+        $reports_v1_slo_status['sustained_generation_drift_detected'] = $reports_v1_has_sustained_generation_drift;
+        $reports_v1_slo_status['sustained_error_drift_detected'] = $reports_v1_has_sustained_error_drift;
+        $reports_v1_slo_status['sustained_drift_detected'] = $reports_v1_sustained_drift_detected;
         $reports_v1_slo_status['calibration_closed'] = $reports_v1_slo_calibration_closed;
         $reports_v1_slo_status['calibration_closed_at'] = (string) $reports_v1_slo_closure['closed_at'];
         $reports_v1_operational_status = [
@@ -1359,6 +1400,11 @@ class ERP_OMD_REST_API
             $reports_v1_operational_status['level'] = 'alert';
             $reports_v1_operational_status['reasons'][] = 'generation_p95_exceeds_target';
             $reports_v1_operational_status['recommended_actions'][] = 'Investigate slow reports and optimize heavy filters/queries.';
+        }
+        if ($reports_v1_sustained_drift_detected) {
+            $reports_v1_operational_status['level'] = 'alert';
+            $reports_v1_operational_status['reasons'][] = 'sustained_drift_detected';
+            $reports_v1_operational_status['recommended_actions'][] = 'Sustained drift detected: execute rollback/tuning playbook for Reports v1 thresholds and heavy report paths.';
         }
         if ($reports_v1_last_metrics_age_seconds === null) {
             if ($reports_v1_operational_status['level'] === 'ok') {
