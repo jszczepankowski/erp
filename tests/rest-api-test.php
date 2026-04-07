@@ -502,7 +502,7 @@ if (! class_exists('ERP_OMD_Period_Service')) {
             $existing = $this->ensure_month_exists($month, get_current_user_id());
             $checklist = $this->build_readiness_checklist($readiness);
             if ($existing['status'] === 'LIVE' && $status === 'DO_ROZLICZENIA' && ! $checklist['ready']) {
-                throw new InvalidArgumentException('LIVE -> DO_ROZLICZENIA requires readiness checklist == ready.');
+                throw new InvalidArgumentException('LIVE -> DO ROZLICZENIA requires readiness checklist == ready.');
             }
             $this->rows[$month]['status'] = $status;
 
@@ -697,6 +697,15 @@ final class RestApiTestRunner
         $this->assertSame(500, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_recommended_max'], 'System status should expose rounded recommended p95 target for calibration.');
         $this->assertSame(1300, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_threshold_delta'], 'System status should expose delta between current and recommended p95 threshold.');
         $this->assertSame('decrease', $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_tuning_direction'], 'System status should expose tuning direction based on current vs recommended p95 threshold.');
+        $this->assertSame(3, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_window_size'], 'System status should expose window size used to evaluate sustained drift.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_evaluation_enabled'], 'System status should evaluate sustained drift only after formal calibration closure.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_generation_drift_detected'], 'System status should not flag sustained generation drift for healthy compact samples.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_error_drift_detected'], 'System status should not flag sustained error drift for healthy compact samples.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_detected'], 'System status should expose consolidated sustained drift marker.');
+        $this->assertSame(2, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_samples_evaluated'], 'System status should expose evaluated sample count for sustained drift telemetry.');
+        $this->assertSame(0, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_positive_samples'], 'System status should expose number of recent samples with drift symptoms.');
+        $this->assertSame(0.0, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_positive_ratio_percent'], 'System status should expose percentage ratio of drift-positive samples.');
+        $this->assertSame('2026-04-02T10:00:00+00:00', $system['feature_flags']['reports_v1_slo_status']['sustained_drift_last_sample_at'], 'System status should expose timestamp of latest sample used by sustained drift telemetry.');
         $this->assertSame('', $system['feature_flags']['reports_v1_slo_closure']['closed_at'], 'System status should expose empty closure payload when SLO calibration closure is not persisted yet.');
         $this->assertSame(0.0, $system['feature_flags']['reports_v1_slo_status']['error_rate_percent'], 'System status should expose computed error rate percent from monitoring samples.');
         $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['error_rate_within_target'], 'System status should expose whether current error rate is within target.');
@@ -708,6 +717,8 @@ final class RestApiTestRunner
         $this->assertSame('ok', $system['feature_flags']['reports_v1_operational_status']['level'], 'System status should expose actionable operational status for reports v1.');
         $this->assertSame(false, $system['feature_flags']['reports_v1_operational_status']['requires_attention'], 'Operational status should remain green when monitoring signals are complete and fresh.');
         $this->assertSame(0, count($system['feature_flags']['reports_v1_operational_status']['reasons']), 'Operational status should have no reasons when reports monitoring is healthy.');
+        $this->assertSame(false, in_array('sustained_drift_detected', $system['feature_flags']['reports_v1_operational_status']['reasons'], true), 'Operational status should avoid sustained drift reason for healthy samples.');
+        $this->assertSame(false, in_array('Sustained drift detected: execute rollback/tuning playbook for Reports v1 thresholds and heavy report paths.', $system['feature_flags']['reports_v1_operational_status']['recommended_actions'], true), 'Operational status should avoid rollback recommendation when sustained drift is not present.');
 
         $api->register_routes();
         $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', WP_REST_Server::READABLE);
@@ -757,9 +768,12 @@ final class RestApiTestRunner
         $this->assertSame(1, $dashboardPayload['applied_limits']['profitability_items'], 'Dashboard endpoint should expose applied profitability item limit.');
         $this->assertSame('2026-03', $dashboardPayload['month'], 'Dashboard endpoint should preserve explicit month filter.');
         $this->assertSame('ZAMKNIETY', $dashboardPayload['mode'], 'Dashboard endpoint should expose applied reporting mode.');
+        $this->assertSame('LIVE', $dashboardPayload['period_status'], 'Dashboard endpoint should expose raw period status value.');
+        $this->assertSame('LIVE', $dashboardPayload['period_status_label'], 'Dashboard endpoint should expose user-facing period status label without underscores.');
         $this->assertSame(false, $dashboardPayload['readiness_checklist']['ready'], 'Dashboard endpoint should expose readiness checklist snapshot for selected month.');
         $this->assertSame(1, $dashboardPayload['readiness_meta']['submitted_or_rejected_entries'], 'Dashboard readiness meta should expose submitted/rejected entry counter.');
         $this->assertSame('DO_ROZLICZENIA', $dashboardPayload['status_actions'][0]['to_status'], 'Dashboard endpoint should expose next status action for current month.');
+        $this->assertSame('DO ROZLICZENIA', $dashboardPayload['status_actions'][0]['to_status_label'], 'Dashboard status actions should expose user-facing labels without underscores.');
         $this->assertSame(false, $dashboardPayload['status_actions'][0]['enabled'], 'Dashboard status action should be disabled when checklist is not ready.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['trend_3m']), 'Dashboard endpoint should expose metric definitions for frontend tooltip rendering.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['readiness_checklist.ready']), 'Dashboard endpoint should expose readiness definition tooltip key.');

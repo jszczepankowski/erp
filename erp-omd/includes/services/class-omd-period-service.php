@@ -59,7 +59,7 @@ class ERP_OMD_Period_Service
         }
 
         if ($from_status === self::STATUS_LIVE && $to_status === self::STATUS_DO_ROZLICZENIA && ! $is_ready) {
-            throw new InvalidArgumentException('LIVE -> DO_ROZLICZENIA requires readiness checklist == ready.');
+            throw new InvalidArgumentException('LIVE -> DO ROZLICZENIA requires readiness checklist == ready.');
         }
     }
 
