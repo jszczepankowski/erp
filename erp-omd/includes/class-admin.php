@@ -27,6 +27,7 @@ class ERP_OMD_Admin
     private $project_financial_service;
     private $reporting_service;
     private $alert_service;
+    private $adjustment_audit;
 
     public function __construct(
         ERP_OMD_Role_Repository $roles,
@@ -80,6 +81,7 @@ class ERP_OMD_Admin
         $this->project_financial_service = $project_financial_service;
         $this->reporting_service = $reporting_service;
         $this->alert_service = $alert_service;
+        $this->adjustment_audit = class_exists('ERP_OMD_Adjustment_Audit_Repository') ? new ERP_OMD_Adjustment_Audit_Repository() : null;
     }
 
     public function register_hooks()
@@ -283,6 +285,9 @@ class ERP_OMD_Admin
                     'reason' => $reason,
                     'limit' => $limit,
                 ];
+                if (! $this->adjustment_audit || ! method_exists($this->adjustment_audit, 'all')) {
+                    wp_die(esc_html__('Repozytorium audytu korekt nie jest dostępne.', 'erp-omd'));
+                }
                 $rows = (array) $this->adjustment_audit->all(array_filter($filters));
 
                 nocache_headers();
@@ -1214,7 +1219,7 @@ class ERP_OMD_Admin
         }
         $can_manage_adjustments_audit = current_user_can('erp_omd_manage_settings');
         $adjustment_rows = [];
-        if ($can_manage_adjustments_audit) {
+        if ($can_manage_adjustments_audit && $this->adjustment_audit && method_exists($this->adjustment_audit, 'all')) {
             $adjustment_rows = (array) $this->adjustment_audit->all(array_filter($adjustment_filters));
         }
         $adjustment_author_labels = [];

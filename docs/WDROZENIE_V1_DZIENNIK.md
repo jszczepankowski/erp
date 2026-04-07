@@ -55,6 +55,7 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix runtime: dodano brakującą metodę `is_valid_month_string()` w `ERP_OMD_Admin` (usuniecie fatal error na ekranie Raporty/Monitoring).
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix redeclare: obsługę `export_adjustments_audit` przeniesiono inline do `handle_forms()` (bez dedykowanej metody), aby wyeliminować kolizje nazw metod po merge/cherry-pick.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — dodano twardy test `tests/admin-class-test.php` pilnujący, że legacy `handle_adjustments_audit_export()` i `handle_adjustments_audit_export_csv()` nie wracają jako metody klasy.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix runtime: dodano inicjalizację `$adjustment_audit` w konstruktorze `ERP_OMD_Admin` + guardy, gdy repozytorium audytu nie jest dostępne.
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
 - Kolejny focus: manualny przebieg UAT ekranów 1–6 i domknięcie statusu końcowego.
 
