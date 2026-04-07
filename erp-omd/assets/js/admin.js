@@ -618,11 +618,11 @@ window.erpOmdInitDashboardV1Preview =
     const costDate = String(detail && detail.cost_date ? detail.cost_date : '');
     if (costId <= 0 || !costDate) {
       setStatusState('Brak danych rekordu kosztu do korekty.', 'error', true);
-      return;
+      return Promise.resolve(false);
     }
     if (!adjustmentReason || adjustmentReason.trim() === '') {
       setStatusState('Powód korekty jest wymagany.', 'error', true);
-      return;
+      return Promise.resolve(false);
     }
 
     const endpoint = `${String(erpOmdAdminData.restUrl).replace(/\/$/, '')}/project-costs/${encodeURIComponent(
@@ -635,7 +635,7 @@ window.erpOmdInitDashboardV1Preview =
     requestBody.set('adjustment_reason', String(adjustmentReason));
 
     setStatusState('Zapisywanie korekty kosztu…', 'loading', true);
-    fetch(endpoint, {
+    return fetch(endpoint, {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, headers),
       body: requestBody.toString(),
@@ -652,9 +652,11 @@ window.erpOmdInitDashboardV1Preview =
         }
         setStatusState('Korekta kosztu zapisana. Odświeżam podgląd…', 'success', true);
         fetchPreview();
+        return true;
       })
       .catch((error) => {
         setStatusState(`Nie udało się zapisać korekty: ${String(error.message || 'błąd')}`, 'error', true);
+        return false;
       });
   };
 
@@ -834,12 +836,32 @@ window.erpOmdInitDashboardV1Preview =
                     saveButton.className = 'button button-primary button-small';
                     saveButton.textContent = 'Zapisz';
                     saveButton.addEventListener('click', () => {
+                      const amountValue = Number(amountInput.value);
+                      if (!(amountValue > 0)) {
+                        setStatusState('Kwota kosztu musi być większa od zera.', 'error', true);
+                        return;
+                      }
+                      if (String(descriptionInput.value || '').trim() === '') {
+                        setStatusState('Opis kosztu nie może być pusty.', 'error', true);
+                        return;
+                      }
+                      if (String(reasonInput.value || '').trim() === '') {
+                        setStatusState('Powód korekty jest wymagany.', 'error', true);
+                        return;
+                      }
+                      saveButton.disabled = true;
                       submitCostCorrection(
                         row,
-                        amountInput.value,
+                        String(amountValue),
                         descriptionInput.value,
                         reasonInput.value
-                      );
+                      ).then((saved) => {
+                        if (saved) {
+                          formNode.remove();
+                        }
+                      }).finally(() => {
+                        saveButton.disabled = false;
+                      });
                     });
 
                     const cancelButton = document.createElement('button');
