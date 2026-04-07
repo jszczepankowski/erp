@@ -1,0 +1,66 @@
+# WDROZENIE_V1_DZIENNIK — tracker postępu cross-chat
+
+Data startu dziennika: 2026-04-07
+Plan bazowy: `docs/PLAN_PELNE_WDROZENIE_WARIANT_B_V1.md`
+Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
+
+## 1) Status globalny
+
+- Aktualny etap: **ETAP 1 — MUST operacyjne (Fala 1)**
+- Aktualny krok: **KROK 1.3 — UAT Master Pass (wykonanie i raport)**
+- Status: **W TRAKCIE**
+- Następny krok: **KROK 1.3 — manualny przebieg UAT ekranów 1–6 + finalny status PASS/PASS warunkowy**
+
+## 2) Etapy i kroki (kanoniczna lista)
+
+### ETAP 0 — Planowanie (zakończony)
+- [x] **0.1** Audyt `RAPORTY_NEW` (braki/duplikaty).
+- [x] **0.2** Opracowanie pełnego planu wdrożenia v1 (4 fale).
+- [x] **0.3** Potwierdzenie kompletności planu względem SPEC + ustalenie trackingu cross-chat.
+
+### ETAP 1 — MUST operacyjne (Fala 1)
+- [x] **1.1** Audit Log UX + CSV — projekt techniczny i zakres implementacji.
+- [x] **1.2** Audit Log UX + CSV — implementacja backend/UI/eksport.
+- [ ] **1.3** UAT Master Pass — wykonanie i raport.
+
+### ETAP 2 — Jakość i bezpieczeństwo (Fala 2)
+- [ ] **2.1** Benchmark wydajności raportów (scenariusze ciężkie).
+- [ ] **2.2** Testy bezpieczeństwa endpointów krytycznych.
+- [ ] **2.3** Regresja migracyjna na staging (kopie danych/historyczne miesiące).
+
+### ETAP 3 — Operacyjność steady-state (Fala 3)
+- [ ] **3.1** Rollback drill (runbook, czasy wykonania).
+- [ ] **3.2** Przegląd i utrwalenie progów operacyjnych.
+- [ ] **3.3** Matryca reakcji operacyjnej (kto/co/kiedy).
+
+### ETAP 4 — Cleanup i formalne zamknięcie (Fala 4)
+- [ ] **4.1** Ujednolicenie dokumentacji końcowej.
+- [ ] **4.2** Finalna nota „v1 fully implemented”.
+- [ ] **4.3** Backlog v1.1 (poza MUST).
+
+## 3) Log aktualizacji (append-only)
+
+## 2026-04-07
+- **DONE:** ETAP 0 / KROK 0.3 — potwierdzono kompletność planu `PLAN_PELNE_WDROZENIE_WARIANT_B_V1.md` względem MUST specyfikacji; zdefiniowano standard raportowania postępu cross-chat.
+- Commit referencyjny: `TBD (uzupełniany po merge)`.
+- Kolejny focus: ETAP 1 / KROK 1.1.
+
+- **DONE:** ETAP 1 / KROK 1.1 — domknięto zakres projektowy dla Audit Log UX + CSV oraz wydzielono warstwę techniczną do zakładki `Monitoring techniczny`.
+- **DONE:** ETAP 1 / KROK 1.2 — wdrożono filtrację i tabelę audit log korekt w `Monitoring techniczny` + eksport CSV audytu.
+- Commit referencyjny: `TBD (uzupełniany po merge)`.
+- Kolejny focus: ETAP 1 / KROK 1.3 (UAT Master Pass).
+
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — utworzono artefakt `docs/UAT_MASTER_PASS_V1_2026-04-07.md` z checklistą UAT per ekran i bieżącymi dowodami technicznymi.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — rozszerzono Audit log korekt o widok/eksport wartości `przed/po` (old/new), aby ułatwić finalne testy UAT z biznesem.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix runtime: dodano brakującą metodę `is_valid_month_string()` w `ERP_OMD_Admin` (usuniecie fatal error na ekranie Raporty/Monitoring).
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix redeclare: eksport audytu korekt przepięto na metodę `handle_adjustments_audit_export_csv()` (uniknięcie kolizji nazw metody w środowiskach po merge/cherry-pick).
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — dodano twardy test `tests/admin-class-test.php` pilnujący, że legacy `handle_adjustments_audit_export()` nie wraca i że `handle_adjustments_audit_export_csv()` istnieje dokładnie raz.
+- Commit referencyjny: `TBD (uzupełniany po merge)`.
+- Kolejny focus: manualny przebieg UAT ekranów 1–6 i domknięcie statusu końcowego.
+
+## 4) Instrukcja wznowienia w nowym chacie
+
+Wklej na start:
+1. `Kontynuujemy wdrożenie v1 wg docs/PLAN_PELNE_WDROZENIE_WARIANT_B_V1.md i docs/WDROZENIE_V1_DZIENNIK.md.`
+2. `Pokaż aktualny ETAP/KROK i przejdź do kolejnego kroku TODO.`
+3. `Po zmianach zaktualizuj dziennik (status + log aktualizacji + commit).`
