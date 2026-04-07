@@ -70,7 +70,8 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 37. ✅ **P3 status cleanup archiwum (37-a)** — UI projektów używa `archiwum` (zamiast legacy `inactive`) w formularzu, filtrach i akcjach masowych.
 38. ✅ **P3/P5 month switcher + cleanup (38-a)** — dedykowany wybór miesiąca działa w panelu admina `ERP OMD — Dashboard`, usunięto box switchera z dashboardu managera, a eksport CSV rozróżnia wersję podstawową i szczegółową.
 39. ✅ **P5 steady-state drift guard (39-a)** — `system/status` (po formalnym zamknięciu kalibracji SLO) wykrywa trwały dryf metryk (`sustained_drift_detected`) na oknie ostatnich próbek i rekomenduje rollback/tuning tylko dla utrzymującego się dryfu.
-40. **Kolejny etap** — lekki panel UX steady-state (baner w raportach + link do runbooka), który pokazuje sygnał `sustained_drift_detected` i zalecane akcje operatorskie.
+40. ✅ **P5 steady-state UX banner (40-a)** — raporty admina pokazują baner steady-state (status drift + akcje operatorskie) oraz szybki link do runbooka/ustawień SLO.
+41. **Kolejny etap** — dodać mini-historię sygnału drift (ostatnie N próbek i timestamps) do banera, aby operator widział trend bez przechodzenia do API.
 
 ## 4) Instrukcja startowa do nowego chatu
 

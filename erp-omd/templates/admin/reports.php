@@ -100,6 +100,24 @@
                 </div>
             </form>
         </section>
+        <section class="erp-omd-card">
+            <div class="notice <?php echo esc_attr((string) ($reports_v1_steady_state_banner['level'] ?? 'notice-info')); ?>" style="margin:0;">
+                <p><strong><?php echo esc_html((string) ($reports_v1_steady_state_banner['title'] ?? '')); ?></strong></p>
+                <p><?php echo esc_html((string) ($reports_v1_steady_state_banner['message'] ?? '')); ?></p>
+                <?php if (! empty($reports_v1_steady_state_banner['actions']) && is_array($reports_v1_steady_state_banner['actions'])) : ?>
+                    <ul style="margin:0 0 8px 18px;">
+                        <?php foreach ($reports_v1_steady_state_banner['actions'] as $monitoring_action) : ?>
+                            <li><?php echo esc_html((string) $monitoring_action); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+                <p style="margin-bottom:8px;">
+                    <a class="button button-secondary" href="<?php echo esc_url((string) $reports_v1_runbook_url); ?>">
+                        <?php esc_html_e('Przejdź do runbooka / ustawień SLO', 'erp-omd'); ?>
+                    </a>
+                </p>
+            </div>
+        </section>
 
         <section class="erp-omd-card erp-omd-dashboard-v1-preview" data-dashboard-v1-preview="1" data-month="<?php echo esc_attr($report_filters['month']); ?>">
             <div class="erp-omd-section-header">
