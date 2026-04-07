@@ -502,7 +502,7 @@ if (! class_exists('ERP_OMD_Period_Service')) {
             $existing = $this->ensure_month_exists($month, get_current_user_id());
             $checklist = $this->build_readiness_checklist($readiness);
             if ($existing['status'] === 'LIVE' && $status === 'DO_ROZLICZENIA' && ! $checklist['ready']) {
-                throw new InvalidArgumentException('LIVE -> DO_ROZLICZENIA requires readiness checklist == ready.');
+                throw new InvalidArgumentException('LIVE -> DO ROZLICZENIA requires readiness checklist == ready.');
             }
             $this->rows[$month]['status'] = $status;
 
@@ -764,9 +764,12 @@ final class RestApiTestRunner
         $this->assertSame(1, $dashboardPayload['applied_limits']['profitability_items'], 'Dashboard endpoint should expose applied profitability item limit.');
         $this->assertSame('2026-03', $dashboardPayload['month'], 'Dashboard endpoint should preserve explicit month filter.');
         $this->assertSame('ZAMKNIETY', $dashboardPayload['mode'], 'Dashboard endpoint should expose applied reporting mode.');
+        $this->assertSame('LIVE', $dashboardPayload['period_status'], 'Dashboard endpoint should expose raw period status value.');
+        $this->assertSame('LIVE', $dashboardPayload['period_status_label'], 'Dashboard endpoint should expose user-facing period status label without underscores.');
         $this->assertSame(false, $dashboardPayload['readiness_checklist']['ready'], 'Dashboard endpoint should expose readiness checklist snapshot for selected month.');
         $this->assertSame(1, $dashboardPayload['readiness_meta']['submitted_or_rejected_entries'], 'Dashboard readiness meta should expose submitted/rejected entry counter.');
         $this->assertSame('DO_ROZLICZENIA', $dashboardPayload['status_actions'][0]['to_status'], 'Dashboard endpoint should expose next status action for current month.');
+        $this->assertSame('DO ROZLICZENIA', $dashboardPayload['status_actions'][0]['to_status_label'], 'Dashboard status actions should expose user-facing labels without underscores.');
         $this->assertSame(false, $dashboardPayload['status_actions'][0]['enabled'], 'Dashboard status action should be disabled when checklist is not ready.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['trend_3m']), 'Dashboard endpoint should expose metric definitions for frontend tooltip rendering.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['readiness_checklist.ready']), 'Dashboard endpoint should expose readiness definition tooltip key.');

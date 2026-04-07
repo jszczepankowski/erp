@@ -157,6 +157,12 @@
                 <?php elseif (! empty($reports_v1_steady_state_banner['history_drift_only'])) : ?>
                     <p><?php esc_html_e('Brak próbek spełniających filtr dryfu w quick view.', 'erp-omd'); ?></p>
                 <?php endif; ?>
+                <p><strong><?php esc_html_e('Szybki smoke-test etykiet statusów', 'erp-omd'); ?></strong></p>
+                <ul style="margin:0 0 8px 18px;">
+                    <li><?php esc_html_e('W selectorze trybu widzisz „DO ROZLICZENIA” (bez underscore).', 'erp-omd'); ?></li>
+                    <li><?php esc_html_e('W karcie „Status miesiąca” dashboard-v1 status renderuje się jako „DO ROZLICZENIA”.', 'erp-omd'); ?></li>
+                    <li><?php esc_html_e('Akcje statusowe nie pokazują fallbacku z underscore, tylko wersję ze spacją.', 'erp-omd'); ?></li>
+                </ul>
             </div>
         </section>
 
