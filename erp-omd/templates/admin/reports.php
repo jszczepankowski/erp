@@ -203,6 +203,100 @@
                 <?php endif; ?>
             </ul>
         </section>
+        <section class="erp-omd-card">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h2><?php esc_html_e('Audit log korekt', 'erp-omd'); ?></h2>
+                    <p class="description"><?php esc_html_e('Filtrowanie i eksport rejestru korekt administracyjnych dla wskazanego okresu.', 'erp-omd'); ?></p>
+                </div>
+            </div>
+            <?php if (! $can_manage_adjustments_audit) : ?>
+                <p class="description"><?php esc_html_e('Brak uprawnień do podglądu audytu korekt.', 'erp-omd'); ?></p>
+            <?php else : ?>
+                <form method="get" style="margin-bottom:12px;">
+                    <input type="hidden" name="page" value="erp-omd-reports" />
+                    <input type="hidden" name="tab" value="monitoring" />
+                    <label>
+                        <?php esc_html_e('Miesiąc', 'erp-omd'); ?>
+                        <input type="month" name="adjustment_month" value="<?php echo esc_attr((string) $adjustment_filters['month']); ?>" />
+                    </label>
+                    <label>
+                        <?php esc_html_e('Typ korekty', 'erp-omd'); ?>
+                        <select name="adjustment_type">
+                            <option value=""><?php esc_html_e('Wszystkie', 'erp-omd'); ?></option>
+                            <?php foreach ($adjustment_types as $adjustment_type_option) : ?>
+                                <option value="<?php echo esc_attr($adjustment_type_option); ?>" <?php selected((string) $adjustment_filters['adjustment_type'], (string) $adjustment_type_option); ?>><?php echo esc_html($adjustment_type_option); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>
+                        <?php esc_html_e('Encja', 'erp-omd'); ?>
+                        <select name="adjustment_entity_type">
+                            <option value=""><?php esc_html_e('Wszystkie', 'erp-omd'); ?></option>
+                            <?php foreach ($adjustment_entity_types as $entity_type_option) : ?>
+                                <option value="<?php echo esc_attr($entity_type_option); ?>" <?php selected((string) $adjustment_filters['entity_type'], (string) $entity_type_option); ?>><?php echo esc_html($entity_type_option); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>
+                        <?php esc_html_e('User ID', 'erp-omd'); ?>
+                        <input type="number" min="0" name="adjustment_changed_by" value="<?php echo esc_attr((string) $adjustment_filters['changed_by']); ?>" />
+                    </label>
+                    <label>
+                        <?php esc_html_e('Powód', 'erp-omd'); ?>
+                        <input type="text" name="adjustment_reason" value="<?php echo esc_attr((string) $adjustment_filters['reason']); ?>" />
+                    </label>
+                    <label>
+                        <?php esc_html_e('Limit', 'erp-omd'); ?>
+                        <input type="number" min="10" max="500" step="10" name="adjustment_limit" value="<?php echo esc_attr((string) $adjustment_filters['limit']); ?>" />
+                    </label>
+                    <button class="button button-primary" type="submit"><?php esc_html_e('Filtruj audyt', 'erp-omd'); ?></button>
+                </form>
+
+                <form method="post" style="margin-bottom:12px;">
+                    <?php wp_nonce_field('erp_omd_export_adjustments_audit'); ?>
+                    <input type="hidden" name="erp_omd_action" value="export_adjustments_audit" />
+                    <input type="hidden" name="adjustment_month" value="<?php echo esc_attr((string) $adjustment_filters['month']); ?>" />
+                    <input type="hidden" name="adjustment_type" value="<?php echo esc_attr((string) $adjustment_filters['adjustment_type']); ?>" />
+                    <input type="hidden" name="adjustment_entity_type" value="<?php echo esc_attr((string) $adjustment_filters['entity_type']); ?>" />
+                    <input type="hidden" name="adjustment_changed_by" value="<?php echo esc_attr((string) $adjustment_filters['changed_by']); ?>" />
+                    <input type="hidden" name="adjustment_reason" value="<?php echo esc_attr((string) $adjustment_filters['reason']); ?>" />
+                    <input type="hidden" name="adjustment_limit" value="<?php echo esc_attr((string) $adjustment_filters['limit']); ?>" />
+                    <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV audytu', 'erp-omd'); ?></button>
+                </form>
+
+                <table class="widefat striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Encja', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Pole', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Powód', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Kto', 'erp-omd'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (empty($adjustment_rows)) : ?>
+                        <tr><td colspan="7"><?php esc_html_e('Brak rekordów audytu dla wybranych filtrów.', 'erp-omd'); ?></td></tr>
+                    <?php else : ?>
+                        <?php foreach ($adjustment_rows as $adjustment_row) : ?>
+                            <tr>
+                                <td><?php echo esc_html((string) ($adjustment_row['changed_at'] ?? '')); ?></td>
+                                <td><?php echo esc_html((string) ($adjustment_row['month'] ?? '')); ?></td>
+                                <td><?php echo esc_html((string) ($adjustment_row['adjustment_type'] ?? '')); ?></td>
+                                <td><?php echo esc_html(sprintf('%s #%d', (string) ($adjustment_row['entity_type'] ?? ''), (int) ($adjustment_row['entity_id'] ?? 0))); ?></td>
+                                <td><?php echo esc_html((string) ($adjustment_row['field_name'] ?? '')); ?></td>
+                                <td><?php echo esc_html((string) ($adjustment_row['reason'] ?? '')); ?></td>
+                                <td><?php echo esc_html((string) ($adjustment_author_labels[(int) ($adjustment_row['changed_by'] ?? 0)] ?? ('#' . (int) ($adjustment_row['changed_by'] ?? 0)))); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </section>
 
         <section class="erp-omd-card erp-omd-dashboard-v1-preview" data-dashboard-v1-preview="1" data-month="<?php echo esc_attr($report_filters['month']); ?>">
             <div class="erp-omd-section-header">

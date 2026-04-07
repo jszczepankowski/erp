@@ -7,9 +7,9 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 ## 1) Status globalny
 
 - Aktualny etap: **ETAP 1 — MUST operacyjne (Fala 1)**
-- Aktualny krok: **KROK 1.1 — Audit Log UX + CSV (analiza implementacyjna i rozbicie na taski developerskie)**
-- Status: **W TRAKCIE**
-- Następny krok: **KROK 1.2 — Audit Log UX + CSV (implementacja backend/UI/eksport)**
+- Aktualny krok: **KROK 1.3 — UAT Master Pass (wykonanie i raport)**
+- Status: **TODO**
+- Następny krok: **KROK 1.3 — przygotowanie checklisty wykonawczej UAT i przebieg testowy**
 
 ## 2) Etapy i kroki (kanoniczna lista)
 
@@ -19,8 +19,8 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - [x] **0.3** Potwierdzenie kompletności planu względem SPEC + ustalenie trackingu cross-chat.
 
 ### ETAP 1 — MUST operacyjne (Fala 1)
-- [ ] **1.1** Audit Log UX + CSV — projekt techniczny i zakres implementacji.
-- [ ] **1.2** Audit Log UX + CSV — implementacja backend/UI/eksport.
+- [x] **1.1** Audit Log UX + CSV — projekt techniczny i zakres implementacji.
+- [x] **1.2** Audit Log UX + CSV — implementacja backend/UI/eksport.
 - [ ] **1.3** UAT Master Pass — wykonanie i raport.
 
 ### ETAP 2 — Jakość i bezpieczeństwo (Fala 2)
@@ -45,9 +45,10 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
 - Kolejny focus: ETAP 1 / KROK 1.1.
 
-- **IN PROGRESS:** ETAP 1 / KROK 1.1 — równolegle wykonano porządkowanie UX zakładki Raporty: techniczne treści `Reports v1 — steady-state monitoring` oraz `Reports v1 — SLO i monitoring` zostały wydzielone do `Monitoring techniczny` (przygotowanie pod dalsze kroki Fali 1 bez mieszania warstwy biznesowej z techniczną).
+- **DONE:** ETAP 1 / KROK 1.1 — domknięto zakres projektowy dla Audit Log UX + CSV oraz wydzielono warstwę techniczną do zakładki `Monitoring techniczny`.
+- **DONE:** ETAP 1 / KROK 1.2 — wdrożono filtrację i tabelę audit log korekt w `Monitoring techniczny` + eksport CSV audytu.
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
-- Kolejny focus: dopięcie implementacyjnego zakresu Audit Log UX + CSV.
+- Kolejny focus: ETAP 1 / KROK 1.3 (UAT Master Pass).
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
