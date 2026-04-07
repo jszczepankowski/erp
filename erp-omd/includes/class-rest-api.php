@@ -1579,6 +1579,9 @@ class ERP_OMD_REST_API
                         $invalid_cost_rows_details[] = [
                             'project_id' => $project_id,
                             'cost_id' => (int) ($cost_row['id'] ?? 0),
+                            'cost_date' => sanitize_text_field((string) ($cost_row['cost_date'] ?? '')),
+                            'amount' => (float) ($cost_row['amount'] ?? 0),
+                            'description' => sanitize_text_field((string) ($cost_row['description'] ?? '')),
                             'reason' => (float) ($cost_row['amount'] ?? 0) <= 0
                                 ? 'amount_non_positive'
                                 : 'description_empty',
