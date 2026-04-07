@@ -16,11 +16,12 @@ class ERP_OMD_Period_Service
 
     public function build_readiness_checklist(array $signals)
     {
+        $meta = (array) ($signals['_meta'] ?? []);
         $map = [
-            'time_entries_finalized' => ! empty($signals['time_entries_finalized']),
-            'project_costs_verified' => ! empty($signals['project_costs_verified']),
-            'project_client_completeness' => ! empty($signals['project_client_completeness']),
-            'critical_settlement_locks' => ! empty($signals['critical_settlement_locks']),
+            'time_entries_finalized' => $this->resolve_check_with_meta($signals, $meta, 'time_entries_finalized', ['submitted_or_rejected_entries']),
+            'project_costs_verified' => $this->resolve_check_with_meta($signals, $meta, 'project_costs_verified', ['invalid_cost_rows', 'relevant_projects_without_cost_rows']),
+            'project_client_completeness' => $this->resolve_check_with_meta($signals, $meta, 'project_client_completeness', ['incomplete_relevant_projects']),
+            'critical_settlement_locks' => $this->resolve_check_with_meta($signals, $meta, 'critical_settlement_locks', ['critical_alerts']),
         ];
 
         $blockers = [];
@@ -34,6 +35,7 @@ class ERP_OMD_Period_Service
             'ready' => $blockers === [],
             'checks' => $map,
             'blockers' => $blockers,
+            'meta' => $meta,
         ];
     }
 
@@ -188,5 +190,21 @@ class ERP_OMD_Period_Service
         }
 
         return $date->format('Y-m') === $month;
+    }
+
+    private function resolve_check_with_meta(array $signals, array $meta, $signal_key, array $blocking_meta_keys)
+    {
+        $signal_passed = ! empty($signals[$signal_key]);
+        if (! $signal_passed) {
+            return false;
+        }
+
+        foreach ($blocking_meta_keys as $meta_key) {
+            if ((int) ($meta[$meta_key] ?? 0) > 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
