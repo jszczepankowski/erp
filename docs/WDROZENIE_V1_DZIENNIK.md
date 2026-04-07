@@ -60,6 +60,8 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — doprecyzowano przebieg „krok po kroku” z linkami per ekran i znacznikami **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]**.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — użytkownik potwierdził `PASS` dla kroków 1–3 (Dashboard v1, Raport klient, Raport projekt); w toku pozostają kroki 4–6.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — po feedbacku dla kroku 4 wdrożono fixy: przełącznik `Podstawowa/Szczegółowa` także dla `time_entries`, górna paginacja tabeli czasu oraz `per_page` jako „Wierszy na stronę” (retest wymagany).
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — użytkownik potwierdził `PASS` dla kroku 4 (Raport czasu); pozostają kroki 5–6.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — użytkownik potwierdził `PASS` dla kroku 5 (OMD rozliczenia); pozostał krok 6.
 - **PARALLEL (ETAP 2 / KROK 2.1):** przygotowano baseline wydajności raportów (`docs/REPORTING_BENCHMARK_BASELINE_2026-04-07.md`) komendą `php tests/reporting-benchmark-12m.php`.
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
 - Kolejny focus: manualny przebieg UAT ekranów 1–6 i domknięcie statusu końcowego.

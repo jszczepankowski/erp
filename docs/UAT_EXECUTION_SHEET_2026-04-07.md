@@ -78,26 +78,28 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 ## Krok 4 — Raport czasu pracy
 - Link: `admin.php?page=erp-omd-reports&tab=reports&report_type=time_entries`.
 - Sprawdź: simple + detail, paginacja, eksport CSV.
-- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `PASS WARUNKOWY (zgłoszone: brak detail switchera, top paginacja, CSV limit=25)` -> `FIX WDROŻONY, WYMAGANY RETEST`
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `PASS (potwierdzone przez użytkownika; uwaga UX: simple/detail obecnie mają bardzo zbliżoną zawartość)`
 
 ## Krok 5 — OMD rozliczenia
 - Link: `admin.php?page=erp-omd-reports&tab=reports&report_type=omd_rozliczenia`.
 - Sprawdź: definicje controllingowe, zgodność wyników i eksportu.
-- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `...`
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `PASS (potwierdzone przez użytkownika)`
 
 ## Krok 6 — Zarządzanie miesiącem
 - Link: `admin.php?page=erp-omd-reports&tab=monitoring` + `admin.php?page=erp-omd-settings#reports-v1-slo-monitoring`.
 - Sprawdź: przejścia statusów, blokady po zamknięciu, zachowanie ścieżki korekt.
-- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `...`
+- Jeśli nie widzisz akcji zmiany statusu, to test wymaga konta z uprawnieniem `erp_omd_manage_settings` lub `administrator`.
+- Alternatywa techniczna: potwierdzenie przez admina na endpointach `/erp-omd/v1/periods/{month}/transition` i próbie zapisu wpisu czasu bez/ze `reason`.
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `BLOKADA UPRAWNIEŃ (oczekuje na test admina)`
 
 ## 6) Wyniki przebiegu (do bieżącego uzupełniania)
 
 - Krok 1 (Dashboard v1): `PASS`
 - Krok 2 (Raport klient): `PASS`
 - Krok 3 (Raport projekt): `PASS`
-- Krok 4 (Raport czasu): `PASS WARUNKOWY -> RETEST`
-- Krok 5 (OMD): `...`
-- Krok 6 (Zarządzanie miesiącem): `...`
+- Krok 4 (Raport czasu): `PASS (z uwagą UX o podobnym zakresie simple/detail)`
+- Krok 5 (OMD): `PASS`
+- Krok 6 (Zarządzanie miesiącem): `BLOKADA UPRAWNIEŃ -> test admina wymagany`
 
 ## 7) Notatka końcowa
 

@@ -32,12 +32,12 @@ Status globalny: **IN PROGRESS**
 - [x] UAT-P2 widok szczegółowy (manual) — PASS (potwierdzenie użytkownika)
 
 ## Ekran 4 — Raport per czas pracy
-- [~] UAT-T1 widok prosty (manual) — PASS WARUNKOWY (zgłoszony brak przełącznika detail; fix wdrożony, retest wymagany)
-- [~] UAT-T2 widok szczegółowy + paginacja (manual) — PASS WARUNKOWY (zgłoszona niespójność górnej paginacji i limitu CSV; fix wdrożony, retest wymagany)
+- [x] UAT-T1 widok prosty (manual) — PASS (potwierdzenie użytkownika; uwaga UX: zakres simple/detail podobny)
+- [x] UAT-T2 widok szczegółowy + paginacja (manual) — PASS (potwierdzenie użytkownika po fixie paginacji i per_page)
 
 ## Ekran 5 — OMD rozliczenia
-- [ ] UAT-O1 definicje (manual)
-- [ ] UAT-O2 wyniki + eksport (manual)
+- [x] UAT-O1 definicje (manual) — PASS (potwierdzenie użytkownika)
+- [x] UAT-O2 wyniki + eksport (manual) — PASS (potwierdzenie użytkownika)
 
 ## Ekran 6 — Zarządzanie miesiącem
 - [ ] UAT-M1 przejścia statusów (manual)
