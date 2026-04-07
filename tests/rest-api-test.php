@@ -697,6 +697,10 @@ final class RestApiTestRunner
         $this->assertSame(500, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_recommended_max'], 'System status should expose rounded recommended p95 target for calibration.');
         $this->assertSame(1300, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_threshold_delta'], 'System status should expose delta between current and recommended p95 threshold.');
         $this->assertSame('decrease', $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_tuning_direction'], 'System status should expose tuning direction based on current vs recommended p95 threshold.');
+        $this->assertSame(3, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_window_size'], 'System status should expose window size used to evaluate sustained drift.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_generation_drift_detected'], 'System status should not flag sustained generation drift for healthy compact samples.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_error_drift_detected'], 'System status should not flag sustained error drift for healthy compact samples.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_detected'], 'System status should expose consolidated sustained drift marker.');
         $this->assertSame('', $system['feature_flags']['reports_v1_slo_closure']['closed_at'], 'System status should expose empty closure payload when SLO calibration closure is not persisted yet.');
         $this->assertSame(0.0, $system['feature_flags']['reports_v1_slo_status']['error_rate_percent'], 'System status should expose computed error rate percent from monitoring samples.');
         $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['error_rate_within_target'], 'System status should expose whether current error rate is within target.');
@@ -708,6 +712,8 @@ final class RestApiTestRunner
         $this->assertSame('ok', $system['feature_flags']['reports_v1_operational_status']['level'], 'System status should expose actionable operational status for reports v1.');
         $this->assertSame(false, $system['feature_flags']['reports_v1_operational_status']['requires_attention'], 'Operational status should remain green when monitoring signals are complete and fresh.');
         $this->assertSame(0, count($system['feature_flags']['reports_v1_operational_status']['reasons']), 'Operational status should have no reasons when reports monitoring is healthy.');
+        $this->assertSame(false, in_array('sustained_drift_detected', $system['feature_flags']['reports_v1_operational_status']['reasons'], true), 'Operational status should avoid sustained drift reason for healthy samples.');
+        $this->assertSame(false, in_array('Sustained drift detected: execute rollback/tuning playbook for Reports v1 thresholds and heavy report paths.', $system['feature_flags']['reports_v1_operational_status']['recommended_actions'], true), 'Operational status should avoid rollback recommendation when sustained drift is not present.');
 
         $api->register_routes();
         $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', WP_REST_Server::READABLE);

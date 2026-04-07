@@ -1298,6 +1298,32 @@ class ERP_OMD_REST_API
         } else {
             $reports_v1_slo_status['generation_ms_p95_tuning_direction'] = 'keep';
         }
+        $reports_v1_drift_window_size = 3;
+        $reports_v1_recent_generation_samples = array_slice(
+            array_values(array_map(static function ($row) {
+                return (int) ($row['generation_ms'] ?? 0);
+            }, $reports_v1_metrics_log)),
+            0,
+            $reports_v1_drift_window_size
+        );
+        $reports_v1_recent_error_samples = array_slice(
+            array_values(array_map(static function ($row) {
+                return ! empty($row['has_error']);
+            }, $reports_v1_metrics_log)),
+            0,
+            $reports_v1_drift_window_size
+        );
+        $reports_v1_has_sustained_generation_drift = count($reports_v1_recent_generation_samples) === $reports_v1_drift_window_size
+            && count(array_filter($reports_v1_recent_generation_samples, static function ($sample) use ($reports_v1_slo) {
+                return (int) $sample > (int) $reports_v1_slo['generation_ms_p95_max'];
+            })) === $reports_v1_drift_window_size;
+        $reports_v1_has_sustained_error_drift = count($reports_v1_recent_error_samples) === $reports_v1_drift_window_size
+            && count(array_filter($reports_v1_recent_error_samples)) === $reports_v1_drift_window_size;
+        $reports_v1_sustained_drift_detected = $reports_v1_has_sustained_generation_drift || $reports_v1_has_sustained_error_drift;
+        $reports_v1_slo_status['sustained_drift_window_size'] = $reports_v1_drift_window_size;
+        $reports_v1_slo_status['sustained_generation_drift_detected'] = $reports_v1_has_sustained_generation_drift;
+        $reports_v1_slo_status['sustained_error_drift_detected'] = $reports_v1_has_sustained_error_drift;
+        $reports_v1_slo_status['sustained_drift_detected'] = $reports_v1_sustained_drift_detected;
         $reports_v1_last_metrics_age_seconds = null;
         $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
         $reports_v1_metrics_freshness_threshold_seconds = $reports_v1_metrics_freshness_minutes * 60;
@@ -1359,6 +1385,11 @@ class ERP_OMD_REST_API
             $reports_v1_operational_status['level'] = 'alert';
             $reports_v1_operational_status['reasons'][] = 'generation_p95_exceeds_target';
             $reports_v1_operational_status['recommended_actions'][] = 'Investigate slow reports and optimize heavy filters/queries.';
+        }
+        if ($reports_v1_sustained_drift_detected) {
+            $reports_v1_operational_status['level'] = 'alert';
+            $reports_v1_operational_status['reasons'][] = 'sustained_drift_detected';
+            $reports_v1_operational_status['recommended_actions'][] = 'Sustained drift detected: execute rollback/tuning playbook for Reports v1 thresholds and heavy report paths.';
         }
         if ($reports_v1_last_metrics_age_seconds === null) {
             if ($reports_v1_operational_status['level'] === 'ok') {
