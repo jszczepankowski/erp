@@ -529,9 +529,10 @@ if (! class_exists('ERP_OMD_Adjustment_Audit_Repository')) {
     class ERP_OMD_Adjustment_Audit_Repository {
         public function create($payload) { return 1; }
         public function all($filters = []) {
-            return [
+            $rows = [
                 [
                     'id' => 501,
+                    'month' => '2026-03',
                     'entity_type' => 'project_cost',
                     'entity_id' => 10,
                     'field_name' => 'amount',
@@ -539,20 +540,51 @@ if (! class_exists('ERP_OMD_Adjustment_Audit_Repository')) {
                     'new_value' => '{"amount":125}',
                     'adjustment_type' => 'STANDARD',
                     'reason' => 'Korekta faktury',
+                    'changed_by' => 77,
                     'changed_at' => '2026-03-20 12:00:00',
                 ],
                 [
                     'id' => 502,
+                    'month' => '2026-03',
                     'entity_type' => 'time_entry',
                     'entity_id' => 22,
                     'field_name' => 'hours',
                     'old_value' => '{"hours":2}',
                     'new_value' => '{"hours":3}',
-                    'adjustment_type' => 'STANDARD',
+                    'adjustment_type' => 'EMERGENCY_ADJUSTMENT',
                     'reason' => 'Korekta godzin',
+                    'changed_by' => 12,
                     'changed_at' => '2026-03-20 13:00:00',
                 ],
             ];
+
+            $rows = array_values(array_filter($rows, static function ($row) use ($filters) {
+                if (! empty($filters['month']) && (string) ($row['month'] ?? '') !== (string) $filters['month']) {
+                    return false;
+                }
+                if (! empty($filters['entity_type']) && (string) ($row['entity_type'] ?? '') !== (string) $filters['entity_type']) {
+                    return false;
+                }
+                if (! empty($filters['entity_id']) && (int) ($row['entity_id'] ?? 0) !== (int) $filters['entity_id']) {
+                    return false;
+                }
+                if (! empty($filters['adjustment_type']) && (string) ($row['adjustment_type'] ?? '') !== (string) $filters['adjustment_type']) {
+                    return false;
+                }
+                if (! empty($filters['changed_by']) && (int) ($row['changed_by'] ?? 0) !== (int) $filters['changed_by']) {
+                    return false;
+                }
+                if (! empty($filters['reason']) && mb_stripos((string) ($row['reason'] ?? ''), (string) $filters['reason']) === false) {
+                    return false;
+                }
+                return true;
+            }));
+
+            if (! empty($filters['limit'])) {
+                $rows = array_slice($rows, 0, max(1, min(200, (int) $filters['limit'])));
+            }
+
+            return $rows;
         }
     }
 }
@@ -700,10 +732,26 @@ final class RestApiTestRunner
         $transitionInvalid = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'LIVE']));
         $this->assertSame('erp_omd_period_transition_invalid', $transitionInvalid->get_error_code(), 'Transition endpoint should reject unsupported target statuses.');
 
+        $adjustmentsCallback = $this->findRouteCallback('/adjustments', WP_REST_Server::READABLE);
+        $filteredAdjustments = $adjustmentsCallback(new WP_REST_Request([
+            'month' => '2026-03',
+            'entity_type' => 'project_cost',
+            'adjustment_type' => 'STANDARD',
+            'changed_by' => 77,
+            'reason' => 'faktury',
+            'limit' => 1,
+        ]));
+        $this->assertSame(1, count($filteredAdjustments), 'Adjustments endpoint should support combined audit filters.');
+        $this->assertSame(501, $filteredAdjustments[0]['id'], 'Adjustments endpoint should return matching adjustment rows.');
+        $this->assertSame('STANDARD', $filteredAdjustments[0]['adjustment_type'], 'Adjustments endpoint should preserve adjustment type in filtered results.');
+
         $dashboardCallback = $this->findRouteCallback('/dashboard-v1', WP_REST_Server::READABLE);
         $dashboardPayload = $dashboardCallback(new WP_REST_Request(['month' => '2026-03', 'mode' => 'ZAMKNIETY', 'profitability_scope' => 'project', 'adjustments_limit' => 1, 'queue_limit' => 1, 'profitability_limit' => 1]));
         $this->assertSame('v1', $dashboardPayload['api_version'], 'Dashboard endpoint should expose explicit contract version.');
         $this->assertSame('2026-03-20 12:00:00', $dashboardPayload['generated_at'], 'Dashboard endpoint should expose deterministic generation timestamp.');
+        $this->assertSame(true, isset($dashboardPayload['data_health']['has_operational_data']), 'Dashboard endpoint should expose operational data health flag.');
+        $this->assertSame(true, isset($dashboardPayload['data_health']['hint']), 'Dashboard endpoint should expose explanatory data health hint.');
+        $this->assertSame(true, isset($dashboardPayload['data_health']['counters']['trend_rows']), 'Dashboard endpoint should expose data health counters.');
         $this->assertSame(1, $dashboardPayload['applied_limits']['adjustments_items'], 'Dashboard endpoint should expose applied adjustments item limit.');
         $this->assertSame(1, $dashboardPayload['applied_limits']['queue_items'], 'Dashboard endpoint should expose applied queue item limit.');
         $this->assertSame(1, $dashboardPayload['applied_limits']['profitability_items'], 'Dashboard endpoint should expose applied profitability item limit.');
@@ -715,6 +763,7 @@ final class RestApiTestRunner
         $this->assertSame(false, $dashboardPayload['status_actions'][0]['enabled'], 'Dashboard status action should be disabled when checklist is not ready.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['trend_3m']), 'Dashboard endpoint should expose metric definitions for frontend tooltip rendering.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['readiness_checklist.ready']), 'Dashboard endpoint should expose readiness definition tooltip key.');
+        $this->assertSame(true, isset($dashboardPayload['metric_definitions']['data_health.has_operational_data']), 'Dashboard endpoint should expose data_health definition tooltip key.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['applied_limits']), 'Dashboard endpoint should define applied limits semantics for clients.');
         $this->assertSame(true, isset($dashboardPayload['drilldown_links']['settlement_queue']), 'Dashboard endpoint should expose drilldown links for queue and adjustments.');
         $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=invoice&month=2026-03', $dashboardPayload['drilldown_links']['settlement_queue'], 'Dashboard queue drilldown should target invoice report for selected month.');
