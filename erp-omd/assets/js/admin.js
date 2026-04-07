@@ -588,12 +588,91 @@ window.erpOmdInitDashboardV1Preview =
     addIds(safeMeta.relevant_projects_without_cost_project_ids);
     return ids;
   };
+  const collectInvalidCostRowDetails = (meta) => {
+    const safeMeta = isObject(meta) ? meta : {};
+    if (!Array.isArray(safeMeta.invalid_cost_rows_details)) {
+      return [];
+    }
+    return safeMeta.invalid_cost_rows_details
+      .map((row) => (isObject(row) ? row : null))
+      .filter((row) => row && Number(row.project_id || 0) > 0)
+      .slice(0, 5);
+  };
+  const formatInvalidCostReason = (reasonCode) => {
+    if (reasonCode === 'amount_non_positive') {
+      return 'kwota <= 0';
+    }
+    if (reasonCode === 'description_empty') {
+      return 'pusty opis';
+    }
+    return 'niepoprawny rekord kosztu';
+  };
   const safeGet = (value, fallback) => (typeof value === 'undefined' || value === null ? fallback : value);
   const isObject = (value) => Boolean(value) && typeof value === 'object';
 
   let activeController = null;
   let activeRequestId = 0;
   const supportsAbortController = typeof AbortController === 'function';
+  const submitCostCorrection = (detail) => {
+    const costId = Number(detail && detail.cost_id ? detail.cost_id : 0);
+    const costDate = String(detail && detail.cost_date ? detail.cost_date : '');
+    if (costId <= 0 || !costDate) {
+      setStatusState('Brak danych rekordu kosztu do korekty.', 'error', true);
+      return;
+    }
+    const currentAmount = String(detail && typeof detail.amount !== 'undefined' ? detail.amount : '');
+    const nextAmountRaw = window.prompt('Nowa kwota kosztu:', currentAmount);
+    if (nextAmountRaw === null) {
+      return;
+    }
+    const nextDescription = window.prompt(
+      'Nowy opis kosztu:',
+      String(detail && detail.description ? detail.description : '')
+    );
+    if (nextDescription === null) {
+      return;
+    }
+    const adjustmentReason = window.prompt(
+      'Powód korekty (wymagany dla audytu):',
+      'Korekta z dashboard-v1'
+    );
+    if (!adjustmentReason || adjustmentReason.trim() === '') {
+      setStatusState('Powód korekty jest wymagany.', 'error', true);
+      return;
+    }
+
+    const endpoint = `${String(erpOmdAdminData.restUrl).replace(/\/$/, '')}/project-costs/${encodeURIComponent(
+      String(costId)
+    )}`;
+    const requestBody = new URLSearchParams();
+    requestBody.set('amount', String(nextAmountRaw));
+    requestBody.set('description', String(nextDescription));
+    requestBody.set('cost_date', costDate);
+    requestBody.set('adjustment_reason', String(adjustmentReason));
+
+    setStatusState('Zapisywanie korekty kosztu…', 'loading', true);
+    fetch(endpoint, {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, headers),
+      body: requestBody.toString(),
+    })
+      .then((response) =>
+        response
+          .json()
+          .catch(() => ({}))
+          .then((payload) => ({ ok: response.ok, payload }))
+      )
+      .then(({ ok, payload }) => {
+        if (!ok) {
+          throw new Error(String((payload && payload.message) || 'Korekta kosztu nie powiodła się.'));
+        }
+        setStatusState('Korekta kosztu zapisana. Odświeżam podgląd…', 'success', true);
+        fetchPreview();
+      })
+      .catch((error) => {
+        setStatusState(`Nie udało się zapisać korekty: ${String(error.message || 'błąd')}`, 'error', true);
+      });
+  };
 
   const fetchPreview = () => {
     if (supportsAbortController && activeController instanceof AbortController) {
@@ -724,6 +803,34 @@ window.erpOmdInitDashboardV1Preview =
               });
               item.appendChild(document.createElement('br'));
               item.appendChild(linksWrapper);
+            }
+            const invalidCostDetails = collectInvalidCostRowDetails(checklistMeta);
+            if (invalidCostDetails.length > 0) {
+              const detailsWrapper = document.createElement('div');
+              detailsWrapper.className = 'erp-omd-dashboard-v1-checklist-links';
+              detailsWrapper.appendChild(document.createTextNode('Szczegóły błędnych kosztów: '));
+              invalidCostDetails.forEach((row, index) => {
+                const projectId = Number(row.project_id || 0);
+                const costId = Number(row.cost_id || 0);
+                const detailText = `#${projectId}${costId > 0 ? `/koszt:${costId}` : ''} (${formatInvalidCostReason(row.reason)})`;
+                detailsWrapper.appendChild(document.createTextNode(detailText));
+                if (costId > 0) {
+                  detailsWrapper.appendChild(document.createTextNode(' '));
+                  const fixButton = document.createElement('button');
+                  fixButton.type = 'button';
+                  fixButton.className = 'button button-small';
+                  fixButton.textContent = 'Skoryguj';
+                  fixButton.addEventListener('click', () => {
+                    submitCostCorrection(row);
+                  });
+                  detailsWrapper.appendChild(fixButton);
+                }
+                if (index < invalidCostDetails.length - 1) {
+                  detailsWrapper.appendChild(document.createTextNode('; '));
+                }
+              });
+              item.appendChild(document.createElement('br'));
+              item.appendChild(detailsWrapper);
             }
           }
           checklistNode.appendChild(item);

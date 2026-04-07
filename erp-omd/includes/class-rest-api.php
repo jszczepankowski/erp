@@ -1545,6 +1545,7 @@ class ERP_OMD_REST_API
         $project_client_completeness = true;
         $invalid_cost_rows = 0;
         $invalid_cost_project_ids = [];
+        $invalid_cost_rows_details = [];
         $relevant_projects_without_cost_rows = 0;
         $relevant_projects_without_cost_project_ids = [];
         $incomplete_relevant_projects = 0;
@@ -1574,6 +1575,18 @@ class ERP_OMD_REST_API
                     $invalid_cost_rows++;
                     $project_costs_verified = false;
                     $invalid_cost_project_ids[$project_id] = true;
+                    if (count($invalid_cost_rows_details) < 10) {
+                        $invalid_cost_rows_details[] = [
+                            'project_id' => $project_id,
+                            'cost_id' => (int) ($cost_row['id'] ?? 0),
+                            'cost_date' => sanitize_text_field((string) ($cost_row['cost_date'] ?? '')),
+                            'amount' => (float) ($cost_row['amount'] ?? 0),
+                            'description' => sanitize_text_field((string) ($cost_row['description'] ?? '')),
+                            'reason' => (float) ($cost_row['amount'] ?? 0) <= 0
+                                ? 'amount_non_positive'
+                                : 'description_empty',
+                        ];
+                    }
                     break;
                 }
             }
@@ -1619,6 +1632,7 @@ class ERP_OMD_REST_API
                 'submitted_or_rejected_entries' => $submitted_or_rejected_entries,
                 'invalid_cost_rows' => $invalid_cost_rows,
                 'invalid_cost_project_ids' => array_map('intval', array_keys($invalid_cost_project_ids)),
+                'invalid_cost_rows_details' => $invalid_cost_rows_details,
                 'relevant_projects_without_cost_rows' => $relevant_projects_without_cost_rows,
                 'relevant_projects_without_cost_project_ids' => array_map('intval', array_keys($relevant_projects_without_cost_project_ids)),
                 'incomplete_relevant_projects' => $incomplete_relevant_projects,

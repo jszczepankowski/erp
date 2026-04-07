@@ -1681,3 +1681,8 @@
 .erp-omd-admin .erp-omd-dashboard-v1-checklist-links a {
     font-weight: 600;
 }
+
+.erp-omd-admin .erp-omd-dashboard-v1-checklist-links .button {
+    margin-left: 6px;
+    vertical-align: baseline;
+}
