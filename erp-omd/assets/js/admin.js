@@ -397,7 +397,363 @@ const initInlineAutoSave = () => {
   });
 };
 
-const initAdminInteractions = (currentPage) => {
+window.erpOmdInitDashboardV1Preview =
+  window.erpOmdInitDashboardV1Preview ||
+  function () {
+    const previewNode = document.querySelector('[data-dashboard-v1-preview="1"]');
+    if (!(previewNode instanceof HTMLElement)) {
+      return;
+    }
+
+    const statusNode = previewNode.querySelector('[data-dashboard-v1-status="1"]');
+    const gridNode = previewNode.querySelector('[data-dashboard-v1-grid="1"]');
+    const monthNode = previewNode.querySelector('[data-dashboard-v1-month="1"]');
+    const modeNode = previewNode.querySelector('[data-dashboard-v1-mode="1"]');
+    const scopeNode = previewNode.querySelector('[data-dashboard-v1-scope="1"]');
+    const refreshNode = previewNode.querySelector('[data-dashboard-v1-refresh="1"]');
+    const clearCacheNode = previewNode.querySelector(
+      '[data-dashboard-v1-clear-cache="1"]'
+    );
+    const monthStatusNode = previewNode.querySelector(
+      '[data-dashboard-v1-month-status="1"]'
+    );
+    const actionsNode = previewNode.querySelector('[data-dashboard-v1-actions="1"]');
+    const checklistNode = previewNode.querySelector(
+      '[data-dashboard-v1-checklist="1"]'
+    );
+    const adjustmentsNode = previewNode.querySelector(
+      '[data-dashboard-v1-adjustments="1"]'
+    );
+    const updatedAtNode = previewNode.querySelector(
+      '[data-dashboard-v1-updated-at="1"]'
+    );
+    const sourceNode = previewNode.querySelector('[data-dashboard-v1-source="1"]');
+    const countersNode = previewNode.querySelector('[data-dashboard-v1-counters="1"]');
+    const debugNode = previewNode.querySelector('[data-dashboard-v1-debug="1"]');
+
+  if (
+    !(statusNode instanceof HTMLElement) ||
+    !(gridNode instanceof HTMLElement) ||
+    !(monthNode instanceof HTMLInputElement) ||
+    !(modeNode instanceof HTMLSelectElement) ||
+    !(scopeNode instanceof HTMLSelectElement) ||
+    !(refreshNode instanceof HTMLButtonElement) ||
+    !(clearCacheNode instanceof HTMLButtonElement) ||
+    !(monthStatusNode instanceof HTMLElement) ||
+    !(actionsNode instanceof HTMLElement) ||
+    !(checklistNode instanceof HTMLElement) ||
+    !(adjustmentsNode instanceof HTMLElement) ||
+    !(updatedAtNode instanceof HTMLElement) ||
+    !(sourceNode instanceof HTMLElement) ||
+    !(countersNode instanceof HTMLElement) ||
+    !(debugNode instanceof HTMLElement)
+  ) {
+    return;
+  }
+
+  if (
+    typeof erpOmdAdminData === 'undefined' ||
+    !erpOmdAdminData ||
+    !erpOmdAdminData.restUrl
+  ) {
+    setStatusState(
+      'Nie udało się załadować dashboard-v1 (brak konfiguracji REST).',
+      'error',
+      true
+    );
+    return;
+  }
+
+  const fallbackMonth = String(previewNode.dataset.month || '').trim();
+  const headers = {};
+  if (erpOmdAdminData.restNonce) {
+    headers['X-WP-Nonce'] = String(erpOmdAdminData.restNonce);
+  }
+
+  const renderEmptyList = (listNode, message) => {
+    listNode.innerHTML = '';
+    const item = document.createElement('li');
+    item.textContent = message;
+    listNode.appendChild(item);
+  };
+  const setSourceState = (label, state) => {
+    sourceNode.textContent = label;
+    sourceNode.classList.remove(
+      'erp-omd-dashboard-v1-source-badge-live',
+      'erp-omd-dashboard-v1-source-badge-cache',
+      'erp-omd-dashboard-v1-source-badge-empty'
+    );
+    sourceNode.classList.add(`erp-omd-dashboard-v1-source-badge-${state}`);
+  };
+  const setStatusState = (message, state, visible) => {
+    statusNode.textContent = message;
+    statusNode.hidden = !visible;
+    statusNode.classList.remove(
+      'erp-omd-dashboard-v1-preview-status-loading',
+      'erp-omd-dashboard-v1-preview-status-success',
+      'erp-omd-dashboard-v1-preview-status-warning',
+      'erp-omd-dashboard-v1-preview-status-error',
+      'erp-omd-dashboard-v1-preview-status-info'
+    );
+    statusNode.classList.add(`erp-omd-dashboard-v1-preview-status-${state}`);
+  };
+  const formatCountersLabel = (counters) => {
+    const safeCounters = counters || {};
+    return [
+      `Trend: ${safeCounters.trend_rows || 0}`,
+      `Projekty: ${safeCounters.project_rows || 0}`,
+      `Klienci: ${safeCounters.client_rows || 0}`,
+      `Kolejka: ${safeCounters.queue_rows || 0}`,
+      `Korekty: ${safeCounters.adjustment_rows || 0}`,
+      `Relewantne projekty: ${safeCounters.relevant_projects || 0}`,
+    ].join(' | ');
+  };
+  const checklistLabelMap = {
+    time_entries_finalized: 'Wpisy czasu sfinalizowane',
+    project_costs_verified: 'Koszty projektowe zweryfikowane',
+    project_client_completeness: 'Kompletność klient/projekt',
+    critical_settlement_locks: 'Brak krytycznych blokad rozliczenia',
+  };
+  const buildChecklistReason = (key, meta) => {
+    const safeMeta = isObject(meta) ? meta : {};
+    if (key === 'project_costs_verified') {
+      const invalidCostRows = Number(safeMeta.invalid_cost_rows || 0);
+      const withoutCostRows = Number(safeMeta.relevant_projects_without_cost_rows || 0);
+      const reasonParts = [];
+      if (invalidCostRows > 0) {
+        reasonParts.push(`błędne wiersze kosztów: ${invalidCostRows}`);
+      }
+      if (withoutCostRows > 0) {
+        reasonParts.push(`projekty bez kosztów: ${withoutCostRows}`);
+      }
+      return reasonParts.join(', ');
+    }
+    if (key === 'time_entries_finalized') {
+      const submittedOrRejected = Number(safeMeta.submitted_or_rejected_entries || 0);
+      return submittedOrRejected > 0 ? `wpisy submitted/rejected: ${submittedOrRejected}` : '';
+    }
+    if (key === 'project_client_completeness') {
+      const incompleteProjects = Number(safeMeta.incomplete_relevant_projects || 0);
+      return incompleteProjects > 0 ? `niekompletne projekty: ${incompleteProjects}` : '';
+    }
+    if (key === 'critical_settlement_locks') {
+      const criticalAlerts = Number(safeMeta.critical_alerts || 0);
+      return criticalAlerts > 0 ? `krytyczne alerty: ${criticalAlerts}` : '';
+    }
+    return '';
+  };
+  const safeGet = (value, fallback) => (typeof value === 'undefined' || value === null ? fallback : value);
+  const isObject = (value) => Boolean(value) && typeof value === 'object';
+
+  let activeController = null;
+  let activeRequestId = 0;
+  const supportsAbortController = typeof AbortController === 'function';
+
+  const fetchPreview = () => {
+    if (supportsAbortController && activeController instanceof AbortController) {
+      activeController.abort();
+    }
+    activeController = supportsAbortController ? new AbortController() : null;
+    activeRequestId += 1;
+    const requestId = activeRequestId;
+    const cacheKey = `erp_omd_dashboard_v1_preview_${monthNode.value || fallbackMonth}_${modeNode.value}_${scopeNode.value}`;
+
+    const endpoint = `${String(erpOmdAdminData.restUrl).replace(
+      /\/$/,
+      ''
+    )}/dashboard-v1?month=${encodeURIComponent(
+      monthNode.value || fallbackMonth
+    )}&mode=${encodeURIComponent(
+      modeNode.value
+    )}&profitability_scope=${encodeURIComponent(scopeNode.value)}`;
+
+    previewNode.setAttribute('aria-busy', 'true');
+    setStatusState('Ładowanie podglądu dashboard-v1…', 'loading', true);
+    gridNode.hidden = true;
+    refreshNode.disabled = true;
+    debugNode.textContent = 'DEBUG: init start';
+
+    const timeoutHandle = window.setTimeout(() => {
+      if (supportsAbortController && activeController instanceof AbortController) {
+        activeController.abort();
+      }
+    }, 12000);
+
+    const fetchOptions = { headers };
+    if (supportsAbortController && activeController instanceof AbortController) {
+      fetchOptions.signal = activeController.signal;
+    }
+
+    fetch(endpoint, fetchOptions)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((payload) => {
+      if (requestId !== activeRequestId) {
+        return;
+      }
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(payload));
+      } catch (_) {
+        // ignore storage quota / privacy mode issues
+      }
+      const safePayload = isObject(payload) ? payload : {};
+      const dataHealth = isObject(safePayload.data_health) ? safePayload.data_health : {};
+      const readinessChecklist = isObject(safePayload.readiness_checklist)
+        ? safePayload.readiness_checklist
+        : {};
+      const adjustments = isObject(safePayload.adjustments) ? safePayload.adjustments : {};
+      gridNode.hidden = false;
+      debugNode.textContent = '';
+      setStatusState('Dane LIVE zostały odświeżone.', 'success', false);
+
+      monthStatusNode.textContent = `${safeGet(safePayload.period_status, '—')} (${safeGet(safePayload.month, monthNode.value || fallbackMonth)})`;
+      updatedAtNode.textContent = `Ostatnia aktualizacja: ${safeGet(safePayload.generated_at, '—')}`;
+      setSourceState('LIVE', 'live');
+      const hasOperationalData = Boolean(dataHealth.has_operational_data);
+      if (!hasOperationalData) {
+        const counters = isObject(dataHealth.counters) ? dataHealth.counters : {};
+        setStatusState(
+          safeGet(dataHealth.hint, 'Brak danych operacyjnych dla wybranego miesiąca.'),
+          'warning',
+          true
+        );
+        countersNode.textContent = formatCountersLabel(counters);
+      } else {
+        setStatusState('Dane LIVE zostały odświeżone.', 'success', false);
+        countersNode.textContent = '';
+      }
+      actionsNode.innerHTML = '';
+      const statusActions = Array.isArray(safePayload.status_actions)
+        ? safePayload.status_actions
+        : [];
+      if (statusActions.length === 0) {
+        renderEmptyList(actionsNode, 'Brak dostępnych akcji statusu.');
+      } else {
+        statusActions.forEach((action) => {
+          const safeAction = isObject(action) ? action : {};
+          const item = document.createElement('li');
+          const label = safeGet(safeAction.label, safeGet(safeAction.to_status, '—'));
+          const state = safeAction.enabled ? 'aktywna' : 'zablokowana';
+          item.textContent = `${label} (${state})`;
+          actionsNode.appendChild(item);
+        });
+      }
+
+      checklistNode.innerHTML = '';
+      const checks = isObject(readinessChecklist.checks) ? readinessChecklist.checks : {};
+      const checklistMeta = isObject(readinessChecklist.meta) ? readinessChecklist.meta : {};
+      const checkEntries = Object.entries(checks);
+      if (checkEntries.length === 0) {
+        renderEmptyList(checklistNode, 'Brak danych checklisty.');
+      } else {
+        checkEntries.forEach(([key, passed]) => {
+          const item = document.createElement('li');
+          const label = safeGet(checklistLabelMap[key], key);
+          const reason = !passed ? buildChecklistReason(key, checklistMeta) : '';
+          item.textContent = `${passed ? '✅' : '⛔'} ${label}${reason ? ` — ${reason}` : ''}`;
+          checklistNode.appendChild(item);
+        });
+      }
+
+      adjustmentsNode.innerHTML = '';
+      const adjustmentItems = Array.isArray(adjustments.items)
+        ? adjustments.items
+        : [];
+      if (adjustmentItems.length === 0) {
+        renderEmptyList(adjustmentsNode, 'Brak korekt dla wybranego miesiąca.');
+      } else {
+        adjustmentItems.slice(0, 5).forEach((row) => {
+          const safeRow = isObject(row) ? row : {};
+          const item = document.createElement('li');
+          const entity = safeGet(safeRow.entity_type, '—');
+          const reason = safeGet(safeRow.reason, '—');
+          item.textContent = `${entity}: ${reason}`;
+          adjustmentsNode.appendChild(item);
+        });
+      }
+      })
+      .catch((error) => {
+        const safeError = isObject(error) ? error : {};
+        if (requestId !== activeRequestId || safeError.name === 'AbortError') {
+          return;
+        }
+        let restored = false;
+        try {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            const payload = JSON.parse(cached);
+            const safePayload = isObject(payload) ? payload : {};
+            const dataHealth = isObject(safePayload.data_health) ? safePayload.data_health : {};
+            monthStatusNode.textContent = `${safeGet(safePayload.period_status, '—')} (${safeGet(safePayload.month, monthNode.value || fallbackMonth)})`;
+            updatedAtNode.textContent = `Tryb offline (cache): ${safeGet(safePayload.generated_at, '—')}`;
+            setSourceState('CACHE', 'cache');
+            const counters = isObject(dataHealth.counters) ? dataHealth.counters : {};
+            countersNode.textContent = formatCountersLabel(counters);
+            restored = true;
+          }
+        } catch (_) {
+          restored = false;
+        }
+        if (restored) {
+          setStatusState(
+            'Nie udało się odświeżyć danych live — pokazuję ostatni zapisany snapshot.',
+            'warning',
+            true
+          );
+          debugNode.textContent = `DEBUG: ${String(safeGet(safeError.message, 'REST fetch failed'))}`;
+          gridNode.hidden = false;
+          return;
+        }
+        setStatusState(
+          'Nie udało się pobrać podglądu dashboard-v1. Sprawdź uprawnienia i konfigurację REST API.',
+          'error',
+          true
+        );
+        setSourceState('BRAK DANYCH', 'empty');
+        debugNode.textContent = `DEBUG: ${String(safeGet(safeError.message, 'REST fetch failed'))}`;
+        gridNode.hidden = true;
+      })
+      .finally(() => {
+        window.clearTimeout(timeoutHandle);
+        if (requestId !== activeRequestId) {
+          return;
+        }
+        previewNode.setAttribute('aria-busy', 'false');
+        refreshNode.disabled = false;
+      });
+  };
+
+  refreshNode.addEventListener('click', fetchPreview);
+  monthNode.addEventListener('change', fetchPreview);
+  modeNode.addEventListener('change', fetchPreview);
+  scopeNode.addEventListener('change', fetchPreview);
+  clearCacheNode.addEventListener('click', () => {
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.indexOf('erp_omd_dashboard_v1_preview_') === 0) {
+          localStorage.removeItem(key);
+        }
+      });
+      setStatusState('Wyczyszczono lokalny cache snapshotów dashboard-v1.', 'info', true);
+      updatedAtNode.textContent = '';
+      setSourceState('LIVE', 'live');
+      countersNode.textContent = '';
+      debugNode.textContent = '';
+    } catch (_) {
+      setStatusState('Nie udało się wyczyścić lokalnego cache.', 'error', true);
+      debugNode.textContent = 'DEBUG: localStorage clear failed';
+    }
+  });
+    fetchPreview();
+  };
+
+window.erpOmdInitAdminInteractions =
+  window.erpOmdInitAdminInteractions ||
+  ((currentPage) => {
 
   document.querySelectorAll('.erp-omd-quick-hours-button').forEach((button) => {
     button.addEventListener('click', () => {
@@ -642,12 +998,25 @@ const initAdminInteractions = (currentPage) => {
     }
     renderState();
   });
-};
+  });
 
 document.addEventListener('DOMContentLoaded', () => {
+  const rootNode = document.body;
+  if (rootNode instanceof HTMLElement) {
+    if (rootNode.dataset.erpOmdAdminInitDone === '1') {
+      return;
+    }
+    rootNode.dataset.erpOmdAdminInitDone = '1';
+  }
+
   const currentPage = new URLSearchParams(window.location.search).get('page') || '';
   initTableTools();
   initFixedCosts();
   initInlineAutoSave();
-  initAdminInteractions(currentPage);
+  if (typeof window.erpOmdInitDashboardV1Preview === 'function') {
+    window.erpOmdInitDashboardV1Preview();
+  }
+  if (typeof window.erpOmdInitAdminInteractions === 'function') {
+    window.erpOmdInitAdminInteractions(currentPage);
+  }
 });
