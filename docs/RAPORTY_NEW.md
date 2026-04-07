@@ -69,7 +69,15 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 36. ✅ **P3/P5 reports UX cleanup (36-a)** — filtry raportów pokazują poprawne statusy zależnie od typu raportu, wrócił jawny wybór wersji `Podstawowa/Szczegółowa`, a panel został odchudzony z diagnostycznych elementów technicznych.
 37. ✅ **P3 status cleanup archiwum (37-a)** — UI projektów używa `archiwum` (zamiast legacy `inactive`) w formularzu, filtrach i akcjach masowych.
 38. ✅ **P3/P5 month switcher + cleanup (38-a)** — dedykowany wybór miesiąca działa w panelu admina `ERP OMD — Dashboard`, usunięto box switchera z dashboardu managera, a eksport CSV rozróżnia wersję podstawową i szczegółową.
-39. **Kolejny etap** — monitoring steady-state po zamknięciu kalibracji + ewentualny rollback/tuning tylko przy trwałym dryfie metryk.
+39. ✅ **P5 steady-state drift guard (39-a)** — `system/status` (po formalnym zamknięciu kalibracji SLO) wykrywa trwały dryf metryk (`sustained_drift_detected`) na oknie ostatnich próbek i rekomenduje rollback/tuning tylko dla utrzymującego się dryfu.
+40. ✅ **P5 steady-state UX banner (40-a)** — raporty admina pokazują baner steady-state (status drift + akcje operatorskie) oraz szybki link do runbooka/ustawień SLO.
+41. ✅ **P5 steady-state drift history (41-a)** — baner raportów pokazuje mini-historię ostatnich próbek drift (timestamp, report_type, ms, err, przekroczenie progu), żeby operator widział trend bez odpytywania API.
+42. ✅ **P5 steady-state drift-only toggle (42-a)** — baner raportów ma przełącznik „pokaż tylko próbki z dryfem / pokaż wszystkie”, żeby skrócić diagnostykę przy dużym ruchu.
+43. ✅ **P5 steady-state drift counter (43-a)** — quick view w banerze pokazuje licznik próbek dryfowych (`x/y`), żeby szybciej ocenić skalę problemu.
+44. ✅ **P5 status naming consistency + smoke (44-a)** — etykiety UI używają formy `DO ROZLICZENIA` (bez underscore), a w raporcie jest szybka checklista smoke do lokalnej weryfikacji.
+45. ✅ **P5 shared status-label helper contract (45-a)** — dashboard-v1 zwraca `period_status_label` i `status_actions[].to_status_label`, a frontend używa tych pól jako źródła etykiet (fallback tylko awaryjnie).
+46. ✅ **P5 status-label contract regression test (46-a)** — dodany dedykowany test regresji UI/API, który pilnuje pól `period_status_label` / `to_status_label` oraz smoke renderingu `DO ROZLICZENIA`.
+47. **Kolejny etap** — finalny cleanup techniczny: usunięcie zbędnych fallbacków labeli po pełnym potwierdzeniu contractu na środowisku stage.
 
 ## 4) Instrukcja startowa do nowego chatu
 

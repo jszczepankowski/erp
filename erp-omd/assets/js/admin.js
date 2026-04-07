@@ -607,6 +607,7 @@ window.erpOmdInitDashboardV1Preview =
     }
     return 'niepoprawny rekord kosztu';
   };
+  const formatPeriodStatusLabel = (statusValue) => String(statusValue || '').replace(/_/g, ' ').trim();
   const safeGet = (value, fallback) => (typeof value === 'undefined' || value === null ? fallback : value);
   const isObject = (value) => Boolean(value) && typeof value === 'object';
 
@@ -721,7 +722,13 @@ window.erpOmdInitDashboardV1Preview =
       debugNode.textContent = '';
       setStatusState('Dane LIVE zostały odświeżone.', 'success', false);
 
-      monthStatusNode.textContent = `${safeGet(safePayload.period_status, '—')} (${safeGet(safePayload.month, monthNode.value || fallbackMonth)})`;
+      const periodStatusLabel = String(
+        safeGet(
+          safePayload.period_status_label,
+          formatPeriodStatusLabel(safeGet(safePayload.period_status, '—')) || '—'
+        )
+      );
+      monthStatusNode.textContent = `${periodStatusLabel || '—'} (${safeGet(safePayload.month, monthNode.value || fallbackMonth)})`;
       updatedAtNode.textContent = `Ostatnia aktualizacja: ${safeGet(safePayload.generated_at, '—')}`;
       setSourceState('LIVE', 'live');
       const hasOperationalData = Boolean(dataHealth.has_operational_data);
@@ -747,7 +754,13 @@ window.erpOmdInitDashboardV1Preview =
         statusActions.forEach((action) => {
           const safeAction = isObject(action) ? action : {};
           const item = document.createElement('li');
-          const label = safeGet(safeAction.label, safeGet(safeAction.to_status, '—'));
+          const fallbackStatusLabel = String(
+            safeGet(
+              safeAction.to_status_label,
+              formatPeriodStatusLabel(safeGet(safeAction.to_status, '—')) || '—'
+            )
+          );
+          const label = safeGet(safeAction.label, fallbackStatusLabel);
           const state = safeAction.enabled ? 'aktywna' : 'zablokowana';
           item.textContent = `${label} (${state})`;
           actionsNode.appendChild(item);
@@ -920,7 +933,13 @@ window.erpOmdInitDashboardV1Preview =
             const payload = JSON.parse(cached);
             const safePayload = isObject(payload) ? payload : {};
             const dataHealth = isObject(safePayload.data_health) ? safePayload.data_health : {};
-            monthStatusNode.textContent = `${safeGet(safePayload.period_status, '—')} (${safeGet(safePayload.month, monthNode.value || fallbackMonth)})`;
+            const cachedPeriodStatusLabel = String(
+              safeGet(
+                safePayload.period_status_label,
+                formatPeriodStatusLabel(safeGet(safePayload.period_status, '—')) || '—'
+              )
+            );
+            monthStatusNode.textContent = `${cachedPeriodStatusLabel || '—'} (${safeGet(safePayload.month, monthNode.value || fallbackMonth)})`;
             updatedAtNode.textContent = `Tryb offline (cache): ${safeGet(safePayload.generated_at, '—')}`;
             setSourceState('CACHE', 'cache');
             const counters = isObject(dataHealth.counters) ? dataHealth.counters : {};
