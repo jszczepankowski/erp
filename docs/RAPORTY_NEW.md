@@ -100,6 +100,7 @@ W nowym chacie wklej:
 - `docs/RAPORTY_NEW.md` (ten snapshot do wznowienia)
 - `docs/PLAN_PELNE_WDROZENIE_WARIANT_B_V1.md` (plan domknięcia 100% MUST ze specyfikacji)
 - `docs/WDROZENIE_V1_DZIENNIK.md` (bieżący tracker etapów/kroków do wznowienia cross-chat)
+- `docs/UAT_MASTER_PASS_V1_2026-04-07.md` (artefakt przebiegu UAT Master Pass v1)
 
 ## 6) Audyt RAPORTY_NEW (2026-04-07) — braki i duplikaty
 

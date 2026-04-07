@@ -8,8 +8,8 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 
 - Aktualny etap: **ETAP 1 — MUST operacyjne (Fala 1)**
 - Aktualny krok: **KROK 1.3 — UAT Master Pass (wykonanie i raport)**
-- Status: **TODO**
-- Następny krok: **KROK 1.3 — przygotowanie checklisty wykonawczej UAT i przebieg testowy**
+- Status: **W TRAKCIE**
+- Następny krok: **KROK 1.3 — manualny przebieg UAT ekranów 1–6 + finalny status PASS/PASS warunkowy**
 
 ## 2) Etapy i kroki (kanoniczna lista)
 
@@ -49,6 +49,10 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **DONE:** ETAP 1 / KROK 1.2 — wdrożono filtrację i tabelę audit log korekt w `Monitoring techniczny` + eksport CSV audytu.
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
 - Kolejny focus: ETAP 1 / KROK 1.3 (UAT Master Pass).
+
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — utworzono artefakt `docs/UAT_MASTER_PASS_V1_2026-04-07.md` z checklistą UAT per ekran i bieżącymi dowodami technicznymi.
+- Commit referencyjny: `TBD (uzupełniany po merge)`.
+- Kolejny focus: manualny przebieg UAT ekranów 1–6 i domknięcie statusu końcowego.
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
