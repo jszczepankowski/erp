@@ -205,9 +205,13 @@ class ERP_OMD_Admin
         if (strpos($hook, 'erp-omd') === false) {
             return;
         }
-        wp_enqueue_style('erp-omd-admin', ERP_OMD_URL . 'assets/css/admin.css', [], ERP_OMD_VERSION);
+        $admin_style_path = ERP_OMD_PATH . 'assets/css/admin.css';
+        $admin_script_path = ERP_OMD_PATH . 'assets/js/admin.js';
+        $admin_style_version = is_readable($admin_style_path) ? (string) filemtime($admin_style_path) : ERP_OMD_VERSION;
+        $admin_script_version = is_readable($admin_script_path) ? (string) filemtime($admin_script_path) : ERP_OMD_VERSION;
+        wp_enqueue_style('erp-omd-admin', ERP_OMD_URL . 'assets/css/admin.css', [], $admin_style_version);
         wp_add_inline_style('erp-omd-admin', '#toplevel_page_erp-omd .wp-submenu a[href*="page=erp-omd-separator-"]{pointer-events:none;opacity:.5;cursor:default;border-top:1px solid rgba(255,255,255,.18);margin-top:4px;padding-top:8px;padding-bottom:8px;}');
-        wp_enqueue_script('erp-omd-admin', ERP_OMD_URL . 'assets/js/admin.js', [], ERP_OMD_VERSION, true);
+        wp_enqueue_script('erp-omd-admin', ERP_OMD_URL . 'assets/js/admin.js', [], $admin_script_version, true);
         wp_localize_script('erp-omd-admin', 'erpOmdAdminData', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'inlineProjectNonce' => wp_create_nonce('erp_omd_inline_project_update'),
