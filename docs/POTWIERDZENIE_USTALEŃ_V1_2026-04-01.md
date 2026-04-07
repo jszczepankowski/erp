@@ -8,7 +8,7 @@ Potwierdzam, że uzgodnienia dla „Specyfikacja reguł v1 — Wariant B” są 
 
 ## Zakres potwierdzenia
 
-- model okresu rozliczeniowego (LIVE / DO_ROZLICZENIA / ZAMKNIETY),
+- model okresu rozliczeniowego (LIVE / DO ROZLICZENIA / ZAMKNIETY),
 - blokady edycji i przejścia statusów,
 - reguły księgowania (approved-only + operational_close_month),
 - korekty administracyjne (72h + EMERGENCY_ADJUSTMENT) i audyt,

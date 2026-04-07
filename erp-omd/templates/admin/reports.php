@@ -128,9 +128,22 @@
                             <?php
                             echo esc_html(
                                 sprintf(
-                                    __('Próbki z dryfem: %1$d/%2$d', 'erp-omd'),
+                                    __('Próbki z dryfem: %1$d/%2$d (%3$s%%)', 'erp-omd'),
                                     (int) $reports_v1_steady_state_banner['history_drift_count'],
-                                    (int) $reports_v1_steady_state_banner['history_total_count']
+                                    (int) $reports_v1_steady_state_banner['history_total_count'],
+                                    number_format((float) ($reports_v1_steady_state_banner['history_drift_ratio_percent'] ?? 0), 2, '.', '')
+                                )
+                            );
+                            ?>
+                        </p>
+                    <?php endif; ?>
+                    <?php if (! empty($reports_v1_steady_state_banner['history_last_sample_at'])) : ?>
+                        <p>
+                            <?php
+                            echo esc_html(
+                                sprintf(
+                                    __('Ostatnia próbka monitoringu: %s', 'erp-omd'),
+                                    (string) $reports_v1_steady_state_banner['history_last_sample_at']
                                 )
                             );
                             ?>

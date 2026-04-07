@@ -7,7 +7,7 @@ Hasło wznowienia: `RAPORTY_NEW`
 ## 1) Co już mamy zrobione
 
 ### Fundament domeny i API
-- Wdrożony model okresów (`LIVE` / `DO_ROZLICZENIA` / `ZAMKNIETY`) wraz z repo i serwisem okresów.
+- Wdrożony model okresów (`LIVE` / `DO ROZLICZENIA` / `ZAMKNIETY`) wraz z repo i serwisem okresów.
 - Wdrożony audyt korekt admina (`erp_omd_adjustment_audit`) + endpointy `GET|POST /adjustments`.
 - Dodane endpointy okresów (`/periods`, `/periods/{YYYY-MM}`, `/periods/{YYYY-MM}/transition`).
 - Dodany kontrakt backendowy `GET /dashboard-v1` (status miesiąca, checklista gotowości, trend, rentowność, kolejka, korekty, drilldown links).
@@ -15,7 +15,7 @@ Hasło wznowienia: `RAPORTY_NEW`
 ### Reguły biznesowe i raportowanie
 - Blokady edycji w miesiącach zamykanych/zamkniętych dla non-admin.
 - Wymóg `reason` i logowanie korekt admina w okresach zablokowanych.
-- Reporting działa z `mode` (`LIVE` / `DO_ROZLICZENIA` / `ZAMKNIETY`).
+- Reporting działa z `mode` (`LIVE` / `DO ROZLICZENIA` / `ZAMKNIETY`).
 - Projekty i trend OMD uwzględniają `operational_close_month`.
 - Status domenowy `inactive` został zastąpiony przez `archiwum`.
 
@@ -79,7 +79,10 @@ Aktualny fokus przesunięty jest na **raporty operacyjne i domknięcie UAT flow*
 46. ✅ **P5 status-label contract regression test (46-a)** — dodany dedykowany test regresji UI/API, który pilnuje pól `period_status_label` / `to_status_label` oraz smoke renderingu `DO ROZLICZENIA`.
 47. ✅ **P5 status-label fallback cleanup (47-a)** — frontend dashboard-v1 używa już bezpośrednio `period_status_label` / `to_status_label` i usunięto legacy fallback formatter underscore.
 48. ✅ **P5 final closure note + handover (48-a)** — dodany release note steady-state + checklista handover on-call dla monitoringu i status-label contract (`docs/REPORTS_V1_STEADY_STATE_RELEASE_NOTE.md`).
-49. **Kolejny etap** — utrzymanie: tylko bugfixy/telemetria po obserwacji produkcyjnej.
+49. ✅ **P5 maintenance telemetry expansion (49-a)** — `system/status` rozszerzony o telemetryczny udział dryfu w oknie steady-state (`sustained_drift_positive_samples`, `sustained_drift_positive_ratio_percent`, `sustained_drift_last_sample_at`), aby on-call szybciej ocenił skalę ryzyka bez ręcznego liczenia.
+50. ✅ **P5 maintenance UX drift ratio (50-a)** — baner steady-state pokazuje teraz udział dryfu jako `x/y (z%)` oraz timestamp ostatniej próbki monitoringu, co skraca triage on-call.
+51. ✅ **P5 maintenance banner contract guard (51-a)** — dodany test kontraktu bannera steady-state (ratio `%` + timestamp ostatniej próbki), aby uniknąć cichych regresji UX.
+52. **Kolejny etap** — utrzymanie: tylko bugfixy/telemetria po obserwacji produkcyjnej.
 
 ## 4) Instrukcja startowa do nowego chatu
 

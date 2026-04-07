@@ -1020,6 +1020,19 @@ class ERP_OMD_Admin
             && count($reports_v1_recent_error_samples) === $reports_v1_sustained_drift_window_size
             && count(array_filter($reports_v1_recent_error_samples)) === $reports_v1_sustained_drift_window_size;
         $reports_v1_sustained_drift_detected = $reports_v1_sustained_generation_drift || $reports_v1_sustained_error_drift;
+        $reports_v1_history_drift_count = count(
+            array_filter(
+                $reports_v1_history_samples,
+                static function ($row) use ($reports_v1_slo_generation_p95_max) {
+                    $generation_ms = (int) ($row['generation_ms'] ?? 0);
+                    return ! empty($row['has_error']) || $generation_ms > (int) $reports_v1_slo_generation_p95_max;
+                }
+            )
+        );
+        $reports_v1_history_total_count = count($reports_v1_history_samples);
+        $reports_v1_history_drift_ratio_percent = $reports_v1_history_total_count > 0
+            ? round(($reports_v1_history_drift_count / $reports_v1_history_total_count) * 100, 2)
+            : 0.0;
         $reports_v1_steady_state_banner = [
             'level' => 'notice-info',
             'title' => __('Reports v1 — steady-state monitoring', 'erp-omd'),
@@ -1043,16 +1056,10 @@ class ERP_OMD_Admin
                 return ! empty($row['has_error']) || ! empty($row['generation_above_threshold']);
             })),
             'history_drift_only' => $reports_v1_history_drift_only,
-            'history_total_count' => count($reports_v1_history_samples),
-            'history_drift_count' => count(
-                array_filter(
-                    $reports_v1_history_samples,
-                    static function ($row) use ($reports_v1_slo_generation_p95_max) {
-                        $generation_ms = (int) ($row['generation_ms'] ?? 0);
-                        return ! empty($row['has_error']) || $generation_ms > (int) $reports_v1_slo_generation_p95_max;
-                    }
-                )
-            ),
+            'history_total_count' => $reports_v1_history_total_count,
+            'history_drift_count' => $reports_v1_history_drift_count,
+            'history_drift_ratio_percent' => $reports_v1_history_drift_ratio_percent,
+            'history_last_sample_at' => (string) ($reports_v1_history_samples[0]['captured_at'] ?? ''),
         ];
         if ($reports_v1_slo_calibration_closed && ! $reports_v1_sustained_drift_detected) {
             $reports_v1_steady_state_banner['level'] = 'notice-success';

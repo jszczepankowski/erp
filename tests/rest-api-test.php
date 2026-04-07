@@ -702,6 +702,10 @@ final class RestApiTestRunner
         $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_generation_drift_detected'], 'System status should not flag sustained generation drift for healthy compact samples.');
         $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_error_drift_detected'], 'System status should not flag sustained error drift for healthy compact samples.');
         $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_detected'], 'System status should expose consolidated sustained drift marker.');
+        $this->assertSame(2, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_samples_evaluated'], 'System status should expose evaluated sample count for sustained drift telemetry.');
+        $this->assertSame(0, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_positive_samples'], 'System status should expose number of recent samples with drift symptoms.');
+        $this->assertSame(0.0, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_positive_ratio_percent'], 'System status should expose percentage ratio of drift-positive samples.');
+        $this->assertSame('2026-04-02T10:00:00+00:00', $system['feature_flags']['reports_v1_slo_status']['sustained_drift_last_sample_at'], 'System status should expose timestamp of latest sample used by sustained drift telemetry.');
         $this->assertSame('', $system['feature_flags']['reports_v1_slo_closure']['closed_at'], 'System status should expose empty closure payload when SLO calibration closure is not persisted yet.');
         $this->assertSame(0.0, $system['feature_flags']['reports_v1_slo_status']['error_rate_percent'], 'System status should expose computed error rate percent from monitoring samples.');
         $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['error_rate_within_target'], 'System status should expose whether current error rate is within target.');

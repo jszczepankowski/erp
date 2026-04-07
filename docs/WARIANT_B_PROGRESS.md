@@ -13,7 +13,7 @@ Następny krok wg planu: **utrzymanie/stabilizacja** (monitoring operacyjny + de
 - [x] Dodany model okresu miesięcznego (`erp_omd_periods`) z polami:
   - `month`, `status`, `closed_at`, `correction_window_until`, `updated_by`.
 - [x] Dodany serwis okresów (`ERP_OMD_Period_Service`):
-  - statusy LIVE / DO_ROZLICZENIA / ZAMKNIETY,
+  - statusy LIVE / DO ROZLICZENIA / ZAMKNIETY,
   - walidacja przejść,
   - checklista gotowości,
   - wyliczanie okna korekty +72h,
@@ -46,7 +46,7 @@ Następny krok wg planu: **utrzymanie/stabilizacja** (monitoring operacyjny + de
   - limity payloadu (`adjustments_limit`, `queue_limit`, `profitability_limit`) i `applied_limits`.
 
 ### Reporting i statusy domenowe
-- [x] Reporting: dodany `mode` (`LIVE`, `DO_ROZLICZENIA`, `ZAMKNIETY`).
+- [x] Reporting: dodany `mode` (`LIVE`, `DO ROZLICZENIA`, `ZAMKNIETY`).
 - [x] Reporting: domyślnie approved-only dla time entries.
 - [x] Reporting: obsługa `archiwum`.
 - [x] Reporting/eksport projektów: kolumna `operational_close_month` (Miesiąc zamk. oper.).
@@ -60,7 +60,7 @@ Następny krok wg planu: **utrzymanie/stabilizacja** (monitoring operacyjny + de
 
 ## 2) Co jest częściowo / techniczny dług
 
-- [~] Checklista gotowości LIVE -> DO_ROZLICZENIA jest obecnie uproszczona (część sygnałów domyślna), wymaga dopięcia pełnych walidatorów biznesowych.
+- [~] Checklista gotowości LIVE -> DO ROZLICZENIA jest obecnie uproszczona (część sygnałów domyślna), wymaga dopięcia pełnych walidatorów biznesowych.
 - [~] Mechanika korekt działa, ale pełna ścieżka UI Admin (dedykowany ekran/flow) i filtrowane widoki audytu są do dopracowania.
 - [~] `dashboard-v1` działa backendowo (contract pod P2-01..P2-04 gotowy), ale frontendowe komponenty/wykresy i UX states wymagają dokończenia.
 
@@ -107,7 +107,7 @@ Wklej na start:
 Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 
 ### P1 — Reguły księgowania i zamknięcie miesiąca
-- `WB-P1-01` — [x] Dopięcie pełnej checklisty gotowości LIVE -> DO_ROZLICZENIA (wszystkie walidatory biznesowe).
+- `WB-P1-01` — [x] Dopięcie pełnej checklisty gotowości LIVE -> DO ROZLICZENIA (wszystkie walidatory biznesowe).
 - `WB-P1-02` — [x] Użycie `operational_close_month` w pełnej logice budżetowej i controllingowej.
 - `WB-P1-03` — [x] Ujednolicenie approved-only we wszystkich raportach/eksportach/API finansowym.
 - `WB-P1-04` — [x] Testy regresji: przejścia statusów, locki, edge-case 72h + emergency + walidacja zakresu miesiąca (`YYYY-MM`) także na endpointach okresów (422 dla out-of-range).
