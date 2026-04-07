@@ -89,6 +89,23 @@ if (! class_exists('ERP_OMD_Project_Financial_Repository')) {
     }
 }
 
+if (! class_exists('ERP_OMD_Project_Revenue_Repository')) {
+    class ERP_OMD_Project_Revenue_Repository
+    {
+        private $revenues;
+
+        public function __construct(array $revenues)
+        {
+            $this->revenues = $revenues;
+        }
+
+        public function for_project($project_id)
+        {
+            return $this->revenues[(int) $project_id] ?? [];
+        }
+    }
+}
+
 if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
     class ERP_OMD_Time_Entry_Repository
     {
@@ -149,6 +166,7 @@ final class ProjectFinancialServiceTestRunner
                     ['amount' => 400.0],
                 ],
             ]),
+            new ERP_OMD_Project_Revenue_Repository([]),
             $financialsRepository,
             $timeEntriesRepository
         );
@@ -198,6 +216,7 @@ final class ProjectFinancialServiceTestRunner
                     ['amount' => 500.0],
                 ],
             ]),
+            new ERP_OMD_Project_Revenue_Repository([]),
             $cachedRepository,
             $cachedTimeEntriesRepository
         );
