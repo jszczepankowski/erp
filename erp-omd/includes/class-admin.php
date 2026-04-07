@@ -1079,6 +1079,14 @@ class ERP_OMD_Admin
             ];
         }
         $reports_v1_runbook_url = admin_url('admin.php?page=erp-omd-settings#reports-v1-slo-monitoring');
+        $reports_v1_monitoring_summary = [
+            'slo_generation_p95_max' => (int) $reports_v1_slo_generation_p95_max,
+            'freshness_minutes' => (int) $reports_v1_freshness_minutes,
+            'drift_ratio_percent' => (float) $reports_v1_history_drift_ratio_percent,
+            'calibration_closed' => (bool) $reports_v1_slo_calibration_closed,
+            'sustained_drift_detected' => (bool) $reports_v1_sustained_drift_detected,
+            'last_sample_at' => (string) ($reports_v1_history_samples[0]['captured_at'] ?? ''),
+        ];
         $reports_page_base_args = [
             'page' => 'erp-omd-reports',
             'tab' => (string) ($report_filters['tab'] ?? 'reports'),

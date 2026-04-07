@@ -6,10 +6,10 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 
 ## 1) Status globalny
 
-- Aktualny etap: **ETAP 0 — Planowanie/Przygotowanie do developmentu**
-- Aktualny krok: **KROK 0.3 — Potwierdzenie kompletności planu i ustalenie sposobu raportowania postępu**
-- Status: **DONE**
-- Następny krok: **KROK 1.1 — Audit Log UX + CSV (analiza implementacyjna i rozbicie na taski developerskie)**
+- Aktualny etap: **ETAP 1 — MUST operacyjne (Fala 1)**
+- Aktualny krok: **KROK 1.1 — Audit Log UX + CSV (analiza implementacyjna i rozbicie na taski developerskie)**
+- Status: **W TRAKCIE**
+- Następny krok: **KROK 1.2 — Audit Log UX + CSV (implementacja backend/UI/eksport)**
 
 ## 2) Etapy i kroki (kanoniczna lista)
 
@@ -44,6 +44,10 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **DONE:** ETAP 0 / KROK 0.3 — potwierdzono kompletność planu `PLAN_PELNE_WDROZENIE_WARIANT_B_V1.md` względem MUST specyfikacji; zdefiniowano standard raportowania postępu cross-chat.
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
 - Kolejny focus: ETAP 1 / KROK 1.1.
+
+- **IN PROGRESS:** ETAP 1 / KROK 1.1 — równolegle wykonano porządkowanie UX zakładki Raporty: techniczne treści `Reports v1 — steady-state monitoring` oraz `Reports v1 — SLO i monitoring` zostały wydzielone do `Monitoring techniczny` (przygotowanie pod dalsze kroki Fali 1 bez mieszania warstwy biznesowej z techniczną).
+- Commit referencyjny: `TBD (uzupełniany po merge)`.
+- Kolejny focus: dopięcie implementacyjnego zakresu Audit Log UX + CSV.
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
