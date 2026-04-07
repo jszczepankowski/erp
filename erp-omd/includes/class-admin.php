@@ -1004,6 +1004,7 @@ class ERP_OMD_Admin
         $reports_v1_recent_metrics_samples = array_slice($metrics_log, 0, $reports_v1_sustained_drift_window_size);
         $reports_v1_history_limit = 5;
         $reports_v1_history_samples = array_slice($metrics_log, 0, $reports_v1_history_limit);
+        $reports_v1_history_drift_only = ! empty($_GET['steady_state_drift_only']) && (string) $_GET['steady_state_drift_only'] === '1';
         $reports_v1_recent_generation_samples = array_values(array_map(static function ($row) {
             return (int) ($row['generation_ms'] ?? 0);
         }, $reports_v1_recent_metrics_samples));
@@ -1026,7 +1027,7 @@ class ERP_OMD_Admin
             'actions' => [
                 __('Dokończ decyzję/closure kalibracji w Ustawieniach.', 'erp-omd'),
             ],
-            'history' => array_values(array_map(static function ($row) use ($reports_v1_slo_generation_p95_max) {
+            'history' => array_values(array_filter(array_map(static function ($row) use ($reports_v1_slo_generation_p95_max) {
                 $generation_ms = (int) ($row['generation_ms'] ?? 0);
                 return [
                     'captured_at' => (string) ($row['captured_at'] ?? ''),
@@ -1035,7 +1036,13 @@ class ERP_OMD_Admin
                     'has_error' => ! empty($row['has_error']),
                     'generation_above_threshold' => $generation_ms > (int) $reports_v1_slo_generation_p95_max,
                 ];
-            }, $reports_v1_history_samples)),
+            }, $reports_v1_history_samples), static function ($row) use ($reports_v1_history_drift_only) {
+                if (! $reports_v1_history_drift_only) {
+                    return true;
+                }
+                return ! empty($row['has_error']) || ! empty($row['generation_above_threshold']);
+            })),
+            'history_drift_only' => $reports_v1_history_drift_only,
         ];
         if ($reports_v1_slo_calibration_closed && ! $reports_v1_sustained_drift_detected) {
             $reports_v1_steady_state_banner['level'] = 'notice-success';
@@ -1053,6 +1060,31 @@ class ERP_OMD_Admin
             ];
         }
         $reports_v1_runbook_url = admin_url('admin.php?page=erp-omd-settings#reports-v1-slo-monitoring');
+        $reports_page_base_args = [
+            'page' => 'erp-omd-reports',
+            'tab' => (string) ($report_filters['tab'] ?? 'reports'),
+            'report_type' => (string) ($report_filters['report_type'] ?? ''),
+            'month' => (string) ($report_filters['month'] ?? ''),
+            'client_id' => (int) ($report_filters['client_id'] ?? 0),
+            'project_id' => (int) ($report_filters['project_id'] ?? 0),
+            'employee_id' => (int) ($report_filters['employee_id'] ?? 0),
+            'status' => (string) ($report_filters['status'] ?? ''),
+            'detail' => (string) ($report_filters['detail'] ?? 'simple'),
+            'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),
+            'per_page' => (int) ($report_filters['per_page'] ?? 25),
+            'dashboard_queue_limit' => (int) ($dashboard_preview_filters['queue_limit'] ?? 25),
+        ];
+        $reports_v1_history_toggle_url = add_query_arg(
+            array_merge(
+                $reports_page_base_args,
+                ['steady_state_drift_only' => $reports_v1_history_drift_only ? '0' : '1']
+            ),
+            admin_url('admin.php')
+        );
+        $reports_v1_steady_state_banner['history_toggle_label'] = $reports_v1_history_drift_only
+            ? __('Pokaż wszystkie próbki', 'erp-omd')
+            : __('Pokaż tylko próbki z dryfem', 'erp-omd');
+        $reports_v1_steady_state_banner['history_toggle_url'] = $reports_v1_history_toggle_url;
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $employees = $this->employees->all();

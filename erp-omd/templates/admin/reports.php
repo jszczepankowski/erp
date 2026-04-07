@@ -115,6 +115,11 @@
                     <a class="button button-secondary" href="<?php echo esc_url((string) $reports_v1_runbook_url); ?>">
                         <?php esc_html_e('Przejdź do runbooka / ustawień SLO', 'erp-omd'); ?>
                     </a>
+                    <?php if (! empty($reports_v1_steady_state_banner['history_toggle_url'])) : ?>
+                        <a class="button" href="<?php echo esc_url((string) $reports_v1_steady_state_banner['history_toggle_url']); ?>">
+                            <?php echo esc_html((string) ($reports_v1_steady_state_banner['history_toggle_label'] ?? __('Pokaż tylko próbki z dryfem', 'erp-omd'))); ?>
+                        </a>
+                    <?php endif; ?>
                 </p>
                 <?php if (! empty($reports_v1_steady_state_banner['history']) && is_array($reports_v1_steady_state_banner['history'])) : ?>
                     <p><strong><?php esc_html_e('Ostatnie próbki drift (quick view)', 'erp-omd'); ?></strong></p>
@@ -136,6 +141,8 @@
                             </li>
                         <?php endforeach; ?>
                     </ul>
+                <?php elseif (! empty($reports_v1_steady_state_banner['history_drift_only'])) : ?>
+                    <p><?php esc_html_e('Brak próbek spełniających filtr dryfu w quick view.', 'erp-omd'); ?></p>
                 <?php endif; ?>
             </div>
         </section>
