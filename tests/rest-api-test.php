@@ -698,6 +698,7 @@ final class RestApiTestRunner
         $this->assertSame(1300, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_threshold_delta'], 'System status should expose delta between current and recommended p95 threshold.');
         $this->assertSame('decrease', $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_tuning_direction'], 'System status should expose tuning direction based on current vs recommended p95 threshold.');
         $this->assertSame(3, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_window_size'], 'System status should expose window size used to evaluate sustained drift.');
+        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_evaluation_enabled'], 'System status should evaluate sustained drift only after formal calibration closure.');
         $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_generation_drift_detected'], 'System status should not flag sustained generation drift for healthy compact samples.');
         $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_error_drift_detected'], 'System status should not flag sustained error drift for healthy compact samples.');
         $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_detected'], 'System status should expose consolidated sustained drift marker.');

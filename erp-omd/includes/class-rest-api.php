@@ -1320,10 +1320,6 @@ class ERP_OMD_REST_API
         $reports_v1_has_sustained_error_drift = count($reports_v1_recent_error_samples) === $reports_v1_drift_window_size
             && count(array_filter($reports_v1_recent_error_samples)) === $reports_v1_drift_window_size;
         $reports_v1_sustained_drift_detected = $reports_v1_has_sustained_generation_drift || $reports_v1_has_sustained_error_drift;
-        $reports_v1_slo_status['sustained_drift_window_size'] = $reports_v1_drift_window_size;
-        $reports_v1_slo_status['sustained_generation_drift_detected'] = $reports_v1_has_sustained_generation_drift;
-        $reports_v1_slo_status['sustained_error_drift_detected'] = $reports_v1_has_sustained_error_drift;
-        $reports_v1_slo_status['sustained_drift_detected'] = $reports_v1_sustained_drift_detected;
         $reports_v1_last_metrics_age_seconds = null;
         $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
         $reports_v1_metrics_freshness_threshold_seconds = $reports_v1_metrics_freshness_minutes * 60;
@@ -1361,6 +1357,17 @@ class ERP_OMD_REST_API
             $reports_v1_slo_status['calibration_state'] = 'closed';
             $reports_v1_slo_status['calibration_next_action'] = 'Calibration formally closed. Keep monitoring SLO trends and reopen only when sustained drift appears.';
         }
+        $reports_v1_sustained_drift_evaluation_enabled = $reports_v1_slo_calibration_closed;
+        if (! $reports_v1_sustained_drift_evaluation_enabled) {
+            $reports_v1_has_sustained_generation_drift = false;
+            $reports_v1_has_sustained_error_drift = false;
+            $reports_v1_sustained_drift_detected = false;
+        }
+        $reports_v1_slo_status['sustained_drift_window_size'] = $reports_v1_drift_window_size;
+        $reports_v1_slo_status['sustained_drift_evaluation_enabled'] = $reports_v1_sustained_drift_evaluation_enabled;
+        $reports_v1_slo_status['sustained_generation_drift_detected'] = $reports_v1_has_sustained_generation_drift;
+        $reports_v1_slo_status['sustained_error_drift_detected'] = $reports_v1_has_sustained_error_drift;
+        $reports_v1_slo_status['sustained_drift_detected'] = $reports_v1_sustained_drift_detected;
         $reports_v1_slo_status['calibration_closed'] = $reports_v1_slo_calibration_closed;
         $reports_v1_slo_status['calibration_closed_at'] = (string) $reports_v1_slo_closure['closed_at'];
         $reports_v1_operational_status = [
