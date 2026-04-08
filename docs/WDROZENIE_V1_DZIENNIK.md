@@ -56,7 +56,7 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix redeclare: obsługę `export_adjustments_audit` przeniesiono inline do `handle_forms()` (bez dedykowanej metody), aby wyeliminować kolizje nazw metod po merge/cherry-pick.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — dodano twardy test `tests/admin-class-test.php` pilnujący, że legacy `handle_adjustments_audit_export()` i `handle_adjustments_audit_export_csv()` nie wracają jako metody klasy.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — hotfix runtime: dodano inicjalizację `$adjustment_audit` w konstruktorze `ERP_OMD_Admin` + guardy, gdy repozytorium audytu nie jest dostępne.
-- **IN PROGRESS:** ETAP 1 / KROK 1.3 — przygotowano `docs/UAT_EXECUTION_SHEET_2026-04-07.md` (operacyjna checklista manualna ekranów 1–6 z kryterium PASS/PASS warunkowy/FAIL).
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — przygotowano `docs/archiwum/UAT_EXECUTION_SHEET_2026-04-07.md` (operacyjna checklista manualna ekranów 1–6 z kryterium PASS/PASS warunkowy/FAIL).
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — doprecyzowano przebieg „krok po kroku” z linkami per ekran i znacznikami **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]**.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — użytkownik potwierdził `PASS` dla kroków 1–3 (Dashboard v1, Raport klient, Raport projekt); w toku pozostają kroki 4–6.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — po feedbacku dla kroku 4 wdrożono fixy: przełącznik `Podstawowa/Szczegółowa` także dla `time_entries`, górna paginacja tabeli czasu oraz `per_page` jako „Wierszy na stronę” (retest wymagany).
@@ -79,7 +79,7 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **DONE:** ETAP 3 / KROK 3.1 — rollback drill zakończony wynikiem PASS (R1..R8), raport: `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 3 / KROK 3.2 — przegląd i utrwalenie progów SLO zakończony wynikiem PASS, decyzja KEEP, raport: `docs/SLO_REVIEW_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 3 / KROK 3.3 — matryca reakcji operacyjnej zwalidowana „na żywo”, wynik PASS (M1..M4), raport: `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`.
-- **DONE:** ETAP 4 / KROK 4.1 — checklista ujednolicenia dokumentacji zakończona wynikiem PASS; source-of-truth zebrany w `docs/CHECKLISTA_UJEDNOLICENIA_DOKUMENTACJI_2026-04-08.md`.
+- **DONE:** ETAP 4 / KROK 4.1 — checklista ujednolicenia dokumentacji zakończona wynikiem PASS; source-of-truth zebrany w `docs/archiwum/CHECKLISTA_UJEDNOLICENIA_DOKUMENTACJI_2026-04-08.md`.
 - **DONE:** ETAP 4 / KROK 4.2 — opublikowano finalną notę domknięcia „v1 fully implemented”: `docs/V1_FULLY_IMPLEMENTED_NOTE_2026-04-08.md`.
 - **DONE:** ETAP 4 / KROK 4.3 — spisano backlog v1.1 (poza MUST): `docs/BACKLOG_V1_1_2026-04-08.md`.
 - Program v1 (MUST baseline) formalnie zamknięty; dalsze prace jako v1.1 backlog.
