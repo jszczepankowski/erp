@@ -92,20 +92,36 @@
 
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
-                        <h3><?php esc_html_e('Automatyczny backup bazy (co tydzień)', 'erp-omd'); ?></h3>
-                        <p><?php esc_html_e('System zapisuje backup bazy do pliku ZIP na serwerze (katalog uploads/erp-omd-backups).', 'erp-omd'); ?></p>
+                        <h3><?php esc_html_e('Backup/odtwarzanie', 'erp-omd'); ?></h3>
+                        <p><?php esc_html_e('Operacje backupu i odtwarzania danych ERP OMD (SQL + ustawienia).', 'erp-omd'); ?></p>
                     </div>
-                    <p>
-                        <strong><?php esc_html_e('Ostatni backup:', 'erp-omd'); ?></strong>
-                        <?php echo $last_backup_at !== '' ? esc_html($last_backup_at) : esc_html__('brak', 'erp-omd'); ?>
-                        <?php if ($last_backup_status !== '') : ?>
-                            · <em><?php echo esc_html($last_backup_status); ?></em>
-                        <?php endif; ?>
-                    </p>
-                    <?php if ($last_backup_file !== '') : ?>
-                        <p><code><?php echo esc_html($last_backup_file); ?></code></p>
-                    <?php endif; ?>
-                    <button type="submit" class="button button-secondary" form="erp-omd-manual-backup-form"><?php esc_html_e('Uruchom backup teraz', 'erp-omd'); ?></button>
+                    <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+                        <div style="flex:1 1 320px; min-width:280px;">
+                            <h4 style="margin-top:0;"><?php esc_html_e('Automatyczny backup bazy (co tydzień)', 'erp-omd'); ?></h4>
+                            <p><?php esc_html_e('System zapisuje backup bazy SQL i ustawień wtyczki do pliku ZIP na serwerze (katalog uploads/erp-omd-backups).', 'erp-omd'); ?></p>
+                            <p>
+                                <strong><?php esc_html_e('Ostatni backup:', 'erp-omd'); ?></strong>
+                                <?php echo $last_backup_at !== '' ? esc_html($last_backup_at) : esc_html__('brak', 'erp-omd'); ?>
+                                <?php if ($last_backup_status !== '') : ?>
+                                    · <em><?php echo esc_html($last_backup_status); ?></em>
+                                <?php endif; ?>
+                            </p>
+                            <?php if ($last_backup_file !== '') : ?>
+                                <p><code><?php echo esc_html($last_backup_file); ?></code></p>
+                            <?php endif; ?>
+                            <button type="submit" class="button button-secondary" form="erp-omd-manual-backup-form"><?php esc_html_e('Uruchom backup teraz', 'erp-omd'); ?></button>
+                        </div>
+                        <div style="flex:1 1 320px; min-width:280px;">
+                            <h4 style="margin-top:0;"><?php esc_html_e('Odtworzenie wtyczki z backupu', 'erp-omd'); ?></h4>
+                            <p><?php esc_html_e('Prześlij paczkę ZIP backupu ERP OMD, aby odtworzyć dane tabel ERP OMD oraz ustawienia wtyczki na tej instalacji.', 'erp-omd'); ?></p>
+                            <p>
+                                <label for="erp-omd-restore-backup-zip"><?php esc_html_e('Plik backupu ZIP', 'erp-omd'); ?></label><br />
+                                <input id="erp-omd-restore-backup-zip" type="file" name="restore_backup_zip" form="erp-omd-restore-backup-form" accept=".zip,application/zip" required />
+                            </p>
+                            <p class="description"><?php esc_html_e('Uwaga: operacja nadpisze bieżące dane ERP OMD (tabele erp_omd_*) i ustawienia opcji erp_omd_*.', 'erp-omd'); ?></p>
+                            <button type="submit" class="button button-primary" form="erp-omd-restore-backup-form"><?php esc_html_e('Odtwórz z backupu', 'erp-omd'); ?></button>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="erp-omd-form-section">
@@ -295,9 +311,35 @@
             </div>
             <?php submit_button(__('Zapisz ustawienia', 'erp-omd')); ?>
         </form>
+        <section class="erp-omd-card" data-settings-period-transitions="1" style="margin-top:16px;">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h2><?php esc_html_e('Zarządzanie statusem miesiąca', 'erp-omd'); ?></h2>
+                    <p class="description"><?php esc_html_e('Ręczne przejścia LIVE → DO ROZLICZENIA → ZAMKNIĘTY dla wskazanego miesiąca.', 'erp-omd'); ?></p>
+                </div>
+                <a class="button button-secondary" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-reports&tab=monitoring')); ?>">
+                    <?php esc_html_e('Otwórz Monitoring techniczny', 'erp-omd'); ?>
+                </a>
+            </div>
+            <div class="erp-omd-form-grid" style="align-items:end;">
+                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                    <label for="erp-omd-settings-period-month"><?php esc_html_e('Miesiąc', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-period-month" type="month" data-settings-period-month="1" value="<?php echo esc_attr(current_time('Y-m')); ?>" />
+                </div>
+                <div class="erp-omd-form-field">
+                    <button type="button" class="button button-primary" data-settings-period-transition="DO_ROZLICZENIA"><?php esc_html_e('Przełącz na DO ROZLICZENIA', 'erp-omd'); ?></button>
+                    <button type="button" class="button" data-settings-period-transition="ZAMKNIETY"><?php esc_html_e('Przełącz na ZAMKNIĘTY', 'erp-omd'); ?></button>
+                </div>
+            </div>
+            <p class="description notice-info" data-settings-period-status="1"><?php esc_html_e('Wybierz miesiąc i uruchom akcję statusu.', 'erp-omd'); ?></p>
+        </section>
         <form id="erp-omd-manual-backup-form" method="post">
             <?php wp_nonce_field('erp_omd_run_manual_backup'); ?>
             <input type="hidden" name="erp_omd_action" value="run_manual_backup" />
+        </form>
+        <form id="erp-omd-restore-backup-form" method="post" enctype="multipart/form-data">
+            <?php wp_nonce_field('erp_omd_restore_backup_bundle'); ?>
+            <input type="hidden" name="erp_omd_action" value="restore_backup_bundle" />
         </form>
     </div>
 </div>
