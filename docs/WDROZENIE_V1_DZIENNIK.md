@@ -6,10 +6,10 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 
 ## 1) Status globalny
 
-- Aktualny etap: **ETAP 3 — Operacyjność steady-state (Fala 3)**
-- Aktualny krok: **KROK 4.1 — Ujednolicenie dokumentacji końcowej**
-- Status: **W TRAKCIE**
-- Następny krok: **ETAP 4 / KROK 4.2 — Finalna nota „v1 fully implemented”**
+- Aktualny etap: **ETAP 4 — Cleanup i formalne zamknięcie (Fala 4)**
+- Aktualny krok: **KROK 4.3 — Backlog v1.1 (poza MUST)**
+- Status: **DONE (program v1 zamknięty formalnie)**
+- Następny krok: **Brak — przejście do realizacji backlogu v1.1 wg priorytetów**
 
 ## 2) Etapy i kroki (kanoniczna lista)
 
@@ -34,9 +34,9 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - [x] **3.3** Matryca reakcji operacyjnej (kto/co/kiedy).
 
 ### ETAP 4 — Cleanup i formalne zamknięcie (Fala 4)
-- [ ] **4.1** Ujednolicenie dokumentacji końcowej.
-- [ ] **4.2** Finalna nota „v1 fully implemented”.
-- [ ] **4.3** Backlog v1.1 (poza MUST).
+- [x] **4.1** Ujednolicenie dokumentacji końcowej.
+- [x] **4.2** Finalna nota „v1 fully implemented”.
+- [x] **4.3** Backlog v1.1 (poza MUST).
 
 ## 3) Log aktualizacji (append-only)
 
@@ -79,8 +79,10 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **DONE:** ETAP 3 / KROK 3.1 — rollback drill zakończony wynikiem PASS (R1..R8), raport: `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 3 / KROK 3.2 — przegląd i utrwalenie progów SLO zakończony wynikiem PASS, decyzja KEEP, raport: `docs/SLO_REVIEW_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 3 / KROK 3.3 — matryca reakcji operacyjnej zwalidowana „na żywo”, wynik PASS (M1..M4), raport: `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`.
-- **IN PROGRESS:** ETAP 4 / KROK 4.1 — przygotowano checklistę ujednolicenia dokumentacji końcowej: `docs/CHECKLISTA_UJEDNOLICENIA_DOKUMENTACJI_2026-04-08.md`.
-- Kolejny focus: przejść checklistę 4.1 „na żywo” i oznaczyć wynik PASS/PASS warunkowy/FAIL.
+- **DONE:** ETAP 4 / KROK 4.1 — checklista ujednolicenia dokumentacji zakończona wynikiem PASS; source-of-truth zebrany w `docs/CHECKLISTA_UJEDNOLICENIA_DOKUMENTACJI_2026-04-08.md`.
+- **DONE:** ETAP 4 / KROK 4.2 — opublikowano finalną notę domknięcia „v1 fully implemented”: `docs/V1_FULLY_IMPLEMENTED_NOTE_2026-04-08.md`.
+- **DONE:** ETAP 4 / KROK 4.3 — spisano backlog v1.1 (poza MUST): `docs/BACKLOG_V1_1_2026-04-08.md`.
+- Program v1 (MUST baseline) formalnie zamknięty; dalsze prace jako v1.1 backlog.
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
