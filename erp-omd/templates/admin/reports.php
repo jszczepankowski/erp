@@ -228,6 +228,16 @@
                 <div>
                     <h2><?php esc_html_e('Szybka korekta admina (po zamknięciu miesiąca)', 'erp-omd'); ?></h2>
                     <p class="description"><?php esc_html_e('Umożliwia korektę rekordu kosztu projektu z wymaganym powodem (reason) do testów UAT 6.3.', 'erp-omd'); ?></p>
+                    <p class="description">
+                        <?php
+                        echo esc_html(
+                            sprintf(
+                                __('ID kosztu musi istnieć. Poniżej pokazano ostatnie koszty z miesiąca %s — użyj przycisku „Wstaw do formularza”.', 'erp-omd'),
+                                (string) $admin_correction_month
+                            )
+                        );
+                        ?>
+                    </p>
                 </div>
             </div>
             <div class="erp-omd-form-grid">
@@ -256,6 +266,54 @@
                 </div>
             </div>
             <p class="description notice-info" data-settings-correction-status="1"><?php esc_html_e('Wprowadź dane rekordu i zapisz korektę z obowiązkowym powodem.', 'erp-omd'); ?></p>
+            <?php if (empty($admin_correction_cost_rows)) : ?>
+                <p class="description"><?php esc_html_e('Brak kosztów projektowych w wybranym miesiącu do szybkiej korekty.', 'erp-omd'); ?></p>
+            <?php else : ?>
+                <table class="widefat striped" style="margin-top:12px;">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('ID kosztu', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Kwota', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Akcja', 'erp-omd'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($admin_correction_cost_rows as $cost_row) : ?>
+                            <?php
+                            $cost_id = (int) ($cost_row['id'] ?? 0);
+                            $cost_date = (string) ($cost_row['cost_date'] ?? '');
+                            $cost_amount = (float) ($cost_row['amount'] ?? 0);
+                            $cost_description = (string) ($cost_row['description'] ?? '');
+                            $cost_project_id = (int) ($cost_row['project_id'] ?? 0);
+                            $cost_project_name = (string) ($project_name_by_id[$cost_project_id] ?? ('#' . $cost_project_id));
+                            ?>
+                            <tr>
+                                <td><?php echo esc_html((string) $cost_id); ?></td>
+                                <td><?php echo esc_html($cost_date); ?></td>
+                                <td><?php echo esc_html($cost_project_name); ?></td>
+                                <td><?php echo esc_html(number_format($cost_amount, 2, '.', '')); ?></td>
+                                <td><?php echo esc_html($cost_description); ?></td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="button button-small"
+                                        data-settings-correction-fill="1"
+                                        data-cost-id="<?php echo esc_attr((string) $cost_id); ?>"
+                                        data-cost-date="<?php echo esc_attr($cost_date); ?>"
+                                        data-cost-amount="<?php echo esc_attr(number_format($cost_amount, 2, '.', '')); ?>"
+                                        data-cost-description="<?php echo esc_attr($cost_description); ?>"
+                                    >
+                                        <?php esc_html_e('Wstaw do formularza', 'erp-omd'); ?>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </section>
         <section class="erp-omd-card">
             <div class="erp-omd-section-header">

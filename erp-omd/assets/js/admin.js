@@ -1160,6 +1160,7 @@ window.erpOmdInitSettingsAdminCorrection =
     const reasonNode = panelNode.querySelector('[data-settings-correction-reason="1"]');
     const submitNode = panelNode.querySelector('[data-settings-correction-submit="1"]');
     const statusNode = panelNode.querySelector('[data-settings-correction-status="1"]');
+    const fillButtons = panelNode.querySelectorAll('[data-settings-correction-fill="1"]');
 
     if (
       !(costIdNode instanceof HTMLInputElement) ||
@@ -1182,6 +1183,20 @@ window.erpOmdInitSettingsAdminCorrection =
       statusNode.classList.remove('notice-error', 'notice-success', 'notice-warning', 'notice-info');
       statusNode.classList.add(tone || 'notice-info');
     };
+
+    fillButtons.forEach((buttonNode) => {
+      if (!(buttonNode instanceof HTMLButtonElement)) {
+        return;
+      }
+      buttonNode.addEventListener('click', () => {
+        costIdNode.value = String(buttonNode.dataset.costId || '');
+        costDateNode.value = String(buttonNode.dataset.costDate || '');
+        amountNode.value = String(buttonNode.dataset.costAmount || '');
+        descriptionNode.value = String(buttonNode.dataset.costDescription || '');
+        reasonNode.focus();
+        setStatus('Uzupełniono formularz danymi istniejącego kosztu. Dodaj powód i zapisz korektę.', 'notice-info');
+      });
+    });
 
     submitNode.addEventListener('click', () => {
       const costId = Number(costIdNode.value || 0);
