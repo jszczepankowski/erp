@@ -1250,7 +1250,22 @@ window.erpOmdInitSettingsAdminCorrection =
           if (!ok) {
             throw new Error(String((payload && payload.message) || 'Korekta nie powiodła się.'));
           }
-          setStatus('Korekta zapisana. Sprawdź wpis w Audit log korekt.', 'notice-success');
+          const correctedMonth = costDate.slice(0, 7);
+          const auditMonthNode = document.querySelector('input[name="adjustment_month"]');
+          const auditEntityTypeNode = document.querySelector('select[name="adjustment_entity_type"]');
+          if (auditMonthNode instanceof HTMLInputElement && /^\d{4}-\d{2}$/.test(correctedMonth)) {
+            auditMonthNode.value = correctedMonth;
+          }
+          if (auditEntityTypeNode instanceof HTMLSelectElement) {
+            auditEntityTypeNode.value = 'project_cost';
+          }
+          setStatus('Korekta zapisana. Odświeżam Audit log korekt dla project_cost...', 'notice-success');
+
+          if (auditMonthNode instanceof HTMLInputElement && auditMonthNode.form instanceof HTMLFormElement) {
+            window.setTimeout(() => {
+              auditMonthNode.form.submit();
+            }, 200);
+          }
         })
         .catch((error) => {
           setStatus(`Nie udało się zapisać korekty: ${String(error.message || 'błąd')}`, 'notice-error');

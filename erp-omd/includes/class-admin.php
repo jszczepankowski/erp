@@ -1245,7 +1245,7 @@ class ERP_OMD_Admin
             $adjustment_filters['entity_type'] = '';
         }
         $can_manage_adjustments_audit = current_user_can('erp_omd_manage_settings');
-        $admin_correction_month = (string) ($report_filters['month'] ?? gmdate('Y-m'));
+        $admin_correction_month = (string) ($adjustment_filters['month'] ?? $report_filters['month'] ?? gmdate('Y-m'));
         if (! $this->is_valid_month_string($admin_correction_month)) {
             $admin_correction_month = gmdate('Y-m');
         }
