@@ -48,8 +48,8 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 - [ ] O5.2 Wyniki OMD i eksport bez regresji.
 
 ## Ekran 6 — Zarządzanie miesiącem
-- [ ] M6.1 LIVE -> DO ROZLICZENIA blokowane, gdy checklista ma blokery.
-- [ ] M6.2 DO ROZLICZENIA -> ZAMKNIĘTY działa dla admina.
+- [x] M6.1 LIVE -> DO ROZLICZENIA blokowane, gdy checklista ma blokery. — PASS (potwierdzenie użytkownika, retest 2026-04-08)
+- [x] M6.2 DO ROZLICZENIA -> ZAMKNIĘTY działa dla admina. — PASS (potwierdzenie użytkownika, retest 2026-04-08)
 - [x] M6.3 Po zamknięciu: tylko admin i tylko ścieżką korekt. — PASS (potwierdzenie użytkownika, retest 2026-04-08)
 
 ## 4) Kryterium wyjścia ETAP 1.3
@@ -90,7 +90,7 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 - Sprawdź: przejścia statusów, blokady po zamknięciu, zachowanie ścieżki korekt.
 - Akcje UI dostępne: przyciski przejść statusu i szybka korekta admina w `Monitoring techniczny`.
 - Auto-smoke backend (2026-04-08): `php tests/omd-period-service-test.php` + `php tests/rest-api-test.php` — PASS; do domknięcia pozostaje walidacja manualna admin/non-admin.
-- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `CZĘŚCIOWY PASS — M6.3 potwierdzone; M6.1/M6.2 nadal do domknięcia manualnego`
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `PASS (M6.1/M6.2/M6.3 potwierdzone manualnie przez użytkownika, 2026-04-08)`
 
 ## 6) Wyniki przebiegu (do bieżącego uzupełniania)
 
@@ -99,7 +99,7 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 - Krok 3 (Raport projekt): `PASS`
 - Krok 4 (Raport czasu): `PASS (z uwagą UX o podobnym zakresie simple/detail)`
 - Krok 5 (OMD): `PASS`
-- Krok 6 (Zarządzanie miesiącem): `CZĘŚCIOWY PASS — M6.3 PASS; M6.1/M6.2 OPEN`
+- Krok 6 (Zarządzanie miesiącem): `PASS`
 
 ## 7) Notatka końcowa
 
