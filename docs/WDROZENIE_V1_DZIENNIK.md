@@ -7,9 +7,9 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 ## 1) Status globalny
 
 - Aktualny etap: **ETAP 3 — Operacyjność steady-state (Fala 3)**
-- Aktualny krok: **KROK 3.2 — Przegląd i utrwalenie progów operacyjnych**
+- Aktualny krok: **KROK 3.3 — Matryca reakcji operacyjnej (kto/co/kiedy)**
 - Status: **W TRAKCIE**
-- Następny krok: **ETAP 3 / KROK 3.3 — Matryca reakcji operacyjnej (kto/co/kiedy)**
+- Następny krok: **ETAP 4 / KROK 4.1 — Ujednolicenie dokumentacji końcowej**
 
 ## 2) Etapy i kroki (kanoniczna lista)
 
@@ -30,7 +30,7 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 
 ### ETAP 3 — Operacyjność steady-state (Fala 3)
 - [x] **3.1** Rollback drill (runbook, czasy wykonania).
-- [ ] **3.2** Przegląd i utrwalenie progów operacyjnych.
+- [x] **3.2** Przegląd i utrwalenie progów operacyjnych.
 - [ ] **3.3** Matryca reakcji operacyjnej (kto/co/kiedy).
 
 ### ETAP 4 — Cleanup i formalne zamknięcie (Fala 4)
@@ -77,7 +77,8 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **DONE:** ETAP 2 / KROK 2.2 — testy bezpieczeństwa endpointów krytycznych zakończone wynikiem PASS (S-01..S-10), raport: `docs/SECURITY_ENDPOINTS_TEST_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 2 / KROK 2.3 — regresja migracyjna na staging zakończona wynikiem PASS (A1..C2), raport: `docs/STAGING_MIGRATION_REGRESSION_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 3 / KROK 3.1 — rollback drill zakończony wynikiem PASS (R1..R8), raport: `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`.
-- Kolejny focus: ETAP 3 / KROK 3.2 — przegląd i utrwalenie progów operacyjnych.
+- **DONE:** ETAP 3 / KROK 3.2 — przegląd i utrwalenie progów SLO zakończony wynikiem PASS, decyzja KEEP, raport: `docs/SLO_REVIEW_REPORT_2026-04-08.md`.
+- Kolejny focus: ETAP 3 / KROK 3.3 — matryca reakcji operacyjnej (kto/co/kiedy).
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
