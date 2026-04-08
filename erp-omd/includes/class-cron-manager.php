@@ -176,6 +176,408 @@ class ERP_OMD_Cron_Manager
         update_option('erp_omd_last_restore_at', current_time('mysql'));
     }
 
+    public static function restore_backup_bundle_from_zip($zip_path)
+    {
+        if (! class_exists('ZipArchive')) {
+            throw new RuntimeException('ZipArchive extension is required to restore backup.');
+        }
+        if (! is_string($zip_path) || $zip_path === '' || ! is_readable($zip_path)) {
+            throw new RuntimeException('Backup ZIP file is not readable.');
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($zip_path) !== true) {
+            throw new RuntimeException('Unable to open backup ZIP file.');
+        }
+
+        $manifest = [];
+        $manifest_raw = $zip->getFromName(self::BACKUP_MANIFEST_FILE);
+        if (is_string($manifest_raw) && $manifest_raw !== '') {
+            $manifest_decoded = json_decode($manifest_raw, true);
+            if (is_array($manifest_decoded)) {
+                $manifest = $manifest_decoded;
+            }
+        }
+
+        $sql_file = (string) ($manifest['sql_file'] ?? '');
+        $settings_file = (string) ($manifest['settings_file'] ?? '');
+
+        if ($sql_file === '' || $zip->locateName($sql_file) === false) {
+            $sql_file = self::find_zip_file_by_extension($zip, '.sql');
+        }
+        if ($settings_file === '' || $zip->locateName($settings_file) === false) {
+            $settings_file = self::find_zip_file_by_extension($zip, '.json', [self::BACKUP_MANIFEST_FILE]);
+        }
+
+        if ($sql_file === '') {
+            $zip->close();
+            throw new RuntimeException('SQL dump file not found inside backup ZIP.');
+        }
+        if ($settings_file === '') {
+            $zip->close();
+            throw new RuntimeException('Settings export file not found inside backup ZIP.');
+        }
+
+        $sql_dump = (string) $zip->getFromName($sql_file);
+        $settings_raw = (string) $zip->getFromName($settings_file);
+        $zip->close();
+
+        if ($sql_dump === '') {
+            throw new RuntimeException('SQL dump file is empty.');
+        }
+        $settings_payload = json_decode($settings_raw, true);
+        if (! is_array($settings_payload) || ! isset($settings_payload['options']) || ! is_array($settings_payload['options'])) {
+            throw new RuntimeException('Settings export file is invalid.');
+        }
+
+        $source_prefix = (string) ($manifest['db_prefix'] ?? self::database_prefix());
+        $target_prefix = self::database_prefix();
+        if ($source_prefix !== '' && $source_prefix !== $target_prefix) {
+            $sql_dump = str_replace('`' . $source_prefix . 'erp_omd_', '`' . $target_prefix . 'erp_omd_', $sql_dump);
+        }
+
+        self::import_sql_dump($sql_dump);
+        self::import_settings_payload($settings_payload);
+
+        update_option('erp_omd_last_restore_status', 'success');
+        update_option('erp_omd_last_restore_at', current_time('mysql'));
+    }
+
+    public static function restore_backup_bundle_from_zip($zip_path)
+    {
+        if (! class_exists('ZipArchive')) {
+            throw new RuntimeException('ZipArchive extension is required to restore backup.');
+        }
+        if (! is_string($zip_path) || $zip_path === '' || ! is_readable($zip_path)) {
+            throw new RuntimeException('Backup ZIP file is not readable.');
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($zip_path) !== true) {
+            throw new RuntimeException('Unable to open backup ZIP file.');
+        }
+
+        $manifest = [];
+        $manifest_raw = $zip->getFromName(self::BACKUP_MANIFEST_FILE);
+        if (is_string($manifest_raw) && $manifest_raw !== '') {
+            $manifest_decoded = json_decode($manifest_raw, true);
+            if (is_array($manifest_decoded)) {
+                $manifest = $manifest_decoded;
+            }
+        }
+
+        $sql_file = (string) ($manifest['sql_file'] ?? '');
+        $settings_file = (string) ($manifest['settings_file'] ?? '');
+
+        if ($sql_file === '' || $zip->locateName($sql_file) === false) {
+            $sql_file = self::find_zip_file_by_extension($zip, '.sql');
+        }
+        if ($settings_file === '' || $zip->locateName($settings_file) === false) {
+            $settings_file = self::find_zip_file_by_extension($zip, '.json', [self::BACKUP_MANIFEST_FILE]);
+        }
+
+        if ($sql_file === '') {
+            $zip->close();
+            throw new RuntimeException('SQL dump file not found inside backup ZIP.');
+        }
+        if ($settings_file === '') {
+            $zip->close();
+            throw new RuntimeException('Settings export file not found inside backup ZIP.');
+        }
+
+        $sql_dump = (string) $zip->getFromName($sql_file);
+        $settings_raw = (string) $zip->getFromName($settings_file);
+        $zip->close();
+
+        if ($sql_dump === '') {
+            throw new RuntimeException('SQL dump file is empty.');
+        }
+        $settings_payload = json_decode($settings_raw, true);
+        if (! is_array($settings_payload) || ! isset($settings_payload['options']) || ! is_array($settings_payload['options'])) {
+            throw new RuntimeException('Settings export file is invalid.');
+        }
+
+        $source_prefix = (string) ($manifest['db_prefix'] ?? self::database_prefix());
+        $target_prefix = self::database_prefix();
+        if ($source_prefix !== '' && $source_prefix !== $target_prefix) {
+            $sql_dump = str_replace('`' . $source_prefix . 'erp_omd_', '`' . $target_prefix . 'erp_omd_', $sql_dump);
+        }
+
+        self::import_sql_dump($sql_dump);
+        self::import_settings_payload($settings_payload);
+
+        update_option('erp_omd_last_restore_status', 'success');
+        update_option('erp_omd_last_restore_at', current_time('mysql'));
+    }
+
+    public static function restore_backup_bundle_from_zip($zip_path)
+    {
+        if (! class_exists('ZipArchive')) {
+            throw new RuntimeException('ZipArchive extension is required to restore backup.');
+        }
+        if (! is_string($zip_path) || $zip_path === '' || ! is_readable($zip_path)) {
+            throw new RuntimeException('Backup ZIP file is not readable.');
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($zip_path) !== true) {
+            throw new RuntimeException('Unable to open backup ZIP file.');
+        }
+
+        $manifest = [];
+        $manifest_raw = $zip->getFromName(self::BACKUP_MANIFEST_FILE);
+        if (is_string($manifest_raw) && $manifest_raw !== '') {
+            $manifest_decoded = json_decode($manifest_raw, true);
+            if (is_array($manifest_decoded)) {
+                $manifest = $manifest_decoded;
+            }
+        }
+
+        $sql_file = (string) ($manifest['sql_file'] ?? '');
+        $settings_file = (string) ($manifest['settings_file'] ?? '');
+
+        if ($sql_file === '' || $zip->locateName($sql_file) === false) {
+            $sql_file = self::find_zip_file_by_extension($zip, '.sql');
+        }
+        if ($settings_file === '' || $zip->locateName($settings_file) === false) {
+            $settings_file = self::find_zip_file_by_extension($zip, '.json', [self::BACKUP_MANIFEST_FILE]);
+        }
+
+        if ($sql_file === '') {
+            $zip->close();
+            throw new RuntimeException('SQL dump file not found inside backup ZIP.');
+        }
+        if ($settings_file === '') {
+            $zip->close();
+            throw new RuntimeException('Settings export file not found inside backup ZIP.');
+        }
+
+        $sql_dump = (string) $zip->getFromName($sql_file);
+        $settings_raw = (string) $zip->getFromName($settings_file);
+        $zip->close();
+
+        if ($sql_dump === '') {
+            throw new RuntimeException('SQL dump file is empty.');
+        }
+        $settings_payload = json_decode($settings_raw, true);
+        if (! is_array($settings_payload) || ! isset($settings_payload['options']) || ! is_array($settings_payload['options'])) {
+            throw new RuntimeException('Settings export file is invalid.');
+        }
+
+        $source_prefix = (string) ($manifest['db_prefix'] ?? self::database_prefix());
+        $target_prefix = self::database_prefix();
+        if ($source_prefix !== '' && $source_prefix !== $target_prefix) {
+            $sql_dump = str_replace('`' . $source_prefix . 'erp_omd_', '`' . $target_prefix . 'erp_omd_', $sql_dump);
+        }
+
+        self::import_sql_dump($sql_dump);
+        self::import_settings_payload($settings_payload);
+
+        update_option('erp_omd_last_restore_status', 'success');
+        update_option('erp_omd_last_restore_at', current_time('mysql'));
+    }
+
+    public static function restore_from_backup_zip($zip_path)
+    {
+        if (! class_exists('ZipArchive')) {
+            throw new RuntimeException('ZipArchive extension is required to restore backup.');
+        }
+        if (! is_string($zip_path) || $zip_path === '' || ! is_readable($zip_path)) {
+            throw new RuntimeException('Backup ZIP file is not readable.');
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($zip_path) !== true) {
+            throw new RuntimeException('Unable to open backup ZIP file.');
+        }
+
+        $manifest = [];
+        $manifest_raw = $zip->getFromName(self::BACKUP_MANIFEST_FILE);
+        if (is_string($manifest_raw) && $manifest_raw !== '') {
+            $manifest_decoded = json_decode($manifest_raw, true);
+            if (is_array($manifest_decoded)) {
+                $manifest = $manifest_decoded;
+            }
+        }
+
+        $sql_file = (string) ($manifest['sql_file'] ?? '');
+        $settings_file = (string) ($manifest['settings_file'] ?? '');
+
+        if ($sql_file === '' || $zip->locateName($sql_file) === false) {
+            $sql_file = self::find_zip_file_by_extension($zip, '.sql');
+        }
+        if ($settings_file === '' || $zip->locateName($settings_file) === false) {
+            $settings_file = self::find_zip_file_by_extension($zip, '.json', [self::BACKUP_MANIFEST_FILE]);
+        }
+
+        if ($sql_file === '') {
+            $zip->close();
+            throw new RuntimeException('SQL dump file not found inside backup ZIP.');
+        }
+        if ($settings_file === '') {
+            $zip->close();
+            throw new RuntimeException('Settings export file not found inside backup ZIP.');
+        }
+
+        $sql_dump = (string) $zip->getFromName($sql_file);
+        $settings_raw = (string) $zip->getFromName($settings_file);
+        $zip->close();
+
+        if ($sql_dump === '') {
+            throw new RuntimeException('SQL dump file is empty.');
+        }
+        $settings_payload = json_decode($settings_raw, true);
+        if (! is_array($settings_payload) || ! isset($settings_payload['options']) || ! is_array($settings_payload['options'])) {
+            throw new RuntimeException('Settings export file is invalid.');
+        }
+
+        $source_prefix = (string) ($manifest['db_prefix'] ?? self::database_prefix());
+        $target_prefix = self::database_prefix();
+        if ($source_prefix !== '' && $source_prefix !== $target_prefix) {
+            $sql_dump = str_replace('`' . $source_prefix . 'erp_omd_', '`' . $target_prefix . 'erp_omd_', $sql_dump);
+        }
+
+        self::import_sql_dump($sql_dump);
+        self::import_settings_payload($settings_payload);
+
+        update_option('erp_omd_last_restore_status', 'success');
+        update_option('erp_omd_last_restore_at', current_time('mysql'));
+    }
+
+    public static function restore_from_backup_zip($zip_path)
+    {
+        if (! class_exists('ZipArchive')) {
+            throw new RuntimeException('ZipArchive extension is required to restore backup.');
+        }
+        if (! is_string($zip_path) || $zip_path === '' || ! is_readable($zip_path)) {
+            throw new RuntimeException('Backup ZIP file is not readable.');
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($zip_path) !== true) {
+            throw new RuntimeException('Unable to open backup ZIP file.');
+        }
+
+        $manifest = [];
+        $manifest_raw = $zip->getFromName(self::BACKUP_MANIFEST_FILE);
+        if (is_string($manifest_raw) && $manifest_raw !== '') {
+            $manifest_decoded = json_decode($manifest_raw, true);
+            if (is_array($manifest_decoded)) {
+                $manifest = $manifest_decoded;
+            }
+        }
+
+        $sql_file = (string) ($manifest['sql_file'] ?? '');
+        $settings_file = (string) ($manifest['settings_file'] ?? '');
+
+        if ($sql_file === '' || $zip->locateName($sql_file) === false) {
+            $sql_file = self::find_zip_file_by_extension($zip, '.sql');
+        }
+        if ($settings_file === '' || $zip->locateName($settings_file) === false) {
+            $settings_file = self::find_zip_file_by_extension($zip, '.json', [self::BACKUP_MANIFEST_FILE]);
+        }
+
+        if ($sql_file === '') {
+            $zip->close();
+            throw new RuntimeException('SQL dump file not found inside backup ZIP.');
+        }
+        if ($settings_file === '') {
+            $zip->close();
+            throw new RuntimeException('Settings export file not found inside backup ZIP.');
+        }
+
+        $sql_dump = (string) $zip->getFromName($sql_file);
+        $settings_raw = (string) $zip->getFromName($settings_file);
+        $zip->close();
+
+        if ($sql_dump === '') {
+            throw new RuntimeException('SQL dump file is empty.');
+        }
+        $settings_payload = json_decode($settings_raw, true);
+        if (! is_array($settings_payload) || ! isset($settings_payload['options']) || ! is_array($settings_payload['options'])) {
+            throw new RuntimeException('Settings export file is invalid.');
+        }
+
+        $source_prefix = (string) ($manifest['db_prefix'] ?? self::database_prefix());
+        $target_prefix = self::database_prefix();
+        if ($source_prefix !== '' && $source_prefix !== $target_prefix) {
+            $sql_dump = str_replace('`' . $source_prefix . 'erp_omd_', '`' . $target_prefix . 'erp_omd_', $sql_dump);
+        }
+
+        self::import_sql_dump($sql_dump);
+        self::import_settings_payload($settings_payload);
+
+        update_option('erp_omd_last_restore_status', 'success');
+        update_option('erp_omd_last_restore_at', current_time('mysql'));
+    }
+
+    public static function restore_from_backup_zip($zip_path)
+    {
+        if (! class_exists('ZipArchive')) {
+            throw new RuntimeException('ZipArchive extension is required to restore backup.');
+        }
+        if (! is_string($zip_path) || $zip_path === '' || ! is_readable($zip_path)) {
+            throw new RuntimeException('Backup ZIP file is not readable.');
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($zip_path) !== true) {
+            throw new RuntimeException('Unable to open backup ZIP file.');
+        }
+
+        $manifest = [];
+        $manifest_raw = $zip->getFromName(self::BACKUP_MANIFEST_FILE);
+        if (is_string($manifest_raw) && $manifest_raw !== '') {
+            $manifest_decoded = json_decode($manifest_raw, true);
+            if (is_array($manifest_decoded)) {
+                $manifest = $manifest_decoded;
+            }
+        }
+
+        $sql_file = (string) ($manifest['sql_file'] ?? '');
+        $settings_file = (string) ($manifest['settings_file'] ?? '');
+
+        if ($sql_file === '' || $zip->locateName($sql_file) === false) {
+            $sql_file = self::find_zip_file_by_extension($zip, '.sql');
+        }
+        if ($settings_file === '' || $zip->locateName($settings_file) === false) {
+            $settings_file = self::find_zip_file_by_extension($zip, '.json', [self::BACKUP_MANIFEST_FILE]);
+        }
+
+        if ($sql_file === '') {
+            $zip->close();
+            throw new RuntimeException('SQL dump file not found inside backup ZIP.');
+        }
+        if ($settings_file === '') {
+            $zip->close();
+            throw new RuntimeException('Settings export file not found inside backup ZIP.');
+        }
+
+        $sql_dump = (string) $zip->getFromName($sql_file);
+        $settings_raw = (string) $zip->getFromName($settings_file);
+        $zip->close();
+
+        if ($sql_dump === '') {
+            throw new RuntimeException('SQL dump file is empty.');
+        }
+        $settings_payload = json_decode($settings_raw, true);
+        if (! is_array($settings_payload) || ! isset($settings_payload['options']) || ! is_array($settings_payload['options'])) {
+            throw new RuntimeException('Settings export file is invalid.');
+        }
+
+        $source_prefix = (string) ($manifest['db_prefix'] ?? self::database_prefix());
+        $target_prefix = self::database_prefix();
+        if ($source_prefix !== '' && $source_prefix !== $target_prefix) {
+            $sql_dump = str_replace('`' . $source_prefix . 'erp_omd_', '`' . $target_prefix . 'erp_omd_', $sql_dump);
+        }
+
+        self::import_sql_dump($sql_dump);
+        self::import_settings_payload($settings_payload);
+
+        update_option('erp_omd_last_restore_status', 'success');
+        update_option('erp_omd_last_restore_at', current_time('mysql'));
+    }
+
     public static function run_missing_hours_notifications()
     {
         $settings = self::notification_settings();
