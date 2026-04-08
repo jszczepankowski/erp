@@ -345,27 +345,7 @@ class ERP_OMD_Admin
                 );
                 break;
             case 'restore_backup_bundle':
-                check_admin_referer('erp_omd_restore_backup_bundle');
-                $this->require_capability('erp_omd_manage_settings');
-                if (! isset($_FILES['restore_backup_zip']) || ! is_array($_FILES['restore_backup_zip'])) {
-                    $this->redirect_with_notice('erp-omd-settings', 'error', __('Nie wybrano pliku ZIP backupu do odtworzenia.', 'erp-omd'));
-                }
-                $backup_file = $_FILES['restore_backup_zip'];
-                $tmp_name = isset($backup_file['tmp_name']) ? (string) $backup_file['tmp_name'] : '';
-                $file_name = isset($backup_file['name']) ? (string) $backup_file['name'] : '';
-                $upload_error = isset($backup_file['error']) ? (int) $backup_file['error'] : UPLOAD_ERR_NO_FILE;
-                if ($upload_error !== UPLOAD_ERR_OK || $tmp_name === '' || ! is_uploaded_file($tmp_name)) {
-                    $this->redirect_with_notice('erp-omd-settings', 'error', __('Przesłany plik backupu jest nieprawidłowy.', 'erp-omd'));
-                }
-                if (strtolower(pathinfo($file_name, PATHINFO_EXTENSION)) !== 'zip') {
-                    $this->redirect_with_notice('erp-omd-settings', 'error', __('Plik backupu musi mieć rozszerzenie .zip.', 'erp-omd'));
-                }
-                try {
-                    ERP_OMD_Cron_Manager::restore_backup_bundle_from_zip($tmp_name);
-                } catch (RuntimeException $exception) {
-                    $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Odtworzenie backupu nie powiodło się: %s', 'erp-omd'), $exception->getMessage()));
-                }
-                $this->redirect_with_notice('erp-omd-settings', 'success', __('Odtworzenie backupu (SQL + ustawienia) zakończone sukcesem.', 'erp-omd'));
+                $this->redirect_with_notice('erp-omd-settings', 'warning', __('Odtwarzanie z backupu jest tymczasowo wyłączone. Korzystaj z ręcznego backupu i restore na poziomie bazy.', 'erp-omd'));
                 break;
             case 'add_project_note': $this->handle_project_note_add(); break;
             case 'save_project_rate': $this->handle_project_rate_save(); break;
