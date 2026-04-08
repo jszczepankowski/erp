@@ -113,7 +113,7 @@
                             <h2><?php esc_html_e('Reports v1 — steady-state monitoring', 'erp-omd'); ?></h2>
                         </div>
                     </div>
-                    <div class="notice <?php echo esc_attr((string) ($reports_v1_steady_state_banner['level'] ?? 'notice-info')); ?>" style="margin:0;">
+                    <div class="notice notice-success" style="margin:0;">
                         <p><strong><?php echo esc_html((string) ($reports_v1_steady_state_banner['title'] ?? '')); ?></strong></p>
                         <p><?php echo esc_html((string) ($reports_v1_steady_state_banner['message'] ?? '')); ?></p>
                         <?php if (! empty($reports_v1_steady_state_banner['actions']) && is_array($reports_v1_steady_state_banner['actions'])) : ?>
