@@ -50,50 +50,7 @@ class ERP_OMD_Cron_Manager
 
     public static function run_weekly_backup()
     {
-        if (! class_exists('ZipArchive')) {
-            update_option('erp_omd_last_backup_status', 'ziparchive_missing');
-            update_option('erp_omd_last_backup_at', current_time('mysql'));
-            return;
-        }
-
-        $upload_dir = wp_upload_dir();
-        $backup_dir = trailingslashit($upload_dir['basedir']) . 'erp-omd-backups';
-        if (! wp_mkdir_p($backup_dir)) {
-            update_option('erp_omd_last_backup_status', 'mkdir_failed');
-            update_option('erp_omd_last_backup_at', current_time('mysql'));
-            return;
-        }
-
-        $timestamp = current_time('Ymd-His');
-        $sql_path = trailingslashit($backup_dir) . "erp-omd-db-{$timestamp}.sql";
-        $zip_path = trailingslashit($backup_dir) . "erp-omd-db-{$timestamp}.zip";
-        $dump = self::build_database_dump();
-
-        if ($dump === '') {
-            update_option('erp_omd_last_backup_status', 'dump_failed');
-            update_option('erp_omd_last_backup_at', current_time('mysql'));
-            return;
-        }
-
-        file_put_contents($sql_path, $dump);
-
-        $zip = new ZipArchive();
-        if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            @unlink($sql_path);
-            update_option('erp_omd_last_backup_status', 'zip_failed');
-            update_option('erp_omd_last_backup_at', current_time('mysql'));
-            return;
-        }
-
-        $zip->addFile($sql_path, basename($sql_path));
-        $zip->close();
-        @unlink($sql_path);
-
-        self::prune_old_backups($backup_dir, 12);
-
-        update_option('erp_omd_last_backup_status', 'success');
-        update_option('erp_omd_last_backup_at', current_time('mysql'));
-        update_option('erp_omd_last_backup_file', $zip_path);
+        ERP_OMD_Backup_Manager::run_backup_bundle();
     }
 
     public static function run_missing_hours_notifications()
@@ -141,89 +98,6 @@ class ERP_OMD_Cron_Manager
         }
 
         update_option('erp_omd_missing_hours_notification_recipients', $recipient_state);
-    }
-
-    private static function build_database_dump()
-    {
-        global $wpdb;
-
-        $tables = $wpdb->get_col('SHOW TABLES');
-        $tables = self::filter_erp_tables((array) $tables, (string) $wpdb->prefix);
-        if (empty($tables)) {
-            return '';
-        }
-
-        $dump = "-- ERP OMD database backup\n";
-        $dump .= '-- Generated at: ' . current_time('mysql') . "\n\n";
-
-        foreach ($tables as $table) {
-            $table = (string) $table;
-            $create_row = $wpdb->get_row("SHOW CREATE TABLE `{$table}`", ARRAY_N);
-            if (! is_array($create_row) || ! isset($create_row[1])) {
-                continue;
-            }
-
-            $dump .= "DROP TABLE IF EXISTS `{$table}`;\n";
-            $dump .= $create_row[1] . ";\n\n";
-
-            $rows = $wpdb->get_results("SELECT * FROM `{$table}`", ARRAY_A);
-            foreach ($rows as $row) {
-                $columns = array_map(static function ($column) {
-                    return '`' . $column . '`';
-                }, array_keys($row));
-                $values = array_map(static function ($value) {
-                    if ($value === null) {
-                        return 'NULL';
-                    }
-
-                    return "'" . esc_sql($value) . "'";
-                }, array_values($row));
-
-                $dump .= sprintf(
-                    "INSERT INTO `%s` (%s) VALUES (%s);\n",
-                    $table,
-                    implode(', ', $columns),
-                    implode(', ', $values)
-                );
-            }
-
-            $dump .= "\n";
-        }
-
-        return $dump;
-    }
-
-    private static function filter_erp_tables(array $tables, $db_prefix)
-    {
-        $allowed_prefixes = [
-            (string) $db_prefix . 'erp_omd_',
-        ];
-
-        return array_values(array_filter($tables, static function ($table) use ($allowed_prefixes) {
-            $table_name = (string) $table;
-            foreach ($allowed_prefixes as $allowed_prefix) {
-                if ($allowed_prefix !== '' && strpos($table_name, $allowed_prefix) === 0) {
-                    return true;
-                }
-            }
-
-            return false;
-        }));
-    }
-
-    private static function prune_old_backups($backup_dir, $keep_count)
-    {
-        $files = glob(trailingslashit($backup_dir) . 'erp-omd-db-*.zip') ?: [];
-        rsort($files, SORT_STRING);
-
-        if (count($files) <= $keep_count) {
-            return;
-        }
-
-        $files_to_delete = array_slice($files, $keep_count);
-        foreach ($files_to_delete as $file) {
-            @unlink($file);
-        }
     }
 
     private static function notification_settings()
