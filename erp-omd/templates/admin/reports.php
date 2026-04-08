@@ -105,7 +105,7 @@
         </section>
         <?php endif; ?>
         <?php if ($report_filters['tab'] === 'monitoring') : ?>
-        <section class="erp-omd-card erp-omd-monitoring-reports-box">
+        <section class="erp-omd-card erp-omd-monitoring-reports-box" hidden>
             <div class="erp-omd-monitoring-reports-grid">
                 <div>
                     <div class="erp-omd-section-header">
