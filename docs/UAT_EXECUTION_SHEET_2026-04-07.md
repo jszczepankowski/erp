@@ -50,7 +50,7 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 ## Ekran 6 — Zarządzanie miesiącem
 - [ ] M6.1 LIVE -> DO ROZLICZENIA blokowane, gdy checklista ma blokery.
 - [ ] M6.2 DO ROZLICZENIA -> ZAMKNIĘTY działa dla admina.
-- [ ] M6.3 Po zamknięciu: tylko admin i tylko ścieżką korekt.
+- [x] M6.3 Po zamknięciu: tylko admin i tylko ścieżką korekt. — PASS (potwierdzenie użytkownika, retest 2026-04-08)
 
 ## 4) Kryterium wyjścia ETAP 1.3
 
@@ -88,8 +88,8 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 ## Krok 6 — Zarządzanie miesiącem
 - Link: `admin.php?page=erp-omd-reports&tab=monitoring` + `admin.php?page=erp-omd-settings#reports-v1-slo-monitoring`.
 - Sprawdź: przejścia statusów, blokady po zamknięciu, zachowanie ścieżki korekt.
-- Akcje UI dostępne: przyciski przejść statusu w `Monitoring techniczny` (Dashboard v1 preview) oraz w `Ustawienia` (sekcja „Zarządzanie statusem miesiąca”).
-- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `RETEST PO WDROŻENIU (admin)`
+- Akcje UI dostępne: przyciski przejść statusu i szybka korekta admina w `Monitoring techniczny`.
+- **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `CZĘŚCIOWY PASS — M6.3 potwierdzone; M6.1/M6.2 nadal do domknięcia manualnego`
 
 ## 6) Wyniki przebiegu (do bieżącego uzupełniania)
 
@@ -98,7 +98,7 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 - Krok 3 (Raport projekt): `PASS`
 - Krok 4 (Raport czasu): `PASS (z uwagą UX o podobnym zakresie simple/detail)`
 - Krok 5 (OMD): `PASS`
-- Krok 6 (Zarządzanie miesiącem): `RETEST PO WDROŻENIU (admin)`
+- Krok 6 (Zarządzanie miesiącem): `CZĘŚCIOWY PASS — M6.3 PASS; M6.1/M6.2 OPEN`
 
 ## 7) Notatka końcowa
 
