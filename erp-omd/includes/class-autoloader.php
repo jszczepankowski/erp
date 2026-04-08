@@ -57,8 +57,61 @@ class ERP_OMD_Autoloader
 
         $file = ERP_OMD_PATH . self::$class_map[$class];
 
+        if ($class === 'ERP_OMD_Cron_Manager' && self::cron_manager_has_restore_duplicates($file)) {
+            self::register_cron_manager_fallback();
+            return;
+        }
+
         if (file_exists($file)) {
             require_once $file;
         }
+    }
+
+    private static function cron_manager_has_restore_duplicates($file)
+    {
+        if (! is_string($file) || $file === '' || ! file_exists($file) || ! is_readable($file)) {
+            return false;
+        }
+
+        $source = (string) file_get_contents($file);
+        if ($source === '') {
+            return false;
+        }
+
+        preg_match_all('/function\s+([a-zA-Z0-9_]+)\s*\(/', $source, $matches);
+        $method_names = array_map('strtolower', $matches[1] ?? []);
+        $counts = array_count_values($method_names);
+        $has_duplicate_restore_bundle = (int) ($counts['restore_backup_bundle_from_zip'] ?? 0) > 1;
+        $has_duplicate_restore_legacy = (int) ($counts['restore_from_backup_zip'] ?? 0) > 1;
+
+        if ($has_duplicate_restore_bundle || $has_duplicate_restore_legacy) {
+            error_log('ERP OMD: class-cron-manager.php contains duplicated restore methods.');
+            return true;
+        }
+
+        return false;
+    }
+
+    private static function register_cron_manager_fallback()
+    {
+        if (class_exists('ERP_OMD_Cron_Manager', false)) {
+            return;
+        }
+
+        eval('class ERP_OMD_Cron_Manager {
+            const WEEKLY_BACKUP_HOOK = "erp_omd_weekly_db_backup";
+            const MISSING_HOURS_HOOK = "erp_omd_daily_missing_hours_notifications";
+            public static function register_hooks() {}
+            public static function activate() {}
+            public static function deactivate() {}
+            public static function run_weekly_backup() {
+                update_option("erp_omd_last_backup_status", "cron_manager_invalid_file");
+                update_option("erp_omd_last_backup_at", current_time("mysql"));
+            }
+            public static function restore_backup_bundle_from_zip($zip_path) {
+                throw new RuntimeException("Cron manager source file contains duplicated restore methods. Please redeploy plugin files.");
+            }
+            public static function run_missing_hours_notifications() {}
+        }');
     }
 }
