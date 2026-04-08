@@ -25,6 +25,34 @@ class ERP_OMD_Project_Cost_Repository
         );
     }
 
+    public function for_month($month, $limit = 20)
+    {
+        global $wpdb;
+
+        $month = (string) $month;
+        if (! preg_match('/^\d{4}-\d{2}$/', $month)) {
+            return [];
+        }
+
+        $limit = max(1, min(200, (int) $limit));
+        $month_start = $month . '-01';
+        $month_end = gmdate('Y-m-t', strtotime($month_start . ' 00:00:00'));
+
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT *
+                FROM {$this->table_name()}
+                WHERE cost_date BETWEEN %s AND %s
+                ORDER BY cost_date DESC, id DESC
+                LIMIT %d",
+                $month_start,
+                $month_end,
+                $limit
+            ),
+            ARRAY_A
+        );
+    }
+
     public function sum_by_project_and_month_in_date_range(array $project_ids, $date_from, $date_to)
     {
         global $wpdb;
