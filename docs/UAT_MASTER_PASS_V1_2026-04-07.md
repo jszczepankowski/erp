@@ -40,9 +40,9 @@ Status globalny: **IN PROGRESS**
 - [x] UAT-O2 wyniki + eksport (manual) — PASS (potwierdzenie użytkownika)
 
 ## Ekran 6 — Zarządzanie miesiącem
-- [ ] UAT-M1 przejścia statusów (manual) — RETEST PO WDROŻENIU UI/API
-- [ ] UAT-M2 blokady uprawnień (manual) — RETEST PO WDROŻENIU UI/API
-- [ ] UAT-M3 korekty 72h vs emergency (manual) — RETEST PO WDROŻENIU UI/API
+- [ ] UAT-M1 przejścia statusów (manual) — RETEST PO WDROŻENIU UI/API *(auto smoke PASS: `php tests/omd-period-service-test.php`, `php tests/rest-api-test.php`, 2026-04-08)*
+- [ ] UAT-M2 blokady uprawnień (manual) — RETEST PO WDROŻENIU UI/API *(auto smoke PASS: `php tests/omd-period-service-test.php`, `php tests/rest-api-test.php`, 2026-04-08)*
+- [x] UAT-M3 korekty 72h vs emergency (manual) — PASS (potwierdzenie użytkownika, 2026-04-08)
 
 ## Ekran 7 — Audit log korekt
 - [x] UAT-A1 rejestr i filtrowanie (automatyczny smoke + implementacja UI)
@@ -58,6 +58,6 @@ Status globalny: **IN PROGRESS**
 
 ## 5) Co dalej (następna iteracja)
 
-1. Wykonać manualny retest Ekranu 6 po wdrożeniu UI/API przejść statusów.
-2. Potwierdzić blokady po zamknięciu i korekty z `reason` + audit trail.
-3. Zaktualizować wpis końcowy w `docs/WDROZENIE_V1_DZIENNIK.md` wynikiem PASS/PASS warunkowy/FAIL dla Kroku 6.
+1. Wykonać manualnie UAT-M1: LIVE -> DO ROZLICZENIA (w tym scenariusz z blokerem checklisty).
+2. Wykonać manualnie UAT-M2: blokady uprawnień dla non-admin w miesiącu DO ROZLICZENIA/ZAMKNIĘTY.
+3. Potwierdzić finalny wynik Kroku 6 i zaktualizować `docs/WDROZENIE_V1_DZIENNIK.md` statusem PASS/PASS warunkowy/FAIL dla ETAP 1 / KROK 1.3.
