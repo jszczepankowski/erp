@@ -204,6 +204,129 @@
                 <?php endif; ?>
             </ul>
         </section>
+        <section class="erp-omd-card" data-settings-period-transitions="1">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h2><?php esc_html_e('Zarządzanie statusem miesiąca', 'erp-omd'); ?></h2>
+                    <p class="description"><?php esc_html_e('Ręczne przejścia LIVE → DO ROZLICZENIA → ZAMKNIĘTY dla wskazanego miesiąca.', 'erp-omd'); ?></p>
+                </div>
+            </div>
+            <div class="erp-omd-form-grid" style="align-items:end;">
+                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                    <label for="erp-omd-settings-period-month"><?php esc_html_e('Miesiąc', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-period-month" type="month" data-settings-period-month="1" value="<?php echo esc_attr(current_time('Y-m')); ?>" />
+                </div>
+                <div class="erp-omd-form-field">
+                    <button type="button" class="button button-primary" data-settings-period-transition="DO_ROZLICZENIA"><?php esc_html_e('Przełącz na DO ROZLICZENIA', 'erp-omd'); ?></button>
+                    <button type="button" class="button" data-settings-period-transition="ZAMKNIETY"><?php esc_html_e('Przełącz na ZAMKNIĘTY', 'erp-omd'); ?></button>
+                </div>
+            </div>
+            <p class="description notice-info" data-settings-period-status="1"><?php esc_html_e('Wybierz miesiąc i uruchom akcję statusu.', 'erp-omd'); ?></p>
+        </section>
+        <section class="erp-omd-card" data-settings-admin-correction="1">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h2><?php esc_html_e('Szybka korekta admina (po zamknięciu miesiąca)', 'erp-omd'); ?></h2>
+                    <p class="description"><?php esc_html_e('Umożliwia korektę rekordu kosztu projektu z wymaganym powodem (reason) do testów UAT 6.3.', 'erp-omd'); ?></p>
+                    <p class="description">
+                        <?php
+                        echo esc_html(
+                            sprintf(
+                                __('ID kosztu musi istnieć. Poniżej pokazano ostatnie koszty z miesiąca %s — użyj przycisku „Wstaw do formularza”.', 'erp-omd'),
+                                (string) $admin_correction_month
+                            )
+                        );
+                        ?>
+                    </p>
+                </div>
+            </div>
+            <form method="get" style="margin-bottom:12px;">
+                <input type="hidden" name="page" value="erp-omd-reports" />
+                <input type="hidden" name="tab" value="monitoring" />
+                <label for="erp-omd-correction-month-picker"><?php esc_html_e('Miesiąc', 'erp-omd'); ?></label>
+                <input
+                    id="erp-omd-correction-month-picker"
+                    type="month"
+                    name="adjustment_month"
+                    value="<?php echo esc_attr((string) $admin_correction_month); ?>"
+                />
+                <button class="button button-secondary" type="submit"><?php esc_html_e('Załaduj listę kosztów', 'erp-omd'); ?></button>
+            </form>
+            <div class="erp-omd-form-grid">
+                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                    <label for="erp-omd-settings-correction-cost-id"><?php esc_html_e('ID kosztu', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-correction-cost-id" type="number" min="1" data-settings-correction-cost-id="1" />
+                </div>
+                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                    <label for="erp-omd-settings-correction-cost-date"><?php esc_html_e('Data kosztu', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-correction-cost-date" type="date" data-settings-correction-cost-date="1" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" />
+                </div>
+                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                    <label for="erp-omd-settings-correction-amount"><?php esc_html_e('Kwota', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-correction-amount" type="number" min="0.01" step="0.01" data-settings-correction-amount="1" />
+                </div>
+                <div class="erp-omd-form-field">
+                    <label for="erp-omd-settings-correction-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-correction-description" type="text" data-settings-correction-description="1" />
+                </div>
+                <div class="erp-omd-form-field">
+                    <label for="erp-omd-settings-correction-reason"><?php esc_html_e('Powód korekty (reason)', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-correction-reason" type="text" data-settings-correction-reason="1" placeholder="<?php echo esc_attr__('Np. korekta po zamknięciu miesiąca', 'erp-omd'); ?>" />
+                </div>
+                <div class="erp-omd-form-field" style="align-self:end;">
+                    <button type="button" class="button button-primary" data-settings-correction-submit="1"><?php esc_html_e('Wykonaj korektę', 'erp-omd'); ?></button>
+                </div>
+            </div>
+            <p class="description notice-info" data-settings-correction-status="1"><?php esc_html_e('Wprowadź dane rekordu i zapisz korektę z obowiązkowym powodem.', 'erp-omd'); ?></p>
+            <?php if (empty($admin_correction_cost_rows)) : ?>
+                <p class="description"><?php esc_html_e('Brak kosztów projektowych w wybranym miesiącu do szybkiej korekty.', 'erp-omd'); ?></p>
+            <?php else : ?>
+                <table class="widefat striped" style="margin-top:12px;">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('ID kosztu', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Kwota', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Akcja', 'erp-omd'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($admin_correction_cost_rows as $cost_row) : ?>
+                            <?php
+                            $cost_id = (int) ($cost_row['id'] ?? 0);
+                            $cost_date = (string) ($cost_row['cost_date'] ?? '');
+                            $cost_amount = (float) ($cost_row['amount'] ?? 0);
+                            $cost_description = (string) ($cost_row['description'] ?? '');
+                            $cost_project_id = (int) ($cost_row['project_id'] ?? 0);
+                            $cost_project_name = (string) ($project_name_by_id[$cost_project_id] ?? ('#' . $cost_project_id));
+                            ?>
+                            <tr>
+                                <td><?php echo esc_html((string) $cost_id); ?></td>
+                                <td><?php echo esc_html($cost_date); ?></td>
+                                <td><?php echo esc_html($cost_project_name); ?></td>
+                                <td><?php echo esc_html(number_format($cost_amount, 2, '.', '')); ?></td>
+                                <td><?php echo esc_html($cost_description); ?></td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="button button-small"
+                                        data-settings-correction-fill="1"
+                                        data-cost-id="<?php echo esc_attr((string) $cost_id); ?>"
+                                        data-cost-date="<?php echo esc_attr($cost_date); ?>"
+                                        data-cost-amount="<?php echo esc_attr(number_format($cost_amount, 2, '.', '')); ?>"
+                                        data-cost-description="<?php echo esc_attr($cost_description); ?>"
+                                    >
+                                        <?php esc_html_e('Wstaw do formularza', 'erp-omd'); ?>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </section>
         <section class="erp-omd-card">
             <div class="erp-omd-section-header">
                 <div>
@@ -266,6 +389,61 @@
                     <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV audytu', 'erp-omd'); ?></button>
                 </form>
 
+                <?php
+                $decode_adjustment_payload = static function ($rawValue) {
+                    if (! is_string($rawValue) || trim($rawValue) === '') {
+                        return null;
+                    }
+
+                    $decoded = json_decode($rawValue, true);
+                    return is_array($decoded) ? $decoded : null;
+                };
+                $format_adjustment_snapshot = static function ($rawValue) use ($decode_adjustment_payload) {
+                    $decoded = $decode_adjustment_payload($rawValue);
+                    if (! is_array($decoded)) {
+                        return wp_trim_words((string) $rawValue, 8, '…');
+                    }
+
+                    $parts = [];
+                    if (isset($decoded['amount']) && $decoded['amount'] !== '') {
+                        $parts[] = sprintf(__('Kwota: %s', 'erp-omd'), (string) $decoded['amount']);
+                    }
+                    if (isset($decoded['description']) && (string) $decoded['description'] !== '') {
+                        $parts[] = sprintf(__('Opis: %s', 'erp-omd'), (string) $decoded['description']);
+                    }
+                    if (isset($decoded['cost_date']) && (string) $decoded['cost_date'] !== '') {
+                        $parts[] = sprintf(__('Data: %s', 'erp-omd'), (string) $decoded['cost_date']);
+                    }
+                    if ($parts === []) {
+                        return wp_trim_words(wp_json_encode($decoded), 8, '…');
+                    }
+
+                    return implode("\n", $parts);
+                };
+                $resolve_adjustment_entity_label = static function (array $adjustmentRow) use ($decode_adjustment_payload, $project_name_by_id) {
+                    $entityType = (string) ($adjustmentRow['entity_type'] ?? '');
+                    $entityId = (int) ($adjustmentRow['entity_id'] ?? 0);
+                    $entityLabel = sprintf('%s #%d', $entityType, $entityId);
+
+                    $oldPayload = $decode_adjustment_payload((string) ($adjustmentRow['old_value'] ?? ''));
+                    $newPayload = $decode_adjustment_payload((string) ($adjustmentRow['new_value'] ?? ''));
+                    $projectId = 0;
+                    if (is_array($newPayload) && ! empty($newPayload['project_id'])) {
+                        $projectId = (int) $newPayload['project_id'];
+                    } elseif (is_array($oldPayload) && ! empty($oldPayload['project_id'])) {
+                        $projectId = (int) $oldPayload['project_id'];
+                    }
+                    if ($projectId > 0) {
+                        $projectName = (string) ($project_name_by_id[$projectId] ?? '');
+                        $entityLabel .= sprintf("\nProjekt #%d", $projectId);
+                        if ($projectName !== '') {
+                            $entityLabel .= sprintf(' (%s)', $projectName);
+                        }
+                    }
+
+                    return $entityLabel;
+                };
+                ?>
                 <table class="widefat striped">
                     <thead>
                         <tr>
@@ -289,10 +467,10 @@
                                 <td><?php echo esc_html((string) ($adjustment_row['changed_at'] ?? '')); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['month'] ?? '')); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['adjustment_type'] ?? '')); ?></td>
-                                <td><?php echo esc_html(sprintf('%s #%d', (string) ($adjustment_row['entity_type'] ?? ''), (int) ($adjustment_row['entity_id'] ?? 0))); ?></td>
+                                <td style="white-space:pre-line;"><?php echo esc_html($resolve_adjustment_entity_label((array) $adjustment_row)); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['field_name'] ?? '')); ?></td>
-                                <td><code><?php echo esc_html(wp_trim_words((string) ($adjustment_row['old_value'] ?? ''), 10, '…')); ?></code></td>
-                                <td><code><?php echo esc_html(wp_trim_words((string) ($adjustment_row['new_value'] ?? ''), 10, '…')); ?></code></td>
+                                <td style="white-space:pre-line;"><?php echo esc_html($format_adjustment_snapshot((string) ($adjustment_row['old_value'] ?? ''))); ?></td>
+                                <td style="white-space:pre-line;"><?php echo esc_html($format_adjustment_snapshot((string) ($adjustment_row['new_value'] ?? ''))); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['reason'] ?? '')); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_author_labels[(int) ($adjustment_row['changed_by'] ?? 0)] ?? ('#' . (int) ($adjustment_row['changed_by'] ?? 0)))); ?></td>
                             </tr>
