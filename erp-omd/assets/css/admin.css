@@ -1616,6 +1616,38 @@
     min-width: 180px;
 }
 
+.erp-omd-admin .erp-omd-monitoring-reports-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.erp-omd-admin .erp-omd-monitoring-layout .erp-omd-monitoring-reports-box {
+    order: 5;
+}
+
+.erp-omd-admin .erp-omd-monitoring-layout .erp-omd-monitoring-dashboard {
+    order: 1;
+}
+
+.erp-omd-admin .erp-omd-monitoring-layout .erp-omd-monitoring-month-status {
+    order: 2;
+}
+
+.erp-omd-admin .erp-omd-monitoring-layout .erp-omd-monitoring-admin-correction {
+    order: 3;
+}
+
+.erp-omd-admin .erp-omd-monitoring-layout .erp-omd-monitoring-audit-log {
+    order: 4;
+}
+
+@media (max-width: 1200px) {
+    .erp-omd-admin .erp-omd-monitoring-reports-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .erp-omd-admin .erp-omd-dashboard-v1-preview-grid {
     margin-top: 16px;
     display: grid;
