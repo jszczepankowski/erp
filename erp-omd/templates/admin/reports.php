@@ -240,6 +240,18 @@
                     </p>
                 </div>
             </div>
+            <form method="get" style="margin-bottom:12px;">
+                <input type="hidden" name="page" value="erp-omd-reports" />
+                <input type="hidden" name="tab" value="monitoring" />
+                <label for="erp-omd-correction-month-picker"><?php esc_html_e('Miesiąc', 'erp-omd'); ?></label>
+                <input
+                    id="erp-omd-correction-month-picker"
+                    type="month"
+                    name="adjustment_month"
+                    value="<?php echo esc_attr((string) $admin_correction_month); ?>"
+                />
+                <button class="button button-secondary" type="submit"><?php esc_html_e('Załaduj listę kosztów', 'erp-omd'); ?></button>
+            </form>
             <div class="erp-omd-form-grid">
                 <div class="erp-omd-form-field erp-omd-form-field-compact">
                     <label for="erp-omd-settings-correction-cost-id"><?php esc_html_e('ID kosztu', 'erp-omd'); ?></label>

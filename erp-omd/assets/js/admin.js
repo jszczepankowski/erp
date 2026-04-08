@@ -1231,6 +1231,7 @@ window.erpOmdInitSettingsAdminCorrection =
       requestBody.set('amount', String(amount));
       requestBody.set('description', description);
       requestBody.set('cost_date', costDate);
+      requestBody.set('reason', reason);
       requestBody.set('adjustment_reason', reason);
 
       setStatus('Zapisywanie korekty…', 'notice-info');
