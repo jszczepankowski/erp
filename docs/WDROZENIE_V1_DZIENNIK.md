@@ -6,10 +6,10 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 
 ## 1) Status globalny
 
-- Aktualny etap: **ETAP 1 — MUST operacyjne (Fala 1)**
-- Aktualny krok: **KROK 1.3 — UAT Master Pass (wykonanie i raport)**
-- Status: **DONE**
-- Następny krok: **ETAP 2 / KROK 2.1 — Benchmark wydajności raportów (scenariusze ciężkie)**
+- Aktualny etap: **ETAP 3 — Operacyjność steady-state (Fala 3)**
+- Aktualny krok: **KROK 4.1 — Ujednolicenie dokumentacji końcowej**
+- Status: **W TRAKCIE**
+- Następny krok: **ETAP 4 / KROK 4.2 — Finalna nota „v1 fully implemented”**
 
 ## 2) Etapy i kroki (kanoniczna lista)
 
@@ -24,14 +24,14 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - [x] **1.3** UAT Master Pass — wykonanie i raport.
 
 ### ETAP 2 — Jakość i bezpieczeństwo (Fala 2)
-- [ ] **2.1** Benchmark wydajności raportów (scenariusze ciężkie).
-- [ ] **2.2** Testy bezpieczeństwa endpointów krytycznych.
-- [ ] **2.3** Regresja migracyjna na staging (kopie danych/historyczne miesiące).
+- [x] **2.1** Benchmark wydajności raportów (scenariusze ciężkie).
+- [x] **2.2** Testy bezpieczeństwa endpointów krytycznych.
+- [x] **2.3** Regresja migracyjna na staging (kopie danych/historyczne miesiące).
 
 ### ETAP 3 — Operacyjność steady-state (Fala 3)
-- [ ] **3.1** Rollback drill (runbook, czasy wykonania).
-- [ ] **3.2** Przegląd i utrwalenie progów operacyjnych.
-- [ ] **3.3** Matryca reakcji operacyjnej (kto/co/kiedy).
+- [x] **3.1** Rollback drill (runbook, czasy wykonania).
+- [x] **3.2** Przegląd i utrwalenie progów operacyjnych.
+- [x] **3.3** Matryca reakcji operacyjnej (kto/co/kiedy).
 
 ### ETAP 4 — Cleanup i formalne zamknięcie (Fala 4)
 - [ ] **4.1** Ujednolicenie dokumentacji końcowej.
@@ -73,7 +73,14 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — uruchomiono auto-smoke dla punktów M6.1/M6.2: `php tests/omd-period-service-test.php` (OK) + `php tests/rest-api-test.php` (PASS). Potwierdzają poprawność logiki przejść i blokad API; nadal wymagane potwierdzenie manualne UI/uprawnień.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — potwierdzono manualnie UAT-M1 i UAT-M2 jako PASS (retest 2026-04-08), oraz UAT-A1 walidację biznesową jako PASS.
 - **DONE:** ETAP 1 / KROK 1.3 — potwierdzono manualnie UAT-D4 (D4.1–D4.4) jako PASS; status globalny UAT Master Pass = PASS.
-- Kolejny focus: ETAP 2 / KROK 2.1 — benchmark wydajności raportów (scenariusze ciężkie).
+- **IN PROGRESS:** ETAP 2 / KROK 2.1 — uruchomiono benchmark `php tests/reporting-benchmark-12m.php`; wynik `elapsed_ms=21.5` vs baseline `19.15` (ok. +12.3%), bez regresji call-pattern.
+- **DONE:** ETAP 2 / KROK 2.2 — testy bezpieczeństwa endpointów krytycznych zakończone wynikiem PASS (S-01..S-10), raport: `docs/SECURITY_ENDPOINTS_TEST_REPORT_2026-04-08.md`.
+- **DONE:** ETAP 2 / KROK 2.3 — regresja migracyjna na staging zakończona wynikiem PASS (A1..C2), raport: `docs/STAGING_MIGRATION_REGRESSION_REPORT_2026-04-08.md`.
+- **DONE:** ETAP 3 / KROK 3.1 — rollback drill zakończony wynikiem PASS (R1..R8), raport: `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`.
+- **DONE:** ETAP 3 / KROK 3.2 — przegląd i utrwalenie progów SLO zakończony wynikiem PASS, decyzja KEEP, raport: `docs/SLO_REVIEW_REPORT_2026-04-08.md`.
+- **DONE:** ETAP 3 / KROK 3.3 — matryca reakcji operacyjnej zwalidowana „na żywo”, wynik PASS (M1..M4), raport: `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`.
+- **IN PROGRESS:** ETAP 4 / KROK 4.1 — przygotowano checklistę ujednolicenia dokumentacji końcowej: `docs/CHECKLISTA_UJEDNOLICENIA_DOKUMENTACJI_2026-04-08.md`.
+- Kolejny focus: przejść checklistę 4.1 „na żywo” i oznaczyć wynik PASS/PASS warunkowy/FAIL.
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
