@@ -7,7 +7,7 @@
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'monitoring'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'monitoring' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Monitoring techniczny', 'erp-omd'); ?></a>
     </nav>
 
-    <div class="erp-omd-page-sections">
+    <div class="erp-omd-page-sections <?php echo $report_filters['tab'] === 'monitoring' ? 'erp-omd-monitoring-layout' : ''; ?>">
         <?php if ($report_filters['tab'] !== 'monitoring') : ?>
         <section class="erp-omd-card">
             <div class="erp-omd-section-header">
@@ -25,6 +25,36 @@
                             <p><?php esc_html_e('Wybierz typ raportu oraz okres, a następnie zawęź dane według filtrów.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid">
+                            <?php
+                            $selected_report_type = (string) ($report_filters['report_type'] ?? '');
+                            $apply_report_variant_rules = $report_filters['tab'] === 'reports' && $selected_report_type !== '';
+
+                            $show_client_field = true;
+                            $show_project_field = true;
+                            $show_employee_field = true;
+                            $show_status_field = true;
+                            $show_detail_field = in_array($selected_report_type, ['projects', 'clients', 'invoice', 'time_entries'], true);
+                            $show_per_page_field = $selected_report_type === 'time_entries';
+
+                            if ($apply_report_variant_rules) {
+                                if ($selected_report_type === 'omd_rozliczenia') {
+                                    $show_client_field = false;
+                                    $show_project_field = false;
+                                    $show_employee_field = false;
+                                    $show_status_field = false;
+                                    $show_detail_field = false;
+                                    $show_per_page_field = false;
+                                } elseif ($selected_report_type === 'invoice') {
+                                    $show_employee_field = false;
+                                    $show_status_field = false;
+                                    $show_detail_field = false;
+                                    $show_per_page_field = false;
+                                } elseif ($selected_report_type === 'time_entries') {
+                                    $show_status_field = false;
+                                    $show_per_page_field = false;
+                                }
+                            }
+                            ?>
                             <?php if ($report_filters['tab'] === 'reports') : ?>
                                 <div class="erp-omd-form-field">
                                     <label for="report-type"><?php esc_html_e('Typ raportu', 'erp-omd'); ?></label>
@@ -43,43 +73,51 @@
                                 <label for="report-month"><?php esc_html_e('Miesiąc', 'erp-omd'); ?></label>
                                 <input id="report-month" type="date" name="month" value="<?php echo esc_attr($report_filters['month'] . '-01'); ?>" />
                             </div>
-                            <div class="erp-omd-form-field">
-                                <label for="report-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
-                                <select id="report-client" name="client_id" data-project-target="#report-project">
-                                    <option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option>
-                                    <?php foreach ($clients as $client_item) : ?>
-                                        <option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) $report_filters['client_id'], (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="erp-omd-form-field">
-                                <label for="report-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
-                                <select id="report-project" name="project_id">
-                                    <option value=""><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option>
-                                    <?php foreach ($projects as $project_item) : ?>
-                                        <option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr((string) ($project_item['client_id'] ?? 0)); ?>" <?php selected((int) $report_filters['project_id'], (int) $project_item['id']); ?>><?php echo esc_html($project_item['name']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="erp-omd-form-field">
-                                <label for="report-employee"><?php esc_html_e('Pracownik', 'erp-omd'); ?></label>
-                                <select id="report-employee" name="employee_id">
-                                    <option value="0"><?php esc_html_e('Wszyscy pracownicy', 'erp-omd'); ?></option>
-                                    <?php foreach ($employees as $employee_item) : ?>
-                                        <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) $report_filters['employee_id'], (int) $employee_item['id']); ?>><?php echo esc_html($employee_item['user_login']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="erp-omd-form-field">
-                                <label for="report-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
-                                <select id="report-status" name="status">
-                                    <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
-                                    <?php foreach ($status_options as $status_option) : ?>
-                                        <option value="<?php echo esc_attr($status_option); ?>" <?php selected($report_filters['status'], $status_option); ?>><?php echo esc_html($status_labels[$status_option] ?? $status_option); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <?php if (in_array($report_filters['report_type'], ['projects', 'clients', 'invoice', 'time_entries'], true)) : ?>
+                            <?php if ($show_client_field) : ?>
+                                <div class="erp-omd-form-field">
+                                    <label for="report-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                                    <select id="report-client" name="client_id" data-project-target="#report-project">
+                                        <option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option>
+                                        <?php foreach ($clients as $client_item) : ?>
+                                            <option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) $report_filters['client_id'], (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($show_project_field) : ?>
+                                <div class="erp-omd-form-field">
+                                    <label for="report-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
+                                    <select id="report-project" name="project_id">
+                                        <option value=""><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option>
+                                        <?php foreach ($projects as $project_item) : ?>
+                                            <option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr((string) ($project_item['client_id'] ?? 0)); ?>" <?php selected((int) $report_filters['project_id'], (int) $project_item['id']); ?>><?php echo esc_html($project_item['name']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($show_employee_field) : ?>
+                                <div class="erp-omd-form-field">
+                                    <label for="report-employee"><?php esc_html_e('Pracownik', 'erp-omd'); ?></label>
+                                    <select id="report-employee" name="employee_id">
+                                        <option value="0"><?php esc_html_e('Wszyscy pracownicy', 'erp-omd'); ?></option>
+                                        <?php foreach ($employees as $employee_item) : ?>
+                                            <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) $report_filters['employee_id'], (int) $employee_item['id']); ?>><?php echo esc_html($employee_item['user_login']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($show_status_field) : ?>
+                                <div class="erp-omd-form-field">
+                                    <label for="report-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
+                                    <select id="report-status" name="status">
+                                        <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
+                                        <?php foreach ($status_options as $status_option) : ?>
+                                            <option value="<?php echo esc_attr($status_option); ?>" <?php selected($report_filters['status'], $status_option); ?>><?php echo esc_html($status_labels[$status_option] ?? $status_option); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($show_detail_field) : ?>
                                 <div class="erp-omd-form-field erp-omd-form-field-compact">
                                     <label for="report-detail"><?php esc_html_e('Wersja raportu', 'erp-omd'); ?></label>
                                     <select id="report-detail" name="detail">
@@ -88,7 +126,7 @@
                                     </select>
                                 </div>
                             <?php endif; ?>
-                            <?php if ($report_filters['report_type'] === 'time_entries') : ?>
+                            <?php if ($show_per_page_field) : ?>
                                 <div class="erp-omd-form-field erp-omd-form-field-compact">
                                     <label for="report-per-page"><?php esc_html_e('Wierszy na stronę', 'erp-omd'); ?></label>
                                     <input id="report-per-page" type="number" min="10" max="200" step="5" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
@@ -105,106 +143,168 @@
         </section>
         <?php endif; ?>
         <?php if ($report_filters['tab'] === 'monitoring') : ?>
-        <section class="erp-omd-card">
-            <div class="notice <?php echo esc_attr((string) ($reports_v1_steady_state_banner['level'] ?? 'notice-info')); ?>" style="margin:0;">
-                <p><strong><?php echo esc_html((string) ($reports_v1_steady_state_banner['title'] ?? '')); ?></strong></p>
-                <p><?php echo esc_html((string) ($reports_v1_steady_state_banner['message'] ?? '')); ?></p>
-                <?php if (! empty($reports_v1_steady_state_banner['actions']) && is_array($reports_v1_steady_state_banner['actions'])) : ?>
-                    <ul style="margin:0 0 8px 18px;">
-                        <?php foreach ($reports_v1_steady_state_banner['actions'] as $monitoring_action) : ?>
-                            <li><?php echo esc_html((string) $monitoring_action); ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
-                <p style="margin-bottom:8px;">
-                    <a class="button button-secondary" href="<?php echo esc_url((string) $reports_v1_runbook_url); ?>">
-                        <?php esc_html_e('Przejdź do runbooka / ustawień SLO', 'erp-omd'); ?>
-                    </a>
-                    <?php if (! empty($reports_v1_steady_state_banner['history_toggle_url'])) : ?>
-                        <a class="button" href="<?php echo esc_url((string) $reports_v1_steady_state_banner['history_toggle_url']); ?>">
-                            <?php echo esc_html((string) ($reports_v1_steady_state_banner['history_toggle_label'] ?? __('Pokaż tylko próbki z dryfem', 'erp-omd'))); ?>
+        <section class="erp-omd-card erp-omd-monitoring-reports-box" hidden>
+            <div class="erp-omd-monitoring-reports-grid">
+                <div>
+                    <div class="erp-omd-section-header">
+                        <div>
+                            <h2><?php esc_html_e('Reports v1 — steady-state monitoring', 'erp-omd'); ?></h2>
+                        </div>
+                    </div>
+                    <div class="notice notice-success" style="margin:0;">
+                        <p><strong><?php echo esc_html((string) ($reports_v1_steady_state_banner['title'] ?? '')); ?></strong></p>
+                        <p><?php echo esc_html((string) ($reports_v1_steady_state_banner['message'] ?? '')); ?></p>
+                        <?php if (! empty($reports_v1_steady_state_banner['actions']) && is_array($reports_v1_steady_state_banner['actions'])) : ?>
+                            <ul style="margin:0 0 8px 18px;">
+                                <?php foreach ($reports_v1_steady_state_banner['actions'] as $monitoring_action) : ?>
+                                    <li><?php echo esc_html((string) $monitoring_action); ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                        <p style="margin-bottom:8px;">
+                            <a class="button button-secondary" href="<?php echo esc_url((string) $reports_v1_runbook_url); ?>">
+                                <?php esc_html_e('Przejdź do runbooka / ustawień SLO', 'erp-omd'); ?>
+                            </a>
+                            <?php if (! empty($reports_v1_steady_state_banner['history_toggle_url'])) : ?>
+                                <a class="button" href="<?php echo esc_url((string) $reports_v1_steady_state_banner['history_toggle_url']); ?>">
+                                    <?php echo esc_html((string) ($reports_v1_steady_state_banner['history_toggle_label'] ?? __('Pokaż tylko próbki z dryfem', 'erp-omd'))); ?>
+                                </a>
+                            <?php endif; ?>
+                        </p>
+                        <?php if (! empty($reports_v1_steady_state_banner['history']) && is_array($reports_v1_steady_state_banner['history'])) : ?>
+                            <p><strong><?php esc_html_e('Ostatnie próbki drift (quick view)', 'erp-omd'); ?></strong></p>
+                            <?php if (isset($reports_v1_steady_state_banner['history_drift_count'], $reports_v1_steady_state_banner['history_total_count'])) : ?>
+                                <p>
+                                    <?php
+                                    echo esc_html(
+                                        sprintf(
+                                            __('Próbki z dryfem: %1$d/%2$d (%3$s%%)', 'erp-omd'),
+                                            (int) $reports_v1_steady_state_banner['history_drift_count'],
+                                            (int) $reports_v1_steady_state_banner['history_total_count'],
+                                            number_format((float) ($reports_v1_steady_state_banner['history_drift_ratio_percent'] ?? 0), 2, '.', '')
+                                        )
+                                    );
+                                    ?>
+                                </p>
+                            <?php endif; ?>
+                            <?php if (! empty($reports_v1_steady_state_banner['history_last_sample_at'])) : ?>
+                                <p>
+                                    <?php
+                                    echo esc_html(
+                                        sprintf(
+                                            __('Ostatnia próbka monitoringu: %s', 'erp-omd'),
+                                            (string) $reports_v1_steady_state_banner['history_last_sample_at']
+                                        )
+                                    );
+                                    ?>
+                                </p>
+                            <?php endif; ?>
+                            <ul style="margin:0 0 8px 18px;">
+                                <?php foreach ($reports_v1_steady_state_banner['history'] as $history_row) : ?>
+                                    <li>
+                                        <?php
+                                        echo esc_html(
+                                            sprintf(
+                                                '%1$s | %2$s | %3$d ms | err=%4$s | p95>%5$s',
+                                                (string) ($history_row['captured_at'] ?? '—'),
+                                                (string) ($history_row['report_type'] ?? '—'),
+                                                (int) ($history_row['generation_ms'] ?? 0),
+                                                ! empty($history_row['has_error']) ? 'yes' : 'no',
+                                                ! empty($history_row['generation_above_threshold']) ? 'yes' : 'no'
+                                            )
+                                        );
+                                        ?>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php elseif (! empty($reports_v1_steady_state_banner['history_drift_only'])) : ?>
+                            <p><?php esc_html_e('Brak próbek spełniających filtr dryfu w quick view.', 'erp-omd'); ?></p>
+                        <?php endif; ?>
+                        <p><strong><?php esc_html_e('Szybki smoke-test etykiet statusów', 'erp-omd'); ?></strong></p>
+                        <ul style="margin:0 0 8px 18px;">
+                            <li><?php esc_html_e('W selectorze trybu widzisz „DO ROZLICZENIA” (bez underscore).', 'erp-omd'); ?></li>
+                            <li><?php esc_html_e('W karcie „Status miesiąca” dashboard-v1 status renderuje się jako „DO ROZLICZENIA”.', 'erp-omd'); ?></li>
+                            <li><?php esc_html_e('Akcje statusowe nie pokazują fallbacku z underscore, tylko wersję ze spacją.', 'erp-omd'); ?></li>
+                        </ul>
+                    </div>
+                </div>
+                <div>
+                    <div class="erp-omd-section-header">
+                        <div>
+                            <h2><?php esc_html_e('Reports v1 — SLO i monitoring', 'erp-omd'); ?></h2>
+                            <p class="description"><?php esc_html_e('Skrót stanu progów i monitoringu technicznego dla raportów v1.', 'erp-omd'); ?></p>
+                        </div>
+                        <a class="button button-secondary" href="<?php echo esc_url((string) $reports_v1_runbook_url); ?>">
+                            <?php esc_html_e('Przejdź do pełnych ustawień SLO', 'erp-omd'); ?>
                         </a>
-                    <?php endif; ?>
-                </p>
-                <?php if (! empty($reports_v1_steady_state_banner['history']) && is_array($reports_v1_steady_state_banner['history'])) : ?>
-                    <p><strong><?php esc_html_e('Ostatnie próbki drift (quick view)', 'erp-omd'); ?></strong></p>
-                    <?php if (isset($reports_v1_steady_state_banner['history_drift_count'], $reports_v1_steady_state_banner['history_total_count'])) : ?>
-                        <p>
-                            <?php
-                            echo esc_html(
-                                sprintf(
-                                    __('Próbki z dryfem: %1$d/%2$d (%3$s%%)', 'erp-omd'),
-                                    (int) $reports_v1_steady_state_banner['history_drift_count'],
-                                    (int) $reports_v1_steady_state_banner['history_total_count'],
-                                    number_format((float) ($reports_v1_steady_state_banner['history_drift_ratio_percent'] ?? 0), 2, '.', '')
-                                )
-                            );
-                            ?>
-                        </p>
-                    <?php endif; ?>
-                    <?php if (! empty($reports_v1_steady_state_banner['history_last_sample_at'])) : ?>
-                        <p>
-                            <?php
-                            echo esc_html(
-                                sprintf(
-                                    __('Ostatnia próbka monitoringu: %s', 'erp-omd'),
-                                    (string) $reports_v1_steady_state_banner['history_last_sample_at']
-                                )
-                            );
-                            ?>
-                        </p>
-                    <?php endif; ?>
+                    </div>
                     <ul style="margin:0 0 8px 18px;">
-                        <?php foreach ($reports_v1_steady_state_banner['history'] as $history_row) : ?>
-                            <li>
-                                <?php
-                                echo esc_html(
-                                    sprintf(
-                                        '%1$s | %2$s | %3$d ms | err=%4$s | p95>%5$s',
-                                        (string) ($history_row['captured_at'] ?? '—'),
-                                        (string) ($history_row['report_type'] ?? '—'),
-                                        (int) ($history_row['generation_ms'] ?? 0),
-                                        ! empty($history_row['has_error']) ? 'yes' : 'no',
-                                        ! empty($history_row['generation_above_threshold']) ? 'yes' : 'no'
-                                    )
-                                );
-                                ?>
-                            </li>
-                        <?php endforeach; ?>
+                        <li><?php echo esc_html(sprintf(__('Próg p95: %d ms', 'erp-omd'), (int) ($reports_v1_monitoring_summary['slo_generation_p95_max'] ?? 0))); ?></li>
+                        <li><?php echo esc_html(sprintf(__('Próg świeżości metryk: %d min', 'erp-omd'), (int) ($reports_v1_monitoring_summary['freshness_minutes'] ?? 0))); ?></li>
+                        <li><?php echo esc_html(sprintf(__('Udział próbek z dryfem (quick view): %.2f%%', 'erp-omd'), (float) ($reports_v1_monitoring_summary['drift_ratio_percent'] ?? 0))); ?></li>
+                        <li><?php echo esc_html(! empty($reports_v1_monitoring_summary['calibration_closed']) ? __('Kalibracja SLO: zamknięta', 'erp-omd') : __('Kalibracja SLO: w toku', 'erp-omd')); ?></li>
+                        <li><?php echo esc_html(! empty($reports_v1_monitoring_summary['sustained_drift_detected']) ? __('Trwały dryf: wykryty', 'erp-omd') : __('Trwały dryf: brak', 'erp-omd')); ?></li>
+                        <?php if (! empty($reports_v1_monitoring_summary['last_sample_at'])) : ?>
+                            <li><?php echo esc_html(sprintf(__('Ostatnia próbka: %s', 'erp-omd'), (string) $reports_v1_monitoring_summary['last_sample_at'])); ?></li>
+                        <?php endif; ?>
                     </ul>
-                <?php elseif (! empty($reports_v1_steady_state_banner['history_drift_only'])) : ?>
-                    <p><?php esc_html_e('Brak próbek spełniających filtr dryfu w quick view.', 'erp-omd'); ?></p>
-                <?php endif; ?>
-                <p><strong><?php esc_html_e('Szybki smoke-test etykiet statusów', 'erp-omd'); ?></strong></p>
-                <ul style="margin:0 0 8px 18px;">
-                    <li><?php esc_html_e('W selectorze trybu widzisz „DO ROZLICZENIA” (bez underscore).', 'erp-omd'); ?></li>
-                    <li><?php esc_html_e('W karcie „Status miesiąca” dashboard-v1 status renderuje się jako „DO ROZLICZENIA”.', 'erp-omd'); ?></li>
-                    <li><?php esc_html_e('Akcje statusowe nie pokazują fallbacku z underscore, tylko wersję ze spacją.', 'erp-omd'); ?></li>
-                </ul>
+                </div>
             </div>
         </section>
-        <section class="erp-omd-card">
+        <section class="erp-omd-card erp-omd-monitoring-section erp-omd-monitoring-dashboard erp-omd-dashboard-v1-preview" data-dashboard-v1-preview="1" data-month="<?php echo esc_attr($report_filters['month']); ?>">
             <div class="erp-omd-section-header">
                 <div>
-                    <h2><?php esc_html_e('Reports v1 — SLO i monitoring', 'erp-omd'); ?></h2>
-                    <p class="description"><?php esc_html_e('Skrót stanu progów i monitoringu technicznego dla raportów v1.', 'erp-omd'); ?></p>
+                    <h2><?php esc_html_e('Dashboard v1 — podgląd operacyjny', 'erp-omd'); ?></h2>
+                    <p class="description"><?php esc_html_e('Szybki podgląd gotowości miesiąca, kolejnych akcji statusowych i ostatnich korekt.', 'erp-omd'); ?></p>
                 </div>
-                <a class="button button-secondary" href="<?php echo esc_url((string) $reports_v1_runbook_url); ?>">
-                    <?php esc_html_e('Przejdź do pełnych ustawień SLO', 'erp-omd'); ?>
-                </a>
             </div>
-            <ul style="margin:0 0 8px 18px;">
-                <li><?php echo esc_html(sprintf(__('Próg p95: %d ms', 'erp-omd'), (int) ($reports_v1_monitoring_summary['slo_generation_p95_max'] ?? 0))); ?></li>
-                <li><?php echo esc_html(sprintf(__('Próg świeżości metryk: %d min', 'erp-omd'), (int) ($reports_v1_monitoring_summary['freshness_minutes'] ?? 0))); ?></li>
-                <li><?php echo esc_html(sprintf(__('Udział próbek z dryfem (quick view): %.2f%%', 'erp-omd'), (float) ($reports_v1_monitoring_summary['drift_ratio_percent'] ?? 0))); ?></li>
-                <li><?php echo esc_html(! empty($reports_v1_monitoring_summary['calibration_closed']) ? __('Kalibracja SLO: zamknięta', 'erp-omd') : __('Kalibracja SLO: w toku', 'erp-omd')); ?></li>
-                <li><?php echo esc_html(! empty($reports_v1_monitoring_summary['sustained_drift_detected']) ? __('Trwały dryf: wykryty', 'erp-omd') : __('Trwały dryf: brak', 'erp-omd')); ?></li>
-                <?php if (! empty($reports_v1_monitoring_summary['last_sample_at'])) : ?>
-                    <li><?php echo esc_html(sprintf(__('Ostatnia próbka: %s', 'erp-omd'), (string) $reports_v1_monitoring_summary['last_sample_at'])); ?></li>
-                <?php endif; ?>
-            </ul>
+            <div class="erp-omd-dashboard-v1-preview-controls">
+                <label>
+                    <?php esc_html_e('Miesiąc', 'erp-omd'); ?>
+                    <input type="month" value="<?php echo esc_attr($report_filters['month']); ?>" data-dashboard-v1-month="1" />
+                </label>
+                <label>
+                    <?php esc_html_e('Tryb', 'erp-omd'); ?>
+                    <select data-dashboard-v1-mode="1">
+                        <option value="LIVE"><?php esc_html_e('LIVE', 'erp-omd'); ?></option>
+                        <option value="DO_ROZLICZENIA"><?php esc_html_e('DO ROZLICZENIA', 'erp-omd'); ?></option>
+                        <option value="ZAMKNIETY"><?php esc_html_e('ZAMKNIETY', 'erp-omd'); ?></option>
+                    </select>
+                </label>
+                <label>
+                    <?php esc_html_e('Scope rentowności', 'erp-omd'); ?>
+                    <select data-dashboard-v1-scope="1">
+                        <option value="project"><?php esc_html_e('Projekt', 'erp-omd'); ?></option>
+                        <option value="client"><?php esc_html_e('Klient', 'erp-omd'); ?></option>
+                    </select>
+                </label>
+                <button type="button" class="button button-secondary" data-dashboard-v1-refresh="1"><?php esc_html_e('Odśwież', 'erp-omd'); ?></button>
+                <button type="button" class="button" data-dashboard-v1-clear-cache="1"><?php esc_html_e('Wyczyść cache', 'erp-omd'); ?></button>
+            </div>
+            <div class="erp-omd-dashboard-v1-preview-status" data-dashboard-v1-status="1" role="status" aria-live="polite"><?php esc_html_e('Ładowanie podglądu dashboard-v1…', 'erp-omd'); ?></div>
+            <p class="description">
+                <span data-dashboard-v1-updated-at="1"></span>
+                <span class="erp-omd-dashboard-v1-source-badge erp-omd-dashboard-v1-source-badge-live" data-dashboard-v1-source="1"><?php esc_html_e('LIVE', 'erp-omd'); ?></span>
+            </p>
+            <p class="description erp-omd-dashboard-v1-counters" data-dashboard-v1-counters="1"></p>
+            <p class="description erp-omd-dashboard-v1-debug" data-dashboard-v1-debug="1"></p>
+            <div class="erp-omd-dashboard-v1-preview-grid" data-dashboard-v1-grid="1" hidden>
+                <div class="erp-omd-dashboard-v1-preview-card">
+                    <h3><?php esc_html_e('Status miesiąca', 'erp-omd'); ?></h3>
+                    <p data-dashboard-v1-month-status="1">—</p>
+                    <ul data-dashboard-v1-actions="1"></ul>
+                </div>
+                <div class="erp-omd-dashboard-v1-preview-card">
+                    <h3><?php esc_html_e('Checklista gotowości', 'erp-omd'); ?></h3>
+                    <ul data-dashboard-v1-checklist="1"></ul>
+                </div>
+                <div class="erp-omd-dashboard-v1-preview-card">
+                    <h3><?php esc_html_e('Ostatnie korekty', 'erp-omd'); ?></h3>
+                    <ul data-dashboard-v1-adjustments="1"></ul>
+                </div>
+            </div>
         </section>
-        <section class="erp-omd-card" data-settings-period-transitions="1">
+        <section class="erp-omd-card erp-omd-monitoring-section erp-omd-monitoring-month-status" data-settings-period-transitions="1">
             <div class="erp-omd-section-header">
                 <div>
                     <h2><?php esc_html_e('Zarządzanie statusem miesiąca', 'erp-omd'); ?></h2>
@@ -223,7 +323,7 @@
             </div>
             <p class="description notice-info" data-settings-period-status="1"><?php esc_html_e('Wybierz miesiąc i uruchom akcję statusu.', 'erp-omd'); ?></p>
         </section>
-        <section class="erp-omd-card" data-settings-admin-correction="1">
+        <section class="erp-omd-card erp-omd-monitoring-section erp-omd-monitoring-admin-correction" data-settings-admin-correction="1">
             <div class="erp-omd-section-header">
                 <div>
                     <h2><?php esc_html_e('Szybka korekta admina (po zamknięciu miesiąca)', 'erp-omd'); ?></h2>
@@ -327,7 +427,7 @@
                 </table>
             <?php endif; ?>
         </section>
-        <section class="erp-omd-card">
+        <section class="erp-omd-card erp-omd-monitoring-section erp-omd-monitoring-audit-log">
             <div class="erp-omd-section-header">
                 <div>
                     <h2><?php esc_html_e('Audit log korekt', 'erp-omd'); ?></h2>
@@ -481,59 +581,6 @@
             <?php endif; ?>
         </section>
 
-        <section class="erp-omd-card erp-omd-dashboard-v1-preview" data-dashboard-v1-preview="1" data-month="<?php echo esc_attr($report_filters['month']); ?>">
-            <div class="erp-omd-section-header">
-                <div>
-                    <h2><?php esc_html_e('Dashboard v1 — podgląd operacyjny', 'erp-omd'); ?></h2>
-                    <p class="description"><?php esc_html_e('Szybki podgląd gotowości miesiąca, kolejnych akcji statusowych i ostatnich korekt.', 'erp-omd'); ?></p>
-                </div>
-            </div>
-            <div class="erp-omd-dashboard-v1-preview-controls">
-                <label>
-                    <?php esc_html_e('Miesiąc', 'erp-omd'); ?>
-                    <input type="month" value="<?php echo esc_attr($report_filters['month']); ?>" data-dashboard-v1-month="1" />
-                </label>
-                <label>
-                    <?php esc_html_e('Tryb', 'erp-omd'); ?>
-                    <select data-dashboard-v1-mode="1">
-                        <option value="LIVE"><?php esc_html_e('LIVE', 'erp-omd'); ?></option>
-                        <option value="DO_ROZLICZENIA"><?php esc_html_e('DO ROZLICZENIA', 'erp-omd'); ?></option>
-                        <option value="ZAMKNIETY"><?php esc_html_e('ZAMKNIETY', 'erp-omd'); ?></option>
-                    </select>
-                </label>
-                <label>
-                    <?php esc_html_e('Scope rentowności', 'erp-omd'); ?>
-                    <select data-dashboard-v1-scope="1">
-                        <option value="project"><?php esc_html_e('Projekt', 'erp-omd'); ?></option>
-                        <option value="client"><?php esc_html_e('Klient', 'erp-omd'); ?></option>
-                    </select>
-                </label>
-                <button type="button" class="button button-secondary" data-dashboard-v1-refresh="1"><?php esc_html_e('Odśwież', 'erp-omd'); ?></button>
-                <button type="button" class="button" data-dashboard-v1-clear-cache="1"><?php esc_html_e('Wyczyść cache', 'erp-omd'); ?></button>
-            </div>
-            <div class="erp-omd-dashboard-v1-preview-status" data-dashboard-v1-status="1" role="status" aria-live="polite"><?php esc_html_e('Ładowanie podglądu dashboard-v1…', 'erp-omd'); ?></div>
-            <p class="description">
-                <span data-dashboard-v1-updated-at="1"></span>
-                <span class="erp-omd-dashboard-v1-source-badge erp-omd-dashboard-v1-source-badge-live" data-dashboard-v1-source="1"><?php esc_html_e('LIVE', 'erp-omd'); ?></span>
-            </p>
-            <p class="description erp-omd-dashboard-v1-counters" data-dashboard-v1-counters="1"></p>
-            <p class="description erp-omd-dashboard-v1-debug" data-dashboard-v1-debug="1"></p>
-            <div class="erp-omd-dashboard-v1-preview-grid" data-dashboard-v1-grid="1" hidden>
-                <div class="erp-omd-dashboard-v1-preview-card">
-                    <h3><?php esc_html_e('Status miesiąca', 'erp-omd'); ?></h3>
-                    <p data-dashboard-v1-month-status="1">—</p>
-                    <ul data-dashboard-v1-actions="1"></ul>
-                </div>
-                <div class="erp-omd-dashboard-v1-preview-card">
-                    <h3><?php esc_html_e('Checklista gotowości', 'erp-omd'); ?></h3>
-                    <ul data-dashboard-v1-checklist="1"></ul>
-                </div>
-                <div class="erp-omd-dashboard-v1-preview-card">
-                    <h3><?php esc_html_e('Ostatnie korekty', 'erp-omd'); ?></h3>
-                    <ul data-dashboard-v1-adjustments="1"></ul>
-                </div>
-            </div>
-        </section>
         <?php endif; ?>
 
         <?php if ($report_filters['tab'] === 'reports') : ?>
