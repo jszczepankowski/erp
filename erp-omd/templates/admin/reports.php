@@ -389,6 +389,61 @@
                     <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV audytu', 'erp-omd'); ?></button>
                 </form>
 
+                <?php
+                $decode_adjustment_payload = static function ($rawValue) {
+                    if (! is_string($rawValue) || trim($rawValue) === '') {
+                        return null;
+                    }
+
+                    $decoded = json_decode($rawValue, true);
+                    return is_array($decoded) ? $decoded : null;
+                };
+                $format_adjustment_snapshot = static function ($rawValue) use ($decode_adjustment_payload) {
+                    $decoded = $decode_adjustment_payload($rawValue);
+                    if (! is_array($decoded)) {
+                        return wp_trim_words((string) $rawValue, 8, '…');
+                    }
+
+                    $parts = [];
+                    if (isset($decoded['amount']) && $decoded['amount'] !== '') {
+                        $parts[] = sprintf(__('Kwota: %s', 'erp-omd'), (string) $decoded['amount']);
+                    }
+                    if (isset($decoded['description']) && (string) $decoded['description'] !== '') {
+                        $parts[] = sprintf(__('Opis: %s', 'erp-omd'), (string) $decoded['description']);
+                    }
+                    if (isset($decoded['cost_date']) && (string) $decoded['cost_date'] !== '') {
+                        $parts[] = sprintf(__('Data: %s', 'erp-omd'), (string) $decoded['cost_date']);
+                    }
+                    if ($parts === []) {
+                        return wp_trim_words(wp_json_encode($decoded), 8, '…');
+                    }
+
+                    return implode(' | ', $parts);
+                };
+                $resolve_adjustment_entity_label = static function (array $adjustmentRow) use ($decode_adjustment_payload, $project_name_by_id) {
+                    $entityType = (string) ($adjustmentRow['entity_type'] ?? '');
+                    $entityId = (int) ($adjustmentRow['entity_id'] ?? 0);
+                    $entityLabel = sprintf('%s #%d', $entityType, $entityId);
+
+                    $oldPayload = $decode_adjustment_payload((string) ($adjustmentRow['old_value'] ?? ''));
+                    $newPayload = $decode_adjustment_payload((string) ($adjustmentRow['new_value'] ?? ''));
+                    $projectId = 0;
+                    if (is_array($newPayload) && ! empty($newPayload['project_id'])) {
+                        $projectId = (int) $newPayload['project_id'];
+                    } elseif (is_array($oldPayload) && ! empty($oldPayload['project_id'])) {
+                        $projectId = (int) $oldPayload['project_id'];
+                    }
+                    if ($projectId > 0) {
+                        $projectName = (string) ($project_name_by_id[$projectId] ?? '');
+                        $entityLabel .= sprintf(' | Projekt #%d', $projectId);
+                        if ($projectName !== '') {
+                            $entityLabel .= sprintf(' (%s)', $projectName);
+                        }
+                    }
+
+                    return $entityLabel;
+                };
+                ?>
                 <table class="widefat striped">
                     <thead>
                         <tr>
@@ -412,10 +467,10 @@
                                 <td><?php echo esc_html((string) ($adjustment_row['changed_at'] ?? '')); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['month'] ?? '')); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['adjustment_type'] ?? '')); ?></td>
-                                <td><?php echo esc_html(sprintf('%s #%d', (string) ($adjustment_row['entity_type'] ?? ''), (int) ($adjustment_row['entity_id'] ?? 0))); ?></td>
+                                <td><?php echo esc_html($resolve_adjustment_entity_label((array) $adjustment_row)); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['field_name'] ?? '')); ?></td>
-                                <td><code><?php echo esc_html(wp_trim_words((string) ($adjustment_row['old_value'] ?? ''), 10, '…')); ?></code></td>
-                                <td><code><?php echo esc_html(wp_trim_words((string) ($adjustment_row['new_value'] ?? ''), 10, '…')); ?></code></td>
+                                <td><?php echo esc_html($format_adjustment_snapshot((string) ($adjustment_row['old_value'] ?? ''))); ?></td>
+                                <td><?php echo esc_html($format_adjustment_snapshot((string) ($adjustment_row['new_value'] ?? ''))); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['reason'] ?? '')); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_author_labels[(int) ($adjustment_row['changed_by'] ?? 0)] ?? ('#' . (int) ($adjustment_row['changed_by'] ?? 0)))); ?></td>
                             </tr>
