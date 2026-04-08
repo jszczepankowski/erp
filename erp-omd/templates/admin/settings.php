@@ -128,8 +128,13 @@
                         </div>
                         <div style="flex:1 1 320px; min-width:280px;">
                             <h4 style="margin-top:0;"><?php esc_html_e('Odtworzenie z backupu', 'erp-omd'); ?></h4>
-                            <p><?php esc_html_e('Ta funkcja jest tymczasowo wyłączona ze względu na problemy środowiskowe z cron-managerem.', 'erp-omd'); ?></p>
-                            <p class="description"><?php esc_html_e('Rekomendacja: użyj przycisku „Pobierz backup” i wykonaj restore ręcznie na poziomie bazy + opcji `erp_omd_*`.', 'erp-omd'); ?></p>
+                            <p><?php esc_html_e('Wgraj paczkę ZIP pobraną z backupu ERP OMD, aby odtworzyć SQL + ustawienia pluginu.', 'erp-omd'); ?></p>
+                            <p>
+                                <label for="erp-omd-restore-backup-zip"><?php esc_html_e('Plik backupu ZIP', 'erp-omd'); ?></label><br />
+                                <input id="erp-omd-restore-backup-zip" type="file" name="restore_backup_zip" form="erp-omd-restore-backup-form" accept=".zip,application/zip" required />
+                            </p>
+                            <p class="description"><?php esc_html_e('Uwaga: operacja nadpisze bieżące dane ERP OMD (tabele erp_omd_*) i ustawienia opcji erp_omd_*.', 'erp-omd'); ?></p>
+                            <button type="submit" class="button button-primary" form="erp-omd-restore-backup-form"><?php esc_html_e('Odtwórz z backupu', 'erp-omd'); ?></button>
                         </div>
                     </div>
                 </section>
@@ -346,6 +351,10 @@
         <form id="erp-omd-manual-backup-form" method="post">
             <?php wp_nonce_field('erp_omd_run_manual_backup'); ?>
             <input type="hidden" name="erp_omd_action" value="run_manual_backup" />
+        </form>
+        <form id="erp-omd-restore-backup-form" method="post" enctype="multipart/form-data">
+            <?php wp_nonce_field('erp_omd_restore_backup_bundle'); ?>
+            <input type="hidden" name="erp_omd_action" value="restore_backup_bundle" />
         </form>
     </div>
 </div>
