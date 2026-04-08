@@ -58,6 +58,6 @@ Status globalny: **IN PROGRESS**
 
 ## 5) Co dalej (następna iteracja)
 
-1. Uzupełnić brakujący punkt manualny UAT-D4 (korekty + drilldown) na Dashboardzie.
+1. Uzupełnić brakujący punkt manualny UAT-D4 (korekty + drilldown) na Dashboardzie wg mini scenariusza: `docs/UAT_D4_MINI_SCENARIUSZ_CHECKLISTA_2026-04-08.md`.
 2. Po domknięciu D4 zaktualizować status globalny UAT na PASS/PASS warunkowy.
 3. Zaktualizować `docs/WDROZENIE_V1_DZIENNIK.md` statusem końcowym ETAP 1 / KROK 1.3.
