@@ -126,6 +126,23 @@
 
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
+                        <h3><?php esc_html_e('Odtworzenie wtyczki z backupu', 'erp-omd'); ?></h3>
+                        <p><?php esc_html_e('Prześlij paczkę ZIP backupu ERP OMD, aby odtworzyć dane tabel ERP OMD oraz ustawienia wtyczki na tej instalacji.', 'erp-omd'); ?></p>
+                    </div>
+                    <form method="post" enctype="multipart/form-data">
+                        <?php wp_nonce_field('erp_omd_restore_backup_bundle'); ?>
+                        <input type="hidden" name="erp_omd_action" value="restore_backup_bundle" />
+                        <p>
+                            <label for="erp-omd-restore-backup-zip"><?php esc_html_e('Plik backupu ZIP', 'erp-omd'); ?></label><br />
+                            <input id="erp-omd-restore-backup-zip" type="file" name="restore_backup_zip" accept=".zip,application/zip" required />
+                        </p>
+                        <p class="description"><?php esc_html_e('Uwaga: operacja nadpisze bieżące dane ERP OMD (tabele erp_omd_*) i ustawienia opcji erp_omd_*.', 'erp-omd'); ?></p>
+                        <button type="submit" class="button button-primary"><?php esc_html_e('Odtwórz z backupu', 'erp-omd'); ?></button>
+                    </form>
+                </section>
+
+                <section class="erp-omd-form-section">
+                    <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Powiadomienia o brakujących godzinach', 'erp-omd'); ?></h3>
                         <p><?php esc_html_e('Skonfiguruj scenariusz automatycznej wysyłki oraz listę pracowników, którzy mają otrzymywać przypomnienia.', 'erp-omd'); ?></p>
                     </div>
