@@ -20,8 +20,12 @@ if (! empty($duplicates)) {
     throw new RuntimeException('Duplicate cron-manager methods found: ' . implode(', ', array_keys($duplicates)));
 }
 
-if (($counts['restore_from_backup_zip'] ?? 0) !== 1) {
-    throw new RuntimeException('restore_from_backup_zip() must be declared exactly once in ERP_OMD_Cron_Manager.');
+if (($counts['restore_backup_bundle_from_zip'] ?? 0) !== 1) {
+    throw new RuntimeException('restore_backup_bundle_from_zip() must be declared exactly once in ERP_OMD_Cron_Manager.');
+}
+
+if (($counts['restore_from_backup_zip'] ?? 0) !== 0) {
+    throw new RuntimeException('Legacy restore_from_backup_zip() should not be declared in ERP_OMD_Cron_Manager.');
 }
 
 if (($counts['import_sql_dump'] ?? 0) !== 1) {
@@ -30,4 +34,3 @@ if (($counts['import_sql_dump'] ?? 0) !== 1) {
 
 echo "Assertions: 3\n";
 echo "Cron manager duplicate-method test passed.\n";
-

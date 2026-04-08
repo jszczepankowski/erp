@@ -361,7 +361,7 @@ class ERP_OMD_Admin
                     $this->redirect_with_notice('erp-omd-settings', 'error', __('Plik backupu musi mieć rozszerzenie .zip.', 'erp-omd'));
                 }
                 try {
-                    ERP_OMD_Cron_Manager::restore_from_backup_zip($tmp_name);
+                    ERP_OMD_Cron_Manager::restore_backup_bundle_from_zip($tmp_name);
                 } catch (RuntimeException $exception) {
                     $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Odtworzenie backupu nie powiodło się: %s', 'erp-omd'), $exception->getMessage()));
                 }
