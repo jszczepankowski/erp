@@ -659,6 +659,46 @@ window.erpOmdInitDashboardV1Preview =
         return false;
       });
   };
+  const submitPeriodTransition = (monthValue, toStatus, actionLabel) => {
+    const safeMonth = String(monthValue || '').trim();
+    const safeStatus = String(toStatus || '').trim();
+    if (!safeMonth || !safeStatus) {
+      return Promise.resolve(false);
+    }
+    const endpoint = `${String(erpOmdAdminData.restUrl).replace(/\/$/, '')}/periods/${encodeURIComponent(
+      safeMonth
+    )}/transition`;
+    const requestBody = new URLSearchParams();
+    requestBody.set('to_status', safeStatus);
+
+    setStatusState(`Zmiana statusu miesiąca na ${actionLabel || safeStatus}…`, 'loading', true);
+    return fetch(endpoint, {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, headers),
+      body: requestBody.toString(),
+    })
+      .then((response) =>
+        response
+          .json()
+          .catch(() => ({}))
+          .then((payload) => ({ ok: response.ok, payload }))
+      )
+      .then(({ ok, payload }) => {
+        if (!ok) {
+          throw new Error(String((payload && payload.message) || 'Zmiana statusu nie powiodła się.'));
+        }
+        setStatusState(`Status miesiąca zmieniono na ${actionLabel || safeStatus}.`, 'success', true);
+        if (modeNode.querySelector(`option[value="${safeStatus}"]`)) {
+          modeNode.value = safeStatus;
+        }
+        fetchPreview();
+        return true;
+      })
+      .catch((error) => {
+        setStatusState(`Nie udało się zmienić statusu miesiąca: ${String(error.message || 'błąd')}`, 'error', true);
+        return false;
+      });
+  };
 
   const fetchPreview = () => {
     if (supportsAbortController && activeController instanceof AbortController) {
@@ -751,7 +791,25 @@ window.erpOmdInitDashboardV1Preview =
           const fallbackStatusLabel = String(safeGet(safeAction.to_status_label, '—'));
           const label = safeGet(safeAction.label, fallbackStatusLabel);
           const state = safeAction.enabled ? 'aktywna' : 'zablokowana';
-          item.textContent = `${label} (${state})`;
+          const stateLabel = document.createElement('span');
+          stateLabel.textContent = `${label} (${state})`;
+          item.appendChild(stateLabel);
+          if (safeAction.enabled) {
+            item.appendChild(document.createTextNode(' '));
+            const transitionButton = document.createElement('button');
+            transitionButton.type = 'button';
+            transitionButton.className = 'button button-small button-primary';
+            transitionButton.textContent = `Przełącz na ${fallbackStatusLabel}`;
+            transitionButton.addEventListener('click', () => {
+              transitionButton.disabled = true;
+              submitPeriodTransition(monthNode.value || fallbackMonth, safeAction.to_status, fallbackStatusLabel).finally(() => {
+                transitionButton.disabled = false;
+              });
+            });
+            item.appendChild(transitionButton);
+          } else if (safeAction.reason) {
+            item.appendChild(document.createTextNode(` — ${String(safeAction.reason)}`));
+          }
           actionsNode.appendChild(item);
         });
       }
@@ -1011,6 +1069,183 @@ window.erpOmdInitAdminInteractions =
     });
   });
 
+window.erpOmdInitSettingsPeriodTransitions =
+  window.erpOmdInitSettingsPeriodTransitions ||
+  (() => {
+    const panelNode = document.querySelector('[data-settings-period-transitions="1"]');
+    if (!(panelNode instanceof HTMLElement)) {
+      return;
+    }
+    const monthNode = panelNode.querySelector('[data-settings-period-month="1"]');
+    const statusNode = panelNode.querySelector('[data-settings-period-status="1"]');
+    const actionButtons = panelNode.querySelectorAll('[data-settings-period-transition]');
+    if (!(monthNode instanceof HTMLInputElement) || !(statusNode instanceof HTMLElement) || actionButtons.length === 0) {
+      return;
+    }
+    if (typeof erpOmdAdminData === 'undefined' || !erpOmdAdminData || !erpOmdAdminData.restUrl) {
+      statusNode.textContent = 'Brak konfiguracji REST API.';
+      return;
+    }
+
+    const headers = {};
+    if (erpOmdAdminData.restNonce) {
+      headers['X-WP-Nonce'] = String(erpOmdAdminData.restNonce);
+    }
+    const setStatus = (message, tone) => {
+      statusNode.textContent = String(message || '');
+      statusNode.classList.remove('notice-error', 'notice-success', 'notice-warning', 'notice-info');
+      statusNode.classList.add(tone || 'notice-info');
+    };
+    const submitTransition = (toStatus, buttonNode) => {
+      const month = String(monthNode.value || '').trim();
+      if (!month) {
+        setStatus('Podaj miesiąc (RRRR-MM).', 'notice-warning');
+        return;
+      }
+      const endpoint = `${String(erpOmdAdminData.restUrl).replace(/\/$/, '')}/periods/${encodeURIComponent(month)}/transition`;
+      const requestBody = new URLSearchParams();
+      requestBody.set('to_status', String(toStatus || ''));
+      setStatus(`Zmiana statusu na ${toStatus}…`, 'notice-info');
+      buttonNode.disabled = true;
+      fetch(endpoint, {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, headers),
+        body: requestBody.toString(),
+      })
+        .then((response) =>
+          response
+            .json()
+            .catch(() => ({}))
+            .then((payload) => ({ ok: response.ok, payload }))
+        )
+        .then(({ ok, payload }) => {
+          if (!ok) {
+            throw new Error(String((payload && payload.message) || 'Błąd zmiany statusu.'));
+          }
+          setStatus(`Status miesiąca ${month} zmieniono na ${toStatus}.`, 'notice-success');
+        })
+        .catch((error) => {
+          setStatus(`Nie udało się zmienić statusu: ${String(error.message || 'błąd')}`, 'notice-error');
+        })
+        .finally(() => {
+          buttonNode.disabled = false;
+        });
+    };
+
+    actionButtons.forEach((buttonNode) => {
+      if (!(buttonNode instanceof HTMLButtonElement)) {
+        return;
+      }
+      buttonNode.addEventListener('click', () => {
+        submitTransition(buttonNode.dataset.settingsPeriodTransition || '', buttonNode);
+      });
+    });
+  });
+
+window.erpOmdInitSettingsAdminCorrection =
+  window.erpOmdInitSettingsAdminCorrection ||
+  (() => {
+    const panelNode = document.querySelector('[data-settings-admin-correction="1"]');
+    if (!(panelNode instanceof HTMLElement)) {
+      return;
+    }
+    if (typeof erpOmdAdminData === 'undefined' || !erpOmdAdminData || !erpOmdAdminData.restUrl) {
+      return;
+    }
+
+    const costIdNode = panelNode.querySelector('[data-settings-correction-cost-id="1"]');
+    const costDateNode = panelNode.querySelector('[data-settings-correction-cost-date="1"]');
+    const amountNode = panelNode.querySelector('[data-settings-correction-amount="1"]');
+    const descriptionNode = panelNode.querySelector('[data-settings-correction-description="1"]');
+    const reasonNode = panelNode.querySelector('[data-settings-correction-reason="1"]');
+    const submitNode = panelNode.querySelector('[data-settings-correction-submit="1"]');
+    const statusNode = panelNode.querySelector('[data-settings-correction-status="1"]');
+
+    if (
+      !(costIdNode instanceof HTMLInputElement) ||
+      !(costDateNode instanceof HTMLInputElement) ||
+      !(amountNode instanceof HTMLInputElement) ||
+      !(descriptionNode instanceof HTMLInputElement) ||
+      !(reasonNode instanceof HTMLInputElement) ||
+      !(submitNode instanceof HTMLButtonElement) ||
+      !(statusNode instanceof HTMLElement)
+    ) {
+      return;
+    }
+
+    const headers = {};
+    if (erpOmdAdminData.restNonce) {
+      headers['X-WP-Nonce'] = String(erpOmdAdminData.restNonce);
+    }
+    const setStatus = (message, tone) => {
+      statusNode.textContent = String(message || '');
+      statusNode.classList.remove('notice-error', 'notice-success', 'notice-warning', 'notice-info');
+      statusNode.classList.add(tone || 'notice-info');
+    };
+
+    submitNode.addEventListener('click', () => {
+      const costId = Number(costIdNode.value || 0);
+      const costDate = String(costDateNode.value || '').trim();
+      const amount = Number(amountNode.value || 0);
+      const description = String(descriptionNode.value || '').trim();
+      const reason = String(reasonNode.value || '').trim();
+
+      if (!(costId > 0)) {
+        setStatus('Podaj poprawne ID kosztu (> 0).', 'notice-warning');
+        return;
+      }
+      if (!costDate) {
+        setStatus('Podaj datę kosztu.', 'notice-warning');
+        return;
+      }
+      if (!(amount > 0)) {
+        setStatus('Kwota musi być większa od zera.', 'notice-warning');
+        return;
+      }
+      if (description === '') {
+        setStatus('Opis kosztu jest wymagany.', 'notice-warning');
+        return;
+      }
+      if (reason === '') {
+        setStatus('Powód korekty (reason) jest wymagany.', 'notice-warning');
+        return;
+      }
+
+      const endpoint = `${String(erpOmdAdminData.restUrl).replace(/\/$/, '')}/project-costs/${encodeURIComponent(String(costId))}`;
+      const requestBody = new URLSearchParams();
+      requestBody.set('amount', String(amount));
+      requestBody.set('description', description);
+      requestBody.set('cost_date', costDate);
+      requestBody.set('adjustment_reason', reason);
+
+      setStatus('Zapisywanie korekty…', 'notice-info');
+      submitNode.disabled = true;
+      fetch(endpoint, {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, headers),
+        body: requestBody.toString(),
+      })
+        .then((response) =>
+          response
+            .json()
+            .catch(() => ({}))
+            .then((payload) => ({ ok: response.ok, payload }))
+        )
+        .then(({ ok, payload }) => {
+          if (!ok) {
+            throw new Error(String((payload && payload.message) || 'Korekta nie powiodła się.'));
+          }
+          setStatus('Korekta zapisana. Sprawdź wpis w Audit log korekt.', 'notice-success');
+        })
+        .catch((error) => {
+          setStatus(`Nie udało się zapisać korekty: ${String(error.message || 'błąd')}`, 'notice-error');
+        })
+        .finally(() => {
+          submitNode.disabled = false;
+        });
+    });
+  });
+
   document.querySelectorAll('.erp-omd-project-monthly-dates').forEach((button) => {
     button.addEventListener('click', () => {
       const startSelector = button.dataset.startTarget || '';
@@ -1253,5 +1488,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (typeof window.erpOmdInitAdminInteractions === 'function') {
     window.erpOmdInitAdminInteractions(currentPage);
+  }
+  if (typeof window.erpOmdInitSettingsPeriodTransitions === 'function') {
+    window.erpOmdInitSettingsPeriodTransitions();
+  }
+  if (typeof window.erpOmdInitSettingsAdminCorrection === 'function') {
+    window.erpOmdInitSettingsAdminCorrection();
   }
 });

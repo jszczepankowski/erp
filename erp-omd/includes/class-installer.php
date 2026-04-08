@@ -6,8 +6,8 @@ class ERP_OMD_Installer
     {
         self::migrate();
         ERP_OMD_Capabilities::activate();
-        ERP_OMD_Frontend::register_rewrite_rules();
         ERP_OMD_Cron_Manager::activate();
+        ERP_OMD_Frontend::register_rewrite_rules();
         flush_rewrite_rules();
     }
 
