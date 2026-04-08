@@ -195,6 +195,7 @@ class ERP_OMD_Plugin
         $this->admin->register_hooks();
         $this->frontend->register_hooks();
         $this->rest_api->register_hooks();
+        ERP_OMD_Cron_Manager::register_hooks();
         add_action('wp_login', [$this, 'track_user_login'], 10, 2);
         add_filter('wp_mail_from', [$this, 'filter_wp_mail_from']);
     }

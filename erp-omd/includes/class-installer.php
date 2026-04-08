@@ -6,6 +6,7 @@ class ERP_OMD_Installer
     {
         self::migrate();
         ERP_OMD_Capabilities::activate();
+        ERP_OMD_Cron_Manager::activate();
         ERP_OMD_Frontend::register_rewrite_rules();
         flush_rewrite_rules();
     }
@@ -13,6 +14,7 @@ class ERP_OMD_Installer
     public static function deactivate()
     {
         ERP_OMD_Capabilities::deactivate();
+        ERP_OMD_Cron_Manager::deactivate();
         flush_rewrite_rules();
     }
 
