@@ -4,9 +4,11 @@
     <nav class="nav-tab-wrapper erp-omd-nav-tabs">
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'reports' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Raporty', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'calendar'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'calendar' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kalendarz', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'monitoring'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'monitoring' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Monitoring techniczny', 'erp-omd'); ?></a>
     </nav>
 
     <div class="erp-omd-page-sections">
+        <?php if ($report_filters['tab'] !== 'monitoring') : ?>
         <section class="erp-omd-card">
             <div class="erp-omd-section-header">
                 <div>
@@ -77,7 +79,7 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <?php if (in_array($report_filters['report_type'], ['projects', 'clients', 'invoice'], true)) : ?>
+                            <?php if (in_array($report_filters['report_type'], ['projects', 'clients', 'invoice', 'time_entries'], true)) : ?>
                                 <div class="erp-omd-form-field erp-omd-form-field-compact">
                                     <label for="report-detail"><?php esc_html_e('Wersja raportu', 'erp-omd'); ?></label>
                                     <select id="report-detail" name="detail">
@@ -86,20 +88,23 @@
                                     </select>
                                 </div>
                             <?php endif; ?>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="dashboard-queue-limit"><?php esc_html_e('Wiersze do exportu CSV', 'erp-omd'); ?></label>
-                                <input id="dashboard-queue-limit" type="number" min="1" max="100" name="dashboard_queue_limit" value="<?php echo esc_attr((string) ($dashboard_preview_filters['queue_limit'] ?? 25)); ?>" />
-                            </div>
+                            <?php if ($report_filters['report_type'] === 'time_entries') : ?>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="report-per-page"><?php esc_html_e('Wierszy na stronę', 'erp-omd'); ?></label>
+                                    <input id="report-per-page" type="number" min="10" max="200" step="5" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </section>
                 </div>
                 <div class="erp-omd-form-actions">
-                    <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
                     <input type="hidden" name="page_num" value="1" />
                     <button class="button button-primary" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
                 </div>
             </form>
         </section>
+        <?php endif; ?>
+        <?php if ($report_filters['tab'] === 'monitoring') : ?>
         <section class="erp-omd-card">
             <div class="notice <?php echo esc_attr((string) ($reports_v1_steady_state_banner['level'] ?? 'notice-info')); ?>" style="margin:0;">
                 <p><strong><?php echo esc_html((string) ($reports_v1_steady_state_banner['title'] ?? '')); ?></strong></p>
@@ -178,6 +183,125 @@
                 </ul>
             </div>
         </section>
+        <section class="erp-omd-card">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h2><?php esc_html_e('Reports v1 — SLO i monitoring', 'erp-omd'); ?></h2>
+                    <p class="description"><?php esc_html_e('Skrót stanu progów i monitoringu technicznego dla raportów v1.', 'erp-omd'); ?></p>
+                </div>
+                <a class="button button-secondary" href="<?php echo esc_url((string) $reports_v1_runbook_url); ?>">
+                    <?php esc_html_e('Przejdź do pełnych ustawień SLO', 'erp-omd'); ?>
+                </a>
+            </div>
+            <ul style="margin:0 0 8px 18px;">
+                <li><?php echo esc_html(sprintf(__('Próg p95: %d ms', 'erp-omd'), (int) ($reports_v1_monitoring_summary['slo_generation_p95_max'] ?? 0))); ?></li>
+                <li><?php echo esc_html(sprintf(__('Próg świeżości metryk: %d min', 'erp-omd'), (int) ($reports_v1_monitoring_summary['freshness_minutes'] ?? 0))); ?></li>
+                <li><?php echo esc_html(sprintf(__('Udział próbek z dryfem (quick view): %.2f%%', 'erp-omd'), (float) ($reports_v1_monitoring_summary['drift_ratio_percent'] ?? 0))); ?></li>
+                <li><?php echo esc_html(! empty($reports_v1_monitoring_summary['calibration_closed']) ? __('Kalibracja SLO: zamknięta', 'erp-omd') : __('Kalibracja SLO: w toku', 'erp-omd')); ?></li>
+                <li><?php echo esc_html(! empty($reports_v1_monitoring_summary['sustained_drift_detected']) ? __('Trwały dryf: wykryty', 'erp-omd') : __('Trwały dryf: brak', 'erp-omd')); ?></li>
+                <?php if (! empty($reports_v1_monitoring_summary['last_sample_at'])) : ?>
+                    <li><?php echo esc_html(sprintf(__('Ostatnia próbka: %s', 'erp-omd'), (string) $reports_v1_monitoring_summary['last_sample_at'])); ?></li>
+                <?php endif; ?>
+            </ul>
+        </section>
+        <section class="erp-omd-card">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h2><?php esc_html_e('Audit log korekt', 'erp-omd'); ?></h2>
+                    <p class="description"><?php esc_html_e('Filtrowanie i eksport rejestru korekt administracyjnych dla wskazanego okresu.', 'erp-omd'); ?></p>
+                </div>
+            </div>
+            <?php if (! $can_manage_adjustments_audit) : ?>
+                <p class="description"><?php esc_html_e('Brak uprawnień do podglądu audytu korekt.', 'erp-omd'); ?></p>
+            <?php else : ?>
+                <form method="get" style="margin-bottom:12px;">
+                    <input type="hidden" name="page" value="erp-omd-reports" />
+                    <input type="hidden" name="tab" value="monitoring" />
+                    <label>
+                        <?php esc_html_e('Miesiąc', 'erp-omd'); ?>
+                        <input type="month" name="adjustment_month" value="<?php echo esc_attr((string) $adjustment_filters['month']); ?>" />
+                    </label>
+                    <label>
+                        <?php esc_html_e('Typ korekty', 'erp-omd'); ?>
+                        <select name="adjustment_type">
+                            <option value=""><?php esc_html_e('Wszystkie', 'erp-omd'); ?></option>
+                            <?php foreach ($adjustment_types as $adjustment_type_option) : ?>
+                                <option value="<?php echo esc_attr($adjustment_type_option); ?>" <?php selected((string) $adjustment_filters['adjustment_type'], (string) $adjustment_type_option); ?>><?php echo esc_html($adjustment_type_option); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>
+                        <?php esc_html_e('Encja', 'erp-omd'); ?>
+                        <select name="adjustment_entity_type">
+                            <option value=""><?php esc_html_e('Wszystkie', 'erp-omd'); ?></option>
+                            <?php foreach ($adjustment_entity_types as $entity_type_option) : ?>
+                                <option value="<?php echo esc_attr($entity_type_option); ?>" <?php selected((string) $adjustment_filters['entity_type'], (string) $entity_type_option); ?>><?php echo esc_html($entity_type_option); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>
+                        <?php esc_html_e('User ID', 'erp-omd'); ?>
+                        <input type="number" min="0" name="adjustment_changed_by" value="<?php echo esc_attr((string) $adjustment_filters['changed_by']); ?>" />
+                    </label>
+                    <label>
+                        <?php esc_html_e('Powód', 'erp-omd'); ?>
+                        <input type="text" name="adjustment_reason" value="<?php echo esc_attr((string) $adjustment_filters['reason']); ?>" />
+                    </label>
+                    <label>
+                        <?php esc_html_e('Limit', 'erp-omd'); ?>
+                        <input type="number" min="10" max="500" step="10" name="adjustment_limit" value="<?php echo esc_attr((string) $adjustment_filters['limit']); ?>" />
+                    </label>
+                    <button class="button button-primary" type="submit"><?php esc_html_e('Filtruj audyt', 'erp-omd'); ?></button>
+                </form>
+
+                <form method="post" style="margin-bottom:12px;">
+                    <?php wp_nonce_field('erp_omd_export_adjustments_audit'); ?>
+                    <input type="hidden" name="erp_omd_action" value="export_adjustments_audit" />
+                    <input type="hidden" name="adjustment_month" value="<?php echo esc_attr((string) $adjustment_filters['month']); ?>" />
+                    <input type="hidden" name="adjustment_type" value="<?php echo esc_attr((string) $adjustment_filters['adjustment_type']); ?>" />
+                    <input type="hidden" name="adjustment_entity_type" value="<?php echo esc_attr((string) $adjustment_filters['entity_type']); ?>" />
+                    <input type="hidden" name="adjustment_changed_by" value="<?php echo esc_attr((string) $adjustment_filters['changed_by']); ?>" />
+                    <input type="hidden" name="adjustment_reason" value="<?php echo esc_attr((string) $adjustment_filters['reason']); ?>" />
+                    <input type="hidden" name="adjustment_limit" value="<?php echo esc_attr((string) $adjustment_filters['limit']); ?>" />
+                    <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV audytu', 'erp-omd'); ?></button>
+                </form>
+
+                <table class="widefat striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Encja', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Pole', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Przed', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Po', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Powód', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Kto', 'erp-omd'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (empty($adjustment_rows)) : ?>
+                        <tr><td colspan="9"><?php esc_html_e('Brak rekordów audytu dla wybranych filtrów.', 'erp-omd'); ?></td></tr>
+                    <?php else : ?>
+                        <?php foreach ($adjustment_rows as $adjustment_row) : ?>
+                            <tr>
+                                <td><?php echo esc_html((string) ($adjustment_row['changed_at'] ?? '')); ?></td>
+                                <td><?php echo esc_html((string) ($adjustment_row['month'] ?? '')); ?></td>
+                                <td><?php echo esc_html((string) ($adjustment_row['adjustment_type'] ?? '')); ?></td>
+                                <td><?php echo esc_html(sprintf('%s #%d', (string) ($adjustment_row['entity_type'] ?? ''), (int) ($adjustment_row['entity_id'] ?? 0))); ?></td>
+                                <td><?php echo esc_html((string) ($adjustment_row['field_name'] ?? '')); ?></td>
+                                <td><code><?php echo esc_html(wp_trim_words((string) ($adjustment_row['old_value'] ?? ''), 10, '…')); ?></code></td>
+                                <td><code><?php echo esc_html(wp_trim_words((string) ($adjustment_row['new_value'] ?? ''), 10, '…')); ?></code></td>
+                                <td><?php echo esc_html((string) ($adjustment_row['reason'] ?? '')); ?></td>
+                                <td><?php echo esc_html((string) ($adjustment_author_labels[(int) ($adjustment_row['changed_by'] ?? 0)] ?? ('#' . (int) ($adjustment_row['changed_by'] ?? 0)))); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </section>
 
         <section class="erp-omd-card erp-omd-dashboard-v1-preview" data-dashboard-v1-preview="1" data-month="<?php echo esc_attr($report_filters['month']); ?>">
             <div class="erp-omd-section-header">
@@ -232,6 +356,7 @@
                 </div>
             </div>
         </section>
+        <?php endif; ?>
 
         <?php if ($report_filters['tab'] === 'reports') : ?>
             <section class="erp-omd-card">
@@ -353,6 +478,37 @@
                         </tbody>
                     </table>
                 <?php elseif ($report_filters['report_type'] === 'time_entries') : ?>
+                    <?php if (! empty($report_pagination) && (int) ($report_pagination['total_pages'] ?? 1) > 1) : ?>
+                        <div class="tablenav top">
+                            <div class="tablenav-pages">
+                                <?php
+                                $base_args = [
+                                    'page' => 'erp-omd-reports',
+                                    'tab' => 'reports',
+                                    'report_type' => $report_filters['report_type'],
+                                    'month' => $report_filters['month'],
+                                    'client_id' => (int) $report_filters['client_id'],
+                                    'project_id' => (int) $report_filters['project_id'],
+                                    'employee_id' => (int) $report_filters['employee_id'],
+                                    'status' => $report_filters['status'],
+                                    'mode' => $report_filters['mode'],
+                                    'detail' => $report_filters['detail'],
+                                    'per_page' => (int) ($report_filters['per_page'] ?? 25),
+                                ];
+                                $current_page = (int) ($report_pagination['page_num'] ?? 1);
+                                $total_pages = (int) ($report_pagination['total_pages'] ?? 1);
+                                ?>
+                                <span class="displaying-num"><?php echo esc_html(sprintf(__('Wyniki: %d', 'erp-omd'), (int) ($report_pagination['total_items'] ?? 0))); ?></span>
+                                <?php if (! empty($report_pagination['has_prev'])) : ?>
+                                    <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['page_num' => $current_page - 1]), admin_url('admin.php'))); ?>">&laquo;</a>
+                                <?php endif; ?>
+                                <span class="paging-input"><?php echo esc_html(sprintf(__('%1$d z %2$d', 'erp-omd'), $current_page, $total_pages)); ?></span>
+                                <?php if (! empty($report_pagination['has_next'])) : ?>
+                                    <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['page_num' => $current_page + 1]), admin_url('admin.php'))); ?>">&raquo;</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Stawka klienta', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th></tr></thead>
                         <tbody>
@@ -374,7 +530,7 @@
                         </tbody>
                     </table>
                     <?php if (! empty($report_pagination) && (int) ($report_pagination['total_pages'] ?? 1) > 1) : ?>
-                        <div class="tablenav">
+                        <div class="tablenav bottom">
                             <div class="tablenav-pages">
                                 <?php
                                 $base_args = [

@@ -481,6 +481,7 @@ class ERP_OMD_REST_API
     private function dashboard_status_actions(array $period, array $checklist)
     {
         $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
+        $can_manage_settings = $this->can_manage_settings();
         $targets = [
             ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA,
             ERP_OMD_Period_Service::STATUS_ZAMKNIETY,
@@ -495,6 +496,10 @@ class ERP_OMD_REST_API
 
             $enabled = true;
             $reason = '';
+            if (! $can_manage_settings) {
+                $enabled = false;
+                $reason = __('Status transition requires erp_omd_manage_settings capability.', 'erp-omd');
+            }
             if (
                 $status === ERP_OMD_Period_Service::STATUS_LIVE
                 && $target_status === ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA
