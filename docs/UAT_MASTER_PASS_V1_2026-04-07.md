@@ -9,11 +9,11 @@ Przejść checklistę UAT ze specyfikacji i zostawić jeden artefakt: co przesz�
 
 ## 2) Wynik bieżący
 
-Status globalny: **IN PROGRESS**
+Status globalny: **PASS**
 
 - ✅ Przygotowano ekran monitoringu technicznego i audit log korekt (filtry + CSV).
 - ✅ Testy automatyczne backend/REST przechodzą.
-- 🟡 Wymagany jeszcze manualny przebieg UAT per ekran przez właściciela biznesowego/operacyjnego.
+- ✅ Manualny przebieg UAT per ekran potwierdzony przez użytkownika biznesowego/operacyjnego.
 
 ## 3) Checklista UAT (robocza)
 
@@ -21,7 +21,7 @@ Status globalny: **IN PROGRESS**
 - [x] UAT-D1 status miesiąca (manual) — PASS (potwierdzenie użytkownika)
 - [x] UAT-D2 trend 3M (manual) — PASS (potwierdzenie użytkownika)
 - [x] UAT-D3 top/bottom (manual) — PASS (potwierdzenie użytkownika)
-- [ ] UAT-D4 korekty + drilldown (manual)
+- [x] UAT-D4 korekty + drilldown (manual) — PASS (potwierdzenie użytkownika, 2026-04-08)
 
 ## Ekran 2 — Raport per klient
 - [x] UAT-C1 widok prosty (manual) — PASS (potwierdzenie użytkownika)
@@ -40,15 +40,15 @@ Status globalny: **IN PROGRESS**
 - [x] UAT-O2 wyniki + eksport (manual) — PASS (potwierdzenie użytkownika)
 
 ## Ekran 6 — Zarządzanie miesiącem
-- [ ] UAT-M1 przejścia statusów (manual) — RETEST PO WDROŻENIU UI/API
-- [ ] UAT-M2 blokady uprawnień (manual) — RETEST PO WDROŻENIU UI/API
-- [ ] UAT-M3 korekty 72h vs emergency (manual) — RETEST PO WDROŻENIU UI/API
+- [x] UAT-M1 przejścia statusów (manual) — PASS (potwierdzenie użytkownika, 2026-04-08; auto smoke PASS)
+- [x] UAT-M2 blokady uprawnień (manual) — PASS (potwierdzenie użytkownika, 2026-04-08; auto smoke PASS)
+- [x] UAT-M3 korekty 72h vs emergency (manual) — PASS (potwierdzenie użytkownika, 2026-04-08)
 
 ## Ekran 7 — Audit log korekt
 - [x] UAT-A1 rejestr i filtrowanie (automatyczny smoke + implementacja UI)
 - [x] UAT-A1 eksport CSV audytu (automatyczny smoke + implementacja backend)
 - [x] UAT-A1 widok `przed/po` (old/new) dostępny w tabeli i eksporcie CSV
-- [ ] UAT-A1 walidacja biznesowa użytkownika końcowego (manual)
+- [x] UAT-A1 walidacja biznesowa użytkownika końcowego (manual) — PASS (potwierdzenie użytkownika, 2026-04-08)
 
 ## 4) Wykonane dziś dowody techniczne
 
@@ -58,6 +58,6 @@ Status globalny: **IN PROGRESS**
 
 ## 5) Co dalej (następna iteracja)
 
-1. Wykonać manualny retest Ekranu 6 po wdrożeniu UI/API przejść statusów.
-2. Potwierdzić blokady po zamknięciu i korekty z `reason` + audit trail.
-3. Zaktualizować wpis końcowy w `docs/WDROZENIE_V1_DZIENNIK.md` wynikiem PASS/PASS warunkowy/FAIL dla Kroku 6.
+1. Oznaczyć ETAP 1 / KROK 1.3 jako DONE w `docs/WDROZENIE_V1_DZIENNIK.md`.
+2. Rozpocząć ETAP 2 / KROK 2.1 (benchmark wydajności raportów).
+3. Przygotować plan wykonania ETAP 2 / KROK 2.2 (testy bezpieczeństwa endpointów krytycznych).

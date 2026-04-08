@@ -6,10 +6,10 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 
 ## 1) Status globalny
 
-- Aktualny etap: **ETAP 1 — MUST operacyjne (Fala 1)**
-- Aktualny krok: **KROK 1.3 — UAT Master Pass (wykonanie i raport)**
-- Status: **W TRAKCIE**
-- Następny krok: **KROK 1.3 — retest Ekranu 6 po wdrożeniu UI/API status transitions + domknięcie raportu UAT**
+- Aktualny etap: **ETAP 4 — Cleanup i formalne zamknięcie (Fala 4)**
+- Aktualny krok: **KROK 4.3 — Backlog v1.1 (poza MUST)**
+- Status: **DONE (program v1 zamknięty formalnie)**
+- Następny krok: **Brak — przejście do realizacji backlogu v1.1 wg priorytetów**
 
 ## 2) Etapy i kroki (kanoniczna lista)
 
@@ -21,22 +21,22 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 ### ETAP 1 — MUST operacyjne (Fala 1)
 - [x] **1.1** Audit Log UX + CSV — projekt techniczny i zakres implementacji.
 - [x] **1.2** Audit Log UX + CSV — implementacja backend/UI/eksport.
-- [ ] **1.3** UAT Master Pass — wykonanie i raport.
+- [x] **1.3** UAT Master Pass — wykonanie i raport.
 
 ### ETAP 2 — Jakość i bezpieczeństwo (Fala 2)
-- [ ] **2.1** Benchmark wydajności raportów (scenariusze ciężkie).
-- [ ] **2.2** Testy bezpieczeństwa endpointów krytycznych.
-- [ ] **2.3** Regresja migracyjna na staging (kopie danych/historyczne miesiące).
+- [x] **2.1** Benchmark wydajności raportów (scenariusze ciężkie).
+- [x] **2.2** Testy bezpieczeństwa endpointów krytycznych.
+- [x] **2.3** Regresja migracyjna na staging (kopie danych/historyczne miesiące).
 
 ### ETAP 3 — Operacyjność steady-state (Fala 3)
-- [ ] **3.1** Rollback drill (runbook, czasy wykonania).
-- [ ] **3.2** Przegląd i utrwalenie progów operacyjnych.
-- [ ] **3.3** Matryca reakcji operacyjnej (kto/co/kiedy).
+- [x] **3.1** Rollback drill (runbook, czasy wykonania).
+- [x] **3.2** Przegląd i utrwalenie progów operacyjnych.
+- [x] **3.3** Matryca reakcji operacyjnej (kto/co/kiedy).
 
 ### ETAP 4 — Cleanup i formalne zamknięcie (Fala 4)
-- [ ] **4.1** Ujednolicenie dokumentacji końcowej.
-- [ ] **4.2** Finalna nota „v1 fully implemented”.
-- [ ] **4.3** Backlog v1.1 (poza MUST).
+- [x] **4.1** Ujednolicenie dokumentacji końcowej.
+- [x] **4.2** Finalna nota „v1 fully implemented”.
+- [x] **4.3** Backlog v1.1 (poza MUST).
 
 ## 3) Log aktualizacji (append-only)
 
@@ -66,6 +66,23 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **PARALLEL (ETAP 2 / KROK 2.1):** przygotowano baseline wydajności raportów (`docs/REPORTING_BENCHMARK_BASELINE_2026-04-07.md`) komendą `php tests/reporting-benchmark-12m.php`.
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
 - Kolejny focus: przeprowadzić retest Kroku 6 (status transitions, blokady po zamknięciu, korekty z reason + audit trail) i domknąć ETAP 1 / KROK 1.3.
+
+## 2026-04-08
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — potwierdzono pozytywnie UAT-M3 (Ekran 6.3): korekta po zamknięciu miesiąca działa ścieżką admina z `reason` i wpisem w Audit log.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — dopracowano UX Monitoringu technicznego (miesiąc dla szybkiej korekty, podpowiedź ID kosztów, czytelny widok `Encja` + `Przed/Po`).
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — uruchomiono auto-smoke dla punktów M6.1/M6.2: `php tests/omd-period-service-test.php` (OK) + `php tests/rest-api-test.php` (PASS). Potwierdzają poprawność logiki przejść i blokad API; nadal wymagane potwierdzenie manualne UI/uprawnień.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — potwierdzono manualnie UAT-M1 i UAT-M2 jako PASS (retest 2026-04-08), oraz UAT-A1 walidację biznesową jako PASS.
+- **DONE:** ETAP 1 / KROK 1.3 — potwierdzono manualnie UAT-D4 (D4.1–D4.4) jako PASS; status globalny UAT Master Pass = PASS.
+- **IN PROGRESS:** ETAP 2 / KROK 2.1 — uruchomiono benchmark `php tests/reporting-benchmark-12m.php`; wynik `elapsed_ms=21.5` vs baseline `19.15` (ok. +12.3%), bez regresji call-pattern.
+- **DONE:** ETAP 2 / KROK 2.2 — testy bezpieczeństwa endpointów krytycznych zakończone wynikiem PASS (S-01..S-10), raport: `docs/SECURITY_ENDPOINTS_TEST_REPORT_2026-04-08.md`.
+- **DONE:** ETAP 2 / KROK 2.3 — regresja migracyjna na staging zakończona wynikiem PASS (A1..C2), raport: `docs/STAGING_MIGRATION_REGRESSION_REPORT_2026-04-08.md`.
+- **DONE:** ETAP 3 / KROK 3.1 — rollback drill zakończony wynikiem PASS (R1..R8), raport: `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`.
+- **DONE:** ETAP 3 / KROK 3.2 — przegląd i utrwalenie progów SLO zakończony wynikiem PASS, decyzja KEEP, raport: `docs/SLO_REVIEW_REPORT_2026-04-08.md`.
+- **DONE:** ETAP 3 / KROK 3.3 — matryca reakcji operacyjnej zwalidowana „na żywo”, wynik PASS (M1..M4), raport: `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`.
+- **DONE:** ETAP 4 / KROK 4.1 — checklista ujednolicenia dokumentacji zakończona wynikiem PASS; source-of-truth zebrany w `docs/CHECKLISTA_UJEDNOLICENIA_DOKUMENTACJI_2026-04-08.md`.
+- **DONE:** ETAP 4 / KROK 4.2 — opublikowano finalną notę domknięcia „v1 fully implemented”: `docs/V1_FULLY_IMPLEMENTED_NOTE_2026-04-08.md`.
+- **DONE:** ETAP 4 / KROK 4.3 — spisano backlog v1.1 (poza MUST): `docs/BACKLOG_V1_1_2026-04-08.md`.
+- Program v1 (MUST baseline) formalnie zamknięty; dalsze prace jako v1.1 backlog.
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
