@@ -78,7 +78,8 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **DONE:** ETAP 2 / KROK 2.3 — regresja migracyjna na staging zakończona wynikiem PASS (A1..C2), raport: `docs/STAGING_MIGRATION_REGRESSION_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 3 / KROK 3.1 — rollback drill zakończony wynikiem PASS (R1..R8), raport: `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 3 / KROK 3.2 — przegląd i utrwalenie progów SLO zakończony wynikiem PASS, decyzja KEEP, raport: `docs/SLO_REVIEW_REPORT_2026-04-08.md`.
-- Kolejny focus: ETAP 3 / KROK 3.3 — matryca reakcji operacyjnej (kto/co/kiedy).
+- **IN PROGRESS:** ETAP 3 / KROK 3.3 — przygotowano draft matrycy reakcji operacyjnej (kto/co/kiedy + SLA + RACI): `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`.
+- Kolejny focus: przejść matrycę 3.3 „na żywo” i oznaczyć wynik PASS/PASS warunkowy/FAIL.
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
