@@ -418,7 +418,7 @@
                         return wp_trim_words(wp_json_encode($decoded), 8, '…');
                     }
 
-                    return implode(' | ', $parts);
+                    return implode("\n", $parts);
                 };
                 $resolve_adjustment_entity_label = static function (array $adjustmentRow) use ($decode_adjustment_payload, $project_name_by_id) {
                     $entityType = (string) ($adjustmentRow['entity_type'] ?? '');
@@ -435,7 +435,7 @@
                     }
                     if ($projectId > 0) {
                         $projectName = (string) ($project_name_by_id[$projectId] ?? '');
-                        $entityLabel .= sprintf(' | Projekt #%d', $projectId);
+                        $entityLabel .= sprintf("\nProjekt #%d", $projectId);
                         if ($projectName !== '') {
                             $entityLabel .= sprintf(' (%s)', $projectName);
                         }
@@ -467,10 +467,10 @@
                                 <td><?php echo esc_html((string) ($adjustment_row['changed_at'] ?? '')); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['month'] ?? '')); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['adjustment_type'] ?? '')); ?></td>
-                                <td><?php echo esc_html($resolve_adjustment_entity_label((array) $adjustment_row)); ?></td>
+                                <td style="white-space:pre-line;"><?php echo esc_html($resolve_adjustment_entity_label((array) $adjustment_row)); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['field_name'] ?? '')); ?></td>
-                                <td><?php echo esc_html($format_adjustment_snapshot((string) ($adjustment_row['old_value'] ?? ''))); ?></td>
-                                <td><?php echo esc_html($format_adjustment_snapshot((string) ($adjustment_row['new_value'] ?? ''))); ?></td>
+                                <td style="white-space:pre-line;"><?php echo esc_html($format_adjustment_snapshot((string) ($adjustment_row['old_value'] ?? ''))); ?></td>
+                                <td style="white-space:pre-line;"><?php echo esc_html($format_adjustment_snapshot((string) ($adjustment_row['new_value'] ?? ''))); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_row['reason'] ?? '')); ?></td>
                                 <td><?php echo esc_html((string) ($adjustment_author_labels[(int) ($adjustment_row['changed_by'] ?? 0)] ?? ('#' . (int) ($adjustment_row['changed_by'] ?? 0)))); ?></td>
                             </tr>
