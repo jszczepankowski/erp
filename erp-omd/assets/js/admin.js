@@ -1142,6 +1142,110 @@ window.erpOmdInitSettingsPeriodTransitions =
     });
   });
 
+window.erpOmdInitSettingsAdminCorrection =
+  window.erpOmdInitSettingsAdminCorrection ||
+  (() => {
+    const panelNode = document.querySelector('[data-settings-admin-correction="1"]');
+    if (!(panelNode instanceof HTMLElement)) {
+      return;
+    }
+    if (typeof erpOmdAdminData === 'undefined' || !erpOmdAdminData || !erpOmdAdminData.restUrl) {
+      return;
+    }
+
+    const costIdNode = panelNode.querySelector('[data-settings-correction-cost-id="1"]');
+    const costDateNode = panelNode.querySelector('[data-settings-correction-cost-date="1"]');
+    const amountNode = panelNode.querySelector('[data-settings-correction-amount="1"]');
+    const descriptionNode = panelNode.querySelector('[data-settings-correction-description="1"]');
+    const reasonNode = panelNode.querySelector('[data-settings-correction-reason="1"]');
+    const submitNode = panelNode.querySelector('[data-settings-correction-submit="1"]');
+    const statusNode = panelNode.querySelector('[data-settings-correction-status="1"]');
+
+    if (
+      !(costIdNode instanceof HTMLInputElement) ||
+      !(costDateNode instanceof HTMLInputElement) ||
+      !(amountNode instanceof HTMLInputElement) ||
+      !(descriptionNode instanceof HTMLInputElement) ||
+      !(reasonNode instanceof HTMLInputElement) ||
+      !(submitNode instanceof HTMLButtonElement) ||
+      !(statusNode instanceof HTMLElement)
+    ) {
+      return;
+    }
+
+    const headers = {};
+    if (erpOmdAdminData.restNonce) {
+      headers['X-WP-Nonce'] = String(erpOmdAdminData.restNonce);
+    }
+    const setStatus = (message, tone) => {
+      statusNode.textContent = String(message || '');
+      statusNode.classList.remove('notice-error', 'notice-success', 'notice-warning', 'notice-info');
+      statusNode.classList.add(tone || 'notice-info');
+    };
+
+    submitNode.addEventListener('click', () => {
+      const costId = Number(costIdNode.value || 0);
+      const costDate = String(costDateNode.value || '').trim();
+      const amount = Number(amountNode.value || 0);
+      const description = String(descriptionNode.value || '').trim();
+      const reason = String(reasonNode.value || '').trim();
+
+      if (!(costId > 0)) {
+        setStatus('Podaj poprawne ID kosztu (> 0).', 'notice-warning');
+        return;
+      }
+      if (!costDate) {
+        setStatus('Podaj datę kosztu.', 'notice-warning');
+        return;
+      }
+      if (!(amount > 0)) {
+        setStatus('Kwota musi być większa od zera.', 'notice-warning');
+        return;
+      }
+      if (description === '') {
+        setStatus('Opis kosztu jest wymagany.', 'notice-warning');
+        return;
+      }
+      if (reason === '') {
+        setStatus('Powód korekty (reason) jest wymagany.', 'notice-warning');
+        return;
+      }
+
+      const endpoint = `${String(erpOmdAdminData.restUrl).replace(/\/$/, '')}/project-costs/${encodeURIComponent(String(costId))}`;
+      const requestBody = new URLSearchParams();
+      requestBody.set('amount', String(amount));
+      requestBody.set('description', description);
+      requestBody.set('cost_date', costDate);
+      requestBody.set('adjustment_reason', reason);
+
+      setStatus('Zapisywanie korekty…', 'notice-info');
+      submitNode.disabled = true;
+      fetch(endpoint, {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, headers),
+        body: requestBody.toString(),
+      })
+        .then((response) =>
+          response
+            .json()
+            .catch(() => ({}))
+            .then((payload) => ({ ok: response.ok, payload }))
+        )
+        .then(({ ok, payload }) => {
+          if (!ok) {
+            throw new Error(String((payload && payload.message) || 'Korekta nie powiodła się.'));
+          }
+          setStatus('Korekta zapisana. Sprawdź wpis w Audit log korekt.', 'notice-success');
+        })
+        .catch((error) => {
+          setStatus(`Nie udało się zapisać korekty: ${String(error.message || 'błąd')}`, 'notice-error');
+        })
+        .finally(() => {
+          submitNode.disabled = false;
+        });
+    });
+  });
+
   document.querySelectorAll('.erp-omd-project-monthly-dates').forEach((button) => {
     button.addEventListener('click', () => {
       const startSelector = button.dataset.startTarget || '';
@@ -1387,5 +1491,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (typeof window.erpOmdInitSettingsPeriodTransitions === 'function') {
     window.erpOmdInitSettingsPeriodTransitions();
+  }
+  if (typeof window.erpOmdInitSettingsAdminCorrection === 'function') {
+    window.erpOmdInitSettingsAdminCorrection();
   }
 });

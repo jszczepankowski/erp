@@ -348,6 +348,40 @@
             </div>
             <p class="description notice-info" data-settings-period-status="1"><?php esc_html_e('Wybierz miesiąc i uruchom akcję statusu.', 'erp-omd'); ?></p>
         </section>
+        <section class="erp-omd-card" data-settings-admin-correction="1" style="margin-top:16px;">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h2><?php esc_html_e('Szybka korekta admina (po zamknięciu miesiąca)', 'erp-omd'); ?></h2>
+                    <p class="description"><?php esc_html_e('Umożliwia korektę rekordu kosztu projektu z wymaganym powodem (reason) do testów UAT 6.3.', 'erp-omd'); ?></p>
+                </div>
+            </div>
+            <div class="erp-omd-form-grid">
+                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                    <label for="erp-omd-settings-correction-cost-id"><?php esc_html_e('ID kosztu', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-correction-cost-id" type="number" min="1" data-settings-correction-cost-id="1" />
+                </div>
+                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                    <label for="erp-omd-settings-correction-cost-date"><?php esc_html_e('Data kosztu', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-correction-cost-date" type="date" data-settings-correction-cost-date="1" value="<?php echo esc_attr(current_time('Y-m-d')); ?>" />
+                </div>
+                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                    <label for="erp-omd-settings-correction-amount"><?php esc_html_e('Kwota', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-correction-amount" type="number" min="0.01" step="0.01" data-settings-correction-amount="1" />
+                </div>
+                <div class="erp-omd-form-field">
+                    <label for="erp-omd-settings-correction-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-correction-description" type="text" data-settings-correction-description="1" />
+                </div>
+                <div class="erp-omd-form-field">
+                    <label for="erp-omd-settings-correction-reason"><?php esc_html_e('Powód korekty (reason)', 'erp-omd'); ?></label>
+                    <input id="erp-omd-settings-correction-reason" type="text" data-settings-correction-reason="1" placeholder="<?php echo esc_attr__('Np. korekta po zamknięciu miesiąca', 'erp-omd'); ?>" />
+                </div>
+                <div class="erp-omd-form-field" style="align-self:end;">
+                    <button type="button" class="button button-primary" data-settings-correction-submit="1"><?php esc_html_e('Wykonaj korektę', 'erp-omd'); ?></button>
+                </div>
+            </div>
+            <p class="description notice-info" data-settings-correction-status="1"><?php esc_html_e('Wprowadź dane rekordu i zapisz korektę z obowiązkowym powodem.', 'erp-omd'); ?></p>
+        </section>
         <form id="erp-omd-manual-backup-form" method="post">
             <?php wp_nonce_field('erp_omd_run_manual_backup'); ?>
             <input type="hidden" name="erp_omd_action" value="run_manual_backup" />
