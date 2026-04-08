@@ -1160,6 +1160,7 @@ window.erpOmdInitSettingsAdminCorrection =
     const reasonNode = panelNode.querySelector('[data-settings-correction-reason="1"]');
     const submitNode = panelNode.querySelector('[data-settings-correction-submit="1"]');
     const statusNode = panelNode.querySelector('[data-settings-correction-status="1"]');
+    const fillButtons = panelNode.querySelectorAll('[data-settings-correction-fill="1"]');
 
     if (
       !(costIdNode instanceof HTMLInputElement) ||
@@ -1182,6 +1183,20 @@ window.erpOmdInitSettingsAdminCorrection =
       statusNode.classList.remove('notice-error', 'notice-success', 'notice-warning', 'notice-info');
       statusNode.classList.add(tone || 'notice-info');
     };
+
+    fillButtons.forEach((buttonNode) => {
+      if (!(buttonNode instanceof HTMLButtonElement)) {
+        return;
+      }
+      buttonNode.addEventListener('click', () => {
+        costIdNode.value = String(buttonNode.dataset.costId || '');
+        costDateNode.value = String(buttonNode.dataset.costDate || '');
+        amountNode.value = String(buttonNode.dataset.costAmount || '');
+        descriptionNode.value = String(buttonNode.dataset.costDescription || '');
+        reasonNode.focus();
+        setStatus('Uzupełniono formularz danymi istniejącego kosztu. Dodaj powód i zapisz korektę.', 'notice-info');
+      });
+    });
 
     submitNode.addEventListener('click', () => {
       const costId = Number(costIdNode.value || 0);
@@ -1235,7 +1250,22 @@ window.erpOmdInitSettingsAdminCorrection =
           if (!ok) {
             throw new Error(String((payload && payload.message) || 'Korekta nie powiodła się.'));
           }
-          setStatus('Korekta zapisana. Sprawdź wpis w Audit log korekt.', 'notice-success');
+          const correctedMonth = costDate.slice(0, 7);
+          const auditMonthNode = document.querySelector('input[name="adjustment_month"]');
+          const auditEntityTypeNode = document.querySelector('select[name="adjustment_entity_type"]');
+          if (auditMonthNode instanceof HTMLInputElement && /^\d{4}-\d{2}$/.test(correctedMonth)) {
+            auditMonthNode.value = correctedMonth;
+          }
+          if (auditEntityTypeNode instanceof HTMLSelectElement) {
+            auditEntityTypeNode.value = 'project_cost';
+          }
+          setStatus('Korekta zapisana. Odświeżam Audit log korekt dla project_cost...', 'notice-success');
+
+          if (auditMonthNode instanceof HTMLInputElement && auditMonthNode.form instanceof HTMLFormElement) {
+            window.setTimeout(() => {
+              auditMonthNode.form.submit();
+            }, 200);
+          }
         })
         .catch((error) => {
           setStatus(`Nie udało się zapisać korekty: ${String(error.message || 'błąd')}`, 'notice-error');
