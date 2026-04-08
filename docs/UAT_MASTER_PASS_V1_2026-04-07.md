@@ -42,7 +42,7 @@ Status globalny: **IN PROGRESS**
 ## Ekran 6 — Zarządzanie miesiącem
 - [ ] UAT-M1 przejścia statusów (manual) — RETEST PO WDROŻENIU UI/API
 - [ ] UAT-M2 blokady uprawnień (manual) — RETEST PO WDROŻENIU UI/API
-- [ ] UAT-M3 korekty 72h vs emergency (manual) — RETEST PO WDROŻENIU UI/API
+- [x] UAT-M3 korekty 72h vs emergency (manual) — PASS (potwierdzenie użytkownika, 2026-04-08)
 
 ## Ekran 7 — Audit log korekt
 - [x] UAT-A1 rejestr i filtrowanie (automatyczny smoke + implementacja UI)
@@ -59,5 +59,5 @@ Status globalny: **IN PROGRESS**
 ## 5) Co dalej (następna iteracja)
 
 1. Wykonać manualny retest Ekranu 6 po wdrożeniu UI/API przejść statusów.
-2. Potwierdzić blokady po zamknięciu i korekty z `reason` + audit trail.
+2. Domknąć UAT-M1 i UAT-M2 (przejścia statusów + blokady uprawnień).
 3. Zaktualizować wpis końcowy w `docs/WDROZENIE_V1_DZIENNIK.md` wynikiem PASS/PASS warunkowy/FAIL dla Kroku 6.

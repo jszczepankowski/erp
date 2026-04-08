@@ -67,6 +67,11 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - Commit referencyjny: `TBD (uzupełniany po merge)`.
 - Kolejny focus: przeprowadzić retest Kroku 6 (status transitions, blokady po zamknięciu, korekty z reason + audit trail) i domknąć ETAP 1 / KROK 1.3.
 
+## 2026-04-08
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — potwierdzono pozytywnie UAT-M3 (Ekran 6.3): korekta po zamknięciu miesiąca działa ścieżką admina z `reason` i wpisem w Audit log.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — dopracowano UX Monitoringu technicznego (miesiąc dla szybkiej korekty, podpowiedź ID kosztów, czytelny widok `Encja` + `Przed/Po`).
+- Kolejny focus: domknąć manualnie UAT-M1 i UAT-M2 (przejścia statusów + blokady uprawnień), następnie oznaczyć KROK 1.3 jako DONE/PASS.
+
 ## 4) Instrukcja wznowienia w nowym chacie
 
 Wklej na start:

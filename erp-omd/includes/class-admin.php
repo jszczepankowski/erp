@@ -1197,6 +1197,10 @@ class ERP_OMD_Admin
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $employees = $this->employees->all();
+        $project_name_by_id = [];
+        foreach ($projects as $project_row) {
+            $project_name_by_id[(int) ($project_row['id'] ?? 0)] = (string) ($project_row['name'] ?? '');
+        }
         $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'];
         if ($report_filters['report_type'] === 'time_entries') {
             $status_options = ['submitted', 'approved', 'rejected'];
@@ -1241,6 +1245,14 @@ class ERP_OMD_Admin
             $adjustment_filters['entity_type'] = '';
         }
         $can_manage_adjustments_audit = current_user_can('erp_omd_manage_settings');
+        $admin_correction_month = (string) ($adjustment_filters['month'] ?? $report_filters['month'] ?? gmdate('Y-m'));
+        if (! $this->is_valid_month_string($admin_correction_month)) {
+            $admin_correction_month = gmdate('Y-m');
+        }
+        $admin_correction_cost_rows = [];
+        if ($can_manage_adjustments_audit && method_exists($this->project_costs, 'for_month')) {
+            $admin_correction_cost_rows = (array) $this->project_costs->for_month($admin_correction_month, 20);
+        }
         $adjustment_rows = [];
         if ($can_manage_adjustments_audit && $this->adjustment_audit && method_exists($this->adjustment_audit, 'all')) {
             $adjustment_rows = (array) $this->adjustment_audit->all(array_filter($adjustment_filters));
