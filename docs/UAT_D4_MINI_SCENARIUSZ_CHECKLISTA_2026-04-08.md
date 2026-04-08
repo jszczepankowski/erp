@@ -57,10 +57,10 @@ Oczekiwane:
 
 ## 4) Checklista PASS/FAIL (do odhaczania)
 
-- [ ] D4.1 Korekta zapisana i widoczna w audit log.
-- [ ] D4.2 Korekta widoczna na dashboardzie.
-- [ ] D4.3 Drilldown otwiera poprawny ekran i poprawny miesiąc.
-- [ ] D4.4 Spójność danych dashboard ↔ audit log potwierdzona.
+- [x] D4.1 Korekta zapisana i widoczna w audit log. — PASS (potwierdzenie użytkownika, 2026-04-08)
+- [x] D4.2 Korekta widoczna na dashboardzie. — PASS (potwierdzenie użytkownika, 2026-04-08)
+- [x] D4.3 Drilldown otwiera poprawny ekran i poprawny miesiąc. — PASS (potwierdzenie użytkownika, 2026-04-08)
+- [x] D4.4 Spójność danych dashboard ↔ audit log potwierdzona. — PASS (potwierdzenie użytkownika, 2026-04-08)
 
 ## 5) Kryterium wyniku
 
@@ -70,6 +70,6 @@ Oczekiwane:
 
 ## 6) Miejsce na wynik
 
-- Wynik końcowy: `PASS / PASS WARUNKOWY / FAIL`
-- Data i osoba testująca:
-- Notatka:
+- Wynik końcowy: `PASS`
+- Data i osoba testująca: `2026-04-08, użytkownik biznesowy/operacyjny`
+- Notatka: `Wszystkie punkty D4.1–D4.4 potwierdzone jako PASS.`
