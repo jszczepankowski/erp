@@ -70,7 +70,9 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 ## 2026-04-08
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — potwierdzono pozytywnie UAT-M3 (Ekran 6.3): korekta po zamknięciu miesiąca działa ścieżką admina z `reason` i wpisem w Audit log.
 - **IN PROGRESS:** ETAP 1 / KROK 1.3 — dopracowano UX Monitoringu technicznego (miesiąc dla szybkiej korekty, podpowiedź ID kosztów, czytelny widok `Encja` + `Przed/Po`).
-- Kolejny focus: domknąć manualnie UAT-M1 i UAT-M2 (przejścia statusów + blokady uprawnień), następnie oznaczyć KROK 1.3 jako DONE/PASS.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — uruchomiono auto-smoke dla punktów M6.1/M6.2: `php tests/omd-period-service-test.php` (OK) + `php tests/rest-api-test.php` (PASS). Potwierdzają poprawność logiki przejść i blokad API; nadal wymagane potwierdzenie manualne UI/uprawnień.
+- **IN PROGRESS:** ETAP 1 / KROK 1.3 — potwierdzono manualnie UAT-M1 i UAT-M2 jako PASS (retest 2026-04-08), oraz UAT-A1 walidację biznesową jako PASS.
+- Kolejny focus: domknąć ostatni punkt manualny UAT-D4 (korekty + drilldown na dashboardzie), następnie oznaczyć KROK 1.3 jako DONE/PASS.
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
