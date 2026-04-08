@@ -346,14 +346,20 @@ class ERP_OMD_Cron_Manager
             throw new RuntimeException('Failed to execute SQL dump import.');
         }
 
-        do {
+        while (true) {
             if ($result = @mysqli_store_result($dbh)) {
                 mysqli_free_result($result);
             }
             if (@mysqli_errno($dbh) !== 0) {
                 throw new RuntimeException('SQL dump import returned database error: ' . (string) @mysqli_error($dbh));
             }
-        } while (@mysqli_more_results($dbh) && @mysqli_next_result($dbh));
+            if (! @mysqli_more_results($dbh)) {
+                break;
+            }
+            if (! @mysqli_next_result($dbh)) {
+                throw new RuntimeException('SQL dump import stopped before processing all statements: ' . (string) @mysqli_error($dbh));
+            }
+        }
     }
 
     private static function find_zip_file_by_extension(ZipArchive $zip, $extension, array $exclude = [])
