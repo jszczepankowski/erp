@@ -1,7 +1,7 @@
 # ETAP 3 / KROK 3.3 — operacyjna matryca reakcji (kto/co/kiedy)
 
 Data: 2026-04-08  
-Status: **DRAFT (gotowa do użycia w ćwiczeniu/operacji)**
+Status: **PASS**
 
 ## 1) Cel
 
@@ -38,3 +38,12 @@ Ustalić jednoznacznie:
 - Matryca zatwierdzona przez ownerów (L1/L2/Operations).
 - Czasy SLA przetestowane co najmniej 1x w ćwiczeniu operacyjnym.
 - Wpis do `WDROZENIE_V1_DZIENNIK.md` z wynikiem `PASS/PASS WARUNKOWY/FAIL`.
+
+## 6) Wynik walidacji „na żywo”
+
+- M1 (RACI) — PASS
+- M2 (warunki wejścia per poziom) — PASS
+- M3 (akcje + SLA) — PASS
+- M4 (decyzja końcowa kroku) — PASS
+
+Wniosek: ETAP 3 / KROK 3.3 uznany za domknięty (PASS).

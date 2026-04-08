@@ -7,9 +7,9 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 ## 1) Status globalny
 
 - Aktualny etap: **ETAP 3 — Operacyjność steady-state (Fala 3)**
-- Aktualny krok: **KROK 3.3 — Matryca reakcji operacyjnej (kto/co/kiedy)**
+- Aktualny krok: **KROK 4.1 — Ujednolicenie dokumentacji końcowej**
 - Status: **W TRAKCIE**
-- Następny krok: **ETAP 4 / KROK 4.1 — Ujednolicenie dokumentacji końcowej**
+- Następny krok: **ETAP 4 / KROK 4.2 — Finalna nota „v1 fully implemented”**
 
 ## 2) Etapy i kroki (kanoniczna lista)
 
@@ -31,7 +31,7 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 ### ETAP 3 — Operacyjność steady-state (Fala 3)
 - [x] **3.1** Rollback drill (runbook, czasy wykonania).
 - [x] **3.2** Przegląd i utrwalenie progów operacyjnych.
-- [ ] **3.3** Matryca reakcji operacyjnej (kto/co/kiedy).
+- [x] **3.3** Matryca reakcji operacyjnej (kto/co/kiedy).
 
 ### ETAP 4 — Cleanup i formalne zamknięcie (Fala 4)
 - [ ] **4.1** Ujednolicenie dokumentacji końcowej.
@@ -78,8 +78,8 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **DONE:** ETAP 2 / KROK 2.3 — regresja migracyjna na staging zakończona wynikiem PASS (A1..C2), raport: `docs/STAGING_MIGRATION_REGRESSION_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 3 / KROK 3.1 — rollback drill zakończony wynikiem PASS (R1..R8), raport: `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 3 / KROK 3.2 — przegląd i utrwalenie progów SLO zakończony wynikiem PASS, decyzja KEEP, raport: `docs/SLO_REVIEW_REPORT_2026-04-08.md`.
-- **IN PROGRESS:** ETAP 3 / KROK 3.3 — przygotowano draft matrycy reakcji operacyjnej (kto/co/kiedy + SLA + RACI): `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`.
-- Kolejny focus: przejść matrycę 3.3 „na żywo” i oznaczyć wynik PASS/PASS warunkowy/FAIL.
+- **DONE:** ETAP 3 / KROK 3.3 — matryca reakcji operacyjnej zwalidowana „na żywo”, wynik PASS (M1..M4), raport: `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`.
+- Kolejny focus: ETAP 4 / KROK 4.1 — ujednolicenie dokumentacji końcowej.
 
 ## 4) Instrukcja wznowienia w nowym chacie
 
