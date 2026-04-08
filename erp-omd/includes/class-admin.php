@@ -331,7 +331,7 @@ class ERP_OMD_Admin
                 check_admin_referer('erp_omd_run_manual_backup');
                 $this->require_capability('erp_omd_manage_settings');
 
-                ERP_OMD_Cron_Manager::run_weekly_backup();
+                ERP_OMD_Backup_Manager::run_backup_bundle();
                 $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
 
                 if ($last_backup_status === 'success') {
@@ -361,7 +361,7 @@ class ERP_OMD_Admin
                     $this->redirect_with_notice('erp-omd-settings', 'error', __('Plik backupu musi mieć rozszerzenie .zip.', 'erp-omd'));
                 }
                 try {
-                    ERP_OMD_Cron_Manager::restore_backup_bundle_from_zip($tmp_name);
+                    ERP_OMD_Backup_Manager::restore_backup_bundle_from_zip($tmp_name);
                 } catch (RuntimeException $exception) {
                     $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Odtworzenie backupu nie powiodło się: %s', 'erp-omd'), $exception->getMessage()));
                 }
