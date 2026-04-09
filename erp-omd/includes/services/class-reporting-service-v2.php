@@ -68,6 +68,9 @@ class ERP_OMD_Reporting_Service
         if (! in_array($detail, ['simple', 'detail'], true)) {
             $detail = 'simple';
         }
+        if ($report_type === 'time_entries') {
+            $detail = 'simple';
+        }
 
         $page = max(1, (int) ($raw_filters['page_num'] ?? 1));
         $per_page = (int) ($raw_filters['per_page'] ?? 25);
@@ -134,19 +137,15 @@ class ERP_OMD_Reporting_Service
                     }
                 );
                 $total_items = max(0, count($rows));
-                $per_page = max(1, (int) $filters['per_page']);
-                $total_pages = max(1, (int) ceil($total_items / $per_page));
-                $page_num = max(1, min((int) $filters['page_num'], $total_pages));
                 $this->last_report_pagination = [
                     'total_items' => $total_items,
-                    'total_pages' => $total_pages,
-                    'page_num' => $page_num,
-                    'per_page' => $per_page,
-                    'has_prev' => $page_num > 1,
-                    'has_next' => $page_num < $total_pages,
+                    'total_pages' => 1,
+                    'page_num' => 1,
+                    'per_page' => $total_items,
+                    'has_prev' => false,
+                    'has_next' => false,
                 ];
-                $offset = ((int) $this->last_report_pagination['page_num'] - 1) * (int) $this->last_report_pagination['per_page'];
-                return array_slice($rows, $offset, (int) $this->last_report_pagination['per_page']);
+                return $rows;
             case 'omd_rozliczenia':
                 $rows = [];
                 $anchor = DateTimeImmutable::createFromFormat('Y-m-d', (string) $filters['month'] . '-01');
@@ -876,7 +875,7 @@ class ERP_OMD_Reporting_Service
             case 'omd_rozliczenia':
                 return [
                     'filename' => sprintf('erp-omd-rozliczenie-omd-%s.csv', $month),
-                    'headers' => ['Miesiąc', 'Koszt pensji', 'Koszt projektów', 'Koszty czasu', 'Stałe koszty', 'Budżety aktywnych projektów', 'Przychód czasu', 'Zysk godzinowy', 'Narzut controllingowy', 'Wynik controllingowy', 'Wynik operacyjny'],
+                    'headers' => ['Miesiąc', 'Koszt pensji', 'Koszt projektów', 'Koszty czasu', 'Stałe koszty', 'Budżety aktywnych projektów', 'Przychód czasu', 'Zysk godzinowy', 'Wynik operacyjny', 'Narzut controllingowy', 'Wynik controllingowy'],
                     'rows' => array_map(static function ($row) {
                         return [
                             $row['month'],
@@ -887,9 +886,9 @@ class ERP_OMD_Reporting_Service
                             number_format((float) $row['active_project_budgets'], 2, '.', ''),
                             number_format((float) $row['time_revenue'], 2, '.', ''),
                             number_format((float) $row['hourly_profit'], 2, '.', ''),
+                            number_format((float) $row['operational_result'], 2, '.', ''),
                             number_format((float) $row['controlling_overhead'], 2, '.', ''),
                             number_format((float) $row['controlling_result'], 2, '.', ''),
-                            number_format((float) $row['operational_result'], 2, '.', ''),
                         ];
                     }, $rows),
                 ];
