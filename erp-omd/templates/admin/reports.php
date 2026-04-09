@@ -73,65 +73,53 @@
                                 <label for="report-month"><?php esc_html_e('Miesiąc', 'erp-omd'); ?></label>
                                 <input id="report-month" type="date" name="month" value="<?php echo esc_attr($report_filters['month'] . '-01'); ?>" />
                             </div>
-                            <?php if ($show_client_field) : ?>
-                                <div class="erp-omd-form-field">
-                                    <label for="report-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
-                                    <select id="report-client" name="client_id" data-project-target="#report-project">
-                                        <option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option>
-                                        <?php foreach ($clients as $client_item) : ?>
-                                            <option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) $report_filters['client_id'], (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($show_project_field) : ?>
-                                <div class="erp-omd-form-field">
-                                    <label for="report-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
-                                    <select id="report-project" name="project_id">
-                                        <option value=""><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option>
-                                        <?php foreach ($projects as $project_item) : ?>
-                                            <option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr((string) ($project_item['client_id'] ?? 0)); ?>" <?php selected((int) $report_filters['project_id'], (int) $project_item['id']); ?>><?php echo esc_html($project_item['name']); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($show_employee_field) : ?>
-                                <div class="erp-omd-form-field">
-                                    <label for="report-employee"><?php esc_html_e('Pracownik', 'erp-omd'); ?></label>
-                                    <select id="report-employee" name="employee_id">
-                                        <option value="0"><?php esc_html_e('Wszyscy pracownicy', 'erp-omd'); ?></option>
-                                        <?php foreach ($employees as $employee_item) : ?>
-                                            <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) $report_filters['employee_id'], (int) $employee_item['id']); ?>><?php echo esc_html($employee_item['user_login']); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($show_status_field) : ?>
-                                <div class="erp-omd-form-field">
-                                    <label for="report-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
-                                    <select id="report-status" name="status">
-                                        <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
-                                        <?php foreach ($status_options as $status_option) : ?>
-                                            <option value="<?php echo esc_attr($status_option); ?>" <?php selected($report_filters['status'], $status_option); ?>><?php echo esc_html($status_labels[$status_option] ?? $status_option); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($show_detail_field) : ?>
-                                <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                    <label for="report-detail"><?php esc_html_e('Wersja raportu', 'erp-omd'); ?></label>
-                                    <select id="report-detail" name="detail">
-                                        <option value="simple" <?php selected($report_filters['detail'], 'simple'); ?>><?php esc_html_e('Podstawowa', 'erp-omd'); ?></option>
-                                        <option value="detail" <?php selected($report_filters['detail'], 'detail'); ?>><?php esc_html_e('Szczegółowa', 'erp-omd'); ?></option>
-                                    </select>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($show_per_page_field) : ?>
-                                <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                    <label for="report-per-page"><?php esc_html_e('Wierszy na stronę', 'erp-omd'); ?></label>
-                                    <input id="report-per-page" type="number" min="10" max="200" step="5" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
-                                </div>
-                            <?php endif; ?>
+                            <div class="erp-omd-form-field" data-report-filter-field="client" <?php echo $show_client_field ? '' : 'hidden'; ?>>
+                                <label for="report-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
+                                <select id="report-client" name="client_id" data-project-target="#report-project" data-default-value="0" <?php echo $show_client_field ? '' : 'disabled'; ?>>
+                                    <option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option>
+                                    <?php foreach ($clients as $client_item) : ?>
+                                        <option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) $report_filters['client_id'], (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field" data-report-filter-field="project" <?php echo $show_project_field ? '' : 'hidden'; ?>>
+                                <label for="report-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
+                                <select id="report-project" name="project_id" data-default-value="" <?php echo $show_project_field ? '' : 'disabled'; ?>>
+                                    <option value=""><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option>
+                                    <?php foreach ($projects as $project_item) : ?>
+                                        <option value="<?php echo esc_attr($project_item['id']); ?>" data-client-id="<?php echo esc_attr((string) ($project_item['client_id'] ?? 0)); ?>" <?php selected((int) $report_filters['project_id'], (int) $project_item['id']); ?>><?php echo esc_html($project_item['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field" data-report-filter-field="employee" <?php echo $show_employee_field ? '' : 'hidden'; ?>>
+                                <label for="report-employee"><?php esc_html_e('Pracownik', 'erp-omd'); ?></label>
+                                <select id="report-employee" name="employee_id" data-default-value="0" <?php echo $show_employee_field ? '' : 'disabled'; ?>>
+                                    <option value="0"><?php esc_html_e('Wszyscy pracownicy', 'erp-omd'); ?></option>
+                                    <?php foreach ($employees as $employee_item) : ?>
+                                        <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) $report_filters['employee_id'], (int) $employee_item['id']); ?>><?php echo esc_html($employee_item['user_login']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field" data-report-filter-field="status" <?php echo $show_status_field ? '' : 'hidden'; ?>>
+                                <label for="report-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
+                                <select id="report-status" name="status" data-default-value="" <?php echo $show_status_field ? '' : 'disabled'; ?>>
+                                    <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
+                                    <?php foreach ($status_options as $status_option) : ?>
+                                        <option value="<?php echo esc_attr($status_option); ?>" <?php selected($report_filters['status'], $status_option); ?>><?php echo esc_html($status_labels[$status_option] ?? $status_option); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact" data-report-filter-field="detail" <?php echo $show_detail_field ? '' : 'hidden'; ?>>
+                                <label for="report-detail"><?php esc_html_e('Wersja raportu', 'erp-omd'); ?></label>
+                                <select id="report-detail" name="detail" data-default-value="simple" <?php echo $show_detail_field ? '' : 'disabled'; ?>>
+                                    <option value="simple" <?php selected($report_filters['detail'], 'simple'); ?>><?php esc_html_e('Podstawowa', 'erp-omd'); ?></option>
+                                    <option value="detail" <?php selected($report_filters['detail'], 'detail'); ?>><?php esc_html_e('Szczegółowa', 'erp-omd'); ?></option>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact" data-report-filter-field="per_page" <?php echo $show_per_page_field ? '' : 'hidden'; ?>>
+                                <label for="report-per-page"><?php esc_html_e('Wierszy na stronę', 'erp-omd'); ?></label>
+                                <input id="report-per-page" type="number" min="10" max="200" step="5" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" data-default-value="25" <?php echo $show_per_page_field ? '' : 'disabled'; ?> />
+                            </div>
                         </div>
                     </section>
                 </div>
