@@ -216,33 +216,47 @@
                         </table>
                     </section>
 
+                    <?php $project_financial_rows_locked = in_array((string) ($project['status'] ?? ''), ['zakonczony', 'archiwum'], true); ?>
                     <section class="erp-omd-form-section erp-omd-project-revenue-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Pozycje przychodowe projektu', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Dodatkowe pozycje podnoszące wartość przychodu projektu (np. druk materiałów).', 'erp-omd'); ?></p>
+                            <?php if ($project_financial_rows_locked) : ?>
+                                <p class="description notice-warning" style="padding:8px 10px;">
+                                    <?php esc_html_e('Po statusie „Zakończony” lub „Archiwum” modyfikacja przychodów jest zablokowana w tym widoku.', 'erp-omd'); ?>
+                                </p>
+                            <?php endif; ?>
                         </div>
-                        <form method="post">
-                            <?php wp_nonce_field('erp_omd_save_project_revenue'); ?>
-                            <input type="hidden" name="erp_omd_action" value="save_project_revenue" />
-                            <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
-                            <div class="erp-omd-form-grid">
-                                <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                    <label for="project-revenue-amount"><?php esc_html_e('Kwota', 'erp-omd'); ?></label>
-                                    <input id="project-revenue-amount" type="number" step="0.01" min="0" name="amount" required />
+                        <?php if (! $project_financial_rows_locked) : ?>
+                            <form method="post">
+                                <?php wp_nonce_field('erp_omd_save_project_revenue'); ?>
+                                <input type="hidden" name="erp_omd_action" value="save_project_revenue" />
+                                <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                <?php if (is_array($project_revenue_edit_row)) : ?>
+                                    <input type="hidden" name="project_revenue_id" value="<?php echo esc_attr((string) ($project_revenue_edit_row['id'] ?? 0)); ?>" />
+                                <?php endif; ?>
+                                <div class="erp-omd-form-grid">
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label for="project-revenue-amount"><?php esc_html_e('Kwota', 'erp-omd'); ?></label>
+                                        <input id="project-revenue-amount" type="number" step="0.01" min="0" name="amount" value="<?php echo esc_attr((string) ($project_revenue_edit_row['amount'] ?? '')); ?>" required />
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label for="project-revenue-date"><?php esc_html_e('Data pozycji', 'erp-omd'); ?></label>
+                                        <input id="project-revenue-date" type="date" name="revenue_date" value="<?php echo esc_attr((string) ($project_revenue_edit_row['revenue_date'] ?? gmdate('Y-m-d'))); ?>" required />
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                        <label for="project-revenue-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
+                                        <textarea id="project-revenue-description" class="large-text" rows="3" name="description"><?php echo esc_textarea((string) ($project_revenue_edit_row['description'] ?? '')); ?></textarea>
+                                    </div>
                                 </div>
-                                <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                    <label for="project-revenue-date"><?php esc_html_e('Data pozycji', 'erp-omd'); ?></label>
-                                    <input id="project-revenue-date" type="date" name="revenue_date" value="<?php echo esc_attr(gmdate('Y-m-d')); ?>" required />
+                                <div class="erp-omd-form-actions">
+                                    <?php submit_button(is_array($project_revenue_edit_row) ? __('Zapisz pozycję przychodową', 'erp-omd') : __('Dodaj pozycję przychodową', 'erp-omd'), 'secondary'); ?>
+                                    <?php if (is_array($project_revenue_edit_row)) : ?>
+                                        <a class="button" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => (int) $project['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Anuluj edycję', 'erp-omd'); ?></a>
+                                    <?php endif; ?>
                                 </div>
-                                <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                                    <label for="project-revenue-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
-                                    <textarea id="project-revenue-description" class="large-text" rows="3" name="description"></textarea>
-                                </div>
-                            </div>
-                            <div class="erp-omd-form-actions">
-                                <?php submit_button(__('Dodaj pozycję przychodową', 'erp-omd'), 'secondary'); ?>
-                            </div>
-                        </form>
+                            </form>
+                        <?php endif; ?>
                         <table class="widefat striped">
                             <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                             <tbody>
@@ -255,13 +269,18 @@
                                             <td><?php echo esc_html(number_format_i18n((float) ($project_revenue_row['amount'] ?? 0), 2)); ?></td>
                                             <td><?php echo esc_html($project_revenue_row['description'] ?: '—'); ?></td>
                                             <td>
-                                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć pozycję przychodową projektu?', 'erp-omd')); ?>');">
-                                                    <?php wp_nonce_field('erp_omd_delete_project_revenue'); ?>
-                                                    <input type="hidden" name="erp_omd_action" value="delete_project_revenue" />
-                                                    <input type="hidden" name="project_revenue_id" value="<?php echo esc_attr($project_revenue_row['id']); ?>" />
-                                                    <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
-                                                    <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
-                                                </form>
+                                                <?php if ($project_financial_rows_locked) : ?>
+                                                    <span aria-hidden="true">—</span>
+                                                <?php else : ?>
+                                                    <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => (int) $project['id'], 'edit_project_revenue_id' => (int) ($project_revenue_row['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                                    <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć pozycję przychodową projektu?', 'erp-omd')); ?>');">
+                                                        <?php wp_nonce_field('erp_omd_delete_project_revenue'); ?>
+                                                        <input type="hidden" name="erp_omd_action" value="delete_project_revenue" />
+                                                        <input type="hidden" name="project_revenue_id" value="<?php echo esc_attr($project_revenue_row['id']); ?>" />
+                                                        <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                                        <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -271,32 +290,46 @@
                     </section>
 
                     <section class="erp-omd-form-section">
+                        <?php $project_costs_locked = $project_financial_rows_locked; ?>
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Koszty projektu', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Zewnętrzne i bezpośrednie koszty z formularzem oraz listą w jednym miejscu.', 'erp-omd'); ?></p>
+                            <?php if ($project_costs_locked) : ?>
+                                <p class="description notice-warning" style="padding:8px 10px;">
+                                    <?php esc_html_e('Po statusie „Zakończony” lub „Archiwum” modyfikacja kosztów jest zablokowana w tym widoku. Użyj „Szybka korekta admina (po zamknięciu miesiąca)” w Monitoring techniczny.', 'erp-omd'); ?>
+                                </p>
+                            <?php endif; ?>
                         </div>
-                        <form method="post">
-                            <?php wp_nonce_field('erp_omd_save_project_cost'); ?>
-                            <input type="hidden" name="erp_omd_action" value="save_project_cost" />
-                            <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
-                            <div class="erp-omd-form-grid">
-                                <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                    <label for="project-cost-amount"><?php esc_html_e('Kwota', 'erp-omd'); ?></label>
-                                    <input id="project-cost-amount" type="number" step="0.01" min="0" name="amount" required />
+                        <?php if (! $project_costs_locked) : ?>
+                            <form method="post">
+                                <?php wp_nonce_field('erp_omd_save_project_cost'); ?>
+                                <input type="hidden" name="erp_omd_action" value="save_project_cost" />
+                                <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                <?php if (is_array($project_cost_edit_row)) : ?>
+                                    <input type="hidden" name="project_cost_id" value="<?php echo esc_attr((string) ($project_cost_edit_row['id'] ?? 0)); ?>" />
+                                <?php endif; ?>
+                                <div class="erp-omd-form-grid">
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label for="project-cost-amount"><?php esc_html_e('Kwota', 'erp-omd'); ?></label>
+                                        <input id="project-cost-amount" type="number" step="0.01" min="0" name="amount" value="<?php echo esc_attr((string) ($project_cost_edit_row['amount'] ?? '')); ?>" required />
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                        <label for="project-cost-date"><?php esc_html_e('Data kosztu', 'erp-omd'); ?></label>
+                                        <input id="project-cost-date" type="date" name="cost_date" value="<?php echo esc_attr((string) ($project_cost_edit_row['cost_date'] ?? gmdate('Y-m-d'))); ?>" required />
+                                    </div>
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                        <label for="project-cost-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
+                                        <textarea id="project-cost-description" class="large-text" rows="3" name="description"><?php echo esc_textarea((string) ($project_cost_edit_row['description'] ?? '')); ?></textarea>
+                                    </div>
                                 </div>
-                                <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                    <label for="project-cost-date"><?php esc_html_e('Data kosztu', 'erp-omd'); ?></label>
-                                    <input id="project-cost-date" type="date" name="cost_date" value="<?php echo esc_attr(gmdate('Y-m-d')); ?>" required />
+                                <div class="erp-omd-form-actions">
+                                    <?php submit_button(is_array($project_cost_edit_row) ? __('Zapisz koszt projektu', 'erp-omd') : __('Dodaj koszt projektu', 'erp-omd'), 'secondary'); ?>
+                                    <?php if (is_array($project_cost_edit_row)) : ?>
+                                        <a class="button" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => (int) $project['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Anuluj edycję', 'erp-omd'); ?></a>
+                                    <?php endif; ?>
                                 </div>
-                                <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                                    <label for="project-cost-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
-                                    <textarea id="project-cost-description" class="large-text" rows="3" name="description"></textarea>
-                                </div>
-                            </div>
-                            <div class="erp-omd-form-actions">
-                                <?php submit_button(__('Dodaj koszt projektu', 'erp-omd'), 'secondary'); ?>
-                            </div>
-                        </form>
+                            </form>
+                        <?php endif; ?>
                         <table class="widefat striped">
                             <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                             <tbody>
@@ -309,13 +342,18 @@
                                             <td><?php echo esc_html(number_format_i18n((float) ($project_cost_row['amount'] ?? 0), 2)); ?></td>
                                             <td><?php echo esc_html($project_cost_row['description'] ?: '—'); ?></td>
                                             <td>
-                                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć koszt projektu?', 'erp-omd')); ?>');">
-                                                    <?php wp_nonce_field('erp_omd_delete_project_cost'); ?>
-                                                    <input type="hidden" name="erp_omd_action" value="delete_project_cost" />
-                                                    <input type="hidden" name="project_cost_id" value="<?php echo esc_attr($project_cost_row['id']); ?>" />
-                                                    <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
-                                                    <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
-                                                </form>
+                                                <?php if ($project_costs_locked) : ?>
+                                                    <span aria-hidden="true">—</span>
+                                                <?php else : ?>
+                                                    <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => (int) $project['id'], 'edit_project_cost_id' => (int) ($project_cost_row['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                                    <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć koszt projektu?', 'erp-omd')); ?>');">
+                                                        <?php wp_nonce_field('erp_omd_delete_project_cost'); ?>
+                                                        <input type="hidden" name="erp_omd_action" value="delete_project_cost" />
+                                                        <input type="hidden" name="project_cost_id" value="<?php echo esc_attr($project_cost_row['id']); ?>" />
+                                                        <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                                        <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

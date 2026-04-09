@@ -377,6 +377,18 @@ class ERP_OMD_Admin
                 $this->require_capability('erp_omd_manage_projects');
                 $id = empty($_POST['project_revenue_id']) ? 0 : (int) $_POST['project_revenue_id'];
                 $project_id = (int) ($_POST['project_id'] ?? 0);
+                $project = $this->projects->find($project_id);
+                if (! $project) {
+                    $this->redirect_with_notice('erp-omd-projects', 'error', __('Projekt nie istnieje.', 'erp-omd'));
+                }
+                if ($this->is_project_cost_locked_by_status((string) ($project['status'] ?? ''))) {
+                    $this->redirect_with_notice(
+                        'erp-omd-projects',
+                        'error',
+                        __('Przychody projektu po statusie Zakończony/Archiwum modyfikuj wyłącznie przez admina po zamknięciu miesiąca.', 'erp-omd'),
+                        ['id' => $project_id]
+                    );
+                }
                 $payload = [
                     'project_id' => $project_id,
                     'amount' => (float) ($_POST['amount'] ?? 0),
@@ -403,6 +415,19 @@ class ERP_OMD_Admin
                 $this->require_capability('erp_omd_manage_projects');
                 $id = (int) ($_POST['project_revenue_id'] ?? 0);
                 $project_id = (int) ($_POST['project_id'] ?? 0);
+                $existing = $id > 0 ? $this->project_revenues->find($id) : null;
+                if ($project_id <= 0 && is_array($existing)) {
+                    $project_id = (int) ($existing['project_id'] ?? 0);
+                }
+                $project = $project_id > 0 ? $this->projects->find($project_id) : null;
+                if (is_array($project) && $this->is_project_cost_locked_by_status((string) ($project['status'] ?? ''))) {
+                    $this->redirect_with_notice(
+                        'erp-omd-projects',
+                        'error',
+                        __('Przychody projektu po statusie Zakończony/Archiwum modyfikuj wyłącznie przez admina po zamknięciu miesiąca.', 'erp-omd'),
+                        ['id' => $project_id]
+                    );
+                }
                 if ($id) {
                     $this->project_revenues->delete($id);
                     $this->project_financial_service->rebuild_for_project($project_id);
@@ -753,6 +778,8 @@ class ERP_OMD_Admin
         $project_rates = [];
         $project_cost_rows = [];
         $project_revenue_rows = [];
+        $project_cost_edit_row = null;
+        $project_revenue_edit_row = null;
         $project_financial = null;
         $project_financials_by_project = [];
         if (! empty($_GET['id'])) {
@@ -762,6 +789,20 @@ class ERP_OMD_Admin
                 $project_rates = $this->project_rates->for_project((int) $project['id']);
                 $project_cost_rows = $this->project_costs->for_project((int) $project['id']);
                 $project_revenue_rows = $this->project_revenues->for_project((int) $project['id']);
+                $edit_project_cost_id = (int) ($_GET['edit_project_cost_id'] ?? 0);
+                if ($edit_project_cost_id > 0) {
+                    $candidate_project_cost = $this->project_costs->find($edit_project_cost_id);
+                    if (is_array($candidate_project_cost) && (int) ($candidate_project_cost['project_id'] ?? 0) === (int) $project['id']) {
+                        $project_cost_edit_row = $candidate_project_cost;
+                    }
+                }
+                $edit_project_revenue_id = (int) ($_GET['edit_project_revenue_id'] ?? 0);
+                if ($edit_project_revenue_id > 0) {
+                    $candidate_project_revenue = $this->project_revenues->find($edit_project_revenue_id);
+                    if (is_array($candidate_project_revenue) && (int) ($candidate_project_revenue['project_id'] ?? 0) === (int) $project['id']) {
+                        $project_revenue_edit_row = $candidate_project_revenue;
+                    }
+                }
                 $project_financial = $this->project_financial_service->rebuild_for_project((int) $project['id']);
                 $project_financials_by_project[(int) $project['id']] = $project_financial;
             }
@@ -2138,6 +2179,18 @@ class ERP_OMD_Admin
         $this->require_capability('erp_omd_manage_projects');
         $id = empty($_POST['project_cost_id']) ? 0 : (int) $_POST['project_cost_id'];
         $project_id = (int) ($_POST['project_id'] ?? 0);
+        $project = $this->projects->find($project_id);
+        if (! $project) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Projekt nie istnieje.', 'erp-omd'));
+        }
+        if ($this->is_project_cost_locked_by_status((string) ($project['status'] ?? ''))) {
+            $this->redirect_with_notice(
+                'erp-omd-projects',
+                'error',
+                __('Koszty projektu po statusie Zakończony/Archiwum modyfikuj wyłącznie przez „Szybka korekta admina (po zamknięciu miesiąca)”.', 'erp-omd'),
+                ['id' => $project_id]
+            );
+        }
         $payload = [
             'project_id' => $project_id,
             'amount' => (float) ($_POST['amount'] ?? 0),
@@ -2166,6 +2219,19 @@ class ERP_OMD_Admin
         $this->require_capability('erp_omd_manage_projects');
         $id = (int) ($_POST['project_cost_id'] ?? 0);
         $project_id = (int) ($_POST['project_id'] ?? 0);
+        $existing = $id > 0 ? $this->project_costs->find($id) : null;
+        if ($project_id <= 0 && is_array($existing)) {
+            $project_id = (int) ($existing['project_id'] ?? 0);
+        }
+        $project = $project_id > 0 ? $this->projects->find($project_id) : null;
+        if (is_array($project) && $this->is_project_cost_locked_by_status((string) ($project['status'] ?? ''))) {
+            $this->redirect_with_notice(
+                'erp-omd-projects',
+                'error',
+                __('Koszty projektu po statusie Zakończony/Archiwum modyfikuj wyłącznie przez „Szybka korekta admina (po zamknięciu miesiąca)”.', 'erp-omd'),
+                ['id' => $project_id]
+            );
+        }
         if ($id) {
             $this->project_costs->delete($id);
             $this->project_financial_service->rebuild_for_project($project_id);
@@ -2929,6 +2995,11 @@ class ERP_OMD_Admin
             default:
                 return 'erp-omd-badge-info';
         }
+    }
+
+    private function is_project_cost_locked_by_status($status)
+    {
+        return in_array((string) $status, ['zakonczony', 'archiwum'], true);
     }
 
     private function render_alert_icons(array $alerts)
