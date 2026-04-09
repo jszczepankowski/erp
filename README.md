@@ -1,6 +1,6 @@
 # ERP OMD
 
-ERP_OMD V2 — wersja 3.1.0 przygotowana pod wdrożenie Sprintu 10.
+ERP_OMD V2 — wersja 3.2.0 przygotowana pod wdrożenie Sprintu 10.
 
 ## Dokumentacja systemu
 - Pełny opis systemu i propozycje usprawnień: `../docs/ERP_OMD_SYSTEM_OVERVIEW.md`
