@@ -1386,6 +1386,116 @@ window.erpOmdInitSettingsAdminCorrection =
     syncRoleAvailability(projectSelect);
   };
 
+  const initReportFilterVariantVisibility = () => {
+    const reportTypeSelect = document.querySelector('#report-type');
+    if (!(reportTypeSelect instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const fieldNodes = {
+      client: document.querySelector('[data-report-filter-field="client"]'),
+      project: document.querySelector('[data-report-filter-field="project"]'),
+      employee: document.querySelector('[data-report-filter-field="employee"]'),
+      status: document.querySelector('[data-report-filter-field="status"]'),
+      detail: document.querySelector('[data-report-filter-field="detail"]'),
+      per_page: document.querySelector('[data-report-filter-field="per_page"]'),
+    };
+
+    const getVisibilityByReportType = (reportType) => {
+      const visibility = {
+        client: true,
+        project: true,
+        employee: true,
+        status: true,
+        detail: ['projects', 'clients', 'invoice', 'time_entries'].includes(reportType),
+        per_page: reportType === 'time_entries',
+      };
+
+      if (reportType === 'omd_rozliczenia') {
+        visibility.client = false;
+        visibility.project = false;
+        visibility.employee = false;
+        visibility.status = false;
+        visibility.detail = false;
+        visibility.per_page = false;
+      } else if (reportType === 'invoice') {
+        visibility.employee = false;
+        visibility.status = false;
+        visibility.detail = false;
+        visibility.per_page = false;
+      } else if (reportType === 'time_entries') {
+        visibility.status = false;
+        visibility.per_page = false;
+      }
+
+      return visibility;
+    };
+
+    const setFieldVisibility = (fieldNode, isVisible) => {
+      if (!(fieldNode instanceof HTMLElement)) {
+        return;
+      }
+
+      fieldNode.hidden = !isVisible;
+      fieldNode.querySelectorAll('input, select, textarea').forEach((controlNode) => {
+        if (
+          !(controlNode instanceof HTMLInputElement) &&
+          !(controlNode instanceof HTMLSelectElement) &&
+          !(controlNode instanceof HTMLTextAreaElement)
+        ) {
+          return;
+        }
+
+        controlNode.disabled = !isVisible;
+        if (isVisible) {
+          return;
+        }
+
+        const defaultValue = controlNode.dataset.defaultValue ?? '';
+        controlNode.value = defaultValue;
+      });
+    };
+
+    const syncDetailModeOptions = (reportType) => {
+      const detailSelect = document.querySelector('#report-detail');
+      if (!(detailSelect instanceof HTMLSelectElement)) {
+        return;
+      }
+
+      const detailOption = detailSelect.querySelector('option[value="detail"]');
+      if (!(detailOption instanceof HTMLOptionElement)) {
+        return;
+      }
+
+      const isTimeEntries = reportType === 'time_entries';
+      detailOption.hidden = isTimeEntries;
+      detailOption.disabled = isTimeEntries;
+      if (isTimeEntries && detailSelect.value === 'detail') {
+        detailSelect.value = 'simple';
+      }
+    };
+
+    const applyVisibility = () => {
+      const reportType = String(reportTypeSelect.value || '');
+      const visibility = getVisibilityByReportType(reportType);
+      syncDetailModeOptions(reportType);
+
+      Object.keys(fieldNodes).forEach((fieldKey) => {
+        setFieldVisibility(fieldNodes[fieldKey], Boolean(visibility[fieldKey]));
+      });
+
+      const clientSelect = document.querySelector('#report-client');
+      if (clientSelect instanceof HTMLSelectElement) {
+        syncProjectOptions(clientSelect);
+      }
+    };
+
+    applyVisibility();
+    reportTypeSelect.addEventListener('change', applyVisibility);
+  };
+
+  initReportFilterVariantVisibility();
+
   document.querySelectorAll('select[data-project-target]').forEach((clientSelect) => {
     syncProjectOptions(clientSelect);
     clientSelect.addEventListener('change', () => syncProjectOptions(clientSelect));
