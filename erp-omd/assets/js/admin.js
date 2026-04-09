@@ -1456,9 +1456,29 @@ window.erpOmdInitSettingsAdminCorrection =
       });
     };
 
+    const syncDetailModeOptions = (reportType) => {
+      const detailSelect = document.querySelector('#report-detail');
+      if (!(detailSelect instanceof HTMLSelectElement)) {
+        return;
+      }
+
+      const detailOption = detailSelect.querySelector('option[value="detail"]');
+      if (!(detailOption instanceof HTMLOptionElement)) {
+        return;
+      }
+
+      const isTimeEntries = reportType === 'time_entries';
+      detailOption.hidden = isTimeEntries;
+      detailOption.disabled = isTimeEntries;
+      if (isTimeEntries && detailSelect.value === 'detail') {
+        detailSelect.value = 'simple';
+      }
+    };
+
     const applyVisibility = () => {
       const reportType = String(reportTypeSelect.value || '');
       const visibility = getVisibilityByReportType(reportType);
+      syncDetailModeOptions(reportType);
 
       Object.keys(fieldNodes).forEach((fieldKey) => {
         setFieldVisibility(fieldNodes[fieldKey], Boolean(visibility[fieldKey]));

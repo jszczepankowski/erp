@@ -113,7 +113,9 @@
                                 <label for="report-detail"><?php esc_html_e('Wersja raportu', 'erp-omd'); ?></label>
                                 <select id="report-detail" name="detail" data-default-value="simple" <?php echo $show_detail_field ? '' : 'disabled'; ?>>
                                     <option value="simple" <?php selected($report_filters['detail'], 'simple'); ?>><?php esc_html_e('Podstawowa', 'erp-omd'); ?></option>
-                                    <option value="detail" <?php selected($report_filters['detail'], 'detail'); ?>><?php esc_html_e('Szczegółowa', 'erp-omd'); ?></option>
+                                    <?php if ($selected_report_type !== 'time_entries') : ?>
+                                        <option value="detail" <?php selected($report_filters['detail'], 'detail'); ?>><?php esc_html_e('Szczegółowa', 'erp-omd'); ?></option>
+                                    <?php endif; ?>
                                 </select>
                             </div>
                             <div class="erp-omd-form-field erp-omd-form-field-compact" data-report-filter-field="per_page" <?php echo $show_per_page_field ? '' : 'hidden'; ?>>
@@ -594,7 +596,6 @@
                             <input type="hidden" name="mode" value="<?php echo esc_attr($report_filters['mode']); ?>" />
                             <input type="hidden" name="detail" value="<?php echo esc_attr($report_filters['detail']); ?>" />
                             <input type="hidden" name="page_num" value="<?php echo esc_attr((string) ($report_filters['page_num'] ?? 1)); ?>" />
-                            <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($report_filters['per_page'] ?? 25)); ?>" />
                             <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV', 'erp-omd'); ?></button>
                         </form>
                     <?php endif; ?>
@@ -691,37 +692,6 @@
                         </tbody>
                     </table>
                 <?php elseif ($report_filters['report_type'] === 'time_entries') : ?>
-                    <?php if (! empty($report_pagination) && (int) ($report_pagination['total_pages'] ?? 1) > 1) : ?>
-                        <div class="tablenav top">
-                            <div class="tablenav-pages">
-                                <?php
-                                $base_args = [
-                                    'page' => 'erp-omd-reports',
-                                    'tab' => 'reports',
-                                    'report_type' => $report_filters['report_type'],
-                                    'month' => $report_filters['month'],
-                                    'client_id' => (int) $report_filters['client_id'],
-                                    'project_id' => (int) $report_filters['project_id'],
-                                    'employee_id' => (int) $report_filters['employee_id'],
-                                    'status' => $report_filters['status'],
-                                    'mode' => $report_filters['mode'],
-                                    'detail' => $report_filters['detail'],
-                                    'per_page' => (int) ($report_filters['per_page'] ?? 25),
-                                ];
-                                $current_page = (int) ($report_pagination['page_num'] ?? 1);
-                                $total_pages = (int) ($report_pagination['total_pages'] ?? 1);
-                                ?>
-                                <span class="displaying-num"><?php echo esc_html(sprintf(__('Wyniki: %d', 'erp-omd'), (int) ($report_pagination['total_items'] ?? 0))); ?></span>
-                                <?php if (! empty($report_pagination['has_prev'])) : ?>
-                                    <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['page_num' => $current_page - 1]), admin_url('admin.php'))); ?>">&laquo;</a>
-                                <?php endif; ?>
-                                <span class="paging-input"><?php echo esc_html(sprintf(__('%1$d z %2$d', 'erp-omd'), $current_page, $total_pages)); ?></span>
-                                <?php if (! empty($report_pagination['has_next'])) : ?>
-                                    <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['page_num' => $current_page + 1]), admin_url('admin.php'))); ?>">&raquo;</a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    <?php endif; ?>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pracownik', 'erp-omd'); ?></th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Rola', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Stawka klienta', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th></tr></thead>
                         <tbody>
@@ -742,37 +712,6 @@
                         <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <?php if (! empty($report_pagination) && (int) ($report_pagination['total_pages'] ?? 1) > 1) : ?>
-                        <div class="tablenav bottom">
-                            <div class="tablenav-pages">
-                                <?php
-                                $base_args = [
-                                    'page' => 'erp-omd-reports',
-                                    'tab' => 'reports',
-                                    'report_type' => $report_filters['report_type'],
-                                    'month' => $report_filters['month'],
-                                    'client_id' => (int) $report_filters['client_id'],
-                                    'project_id' => (int) $report_filters['project_id'],
-                                    'employee_id' => (int) $report_filters['employee_id'],
-                                    'status' => $report_filters['status'],
-                                    'mode' => $report_filters['mode'],
-                                    'detail' => $report_filters['detail'],
-                                    'per_page' => (int) ($report_filters['per_page'] ?? 25),
-                                ];
-                                $current_page = (int) ($report_pagination['page_num'] ?? 1);
-                                $total_pages = (int) ($report_pagination['total_pages'] ?? 1);
-                                ?>
-                                <span class="displaying-num"><?php echo esc_html(sprintf(__('Wyniki: %d', 'erp-omd'), (int) ($report_pagination['total_items'] ?? 0))); ?></span>
-                                <?php if (! empty($report_pagination['has_prev'])) : ?>
-                                    <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['page_num' => $current_page - 1]), admin_url('admin.php'))); ?>">&laquo;</a>
-                                <?php endif; ?>
-                                <span class="paging-input"><?php echo esc_html(sprintf(__('%1$d z %2$d', 'erp-omd'), $current_page, $total_pages)); ?></span>
-                                <?php if (! empty($report_pagination['has_next'])) : ?>
-                                    <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($base_args, ['page_num' => $current_page + 1]), admin_url('admin.php'))); ?>">&raquo;</a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    <?php endif; ?>
                 <?php else : ?>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet %', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><?php if ($report_filters['report_type'] === 'invoice') : ?><th><?php esc_html_e('Pozycje do faktury', 'erp-omd'); ?></th><?php endif; ?></tr></thead>
