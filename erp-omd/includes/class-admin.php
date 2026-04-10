@@ -628,6 +628,8 @@ class ERP_OMD_Admin
         $selected_client = null;
         $client = null;
         $client_rates = [];
+        $selected_client_projects = [];
+        $selected_client_project_financials = [];
         $editing_client_rate = null;
         $is_editing_client = ! empty($_GET['edit']) || ! empty($_GET['rate_id']);
         if (! empty($_GET['id'])) {
@@ -687,6 +689,11 @@ class ERP_OMD_Admin
                 $employee_logins[(int) ($employee_row['id'] ?? 0)] = (string) ($employee_row['user_login'] ?? '');
             }
             $selected_client['account_manager_login'] = $employee_logins[(int) ($selected_client['account_manager_id'] ?? 0)] ?? '';
+            $selected_client['total_profit'] = (float) ($client_profit_totals[(int) ($selected_client['id'] ?? 0)] ?? 0.0);
+            $selected_client_projects = $this->projects->all(['client_id' => (int) ($selected_client['id'] ?? 0)]);
+            $selected_client_project_financials = $this->project_financial_service->get_project_financials(
+                wp_list_pluck($selected_client_projects, 'id')
+            );
         }
         include ERP_OMD_PATH . 'templates/admin/clients.php';
     }
