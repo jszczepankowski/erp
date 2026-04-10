@@ -71,6 +71,25 @@
                             </p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-deadline-date"><?php esc_html_e('Deadline projektu', 'erp-omd'); ?></label>
+                            <input id="project-deadline-date" type="date" name="deadline_date" value="<?php echo esc_attr($project['deadline_date'] ?? ''); ?>" />
+                            <p class="description"><?php esc_html_e('Deadline jest monitorowany alertami: 3 dni przed, 1 dzień przed oraz po terminie.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-deadline-completed"><?php esc_html_e('Realizacja deadline', 'erp-omd'); ?></label>
+                            <label style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                                <input id="project-deadline-completed" type="checkbox" name="deadline_mark_completed" value="1" <?php disabled(! empty($project['deadline_completed_at'])); ?> />
+                                <span><?php esc_html_e('Oznacz deadline jako zrealizowany', 'erp-omd'); ?></span>
+                            </label>
+                            <p class="description">
+                                <?php if (! empty($project['deadline_completed_at'])) : ?>
+                                    <?php echo esc_html(sprintf(__('Deadline oznaczono jako zrealizowany: %s', 'erp-omd'), (string) $project['deadline_completed_at'])); ?>
+                                <?php else : ?>
+                                    <?php esc_html_e('Po oznaczeniu realizacji status deadline wraca do OK.', 'erp-omd'); ?>
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="project-manager"><?php esc_html_e('Główny manager projektu', 'erp-omd'); ?></label>
                             <select id="project-manager" name="manager_id">
                                 <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
@@ -148,6 +167,8 @@
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Abonament', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project['retainer_monthly_fee'] ?? 0), 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Start', 'erp-omd'); ?></strong><span><?php echo esc_html($project['start_date'] ?? '—'); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koniec', 'erp-omd'); ?></strong><span><?php echo esc_html($project['end_date'] ?? '—'); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Deadline', 'erp-omd'); ?></strong><span><?php echo esc_html($project['deadline_date'] ?? '—'); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Status deadline', 'erp-omd'); ?></strong><span><?php echo esc_html($project['deadline_status_label'] ?? __('OK', 'erp-omd')); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Próg marży', 'erp-omd'); ?></strong><span><?php echo esc_html(($project['alert_margin_threshold'] ?? '') !== '' && $project['alert_margin_threshold'] !== null ? number_format_i18n((float) $project['alert_margin_threshold'], 2) . '%' : '—'); ?></span></div>
                                 </div>
                             </div>
