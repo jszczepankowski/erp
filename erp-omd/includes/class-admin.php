@@ -628,6 +628,8 @@ class ERP_OMD_Admin
         $selected_client = null;
         $client = null;
         $client_rates = [];
+        $selected_client_projects = [];
+        $selected_client_project_financials = [];
         $editing_client_rate = null;
         $is_editing_client = ! empty($_GET['edit']) || ! empty($_GET['rate_id']);
         if (! empty($_GET['id'])) {
@@ -687,6 +689,11 @@ class ERP_OMD_Admin
                 $employee_logins[(int) ($employee_row['id'] ?? 0)] = (string) ($employee_row['user_login'] ?? '');
             }
             $selected_client['account_manager_login'] = $employee_logins[(int) ($selected_client['account_manager_id'] ?? 0)] ?? '';
+            $selected_client['total_profit'] = (float) ($client_profit_totals[(int) ($selected_client['id'] ?? 0)] ?? 0.0);
+            $selected_client_projects = $this->projects->all(['client_id' => (int) ($selected_client['id'] ?? 0)]);
+            $selected_client_project_financials = $this->project_financial_service->get_project_financials(
+                wp_list_pluck($selected_client_projects, 'id')
+            );
         }
         include ERP_OMD_PATH . 'templates/admin/clients.php';
     }
@@ -805,6 +812,8 @@ class ERP_OMD_Admin
                 }
                 $project_financial = $this->project_financial_service->rebuild_for_project((int) $project['id']);
                 $project_financials_by_project[(int) $project['id']] = $project_financial;
+                $project['deadline_status'] = $this->resolve_project_deadline_status($project);
+                $project['deadline_status_label'] = $this->project_deadline_status_label($project['deadline_status']);
             }
         }
         $projects = $this->projects->all();
@@ -829,6 +838,8 @@ class ERP_OMD_Admin
         );
         foreach ($projects as &$project_row) {
             $project_row['alerts'] = $project_alerts[(int) $project_row['id']] ?? [];
+            $project_row['deadline_status'] = $this->resolve_project_deadline_status($project_row);
+            $project_row['deadline_status_label'] = $this->project_deadline_status_label($project_row['deadline_status']);
         }
         unset($project_row);
         $project_filters = [
@@ -1957,7 +1968,8 @@ class ERP_OMD_Admin
         if ($project_status === 'inactive') {
             $project_status = 'archiwum';
         }
-        $payload = $this->client_project_service->prepare_project(['client_id' => (int) ($_POST['client_id'] ?? 0), 'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')), 'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')), 'budget' => (float) ($_POST['budget'] ?? 0), 'retainer_monthly_fee' => (float) ($_POST['retainer_monthly_fee'] ?? 0), 'status' => $project_status, 'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')), 'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')), 'manager_id' => (int) ($_POST['manager_id'] ?? 0), 'manager_ids' => array_map('intval', wp_unslash($_POST['manager_ids'] ?? [])), 'estimate_id' => (int) ($_POST['estimate_id'] ?? 0), 'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')), 'alert_margin_threshold' => sanitize_text_field(wp_unslash($_POST['alert_margin_threshold'] ?? ''))], $existing);
+        $deadline_mark_completed = ! empty($_POST['deadline_mark_completed']);
+        $payload = $this->client_project_service->prepare_project(['client_id' => (int) ($_POST['client_id'] ?? 0), 'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')), 'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')), 'budget' => (float) ($_POST['budget'] ?? 0), 'retainer_monthly_fee' => (float) ($_POST['retainer_monthly_fee'] ?? 0), 'status' => $project_status, 'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')), 'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')), 'deadline_date' => sanitize_text_field(wp_unslash($_POST['deadline_date'] ?? '')), 'deadline_completed_at' => $deadline_mark_completed ? current_time('mysql') : (string) ($existing['deadline_completed_at'] ?? ''), 'deadline_completed_by' => $deadline_mark_completed ? (int) get_current_user_id() : (int) ($existing['deadline_completed_by'] ?? 0), 'manager_id' => (int) ($_POST['manager_id'] ?? 0), 'manager_ids' => array_map('intval', wp_unslash($_POST['manager_ids'] ?? [])), 'estimate_id' => (int) ($_POST['estimate_id'] ?? 0), 'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')), 'alert_margin_threshold' => sanitize_text_field(wp_unslash($_POST['alert_margin_threshold'] ?? ''))], $existing);
         $errors = $this->client_project_service->validate_project($payload, $existing);
         if ($errors) { $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), $id ? ['id' => $id] : []); }
         $was_update = $id > 0;
@@ -2954,6 +2966,46 @@ class ERP_OMD_Admin
             case 'submitted':
             default:
                 return __('Zgłoszony', 'erp-omd');
+        }
+    }
+
+    private function resolve_project_deadline_status(array $project)
+    {
+        $deadline_date = (string) ($project['deadline_date'] ?? '');
+        if ($deadline_date === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $deadline_date) !== 1) {
+            return 'ok';
+        }
+
+        if ((string) ($project['deadline_completed_at'] ?? '') !== '') {
+            return 'ok';
+        }
+
+        $today = current_time('Y-m-d');
+        if ($deadline_date < $today) {
+            return 'po_terminie';
+        }
+
+        $today_dt = DateTimeImmutable::createFromFormat('Y-m-d', $today) ?: new DateTimeImmutable($today);
+        $deadline_dt = DateTimeImmutable::createFromFormat('Y-m-d', $deadline_date) ?: new DateTimeImmutable($deadline_date);
+        $days_to_deadline = (int) $today_dt->diff($deadline_dt)->days;
+
+        if ($days_to_deadline <= 3) {
+            return 'ryzyko';
+        }
+
+        return 'ok';
+    }
+
+    private function project_deadline_status_label($status)
+    {
+        switch ((string) $status) {
+            case 'po_terminie':
+                return __('Po terminie', 'erp-omd');
+            case 'ryzyko':
+                return __('Ryzyko', 'erp-omd');
+            case 'ok':
+            default:
+                return __('OK', 'erp-omd');
         }
     }
 
