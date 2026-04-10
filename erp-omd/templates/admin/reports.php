@@ -141,7 +141,7 @@
                             <h2><?php esc_html_e('Reports v1 — steady-state monitoring', 'erp-omd'); ?></h2>
                         </div>
                     </div>
-                    <div class="notice notice-success" style="margin:0;">
+                    <div class="notice notice-success" style="margin:0; display: none;">
                         <p><strong><?php echo esc_html((string) ($reports_v1_steady_state_banner['title'] ?? '')); ?></strong></p>
                         <p><?php echo esc_html((string) ($reports_v1_steady_state_banner['message'] ?? '')); ?></p>
                         <?php if (! empty($reports_v1_steady_state_banner['actions']) && is_array($reports_v1_steady_state_banner['actions'])) : ?>
@@ -316,7 +316,7 @@
         <section class="erp-omd-card erp-omd-monitoring-section erp-omd-monitoring-admin-correction" data-settings-admin-correction="1">
             <div class="erp-omd-section-header">
                 <div>
-                    <h2><?php esc_html_e('Szybka korekta admina (po zamknięciu miesiąca)', 'erp-omd'); ?></h2>
+                    <h2><?php esc_html_e('Szybka korekta', 'erp-omd'); ?></h2>
                     <p class="description"><?php esc_html_e('Umożliwia korektę rekordu kosztu projektu z wymaganym powodem (reason) do testów UAT 6.3.', 'erp-omd'); ?></p>
                     <p class="description">
                         <?php
@@ -420,7 +420,7 @@
         <section class="erp-omd-card erp-omd-monitoring-section erp-omd-monitoring-audit-log">
             <div class="erp-omd-section-header">
                 <div>
-                    <h2><?php esc_html_e('Audit log korekt', 'erp-omd'); ?></h2>
+                    <h2><?php esc_html_e('Audyt korekt', 'erp-omd'); ?></h2>
                     <p class="description"><?php esc_html_e('Filtrowanie i eksport rejestru korekt administracyjnych dla wskazanego okresu.', 'erp-omd'); ?></p>
                 </div>
             </div>

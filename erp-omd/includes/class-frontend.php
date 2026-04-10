@@ -71,10 +71,56 @@ class ERP_OMD_Frontend
     public function register_hooks()
     {
         add_action('init', [__CLASS__, 'register_rewrite_rules']);
+        add_action('init', [$this, 'enforce_active_employee_session']);
         add_filter('query_vars', [$this, 'register_query_vars']);
         add_action('template_redirect', [$this, 'handle_front_request']);
         add_action('admin_init', [$this, 'redirect_front_users_from_admin']);
         add_filter('login_redirect', [$this, 'filter_login_redirect'], 10, 3);
+        add_filter('wp_authenticate_user', [$this, 'block_inactive_employee_login'], 10, 2);
+    }
+
+    public function block_inactive_employee_login($user, $password)
+    {
+        if (! $user instanceof WP_User || ! $user->exists()) {
+            return $user;
+        }
+
+        if (! $this->is_user_inactive_employee((int) $user->ID)) {
+            return $user;
+        }
+
+        return new WP_Error(
+            'erp_omd_employee_inactive',
+            __('Twoje konto pracownika jest nieaktywne. Skontaktuj się z administratorem.', 'erp-omd')
+        );
+    }
+
+    public function enforce_active_employee_session()
+    {
+        if (! is_user_logged_in()) {
+            return;
+        }
+
+        if ((function_exists('wp_doing_ajax') && wp_doing_ajax()) || (defined('DOING_AJAX') && DOING_AJAX)) {
+            return;
+        }
+
+        if ((function_exists('wp_doing_cron') && wp_doing_cron()) || (defined('DOING_CRON') && DOING_CRON)) {
+            return;
+        }
+
+        if ((defined('REST_REQUEST') && REST_REQUEST)) {
+            return;
+        }
+
+        $user = wp_get_current_user();
+        if (! $this->is_user_inactive_employee((int) $user->ID)) {
+            return;
+        }
+
+        wp_logout();
+        wp_safe_redirect(wp_login_url());
+        exit;
     }
 
     public function redirect_front_users_from_admin()
@@ -264,6 +310,20 @@ class ERP_OMD_Frontend
         }
 
         return admin_url();
+    }
+
+    private function is_user_inactive_employee($user_id)
+    {
+        if ($user_id <= 0) {
+            return false;
+        }
+
+        $employee = $this->employees->find_by_user_id($user_id);
+        if (! $employee) {
+            return false;
+        }
+
+        return (string) ($employee['status'] ?? '') === 'inactive';
     }
 
     private function render_login_screen($error = null)
