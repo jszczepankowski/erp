@@ -1,5 +1,7 @@
 <?php
 
+require_once ERP_OMD_PATH . 'includes/class-front-estimate-decision-screen.php';
+
 class ERP_OMD_Frontend
 {
     private $employees;
@@ -66,15 +68,62 @@ class ERP_OMD_Frontend
         add_rewrite_rule('^erp-front/logout/?$', 'index.php?erp_omd_front=logout', 'top');
         add_rewrite_rule('^erp-front/worker/?$', 'index.php?erp_omd_front=worker', 'top');
         add_rewrite_rule('^erp-front/manager/?$', 'index.php?erp_omd_front=manager', 'top');
+        add_rewrite_rule('^erp-front/estimate-decision/?$', 'index.php?erp_omd_front=estimate-decision', 'top');
     }
 
     public function register_hooks()
     {
         add_action('init', [__CLASS__, 'register_rewrite_rules']);
+        add_action('init', [$this, 'enforce_active_employee_session']);
         add_filter('query_vars', [$this, 'register_query_vars']);
         add_action('template_redirect', [$this, 'handle_front_request']);
         add_action('admin_init', [$this, 'redirect_front_users_from_admin']);
         add_filter('login_redirect', [$this, 'filter_login_redirect'], 10, 3);
+        add_filter('wp_authenticate_user', [$this, 'block_inactive_employee_login'], 10, 2);
+    }
+
+    public function block_inactive_employee_login($user, $password)
+    {
+        if (! $user instanceof WP_User || ! $user->exists()) {
+            return $user;
+        }
+
+        if (! $this->is_front_employee_inactive((int) $user->ID)) {
+            return $user;
+        }
+
+        return new WP_Error(
+            'erp_omd_employee_inactive',
+            __('Twoje konto pracownika jest nieaktywne. Skontaktuj się z administratorem.', 'erp-omd')
+        );
+    }
+
+    public function enforce_active_employee_session()
+    {
+        if (! is_user_logged_in()) {
+            return;
+        }
+
+        if ((function_exists('wp_doing_ajax') && wp_doing_ajax()) || (defined('DOING_AJAX') && DOING_AJAX)) {
+            return;
+        }
+
+        if ((function_exists('wp_doing_cron') && wp_doing_cron()) || (defined('DOING_CRON') && DOING_CRON)) {
+            return;
+        }
+
+        if ((defined('REST_REQUEST') && REST_REQUEST)) {
+            return;
+        }
+
+        $user = wp_get_current_user();
+        if (! $this->is_front_employee_inactive((int) $user->ID)) {
+            return;
+        }
+
+        wp_logout();
+        wp_safe_redirect(wp_login_url());
+        exit;
     }
 
     public function redirect_front_users_from_admin()
@@ -130,6 +179,14 @@ class ERP_OMD_Frontend
 
         if ($screen === 'login') {
             $this->handle_login_screen();
+            return;
+        }
+        if ($screen === 'estimate-decision') {
+            ERP_OMD_Front_Estimate_Decision_Screen::handle_request(
+                $this->estimates,
+                $this->estimate_items,
+                $this->estimate_service
+            );
             return;
         }
 
@@ -264,6 +321,20 @@ class ERP_OMD_Frontend
         }
 
         return admin_url();
+    }
+
+    private function is_front_employee_inactive($user_id)
+    {
+        if ($user_id <= 0) {
+            return false;
+        }
+
+        $employee = $this->employees->find_by_user_id($user_id);
+        if (! $employee) {
+            return false;
+        }
+
+        return (string) ($employee['status'] ?? '') === 'inactive';
     }
 
     private function render_login_screen($error = null)
@@ -1043,7 +1114,7 @@ class ERP_OMD_Frontend
         $linked_estimates = $this->load_estimates_for_projects($managed_projects);
         $manager_estimates = $this->load_visible_manager_estimates((int) $employee['id'], $managed_projects, user_can($user, 'administrator'));
         $estimate_status_filter = sanitize_text_field(wp_unslash($_GET['estimate_status'] ?? ''));
-        if (! in_array($estimate_status_filter, ['', 'wstepny', 'do_akceptacji', 'zaakceptowany'], true)) {
+        if (! in_array($estimate_status_filter, ['', 'wstepny', 'do_akceptacji', 'zaakceptowany', 'odrzucony'], true)) {
             $estimate_status_filter = '';
         }
         $filtered_estimates = $manager_estimates;
@@ -1055,7 +1126,7 @@ class ERP_OMD_Frontend
         usort(
             $filtered_estimates,
             static function ($left, $right) {
-                $order = ['wstepny' => 0, 'do_akceptacji' => 1, 'zaakceptowany' => 2];
+                $order = ['wstepny' => 0, 'do_akceptacji' => 1, 'odrzucony' => 2, 'zaakceptowany' => 3];
                 $left_status_weight = $order[(string) ($left['status'] ?? '')] ?? 99;
                 $right_status_weight = $order[(string) ($right['status'] ?? '')] ?? 99;
                 if ($left_status_weight !== $right_status_weight) {
