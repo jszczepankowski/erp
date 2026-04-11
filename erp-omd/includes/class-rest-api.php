@@ -608,6 +608,10 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/estimates/(?P<id>\d+)/accept', [
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'accept_estimate'], 'permission_callback' => [$this, 'can_manage_projects']],
         ]);
+        register_rest_route('erp-omd/v1', '/estimate-decision', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_estimate_client_decision_state'], 'permission_callback' => '__return_true'],
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'submit_estimate_client_decision'], 'permission_callback' => '__return_true'],
+        ]);
     }
 
     private function register_project_routes()
@@ -929,6 +933,67 @@ class ERP_OMD_REST_API
         }
 
         return rest_ensure_response($result);
+    }
+
+    public function get_estimate_client_decision_state(WP_REST_Request $request)
+    {
+        $token = sanitize_text_field((string) $request->get_param('token'));
+        if ($token === '') {
+            return new WP_Error('erp_omd_estimate_token_missing', __('Brak tokenu decyzji kosztorysu.', 'erp-omd'), ['status' => 422]);
+        }
+
+        $state = $this->resolve_estimate_by_token($token);
+        if ($state instanceof WP_Error) {
+            return $state;
+        }
+
+        return rest_ensure_response([
+            'estimate_id' => (int) ($state['estimate']['id'] ?? 0),
+            'estimate_name' => (string) ($state['estimate']['name'] ?? ''),
+            'client_name' => (string) ($state['estimate']['client_name'] ?? ''),
+            'expires_at' => (int) ($state['token_row']['expires_at'] ?? 0),
+            'status' => (string) ($state['estimate']['status'] ?? ''),
+        ]);
+    }
+
+    public function submit_estimate_client_decision(WP_REST_Request $request)
+    {
+        $token = sanitize_text_field((string) $request->get_param('token'));
+        $decision = sanitize_key((string) $request->get_param('decision'));
+        $comment = sanitize_textarea_field((string) $request->get_param('comment'));
+
+        if (! in_array($decision, ['accept', 'reject'], true)) {
+            return new WP_Error('erp_omd_estimate_decision_invalid', __('Niepoprawna decyzja kosztorysu.', 'erp-omd'), ['status' => 422]);
+        }
+        if ($decision === 'reject' && trim($comment) === '') {
+            return new WP_Error('erp_omd_estimate_decision_comment_required', __('Komentarz jest wymagany przy odrzuceniu kosztorysu.', 'erp-omd'), ['status' => 422]);
+        }
+
+        $state = $this->resolve_estimate_by_token($token);
+        if ($state instanceof WP_Error) {
+            return $state;
+        }
+
+        $estimate_id = (int) ($state['estimate']['id'] ?? 0);
+        if ($decision === 'accept') {
+            $result = $this->estimate_service->accept($estimate_id);
+            if ($result instanceof WP_Error) {
+                return $result;
+            }
+            $this->invalidate_estimate_token($estimate_id);
+
+            return rest_ensure_response(['decision' => 'accept', 'result' => $result]);
+        }
+
+        $estimate = $state['estimate'];
+        $estimate['status'] = 'wstepny';
+        $estimate['accepted_by_user_id'] = 0;
+        $estimate['accepted_at'] = null;
+        $this->estimates->update($estimate_id, $estimate);
+        update_option('erp_omd_estimate_client_rejection_comment_' . $estimate_id, $comment, false);
+        $this->invalidate_estimate_token($estimate_id);
+
+        return rest_ensure_response(['decision' => 'reject', 'status' => 'wstepny']);
     }
 
     public function list_projects(WP_REST_Request $request)
@@ -1485,9 +1550,56 @@ class ERP_OMD_REST_API
     private function sanitize_client_payload(WP_REST_Request $request) { return ['name' => sanitize_text_field((string) $request->get_param('name')), 'company' => sanitize_text_field((string) $request->get_param('company')), 'nip' => sanitize_text_field((string) $request->get_param('nip')), 'email' => sanitize_email((string) $request->get_param('email')), 'phone' => sanitize_text_field((string) $request->get_param('phone')), 'contact_person_name' => sanitize_text_field((string) $request->get_param('contact_person_name')), 'contact_person_email' => sanitize_email((string) $request->get_param('contact_person_email')), 'contact_person_phone' => sanitize_text_field((string) $request->get_param('contact_person_phone')), 'city' => sanitize_text_field((string) $request->get_param('city')), 'street' => sanitize_text_field((string) $request->get_param('street')), 'apartment_number' => sanitize_text_field((string) $request->get_param('apartment_number')), 'postal_code' => sanitize_text_field((string) $request->get_param('postal_code')), 'country' => sanitize_text_field((string) $request->get_param('country')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active', 'account_manager_id' => (int) $request->get_param('account_manager_id'), 'alert_margin_threshold' => sanitize_text_field((string) $request->get_param('alert_margin_threshold'))]; }
     private function sanitize_estimate_payload(WP_REST_Request $request, array $existing = null) { return ['client_id' => (int) ($request->get_param('client_id') ?: ($existing['client_id'] ?? 0)), 'name' => sanitize_text_field((string) ($request->get_param('name') ?: ($existing['name'] ?? ''))), 'status' => sanitize_text_field((string) ($request->get_param('status') ?: ($existing['status'] ?? 'wstepny'))) ?: 'wstepny', 'accepted_by_user_id' => (int) ($existing['accepted_by_user_id'] ?? 0), 'accepted_at' => $existing['accepted_at'] ?? null]; }
     private function sanitize_estimate_item_payload(WP_REST_Request $request, $estimate_id, array $existing = null) { return ['estimate_id' => (int) $estimate_id, 'name' => sanitize_text_field((string) ($request->get_param('name') ?: ($existing['name'] ?? ''))), 'qty' => (float) ($request->get_param('qty') !== null ? $request->get_param('qty') : ($existing['qty'] ?? 0)), 'price' => (float) ($request->get_param('price') !== null ? $request->get_param('price') : ($existing['price'] ?? 0)), 'cost_internal' => (float) ($request->get_param('cost_internal') !== null ? $request->get_param('cost_internal') : ($existing['cost_internal'] ?? 0)), 'comment' => sanitize_textarea_field((string) ($request->get_param('comment') !== null ? $request->get_param('comment') : ($existing['comment'] ?? '')) )]; }
-    private function sanitize_project_payload(WP_REST_Request $request) { $manager_ids = $request->get_param('manager_ids'); $operational_close_month = sanitize_text_field((string) $request->get_param('operational_close_month')); if (preg_match('/^\\d{4}-\\d{2}$/', $operational_close_month) !== 1) { $operational_close_month = ''; } return ['client_id' => (int) $request->get_param('client_id'), 'name' => sanitize_text_field((string) $request->get_param('name')), 'billing_type' => sanitize_text_field((string) $request->get_param('billing_type')) ?: 'time_material', 'budget' => (float) $request->get_param('budget'), 'retainer_monthly_fee' => (float) $request->get_param('retainer_monthly_fee'), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'do_rozpoczecia', 'start_date' => sanitize_text_field((string) $request->get_param('start_date')), 'end_date' => sanitize_text_field((string) $request->get_param('end_date')), 'operational_close_month' => $operational_close_month, 'manager_id' => (int) $request->get_param('manager_id'), 'manager_ids' => is_array($manager_ids) ? array_map('intval', $manager_ids) : [], 'estimate_id' => (int) $request->get_param('estimate_id'), 'brief' => sanitize_textarea_field((string) $request->get_param('brief')), 'alert_margin_threshold' => sanitize_text_field((string) $request->get_param('alert_margin_threshold'))]; }
+    private function sanitize_project_payload(WP_REST_Request $request) { $manager_ids = $request->get_param('manager_ids'); $operational_close_month = sanitize_text_field((string) $request->get_param('operational_close_month')); if (preg_match('/^\\d{4}-\\d{2}$/', $operational_close_month) !== 1) { $operational_close_month = ''; } return ['client_id' => (int) $request->get_param('client_id'), 'name' => sanitize_text_field((string) $request->get_param('name')), 'billing_type' => sanitize_text_field((string) $request->get_param('billing_type')) ?: 'time_material', 'budget' => (float) $request->get_param('budget'), 'retainer_monthly_fee' => (float) $request->get_param('retainer_monthly_fee'), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'do_rozpoczecia', 'start_date' => sanitize_text_field((string) $request->get_param('start_date')), 'end_date' => sanitize_text_field((string) $request->get_param('end_date')), 'deadline_date' => sanitize_text_field((string) $request->get_param('deadline_date')), 'deadline_completed_at' => sanitize_text_field((string) $request->get_param('deadline_completed_at')), 'deadline_completed_by' => (int) $request->get_param('deadline_completed_by'), 'operational_close_month' => $operational_close_month, 'manager_id' => (int) $request->get_param('manager_id'), 'manager_ids' => is_array($manager_ids) ? array_map('intval', $manager_ids) : [], 'estimate_id' => (int) $request->get_param('estimate_id'), 'brief' => sanitize_textarea_field((string) $request->get_param('brief')), 'alert_margin_threshold' => sanitize_text_field((string) $request->get_param('alert_margin_threshold'))]; }
     private function sanitize_project_cost_payload(WP_REST_Request $request, $project_id) { return ['project_id' => (int) $project_id, 'amount' => (float) $request->get_param('amount'), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'cost_date' => sanitize_text_field((string) $request->get_param('cost_date')), 'created_by_user_id' => get_current_user_id()]; }
     private function sanitize_time_entry_payload(WP_REST_Request $request) { return ['employee_id' => (int) $request->get_param('employee_id'), 'project_id' => (int) $request->get_param('project_id'), 'role_id' => (int) $request->get_param('role_id'), 'hours' => (float) $request->get_param('hours'), 'entry_date' => sanitize_text_field((string) $request->get_param('entry_date')), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'submitted']; }
+
+    private function resolve_estimate_by_token($token)
+    {
+        $token = (string) $token;
+        if ($token === '') {
+            return new WP_Error('erp_omd_estimate_token_missing', __('Brak tokenu decyzji kosztorysu.', 'erp-omd'), ['status' => 422]);
+        }
+
+        $state = (array) get_option('erp_omd_estimate_client_link_tokens', []);
+        $now = time();
+        foreach ($state as $estimate_id => $token_row) {
+            if ((string) ($token_row['token'] ?? '') !== $token) {
+                continue;
+            }
+
+            $expires_at = (int) ($token_row['expires_at'] ?? 0);
+            if ($expires_at > 0 && $expires_at < $now) {
+                return new WP_Error('erp_omd_estimate_token_expired', __('Link decyzji kosztorysu wygasł.', 'erp-omd'), ['status' => 410]);
+            }
+
+            $estimate = $this->estimates->find((int) $estimate_id);
+            if (! $estimate) {
+                return new WP_Error('erp_omd_estimate_not_found', __('Kosztorys nie istnieje.', 'erp-omd'), ['status' => 404]);
+            }
+            if ((string) ($estimate['status'] ?? '') !== 'do_akceptacji') {
+                return new WP_Error('erp_omd_estimate_status_invalid', __('Kosztorys nie jest w statusie do_akceptacji.', 'erp-omd'), ['status' => 422]);
+            }
+
+            return ['estimate_id' => (int) $estimate_id, 'estimate' => $estimate, 'token_row' => $token_row];
+        }
+
+        return new WP_Error('erp_omd_estimate_token_invalid', __('Nieprawidłowy link decyzji kosztorysu.', 'erp-omd'), ['status' => 404]);
+    }
+
+    private function invalidate_estimate_token($estimate_id)
+    {
+        $estimate_id = (int) $estimate_id;
+        if ($estimate_id <= 0) {
+            return;
+        }
+
+        $state = (array) get_option('erp_omd_estimate_client_link_tokens', []);
+        if (isset($state[$estimate_id])) {
+            unset($state[$estimate_id]);
+            update_option('erp_omd_estimate_client_link_tokens', $state, false);
+        }
+    }
 
 
     private function current_employee_id()
