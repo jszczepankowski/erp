@@ -130,6 +130,7 @@
                             <div class="erp-omd-detail-item"><strong><?php esc_html_e('Firma', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['company'] ?? '—'); ?></span></div>
                             <div class="erp-omd-detail-item"><strong><?php esc_html_e('Adres', 'erp-omd'); ?></strong><span><?php echo esc_html(trim(($selected_client['street'] ?? '') . ' ' . ($selected_client['apartment_number'] ?? '') . ', ' . ($selected_client['postal_code'] ?? '') . ' ' . ($selected_client['city'] ?? '') . ', ' . ($selected_client['country'] ?? '')) ?: '—'); ?></span></div>
                             <div class="erp-omd-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($selected_client['status'] ?? 'active', 'active')); ?>"><?php echo esc_html($this->active_status_label($selected_client['status'] ?? 'active')); ?></span></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zysk', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($selected_client['total_profit'] ?? 0), 2)); ?></span></div>
                         </div>
                     </div>
                     <div class="erp-omd-detail-card">
@@ -247,6 +248,53 @@
                         </table>
                     </section>
                 </div>
+                <section class="erp-omd-form-section" style="margin-top:16px;">
+                    <div class="erp-omd-section-header">
+                        <div>
+                            <h2><?php esc_html_e('Projekty klienta', 'erp-omd'); ?></h2>
+                        </div>
+                    </div>
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('Nazwa projektu', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Koszt', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Przychód', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Zysk', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Marża', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($selected_client_projects)) : ?>
+                                <tr>
+                                    <td colspan="7"><?php esc_html_e('Brak projektów przypisanych do tego klienta.', 'erp-omd'); ?></td>
+                                </tr>
+                            <?php else : ?>
+                                <?php foreach ($selected_client_projects as $client_project_row) : ?>
+                                    <?php
+                                    $project_id = (int) ($client_project_row['id'] ?? 0);
+                                    $project_financial = (array) ($selected_client_project_financials[$project_id] ?? []);
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_id], admin_url('admin.php'))); ?>">
+                                                <?php echo esc_html((string) ($client_project_row['name'] ?? ('#' . $project_id))); ?>
+                                            </a>
+                                        </td>
+                                        <td><?php echo esc_html($this->billing_type_label((string) ($client_project_row['billing_type'] ?? ''))); ?></td>
+                                        <td><?php echo esc_html(number_format_i18n((float) ($project_financial['cost'] ?? 0), 2)); ?></td>
+                                        <td><?php echo esc_html(number_format_i18n((float) ($project_financial['revenue'] ?? 0), 2)); ?></td>
+                                        <td><?php echo esc_html(number_format_i18n((float) ($project_financial['profit'] ?? 0), 2)); ?></td>
+                                        <td><?php echo esc_html(number_format_i18n((float) ($project_financial['margin'] ?? 0), 2)); ?>%</td>
+                                        <td><?php echo esc_html($this->project_status_label((string) ($client_project_row['status'] ?? ''))); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </section>
             <?php endif; ?>
     </section>
 

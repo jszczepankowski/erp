@@ -722,6 +722,38 @@ background-image: none !important;
     width: 100%;
 }
 
+.erp-omd-front-shell-estimate-decision {
+    max-width: 900px;
+}
+
+.erp-omd-front-card-estimate-decision {
+    max-width: 100%;
+}
+
+.erp-omd-front-estimate-decision-form {
+    margin-top: 20px;
+}
+
+.erp-omd-front-estimate-decision-choice {
+    display: grid;
+    gap: 10px;
+}
+
+.erp-omd-front-estimate-decision-choice label {
+    align-items: center;
+    border: 1px solid var(--erp-omd-front-border);
+    border-radius: 12px;
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+}
+
+.erp-omd-front-estimate-decision-form textarea {
+    height: auto;
+    min-height: 120px;
+    resize: vertical;
+}
+
 .erp-omd-front-card,
 .erp-omd-front-panel,
 .erp-omd-front-metric,
