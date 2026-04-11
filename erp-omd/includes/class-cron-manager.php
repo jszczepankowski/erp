@@ -4,12 +4,14 @@ class ERP_OMD_Cron_Manager
 {
     const WEEKLY_BACKUP_HOOK = 'erp_omd_weekly_db_backup';
     const MISSING_HOURS_HOOK = 'erp_omd_daily_missing_hours_notifications';
+    const PROJECT_DEADLINE_HOOK = 'erp_omd_daily_project_deadline_notifications';
 
     public static function register_hooks()
     {
         add_filter('cron_schedules', [__CLASS__, 'register_weekly_schedule']);
         add_action(self::WEEKLY_BACKUP_HOOK, [__CLASS__, 'run_weekly_backup']);
         add_action(self::MISSING_HOURS_HOOK, [__CLASS__, 'run_missing_hours_notifications']);
+        add_action(self::PROJECT_DEADLINE_HOOK, [__CLASS__, 'run_project_deadline_notifications']);
         self::schedule_events();
     }
 
@@ -22,6 +24,7 @@ class ERP_OMD_Cron_Manager
     {
         wp_clear_scheduled_hook(self::WEEKLY_BACKUP_HOOK);
         wp_clear_scheduled_hook(self::MISSING_HOURS_HOOK);
+        wp_clear_scheduled_hook(self::PROJECT_DEADLINE_HOOK);
     }
 
     public static function register_weekly_schedule($schedules)
@@ -45,6 +48,9 @@ class ERP_OMD_Cron_Manager
 
         if (! wp_next_scheduled(self::MISSING_HOURS_HOOK)) {
             wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', self::MISSING_HOURS_HOOK);
+        }
+        if (! wp_next_scheduled(self::PROJECT_DEADLINE_HOOK)) {
+            wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', self::PROJECT_DEADLINE_HOOK);
         }
     }
 
@@ -98,6 +104,76 @@ class ERP_OMD_Cron_Manager
         }
 
         update_option('erp_omd_missing_hours_notification_recipients', $recipient_state);
+    }
+
+    public static function run_project_deadline_notifications()
+    {
+        $projects = (new ERP_OMD_Project_Repository())->all();
+        $employees = (new ERP_OMD_Employee_Repository())->all();
+        $employee_email_by_id = [];
+        foreach ($employees as $employee) {
+            $employee_email_by_id[(int) ($employee['id'] ?? 0)] = sanitize_email((string) ($employee['user_email'] ?? ''));
+        }
+
+        $admin_users = get_users(['role' => 'administrator', 'fields' => ['user_email']]);
+        $admin_emails = [];
+        foreach ($admin_users as $admin_user) {
+            $admin_email = sanitize_email((string) ($admin_user->user_email ?? ''));
+            if (is_email($admin_email)) {
+                $admin_emails[] = $admin_email;
+            }
+        }
+
+        $today = current_time('Y-m-d');
+        $today_dt = DateTimeImmutable::createFromFormat('Y-m-d', $today) ?: new DateTimeImmutable($today);
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+
+        foreach ($projects as $project) {
+            $status = (string) ($project['status'] ?? '');
+            if (in_array($status, ['archiwum'], true)) {
+                continue;
+            }
+            if ((string) ($project['deadline_completed_at'] ?? '') !== '') {
+                continue;
+            }
+
+            $deadline_date = (string) ($project['deadline_date'] ?? '');
+            if ($deadline_date === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $deadline_date) !== 1) {
+                continue;
+            }
+
+            $deadline_dt = DateTimeImmutable::createFromFormat('Y-m-d', $deadline_date) ?: new DateTimeImmutable($deadline_date);
+            $is_overdue = $deadline_dt < $today_dt;
+            $days_to_deadline = (int) $today_dt->diff($deadline_dt)->days;
+            if (! $is_overdue && ! in_array($days_to_deadline, [3, 1], true)) {
+                continue;
+            }
+
+            $project_name = (string) ($project['name'] ?? ('#' . (int) ($project['id'] ?? 0)));
+            $phase_label = $is_overdue
+                ? __('po terminie', 'erp-omd')
+                : sprintf(__('za %d dni', 'erp-omd'), $days_to_deadline);
+            $subject = sprintf(__('[ERP OMD] Deadline projektu: %1$s (%2$s)', 'erp-omd'), $project_name, $phase_label);
+            $body = sprintf(
+                __('Projekt <strong>%1$s</strong> ma deadline <strong>%2$s</strong> (%3$s).', 'erp-omd'),
+                esc_html($project_name),
+                esc_html($deadline_date),
+                esc_html($phase_label)
+            );
+
+            $recipient_emails = $admin_emails;
+            foreach ((array) ($project['manager_ids'] ?? []) as $manager_id) {
+                $email = (string) ($employee_email_by_id[(int) $manager_id] ?? '');
+                if (is_email($email)) {
+                    $recipient_emails[] = $email;
+                }
+            }
+            $recipient_emails = array_values(array_unique(array_filter($recipient_emails, 'is_email')));
+
+            foreach ($recipient_emails as $recipient_email) {
+                wp_mail($recipient_email, $subject, wpautop($body), $headers);
+            }
+        }
     }
 
     private static function notification_settings()

@@ -232,6 +232,9 @@ class ERP_OMD_Project_Repository
                 'status' => $data['status'],
                 'start_date' => $data['start_date'] ?: null,
                 'end_date' => $data['end_date'] ?: null,
+                'deadline_date' => ($data['deadline_date'] ?? '') !== '' ? $data['deadline_date'] : null,
+                'deadline_completed_at' => ($data['deadline_completed_at'] ?? '') !== '' ? $data['deadline_completed_at'] : null,
+                'deadline_completed_by' => ! empty($data['deadline_completed_by']) ? (int) $data['deadline_completed_by'] : null,
                 'operational_close_month' => ($data['operational_close_month'] ?? '') !== '' ? $data['operational_close_month'] : null,
                 'manager_id' => $data['manager_id'] ?: null,
                 'estimate_id' => $data['estimate_id'] ?: null,
@@ -240,7 +243,7 @@ class ERP_OMD_Project_Repository
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s']
+            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%s', '%s']
         );
 
         $project_id = (int) $wpdb->insert_id;
@@ -264,6 +267,9 @@ class ERP_OMD_Project_Repository
                 'status' => $data['status'],
                 'start_date' => $data['start_date'] ?: null,
                 'end_date' => $data['end_date'] ?: null,
+                'deadline_date' => ($data['deadline_date'] ?? '') !== '' ? $data['deadline_date'] : null,
+                'deadline_completed_at' => ($data['deadline_completed_at'] ?? '') !== '' ? $data['deadline_completed_at'] : null,
+                'deadline_completed_by' => ! empty($data['deadline_completed_by']) ? (int) $data['deadline_completed_by'] : null,
                 'operational_close_month' => ($data['operational_close_month'] ?? '') !== '' ? $data['operational_close_month'] : null,
                 'manager_id' => $data['manager_id'] ?: null,
                 'estimate_id' => $data['estimate_id'] ?: null,
@@ -272,7 +278,7 @@ class ERP_OMD_Project_Repository
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => $id],
-            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s'],
+            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%s'],
             ['%d']
         );
 
