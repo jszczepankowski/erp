@@ -351,6 +351,20 @@ class ERP_OMD_Frontend
         return (string) ($employee['status'] ?? '') === 'inactive';
     }
 
+    private function is_front_employee_inactive($user_id)
+    {
+        if ($user_id <= 0) {
+            return false;
+        }
+
+        $employee = $this->employees->find_by_user_id($user_id);
+        if (! $employee) {
+            return false;
+        }
+
+        return (string) ($employee['status'] ?? '') === 'inactive';
+    }
+
     private function is_user_inactive_employee($user_id)
     {
         if ($user_id <= 0) {
