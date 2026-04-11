@@ -1866,7 +1866,7 @@ class ERP_OMD_Admin
         ];
         update_option('erp_omd_estimate_client_link_tokens', $state, false);
 
-        $decision_url = add_query_arg(['token' => rawurlencode($token)], rest_url('erp-omd/v1/estimate-decision'));
+        $decision_url = add_query_arg(['token' => rawurlencode($token)], home_url('/erp-front/estimate-decision/'));
         $subject = sprintf(__('[ERP OMD] Decyzja klienta dla kosztorysu %s', 'erp-omd'), (string) ($estimate['name'] ?? ('#' . $estimate_id)));
         $body = sprintf(
             __('Dzień dobry,<br><br>prosimy o decyzję dla kosztorysu <strong>%1$s</strong>.<br>Link jest ważny 5 dni:<br><a href="%2$s">%2$s</a>', 'erp-omd'),
