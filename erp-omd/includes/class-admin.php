@@ -261,7 +261,7 @@ class ERP_OMD_Admin
             case 'save_estimate_item': $this->handle_estimate_item_save(); break;
             case 'delete_estimate_item': $this->handle_estimate_item_delete(); break;
             case 'accept_estimate': $this->handle_estimate_accept(); break;
-            case 'send_estimate_client_link': $this->handle_send_estimate_client_link(); break;
+            case 'send_estimate_client_link': $this->handle_send_estimate_client_decision_link(); break;
             case 'export_estimate': $this->handle_estimate_export(); break;
             case 'export_report': $this->handle_report_export(); break;
             case 'export_adjustments_audit':
@@ -1837,6 +1837,50 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-estimates', 'success', __('Kosztorys został zaakceptowany i powiązany z projektem.', 'erp-omd'), ['id' => $estimate_id]);
     }
 
+    private function handle_send_estimate_client_decision_link()
+    {
+        check_admin_referer('erp_omd_send_estimate_client_link');
+        $this->require_capability('erp_omd_manage_projects');
+        $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+        $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
+        if (! $estimate) {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie znaleziono kosztorysu do wysyłki.', 'erp-omd'));
+        }
+        if ((string) ($estimate['status'] ?? '') !== 'do_akceptacji') {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', __('Link można wysłać tylko dla kosztorysu o statusie do_akceptacji.', 'erp-omd'), ['id' => $estimate_id]);
+        }
+
+        $client = $this->clients->find((int) ($estimate['client_id'] ?? 0));
+        $client_email = sanitize_email((string) ($client['email'] ?? ''));
+        if (! is_email($client_email)) {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', __('Klient nie ma poprawnego adresu e-mail.', 'erp-omd'), ['id' => $estimate_id]);
+        }
+
+        $token = wp_generate_password(48, false, false);
+        $state = $this->estimate_client_link_state();
+        $state[$estimate_id] = [
+            'token' => $token,
+            'expires_at' => time() + (5 * DAY_IN_SECONDS),
+            'created_at' => current_time('mysql'),
+            'created_by' => (int) get_current_user_id(),
+        ];
+        update_option('erp_omd_estimate_client_link_tokens', $state, false);
+
+        $decision_url = add_query_arg(['token' => rawurlencode($token)], home_url('/erp-front/estimate-decision/'));
+        $subject = sprintf(__('[ERP OMD] Decyzja klienta dla kosztorysu %s', 'erp-omd'), (string) ($estimate['name'] ?? ('#' . $estimate_id)));
+        $body = sprintf(
+            __('Dzień dobry,<br><br>prosimy o decyzję dla kosztorysu <strong>%1$s</strong>.<br>Link jest ważny 5 dni:<br><a href="%2$s">%2$s</a>', 'erp-omd'),
+            esc_html((string) ($estimate['name'] ?? ('#' . $estimate_id))),
+            esc_url($decision_url)
+        );
+        $sent = wp_mail($client_email, $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);
+        if (! $sent) {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie udało się wysłać e-maila do klienta.', 'erp-omd'), ['id' => $estimate_id]);
+        }
+
+        $this->redirect_with_notice('erp-omd-estimates', 'success', __('Link akceptacji/odrzucenia został wysłany do klienta.', 'erp-omd'), ['id' => $estimate_id]);
+    }
+
     private function handle_send_estimate_client_link()
     {
         check_admin_referer('erp_omd_send_estimate_client_link');
@@ -3138,6 +3182,46 @@ class ERP_OMD_Admin
         }
     }
 
+    private function resolve_project_deadline_status(array $project)
+    {
+        $deadline_date = (string) ($project['deadline_date'] ?? '');
+        if ($deadline_date === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $deadline_date) !== 1) {
+            return 'ok';
+        }
+
+        if ((string) ($project['deadline_completed_at'] ?? '') !== '') {
+            return 'ok';
+        }
+
+        $today = current_time('Y-m-d');
+        if ($deadline_date < $today) {
+            return 'po_terminie';
+        }
+
+        $today_dt = DateTimeImmutable::createFromFormat('Y-m-d', $today) ?: new DateTimeImmutable($today);
+        $deadline_dt = DateTimeImmutable::createFromFormat('Y-m-d', $deadline_date) ?: new DateTimeImmutable($deadline_date);
+        $days_to_deadline = (int) $today_dt->diff($deadline_dt)->days;
+
+        if ($days_to_deadline <= 3) {
+            return 'ryzyko';
+        }
+
+        return 'ok';
+    }
+
+    private function project_deadline_status_label($status)
+    {
+        switch ((string) $status) {
+            case 'po_terminie':
+                return __('Po terminie', 'erp-omd');
+            case 'ryzyko':
+                return __('Ryzyko', 'erp-omd');
+            case 'ok':
+            default:
+                return __('OK', 'erp-omd');
+        }
+    }
+
     private function status_badge_class($status, $type = 'default')
     {
         switch ($type) {
@@ -3229,6 +3313,24 @@ class ERP_OMD_Admin
             'subject' => __('Przypomnienie o raporcie godzin pracy', 'erp-omd'),
             'body' => __('Cześć {login},<br><br>ostatni raport godzin wysłałeś: <strong>{last_reported_date}</strong>.<br>Prosimy o uzupełnienie brakujących godzin.', 'erp-omd'),
         ];
+    }
+
+    private function estimate_client_link_state()
+    {
+        $state = (array) get_option('erp_omd_estimate_client_link_tokens', []);
+        if ($state === []) {
+            return [];
+        }
+
+        $now = time();
+        foreach ($state as $estimate_id => $token_row) {
+            $expires_at = (int) ($token_row['expires_at'] ?? 0);
+            if ($expires_at > 0 && $expires_at < $now) {
+                unset($state[$estimate_id]);
+            }
+        }
+
+        return $state;
     }
 
     private function estimate_client_link_state()
