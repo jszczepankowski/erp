@@ -71,6 +71,25 @@
                             </p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-deadline-date"><?php esc_html_e('Deadline projektu', 'erp-omd'); ?></label>
+                            <input id="project-deadline-date" type="date" name="deadline_date" value="<?php echo esc_attr($project['deadline_date'] ?? ''); ?>" />
+                            <p class="description"><?php esc_html_e('Deadline jest monitorowany alertami: 3 dni przed, 1 dzień przed oraz po terminie.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="project-deadline-completed"><?php esc_html_e('Realizacja deadline', 'erp-omd'); ?></label>
+                            <label style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                                <input id="project-deadline-completed" type="checkbox" name="deadline_mark_completed" value="1" <?php disabled(! empty($project['deadline_completed_at'])); ?> />
+                                <span><?php esc_html_e('Oznacz deadline jako zrealizowany', 'erp-omd'); ?></span>
+                            </label>
+                            <p class="description">
+                                <?php if (! empty($project['deadline_completed_at'])) : ?>
+                                    <?php echo esc_html(sprintf(__('Deadline oznaczono jako zrealizowany: %s', 'erp-omd'), (string) $project['deadline_completed_at'])); ?>
+                                <?php else : ?>
+                                    <?php esc_html_e('Po oznaczeniu realizacji status deadline wraca do OK.', 'erp-omd'); ?>
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="project-manager"><?php esc_html_e('Główny manager projektu', 'erp-omd'); ?></label>
                             <select id="project-manager" name="manager_id">
                                 <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
@@ -148,6 +167,8 @@
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Abonament', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project['retainer_monthly_fee'] ?? 0), 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Start', 'erp-omd'); ?></strong><span><?php echo esc_html($project['start_date'] ?? '—'); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koniec', 'erp-omd'); ?></strong><span><?php echo esc_html($project['end_date'] ?? '—'); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Deadline', 'erp-omd'); ?></strong><span><?php echo esc_html($project['deadline_date'] ?? '—'); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Status deadline', 'erp-omd'); ?></strong><span><?php echo esc_html($project['deadline_status_label'] ?? __('OK', 'erp-omd')); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Próg marży', 'erp-omd'); ?></strong><span><?php echo esc_html(($project['alert_margin_threshold'] ?? '') !== '' && $project['alert_margin_threshold'] !== null ? number_format_i18n((float) $project['alert_margin_threshold'], 2) . '%' : '—'); ?></span></div>
                                 </div>
                             </div>
@@ -575,10 +596,10 @@
             <div class="tablenav top"><div class="alignleft actions"><select name="bulk_action"><option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option><option value="activate"><?php esc_html_e('Aktywuj', 'erp-omd'); ?></option><option value="deactivate"><?php esc_html_e('Przenieś do archiwum', 'erp-omd'); ?></option><option value="duplicate"><?php esc_html_e('Duplikuj', 'erp-omd'); ?></option><option value="set_status_do_rozpoczecia"><?php esc_html_e('Status: Do rozpoczęcia', 'erp-omd'); ?></option><option value="set_status_w_realizacji"><?php esc_html_e('Status: W realizacji', 'erp-omd'); ?></option><option value="set_status_w_akceptacji"><?php esc_html_e('Status: W akceptacji', 'erp-omd'); ?></option><option value="set_status_do_faktury"><?php esc_html_e('Status: Do faktury', 'erp-omd'); ?></option><option value="set_status_zakonczony"><?php esc_html_e('Status: Zakończony', 'erp-omd'); ?></option><option value="set_status_archiwum"><?php esc_html_e('Status: Archiwum', 'erp-omd'); ?></option></select><button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button></div></div>
         </form>
         <table class="widefat striped">
-            <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-project-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Typ', 'erp-omd'); ?></th><th><?php esc_html_e('Managerowie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-project-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Typ', 'erp-omd'); ?></th><th><?php esc_html_e('Managerowie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Deadline', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
             <tbody>
                 <?php if (empty($projects)) : ?>
-                    <tr><td colspan="12"><?php echo esc_html($projects_is_archive_view ? __('Brak projektów w archiwum dla wybranych filtrów.', 'erp-omd') : __('Brak projektów dla wybranych filtrów. Zmień kryteria albo dodaj nowy projekt.', 'erp-omd')); ?></td></tr>
+                    <tr><td colspan="13"><?php echo esc_html($projects_is_archive_view ? __('Brak projektów w archiwum dla wybranych filtrów.', 'erp-omd') : __('Brak projektów dla wybranych filtrów. Zmień kryteria albo dodaj nowy projekt.', 'erp-omd')); ?></td></tr>
                 <?php else : ?>
                     <?php foreach ($projects as $project_row) : ?>
                         <?php $list_financial = $project_financials_by_project[(int) $project_row['id']] ?? []; ?>
@@ -597,6 +618,7 @@
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['revenue'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['profit'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['margin'] ?? 0), 2)); ?></td>
+                            <td><?php echo esc_html((string) ($project_row['deadline_date'] ?? '') !== '' ? (string) $project_row['deadline_date'] : '—'); ?></td>
                             <td>
                                 <select name="status" form="<?php echo esc_attr($inline_project_form_id); ?>">
                                     <?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'] as $project_status_option) : ?>
