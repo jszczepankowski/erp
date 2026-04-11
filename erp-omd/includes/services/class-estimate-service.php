@@ -40,7 +40,7 @@ class ERP_OMD_Estimate_Service
             $errors[] = __('Kosztorys musi być przypisany do istniejącego klienta.', 'erp-omd');
         }
 
-        if (! in_array($data['status'], ['wstepny', 'do_akceptacji', 'zaakceptowany'], true)) {
+        if (! in_array($data['status'], ['wstepny', 'do_akceptacji', 'zaakceptowany', 'odrzucony'], true)) {
             $errors[] = __('Status kosztorysu jest niepoprawny.', 'erp-omd');
         }
 

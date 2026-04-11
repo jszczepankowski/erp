@@ -299,7 +299,7 @@ class ERP_OMD_Frontend
                     }
                 } else {
                     $estimate = (array) $state['estimate'];
-                    $estimate['status'] = 'wstepny';
+                    $estimate['status'] = 'odrzucony';
                     $estimate['accepted_by_user_id'] = 0;
                     $estimate['accepted_at'] = null;
                     $this->estimates->update($estimate_id, $estimate);
@@ -1235,7 +1235,7 @@ class ERP_OMD_Frontend
         $linked_estimates = $this->load_estimates_for_projects($managed_projects);
         $manager_estimates = $this->load_visible_manager_estimates((int) $employee['id'], $managed_projects, user_can($user, 'administrator'));
         $estimate_status_filter = sanitize_text_field(wp_unslash($_GET['estimate_status'] ?? ''));
-        if (! in_array($estimate_status_filter, ['', 'wstepny', 'do_akceptacji', 'zaakceptowany'], true)) {
+        if (! in_array($estimate_status_filter, ['', 'wstepny', 'do_akceptacji', 'zaakceptowany', 'odrzucony'], true)) {
             $estimate_status_filter = '';
         }
         $filtered_estimates = $manager_estimates;
@@ -1247,7 +1247,7 @@ class ERP_OMD_Frontend
         usort(
             $filtered_estimates,
             static function ($left, $right) {
-                $order = ['wstepny' => 0, 'do_akceptacji' => 1, 'zaakceptowany' => 2];
+                $order = ['wstepny' => 0, 'do_akceptacji' => 1, 'odrzucony' => 2, 'zaakceptowany' => 3];
                 $left_status_weight = $order[(string) ($left['status'] ?? '')] ?? 99;
                 $right_status_weight = $order[(string) ($right['status'] ?? '')] ?? 99;
                 if ($left_status_weight !== $right_status_weight) {

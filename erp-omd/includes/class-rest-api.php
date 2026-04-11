@@ -986,14 +986,14 @@ class ERP_OMD_REST_API
         }
 
         $estimate = $state['estimate'];
-        $estimate['status'] = 'wstepny';
+        $estimate['status'] = 'odrzucony';
         $estimate['accepted_by_user_id'] = 0;
         $estimate['accepted_at'] = null;
         $this->estimates->update($estimate_id, $estimate);
         update_option('erp_omd_estimate_client_rejection_comment_' . $estimate_id, $comment, false);
         $this->invalidate_estimate_token($estimate_id);
 
-        return rest_ensure_response(['decision' => 'reject', 'status' => 'wstepny']);
+        return rest_ensure_response(['decision' => 'reject', 'status' => 'odrzucony']);
     }
 
     public function list_projects(WP_REST_Request $request)
@@ -1291,7 +1291,7 @@ class ERP_OMD_REST_API
                 ['value' => 'retainer', 'label' => __('Abonament', 'erp-omd')],
             ],
             'project_statuses' => ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'],
-            'estimate_statuses' => ['wstepny', 'do_akceptacji', 'zaakceptowany'],
+            'estimate_statuses' => ['wstepny', 'do_akceptacji', 'odrzucony', 'zaakceptowany'],
             'time_statuses' => ['submitted', 'approved', 'rejected'],
             'report_types' => ['projects', 'clients', 'invoice', 'monthly'],
             'attachment_entity_types' => ['project', 'estimate'],
