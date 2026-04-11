@@ -608,7 +608,7 @@
 
                         <label for="erp-omd-front-estimate-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
                         <select id="erp-omd-front-estimate-status" name="status">
-                            <?php foreach (['wstepny' => __('Wstępny', 'erp-omd'), 'do_akceptacji' => __('Do akceptacji', 'erp-omd')] as $estimate_status => $estimate_status_label) : ?>
+                            <?php foreach (['wstepny' => __('Wstępny', 'erp-omd'), 'do_akceptacji' => __('Do akceptacji', 'erp-omd'), 'odrzucony' => __('Odrzucony', 'erp-omd')] as $estimate_status => $estimate_status_label) : ?>
                                 <option value="<?php echo esc_attr($estimate_status); ?>"><?php echo esc_html($estimate_status_label); ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -677,7 +677,7 @@
                         <label for="erp-omd-front-estimate-status-filter"><?php esc_html_e('Filtr statusu', 'erp-omd'); ?></label>
                         <select id="erp-omd-front-estimate-status-filter" name="estimate_status">
                             <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
-                            <?php foreach (['wstepny', 'do_akceptacji', 'zaakceptowany'] as $status_option) : ?>
+                            <?php foreach (['wstepny', 'do_akceptacji', 'odrzucony', 'zaakceptowany'] as $status_option) : ?>
                                 <option value="<?php echo esc_attr($status_option); ?>" <?php selected((string) ($estimate_status_filter ?? ''), $status_option); ?>><?php echo esc_html($status_option); ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -789,7 +789,7 @@
                                             <div class="erp-omd-front-detail-item">
                                                 <strong><?php esc_html_e('Status kosztorysu', 'erp-omd'); ?></strong>
                                                 <select id="erp-omd-front-edit-estimate-status" name="status">
-                                                    <?php foreach (['wstepny' => __('Wstępny', 'erp-omd'), 'do_akceptacji' => __('Do akceptacji', 'erp-omd'), 'zaakceptowany' => __('Zaakceptowany', 'erp-omd')] as $estimate_status => $estimate_status_label) : ?>
+                                                    <?php foreach (['wstepny' => __('Wstępny', 'erp-omd'), 'do_akceptacji' => __('Do akceptacji', 'erp-omd'), 'odrzucony' => __('Odrzucony', 'erp-omd'), 'zaakceptowany' => __('Zaakceptowany', 'erp-omd')] as $estimate_status => $estimate_status_label) : ?>
                                                         <option value="<?php echo esc_attr($estimate_status); ?>" <?php selected((string) ($selected_estimate['status'] ?? ''), $estimate_status); ?>>
                                                             <?php echo esc_html($estimate_status_label); ?>
                                                         </option>

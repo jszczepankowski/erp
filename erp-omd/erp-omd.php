@@ -61,6 +61,7 @@ function erp_omd_invalidate_plugin_opcache()
         ERP_OMD_PATH . 'includes/class-plugin.php',
         ERP_OMD_PATH . 'includes/class-admin.php',
         ERP_OMD_PATH . 'includes/class-frontend.php',
+        ERP_OMD_PATH . 'includes/class-frontend-runtime.php',
         ERP_OMD_PATH . 'includes/class-rest-api.php',
         ERP_OMD_PATH . 'includes/services/class-reporting-service.php',
         ERP_OMD_PATH . 'includes/services/class-reporting-service-v2.php',

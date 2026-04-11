@@ -86,6 +86,34 @@ class ERP_OMD_Alert_Service
             if (empty($project_rates) && empty($client_rates)) {
                 $alerts[] = $this->make_alert('warning', 'project_missing_rates', 'project', $project_id, sprintf(__('Projekt %s nie ma skonfigurowanych stawek projektowych ani stawek klienta.', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id)));
             }
+
+            $deadline_date = (string) ($project['deadline_date'] ?? '');
+            $deadline_completed_at = (string) ($project['deadline_completed_at'] ?? '');
+            if ($deadline_date !== '' && $deadline_completed_at === '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $deadline_date) === 1) {
+                $today = current_time('Y-m-d');
+                if ($deadline_date < $today) {
+                    $alerts[] = $this->make_alert(
+                        'warning',
+                        'project_deadline_overdue',
+                        'project',
+                        $project_id,
+                        sprintf(__('Projekt %1$s przekroczył deadline (%2$s).', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id), $deadline_date)
+                    );
+                } else {
+                    $today_dt = DateTimeImmutable::createFromFormat('Y-m-d', $today) ?: new DateTimeImmutable($today);
+                    $deadline_dt = DateTimeImmutable::createFromFormat('Y-m-d', $deadline_date) ?: new DateTimeImmutable($deadline_date);
+                    $days_to_deadline = (int) $today_dt->diff($deadline_dt)->days;
+                    if ($days_to_deadline <= 3) {
+                        $alerts[] = $this->make_alert(
+                            'info',
+                            'project_deadline_risk',
+                            'project',
+                            $project_id,
+                            sprintf(__('Projekt %1$s ma deadline za %2$d dni (%3$s).', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id), $days_to_deadline, $deadline_date)
+                        );
+                    }
+                }
+            }
         }
 
         return $alerts;

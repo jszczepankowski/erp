@@ -166,6 +166,15 @@ class ERP_OMD_Client_Project_Service
         if ($data['start_date'] !== '' && $data['end_date'] !== '' && $data['end_date'] < $data['start_date']) {
             $errors[] = __('Data end_date nie może być wcześniejsza niż start_date.', 'erp-omd');
         }
+        if (($data['deadline_date'] ?? '') !== '' && ! $this->valid_date((string) $data['deadline_date'])) {
+            $errors[] = __('Data deadline jest niepoprawna.', 'erp-omd');
+        }
+        if (($data['deadline_date'] ?? '') !== '' && $data['start_date'] !== '' && (string) $data['deadline_date'] < $data['start_date']) {
+            $errors[] = __('Data deadline nie może być wcześniejsza niż start_date.', 'erp-omd');
+        }
+        if (($data['deadline_date'] ?? '') !== '' && $data['end_date'] !== '' && (string) $data['deadline_date'] > $data['end_date']) {
+            $errors[] = __('Data deadline nie może być późniejsza niż end_date.', 'erp-omd');
+        }
 
         if (($data['operational_close_month'] ?? '') !== '' && preg_match('/^\d{4}-\d{2}$/', (string) $data['operational_close_month']) !== 1) {
             $errors[] = __('Pole operational_close_month musi mieć format YYYY-MM.', 'erp-omd');
@@ -205,6 +214,9 @@ class ERP_OMD_Client_Project_Service
             'status' => trim((string) ($data['status'] ?? ($existing_project['status'] ?? 'do_rozpoczecia'))) ?: 'do_rozpoczecia',
             'start_date' => trim((string) ($data['start_date'] ?? ($existing_project['start_date'] ?? ''))),
             'end_date' => trim((string) ($data['end_date'] ?? ($existing_project['end_date'] ?? ''))),
+            'deadline_date' => trim((string) ($data['deadline_date'] ?? ($existing_project['deadline_date'] ?? ''))),
+            'deadline_completed_at' => trim((string) ($data['deadline_completed_at'] ?? ($existing_project['deadline_completed_at'] ?? ''))),
+            'deadline_completed_by' => (int) ($data['deadline_completed_by'] ?? ($existing_project['deadline_completed_by'] ?? 0)),
             'operational_close_month' => trim((string) ($data['operational_close_month'] ?? ($existing_project['operational_close_month'] ?? ''))),
             'manager_id' => $manager_id,
             'manager_ids' => $manager_ids,

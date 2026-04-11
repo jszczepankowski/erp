@@ -10,7 +10,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Installer' => 'includes/class-installer.php',
         'ERP_OMD_Capabilities' => 'includes/class-capabilities.php',
         'ERP_OMD_Admin' => 'includes/class-admin.php',
-        'ERP_OMD_Frontend' => 'includes/class-frontend.php',
+        'ERP_OMD_Frontend' => 'includes/class-frontend-runtime.php',
         'ERP_OMD_REST_API' => 'includes/class-rest-api.php',
         'ERP_OMD_Backup_Manager' => 'includes/class-backup-manager.php',
         'ERP_OMD_Cron_Manager' => 'includes/class-cron-manager.php',
