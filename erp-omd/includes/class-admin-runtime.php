@@ -2580,6 +2580,15 @@ class ERP_OMD_Admin
             } elseif ($bulk_action === 'duplicate') {
                 $this->duplicate_project_and_rebuild($project_id);
             } elseif ($target_status !== '') {
+                $project = $this->projects->find($project_id);
+                if (! $project) {
+                    continue;
+                }
+                $validation_payload = $this->client_project_service->prepare_project(['status' => $target_status], $project);
+                $errors = $this->client_project_service->validate_project($validation_payload, $project);
+                if ($errors) {
+                    $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', array_unique($errors)), ['id' => $project_id]);
+                }
                 $this->projects->set_status($project_id, $target_status);
             }
         }
@@ -2787,6 +2796,17 @@ class ERP_OMD_Admin
             : $this->estimates->find($entity_id);
         if (! $entity || ! wp_attachment_is_image($attachment_id) && ! get_post($attachment_id)) {
             $this->redirect_with_notice($entity_type === 'project' ? 'erp-omd-projects' : 'erp-omd-estimates', 'error', __('Nie udało się dodać załącznika.', 'erp-omd'), ['id' => $entity_id]);
+        }
+        if ($entity_type === 'project') {
+            $attachment_path = function_exists('get_attached_file') ? (string) get_attached_file($attachment_id) : '';
+            $file_info = function_exists('wp_check_filetype_and_ext') ? (array) wp_check_filetype_and_ext($attachment_path, basename((string) $attachment_path)) : [];
+            $is_pdf_candidate = (string) ($file_info['ext'] ?? '') === 'pdf' || (string) ($file_info['type'] ?? '') === 'application/pdf';
+            if ($is_pdf_candidate) {
+                $pdf_errors = (new ERP_OMD_Project_Attachment_Service($this->attachments))->validate_pdf_attachment($attachment_id);
+                if ($pdf_errors) {
+                    $this->redirect_with_notice($entity_type === 'project' ? 'erp-omd-projects' : 'erp-omd-estimates', 'error', implode(' ', $pdf_errors), ['id' => $entity_id]);
+                }
+            }
         }
 
         $this->attachments->create([

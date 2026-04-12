@@ -28,6 +28,7 @@ class ERP_OMD_Plugin
     private $project_financial_service;
     private $reporting_service;
     private $alert_service;
+    private $project_attachment_service;
     private $admin;
     private $frontend;
     private $rest_api;
@@ -51,6 +52,7 @@ class ERP_OMD_Plugin
         $this->project_financial_repository = new ERP_OMD_Project_Financial_Repository();
         $this->time_entry_repository = new ERP_OMD_Time_Entry_Repository();
         $this->attachment_repository = new ERP_OMD_Attachment_Repository();
+        $this->project_attachment_service = new ERP_OMD_Project_Attachment_Service($this->attachment_repository);
         $this->monthly_hours_service = new ERP_OMD_Monthly_Hours_Service();
         $this->employee_service = new ERP_OMD_Employee_Service(
             $this->employee_repository,
@@ -107,7 +109,8 @@ class ERP_OMD_Plugin
             $this->role_repository,
             $this->project_repository,
             $this->time_entry_repository,
-            $this->alert_service
+            $this->alert_service,
+            $this->project_attachment_service
         );
         $this->project_request_service = new ERP_OMD_Project_Request_Service(
             $this->client_repository,
