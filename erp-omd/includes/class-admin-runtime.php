@@ -947,6 +947,9 @@ class ERP_OMD_Admin
         if (! $can_select_any_employee && $current_employee) {
             $filters['employee_id'] = (string) $current_employee['id'];
         }
+        $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
+        include ERP_OMD_PATH . 'templates/admin/time-entries.php';
+    }
 
         $entry = ! empty($_GET['id']) ? $this->time_entries->find((int) $_GET['id']) : null;
         $can_edit_selected_entry = $entry ? $this->time_entry_service->can_edit_entry($entry, $current_user) : true;
