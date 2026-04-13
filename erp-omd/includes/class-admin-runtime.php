@@ -925,6 +925,32 @@ class ERP_OMD_Admin
             $month_start_ts = strtotime(current_time('Y-m') . '-01 00:00:00');
             $projects_calendar_month = date('Y-m', (int) $month_start_ts);
         }
+        $projects = array_values(array_filter($projects, function ($project_row) use ($project_filters) {
+            if ($project_filters['search'] !== '') {
+                $haystack = strtolower(implode(' ', [
+                    (string) ($project_row['name'] ?? ''),
+                    (string) ($project_row['client_name'] ?? ''),
+                    (string) ($project_row['manager_logins_display'] ?? ($project_row['manager_login'] ?? '')),
+                ]));
+                if (strpos($haystack, strtolower($project_filters['search'])) === false) {
+                    return false;
+                }
+            }
+            if ($project_filters['client_id'] > 0 && (int) ($project_row['client_id'] ?? 0) !== $project_filters['client_id']) {
+                return false;
+            }
+            if ($project_filters['manager_id'] > 0 && ! in_array($project_filters['manager_id'], array_map('intval', (array) ($project_row['manager_ids'] ?? [])), true)) {
+                return false;
+            }
+            if ($project_filters['status'] !== '' && (string) ($project_row['status'] ?? '') !== $project_filters['status']) {
+                return false;
+            }
+            if ($project_filters['month'] !== '') {
+                $project_month_source = (string) (($project_row['start_date'] ?? '') !== '' ? ($project_row['start_date'] ?? '') : ($project_row['created_at'] ?? ''));
+                if (substr($project_month_source, 0, 7) !== $project_filters['month']) {
+                    return false;
+                }
+            }
 
         $month_end_ts = strtotime(date('Y-m-t 00:00:00', (int) $month_start_ts));
         $month_start_weekday = (int) date('N', (int) $month_start_ts);
@@ -957,6 +983,9 @@ class ERP_OMD_Admin
                 $totals['projects_count']++;
             }
         }
+        $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
+        include ERP_OMD_PATH . 'templates/admin/time-entries.php';
+    }
 
         $weeks = [];
         $week = [];
