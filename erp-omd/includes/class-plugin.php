@@ -29,6 +29,7 @@ class ERP_OMD_Plugin
     private $reporting_service;
     private $alert_service;
     private $project_attachment_service;
+    private $google_calendar_sync_service;
     private $admin;
     private $frontend;
     private $rest_api;
@@ -53,6 +54,10 @@ class ERP_OMD_Plugin
         $this->time_entry_repository = new ERP_OMD_Time_Entry_Repository();
         $this->attachment_repository = new ERP_OMD_Attachment_Repository();
         $this->project_attachment_service = new ERP_OMD_Project_Attachment_Service($this->attachment_repository);
+        $this->google_calendar_sync_service = new ERP_OMD_Google_Calendar_Sync_Service(
+            $this->project_repository,
+            new ERP_OMD_Project_Calendar_Sync_Repository()
+        );
         $this->monthly_hours_service = new ERP_OMD_Monthly_Hours_Service();
         $this->employee_service = new ERP_OMD_Employee_Service(
             $this->employee_repository,
@@ -199,8 +204,33 @@ class ERP_OMD_Plugin
         $this->frontend->register_hooks();
         $this->rest_api->register_hooks();
         ERP_OMD_Cron_Manager::register_hooks();
+        add_action('erp_omd_project_saved', [$this, 'sync_project_calendar_after_save'], 10, 2);
+        add_action('erp_omd_project_deleted', [$this, 'sync_project_calendar_after_delete']);
         add_action('wp_login', [$this, 'track_user_login'], 10, 2);
         add_filter('wp_mail_from', [$this, 'filter_wp_mail_from']);
+    }
+
+    public function sync_project_calendar_after_save($project, $operation = 'update')
+    {
+        if (! is_array($project) || (int) ($project['id'] ?? 0) <= 0) {
+            return;
+        }
+
+        if ((string) ($project['status'] ?? '') === 'archiwum') {
+            $this->google_calendar_sync_service->delete_project_events((int) $project['id']);
+            return;
+        }
+
+        $this->google_calendar_sync_service->sync_project_events($project);
+    }
+
+    public function sync_project_calendar_after_delete($project)
+    {
+        if (! is_array($project)) {
+            return;
+        }
+
+        $this->google_calendar_sync_service->delete_project_events((int) ($project['id'] ?? 0));
     }
 
     public function track_user_login($user_login, $user)
