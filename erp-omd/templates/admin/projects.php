@@ -570,7 +570,16 @@
         ?>
 
         <div class="erp-omd-section-header">
-            <h2><?php echo esc_html(sprintf(__('Kalendarz miesiąca %s', 'erp-omd'), $projects_calendar_month)); ?></h2>
+            <h2><?php echo esc_html(sprintf(__('Kalendarz projektów %s', 'erp-omd'), $projects_calendar_month)); ?></h2>
+            <p class="description">
+                <?php
+                echo esc_html(sprintf(
+                    __('Terminy: %1$s | Projekty: %2$s', 'erp-omd'),
+                    (int) ($projects_calendar_data['totals']['deadlines_count'] ?? 0),
+                    (int) ($projects_calendar_data['totals']['projects_count'] ?? 0)
+                ));
+                ?>
+            </p>
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-projects" />
                 <input type="hidden" name="list_view" value="<?php echo esc_attr($projects_list_view); ?>" />
@@ -591,13 +600,29 @@
                 <tr>
                     <?php foreach ((array) $week as $day) : ?>
                         <td class="erp-omd-calendar-cell">
-                            <?php if ($day) : ?>
-                                <div class="erp-omd-calendar-day"><?php echo esc_html($day['day']); ?></div>
-                                <div><strong><?php esc_html_e('Godziny:', 'erp-omd'); ?></strong> <?php echo esc_html(number_format_i18n((float) $day['hours'], 2)); ?></div>
-                                <div><strong><?php esc_html_e('Wpisy:', 'erp-omd'); ?></strong> <?php echo esc_html((string) $day['entries_count']); ?></div>
-                                <div class="description"><?php echo esc_html(sprintf(__('A: %1$s | Z: %2$s | O: %3$s', 'erp-omd'), number_format_i18n((float) $day['approved_hours'], 2), number_format_i18n((float) $day['submitted_hours'], 2), number_format_i18n((float) $day['rejected_hours'], 2))); ?></div>
+                            <?php $is_current_month_day = (bool) ($day['is_current_month'] ?? false); ?>
+                            <div class="erp-omd-calendar-day" style="<?php echo $is_current_month_day ? '' : 'opacity:.45;'; ?>"><?php echo esc_html((string) ($day['day'] ?? '')); ?></div>
+                            <?php if (! empty($day['events'])) : ?>
+                                <ul style="margin:6px 0 0 18px;">
+                                    <?php foreach ((array) $day['events'] as $event) : ?>
+                                        <li style="margin-bottom:4px;">
+                                            <a href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-projects&id=' . (int) ($event['project_id'] ?? 0))); ?>">
+                                                <?php echo esc_html((string) ($event['project_name'] ?? '')); ?>
+                                            </a>
+                                            <div class="description">
+                                                <?php
+                                                echo esc_html(sprintf(
+                                                    __('Status: %1$s | Sync: %2$s', 'erp-omd'),
+                                                    $this->project_status_label((string) ($event['project_status'] ?? '')),
+                                                    (string) ($event['sync_status'] ?? 'pending')
+                                                ));
+                                                ?>
+                                            </div>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
                             <?php else : ?>
-                                &nbsp;
+                                <div class="description">—</div>
                             <?php endif; ?>
                         </td>
                     <?php endforeach; ?>
