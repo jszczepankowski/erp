@@ -1256,6 +1256,17 @@ class ERP_OMD_REST_API
         if (! wp_attachment_is_image($attachment_id) && ! get_post($attachment_id)) {
             return new WP_Error('erp_omd_attachment_media_not_found', __('WordPress media attachment not found.', 'erp-omd'), ['status' => 404]);
         }
+        if ($entity_type === 'project') {
+            $attachment_path = function_exists('get_attached_file') ? (string) get_attached_file($attachment_id) : '';
+            $file_info = function_exists('wp_check_filetype_and_ext') ? (array) wp_check_filetype_and_ext($attachment_path, basename((string) $attachment_path)) : [];
+            $is_pdf_candidate = (string) ($file_info['ext'] ?? '') === 'pdf' || (string) ($file_info['type'] ?? '') === 'application/pdf';
+            if ($is_pdf_candidate) {
+                $pdf_errors = (new ERP_OMD_Project_Attachment_Service($this->attachments))->validate_pdf_attachment($attachment_id);
+                if ($pdf_errors) {
+                    return new WP_Error('erp_omd_attachment_invalid_pdf', implode(' ', $pdf_errors), ['status' => 422]);
+                }
+            }
+        }
 
         $id = $this->attachments->create([
             'entity_type' => $entity_type,

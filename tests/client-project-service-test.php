@@ -16,6 +16,46 @@ if (! function_exists('is_email')) {
     }
 }
 
+if (! function_exists('get_attached_file')) {
+    function get_attached_file($attachment_id)
+    {
+        return $GLOBALS['erp_omd_attachment_file_map'][(int) $attachment_id] ?? '';
+    }
+}
+
+if (! function_exists('get_post_mime_type')) {
+    function get_post_mime_type($attachment_id)
+    {
+        return $GLOBALS['erp_omd_attachment_mime_map'][(int) $attachment_id] ?? '';
+    }
+}
+
+if (! function_exists('wp_check_filetype_and_ext')) {
+    function wp_check_filetype_and_ext($path, $filename)
+    {
+        $extension = strtolower(pathinfo((string) $filename, PATHINFO_EXTENSION));
+        $mime = $extension === 'pdf' ? 'application/pdf' : 'text/plain';
+
+        foreach ((array) ($GLOBALS['erp_omd_attachment_file_map'] ?? []) as $attachment_id => $mapped_path) {
+            if ((string) $mapped_path === (string) $path) {
+                $mime = (string) ($GLOBALS['erp_omd_attachment_mime_map'][(int) $attachment_id] ?? $mime);
+                if ($mime === 'application/pdf') {
+                    $extension = 'pdf';
+                } elseif ($extension === '') {
+                    $extension = 'txt';
+                }
+                break;
+            }
+        }
+
+        return [
+            'ext' => $extension,
+            'type' => $mime,
+            'proper_filename' => $filename,
+        ];
+    }
+}
+
 if (! class_exists('ERP_OMD_Client_Repository')) {
     class ERP_OMD_Client_Repository
     {
@@ -84,6 +124,23 @@ if (! class_exists('ERP_OMD_Project_Repository')) {
     }
 }
 
+if (! class_exists('ERP_OMD_Attachment_Repository')) {
+    class ERP_OMD_Attachment_Repository
+    {
+        private $attachments_by_entity;
+
+        public function __construct(array $attachments_by_entity = [])
+        {
+            $this->attachments_by_entity = $attachments_by_entity;
+        }
+
+        public function for_entity($entity_type, $entity_id)
+        {
+            return $this->attachments_by_entity[$entity_type . ':' . (int) $entity_id] ?? [];
+        }
+    }
+}
+
 if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
     class ERP_OMD_Time_Entry_Repository
     {
@@ -119,6 +176,7 @@ if (! class_exists('ERP_OMD_Alert_Service')) {
 }
 
 require_once __DIR__ . '/../erp-omd/includes/services/class-client-project-service.php';
+require_once __DIR__ . '/../erp-omd/includes/services/class-project-attachment-service.php';
 
 final class ClientProjectServiceTestRunner
 {
@@ -126,6 +184,40 @@ final class ClientProjectServiceTestRunner
 
     public function run(): void
     {
+        $valid_pdf_path = tempnam(sys_get_temp_dir(), 'erp_omd_pdf_valid_');
+        $invalid_mime_path = tempnam(sys_get_temp_dir(), 'erp_omd_pdf_invalid_mime_');
+        $broken_pdf_path = tempnam(sys_get_temp_dir(), 'erp_omd_pdf_broken_');
+        $oversized_pdf_path = tempnam(sys_get_temp_dir(), 'erp_omd_pdf_big_');
+        file_put_contents($valid_pdf_path, "%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF");
+        file_put_contents($invalid_mime_path, "NOT_A_PDF\ncontent");
+        file_put_contents($broken_pdf_path, "%PDF-1.4\nbroken-without-eof");
+        file_put_contents($oversized_pdf_path, "%PDF-1.4\n" . str_repeat('A', 6 * 1024 * 1024) . "\n%%EOF");
+
+        $GLOBALS['erp_omd_attachment_file_map'] = [
+            1001 => $valid_pdf_path,
+            1002 => $invalid_mime_path,
+            1003 => $broken_pdf_path,
+            1004 => $oversized_pdf_path,
+        ];
+        $GLOBALS['erp_omd_attachment_mime_map'] = [
+            1001 => 'application/pdf',
+            1002 => 'text/plain',
+            1003 => 'application/pdf',
+            1004 => 'application/pdf',
+        ];
+
+        $attachment_service = new ERP_OMD_Project_Attachment_Service(
+            new ERP_OMD_Attachment_Repository([
+                'project:11' => [],
+                'project:12' => [
+                    ['attachment_id' => 1002],
+                ],
+                'project:13' => [
+                    ['attachment_id' => 1001],
+                ],
+            ])
+        );
+
         $service = new ERP_OMD_Client_Project_Service(
             new ERP_OMD_Client_Repository([
                 1 => ['id' => 1, 'nip' => '1234567890'],
@@ -145,7 +237,8 @@ final class ClientProjectServiceTestRunner
                 'project:10' => [
                     ['severity' => 'error', 'code' => 'project_budget_exceeded'],
                 ],
-            ])
+            ]),
+            $attachment_service
         );
 
         $preparedClient = $service->prepare_client([
@@ -268,6 +361,48 @@ final class ClientProjectServiceTestRunner
         );
         $this->assertTrue(in_array('Projekt nie może przejść do do_faktury, jeśli ma niezatwierdzone wpisy czasu.', $lifecycleErrors, true), 'Project should not enter do_faktury with pending time entries.');
         $this->assertTrue(in_array('Projekt nie może przejść do do_faktury, jeśli ma aktywne alerty krytyczne.', $lifecycleErrors, true), 'Project should not enter do_faktury with critical alerts.');
+
+        $missingPdfErrors = $service->validate_project(
+            [
+                'client_id' => 1,
+                'name' => 'Projekt bez faktury',
+                'billing_type' => 'time_material',
+                'budget' => 0,
+                'retainer_monthly_fee' => 0,
+                'status' => 'zakonczony',
+                'manager_id' => 5,
+            ],
+            [
+                'id' => 11,
+                'client_id' => 1,
+                'name' => 'Projekt bez faktury',
+                'billing_type' => 'time_material',
+                'budget' => 0,
+                'retainer_monthly_fee' => 0,
+                'status' => 'do_faktury',
+                'manager_id' => 5,
+            ]
+        );
+        $this->assertTrue(in_array('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury PDF.', $missingPdfErrors, true), 'Project should not close without a final PDF invoice.');
+
+        $invalidMimeErrors = $service->validate_project(
+            ['client_id' => 1, 'name' => 'Projekt z błędnym MIME', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'zakonczony', 'manager_id' => 5],
+            ['id' => 12, 'client_id' => 1, 'name' => 'Projekt z błędnym MIME', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'do_faktury', 'manager_id' => 5]
+        );
+        $this->assertTrue(in_array('Projekt nie może przejść do zakończony — brak poprawnej końcowej faktury PDF (MIME application/pdf, maks. 5 MB, poprawna integralność pliku).', $invalidMimeErrors, true), 'Project should reject closing when only non-PDF invoice attachments exist.');
+
+        $tooBigErrors = $attachment_service->validate_pdf_attachment(1004);
+        $this->assertTrue(
+            in_array('Plik faktury PDF przekracza maksymalny rozmiar 5 MB.', $tooBigErrors, true)
+                || in_array('Plik faktury PDF ma niepoprawny rozmiar.', $tooBigErrors, true),
+            'PDF validation should reject files bigger than 5 MB.'
+        );
+
+        $validCloseErrors = $service->validate_project(
+            ['client_id' => 1, 'name' => 'Projekt z poprawną fakturą', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'zakonczony', 'manager_id' => 5],
+            ['id' => 13, 'client_id' => 1, 'name' => 'Projekt z poprawną fakturą', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'do_faktury', 'manager_id' => 5]
+        );
+        $this->assertSame(false, in_array('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury PDF.', $validCloseErrors, true), 'Project with valid PDF should be allowed to close.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "Client project service tests passed.\n";
