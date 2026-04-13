@@ -5,6 +5,7 @@ class ERP_OMD_Cron_Manager
     const WEEKLY_BACKUP_HOOK = 'erp_omd_weekly_db_backup';
     const MISSING_HOURS_HOOK = 'erp_omd_daily_missing_hours_notifications';
     const PROJECT_DEADLINE_HOOK = 'erp_omd_daily_project_deadline_notifications';
+    const GOOGLE_CALENDAR_SYNC_HOOK = 'erp_omd_google_calendar_sync';
 
     public static function register_hooks()
     {
@@ -12,6 +13,7 @@ class ERP_OMD_Cron_Manager
         add_action(self::WEEKLY_BACKUP_HOOK, [__CLASS__, 'run_weekly_backup']);
         add_action(self::MISSING_HOURS_HOOK, [__CLASS__, 'run_missing_hours_notifications']);
         add_action(self::PROJECT_DEADLINE_HOOK, [__CLASS__, 'run_project_deadline_notifications']);
+        add_action(self::GOOGLE_CALENDAR_SYNC_HOOK, [__CLASS__, 'run_google_calendar_sync']);
         self::schedule_events();
     }
 
@@ -25,6 +27,7 @@ class ERP_OMD_Cron_Manager
         wp_clear_scheduled_hook(self::WEEKLY_BACKUP_HOOK);
         wp_clear_scheduled_hook(self::MISSING_HOURS_HOOK);
         wp_clear_scheduled_hook(self::PROJECT_DEADLINE_HOOK);
+        wp_clear_scheduled_hook(self::GOOGLE_CALENDAR_SYNC_HOOK);
     }
 
     public static function register_weekly_schedule($schedules)
@@ -34,6 +37,12 @@ class ERP_OMD_Cron_Manager
                 'interval' => 7 * DAY_IN_SECONDS,
                 // Intentionally not translated here to avoid loading textdomain before init.
                 'display' => 'ERP OMD Weekly',
+            ];
+        }
+        if (! isset($schedules['erp_omd_two_hours'])) {
+            $schedules['erp_omd_two_hours'] = [
+                'interval' => 2 * HOUR_IN_SECONDS,
+                'display' => 'ERP OMD Every 2 Hours',
             ];
         }
 
@@ -51,6 +60,9 @@ class ERP_OMD_Cron_Manager
         }
         if (! wp_next_scheduled(self::PROJECT_DEADLINE_HOOK)) {
             wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', self::PROJECT_DEADLINE_HOOK);
+        }
+        if (! wp_next_scheduled(self::GOOGLE_CALENDAR_SYNC_HOOK)) {
+            wp_schedule_event(time() + HOUR_IN_SECONDS, 'erp_omd_two_hours', self::GOOGLE_CALENDAR_SYNC_HOOK);
         }
     }
 
@@ -174,6 +186,15 @@ class ERP_OMD_Cron_Manager
                 wp_mail($recipient_email, $subject, wpautop($body), $headers);
             }
         }
+    }
+
+    public static function run_google_calendar_sync()
+    {
+        $service = new ERP_OMD_Google_Calendar_Sync_Service(
+            new ERP_OMD_Project_Repository(),
+            new ERP_OMD_Project_Calendar_Sync_Repository()
+        );
+        $service->sync_all_projects();
     }
 
     private static function notification_settings()
