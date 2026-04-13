@@ -938,8 +938,8 @@ class ERP_OMD_Admin
             'month' => sanitize_text_field(wp_unslash(isset($_GET['month']) ? $_GET['month'] : '')),
         ];
         $pagination = [
-            'page_num' => max(1, (int) ($_GET['page_num'] ?? 1)),
-            'per_page' => (int) ($_GET['per_page'] ?? 100),
+            'page_num' => max(1, (int) (isset($_GET['page_num']) ? $_GET['page_num'] : 1)),
+            'per_page' => (int) (isset($_GET['per_page']) ? $_GET['per_page'] : 100),
         ];
         if (! in_array($pagination['per_page'], [25, 50, 100, 200], true)) {
             $pagination['per_page'] = 100;
@@ -974,7 +974,9 @@ class ERP_OMD_Admin
         if ($pagination['page_num'] > $pagination['total_pages']) {
             $pagination['page_num'] = $pagination['total_pages'];
         }
-        $selected_employee_id = $entry['employee_id'] ?? ($current_employee['id'] ?? 0);
+        $selected_employee_id = isset($entry['employee_id'])
+            ? $entry['employee_id']
+            : (isset($current_employee['id']) ? $current_employee['id'] : 0);
         $selected_time_client_id = 0;
         if ($entry) {
             foreach ($projects_for_time as $project_row) {
