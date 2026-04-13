@@ -106,6 +106,7 @@ class ERP_OMD_Admin
         add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
         add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
+        add_submenu_page('erp-omd', __('Kalendarz', 'erp-omd'), __('Kalendarz', 'erp-omd'), 'erp_omd_access', 'erp-omd-calendar', [$this, 'render_calendar']);
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
         add_submenu_page(
             'erp-omd',
@@ -457,6 +458,7 @@ class ERP_OMD_Admin
             case 'save_settings': $this->handle_settings_save(); break;
             case 'google_calendar_connect': $this->handle_google_calendar_connect(); break;
             case 'google_calendar_disconnect': $this->handle_google_calendar_disconnect(); break;
+            case 'google_calendar_sync_now': $this->handle_google_calendar_sync_now(); break;
             case 'delete_client': $this->handle_client_delete(); break;
             case 'delete_project': $this->handle_project_delete(); break;
         }
@@ -1076,6 +1078,75 @@ class ERP_OMD_Admin
     {
         $alerts = $this->alert_service->all_alerts();
         include ERP_OMD_PATH . 'templates/admin/alerts.php';
+    }
+
+    public function render_calendar()
+    {
+        $calendar_month = sanitize_text_field(wp_unslash($_GET['calendar_month'] ?? current_time('Y-m')));
+        if (! $this->is_valid_month_string($calendar_month)) {
+            $calendar_month = current_time('Y-m');
+        }
+
+        $month_start = DateTimeImmutable::createFromFormat('Y-m-d', $calendar_month . '-01') ?: new DateTimeImmutable($calendar_month . '-01');
+        $month_end = $month_start->modify('last day of this month');
+        $previous_month = $month_start->modify('-1 month')->format('Y-m');
+        $next_month = $month_start->modify('+1 month')->format('Y-m');
+        $sync_repository = new ERP_OMD_Project_Calendar_Sync_Repository();
+
+        $events = [];
+        foreach ($this->projects->all() as $project) {
+            $project_status = (string) ($project['status'] ?? '');
+            if ($project_status === 'archiwum') {
+                continue;
+            }
+
+            $project_id = (int) ($project['id'] ?? 0);
+            $sync_state = $sync_repository->find_by_project_id($project_id) ?: [];
+            $sync_status = (string) ($sync_state['sync_status'] ?? 'pending');
+            $sync_error = (string) ($sync_state['last_error'] ?? '');
+            $project_name = (string) ($project['name'] ?? ('#' . $project_id));
+
+            $start_date = (string) ($project['start_date'] ?? '');
+            $end_date = (string) ($project['end_date'] ?? '');
+            if ($start_date !== '' && $end_date !== '') {
+                $range_start = DateTimeImmutable::createFromFormat('Y-m-d', $start_date);
+                $range_end = DateTimeImmutable::createFromFormat('Y-m-d', $end_date);
+                if ($range_start && $range_end && $range_end >= $month_start && $range_start <= $month_end) {
+                    $events[] = [
+                        'project_id' => $project_id,
+                        'project_name' => $project_name,
+                        'event_type' => 'range',
+                        'date_start' => $start_date,
+                        'date_end' => $end_date,
+                        'status' => $project_status,
+                        'sync_status' => $sync_status,
+                        'sync_error' => $sync_error,
+                    ];
+                }
+            }
+
+            $deadline_date = (string) ($project['deadline_date'] ?? '');
+            if ($deadline_date !== '' && strpos($deadline_date, $calendar_month . '-') === 0) {
+                $events[] = [
+                    'project_id' => $project_id,
+                    'project_name' => $project_name,
+                    'event_type' => 'deadline',
+                    'date_start' => $deadline_date,
+                    'date_end' => $deadline_date,
+                    'status' => $project_status,
+                    'sync_status' => $sync_status,
+                    'sync_error' => $sync_error,
+                ];
+            }
+        }
+
+        usort($events, static function ($left, $right) {
+            $left_date = (string) ($left['date_start'] ?? '');
+            $right_date = (string) ($right['date_start'] ?? '');
+            return strcmp($left_date, $right_date);
+        });
+
+        include ERP_OMD_PATH . 'templates/admin/calendar.php';
     }
 
     public function render_reports()
@@ -2825,6 +2896,24 @@ class ERP_OMD_Admin
         update_option('erp_omd_google_calendar_last_error', '');
         update_option('erp_omd_google_calendar_last_sync_at', '');
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Połączenie Google Calendar zostało rozłączone.', 'erp-omd'));
+    }
+
+    private function handle_google_calendar_sync_now()
+    {
+        check_admin_referer('erp_omd_google_calendar_sync_now');
+        $this->require_capability('erp_omd_manage_settings');
+
+        try {
+            $sync_service = new ERP_OMD_Google_Calendar_Sync_Service(
+                $this->projects,
+                new ERP_OMD_Project_Calendar_Sync_Repository()
+            );
+            $sync_service->sync_all_projects();
+        } catch (Throwable $exception) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Ręczna synchronizacja Google Calendar nie powiodła się: %s', 'erp-omd'), $exception->getMessage()));
+        }
+
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Ręczna synchronizacja Google Calendar została uruchomiona.', 'erp-omd'));
     }
 
     private function handle_google_calendar_oauth_callback()

@@ -297,6 +297,7 @@
                             <p>
                                 <button type="submit" class="button button-secondary" form="erp-omd-google-calendar-connect-form"><?php esc_html_e('Połącz z Google', 'erp-omd'); ?></button>
                                 <button type="submit" class="button button-link-delete" form="erp-omd-google-calendar-disconnect-form"><?php esc_html_e('Odłącz', 'erp-omd'); ?></button>
+                                <button type="submit" class="button" form="erp-omd-google-calendar-sync-now-form"><?php esc_html_e('Synchronizuj teraz', 'erp-omd'); ?></button>
                             </p>
                         </div>
                     </div>
@@ -399,6 +400,10 @@
         <form id="erp-omd-google-calendar-disconnect-form" method="post">
             <?php wp_nonce_field('erp_omd_google_calendar_disconnect'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_disconnect" />
+        </form>
+        <form id="erp-omd-google-calendar-sync-now-form" method="post">
+            <?php wp_nonce_field('erp_omd_google_calendar_sync_now'); ?>
+            <input type="hidden" name="erp_omd_action" value="google_calendar_sync_now" />
         </form>
     </div>
 </div>
