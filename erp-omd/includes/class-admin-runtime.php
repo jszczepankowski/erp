@@ -913,80 +913,13 @@ class ERP_OMD_Admin
         if (! $this->is_valid_month_string($projects_calendar_month)) {
             $projects_calendar_month = current_time('Y-m');
         }
-        $projects_calendar_data = $this->build_projects_deadline_calendar($projects, $projects_calendar_month);
+        $projects_calendar_data = [
+            'month' => $projects_calendar_month,
+            'weeks' => [],
+            'totals' => ['deadlines_count' => 0, 'projects_count' => 0],
+        ];
         $project_attachments = $project ? $this->attachments->for_entity('project', (int) $project['id']) : [];
         include ERP_OMD_PATH . 'templates/admin/projects.php';
-    }
-
-    private function build_projects_deadline_calendar(array $projects, $projects_calendar_month)
-    {
-        $month_start_ts = strtotime($projects_calendar_month . '-01 00:00:00');
-        if (! $month_start_ts) {
-            $month_start_ts = strtotime(current_time('Y-m') . '-01 00:00:00');
-            $projects_calendar_month = date('Y-m', (int) $month_start_ts);
-        }
-        $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
-        include ERP_OMD_PATH . 'templates/admin/time-entries.php';
-    }
-
-        $month_end_ts = strtotime(date('Y-m-t 00:00:00', (int) $month_start_ts));
-        $month_start_weekday = (int) date('N', (int) $month_start_ts);
-        $month_end_weekday = (int) date('N', (int) $month_end_ts);
-        $grid_start_ts = strtotime('-' . ($month_start_weekday - 1) . ' days', (int) $month_start_ts);
-        $grid_end_ts = strtotime('+' . (7 - $month_end_weekday) . ' days', (int) $month_end_ts);
-
-        $events_by_date = [];
-        $totals = ['deadlines_count' => 0, 'projects_count' => 0];
-        $projects_seen = [];
-        $sync_repository = class_exists('ERP_OMD_Project_Calendar_Sync_Repository') ? new ERP_OMD_Project_Calendar_Sync_Repository() : null;
-
-        foreach ($projects as $project_row) {
-            $project_id = (int) ($project_row['id'] ?? 0);
-            $deadline_date = (string) ($project_row['deadline_date'] ?? '');
-            if ($project_id <= 0 || $deadline_date === '' || strpos($deadline_date, $projects_calendar_month . '-') !== 0) {
-                continue;
-            }
-
-            $sync_state = $sync_repository ? ($sync_repository->find_by_project_id($project_id) ?: []) : [];
-            $events_by_date[$deadline_date][] = [
-                'project_id' => $project_id,
-                'project_name' => (string) ($project_row['name'] ?? ('#' . $project_id)),
-                'project_status' => (string) ($project_row['status'] ?? ''),
-                'sync_status' => (string) ($sync_state['sync_status'] ?? 'pending'),
-            ];
-            $totals['deadlines_count']++;
-            if (! isset($projects_seen[$project_id])) {
-                $projects_seen[$project_id] = true;
-                $totals['projects_count']++;
-            }
-        }
-        $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
-        include ERP_OMD_PATH . 'templates/admin/time-entries.php';
-    }
-
-        $weeks = [];
-        $week = [];
-        $cursor = (int) $grid_start_ts;
-        while ($cursor <= (int) $grid_end_ts) {
-            $date_key = date('Y-m-d', $cursor);
-            $week[] = [
-                'date' => $date_key,
-                'day' => date('j', $cursor),
-                'is_current_month' => date('Y-m', $cursor) === $projects_calendar_month,
-                'events' => $events_by_date[$date_key] ?? [],
-            ];
-            if (count($week) === 7) {
-                $weeks[] = $week;
-                $week = [];
-            }
-            $cursor = strtotime('+1 day', $cursor);
-        }
-
-        return [
-            'month' => $projects_calendar_month,
-            'weeks' => $weeks,
-            'totals' => $totals,
-        ];
     }
 
     public function render_time_entries()
@@ -1014,6 +947,9 @@ class ERP_OMD_Admin
         if (! $can_select_any_employee && $current_employee) {
             $filters['employee_id'] = (string) $current_employee['id'];
         }
+        $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
+        include ERP_OMD_PATH . 'templates/admin/time-entries.php';
+    }
 
         $entry = ! empty($_GET['id']) ? $this->time_entries->find((int) $_GET['id']) : null;
         $can_edit_selected_entry = $entry ? $this->time_entry_service->can_edit_entry($entry, $current_user) : true;

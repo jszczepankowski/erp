@@ -567,6 +567,50 @@
         $projects_calendar_cursor = DateTimeImmutable::createFromFormat('Y-m-d', $projects_calendar_month . '-01') ?: new DateTimeImmutable(current_time('Y-m') . '-01');
         $projects_calendar_prev_month = $projects_calendar_cursor->modify('-1 month')->format('Y-m');
         $projects_calendar_next_month = $projects_calendar_cursor->modify('+1 month')->format('Y-m');
+        $projects_calendar_events_by_date = [];
+        $projects_calendar_totals = ['deadlines_count' => 0, 'projects_count' => 0];
+        $projects_calendar_seen_projects = [];
+        $projects_calendar_sync_repository = class_exists('ERP_OMD_Project_Calendar_Sync_Repository')
+            ? new ERP_OMD_Project_Calendar_Sync_Repository()
+            : null;
+        foreach ((array) $projects as $project_row) {
+            $project_id = (int) ($project_row['id'] ?? 0);
+            $deadline_date = (string) ($project_row['deadline_date'] ?? '');
+            if ($project_id <= 0 || $deadline_date === '' || strpos($deadline_date, $projects_calendar_month . '-') !== 0) {
+                continue;
+            }
+
+            $sync_state = $projects_calendar_sync_repository ? ($projects_calendar_sync_repository->find_by_project_id($project_id) ?: []) : [];
+            $projects_calendar_events_by_date[$deadline_date][] = [
+                'project_id' => $project_id,
+                'project_name' => (string) ($project_row['name'] ?? ('#' . $project_id)),
+                'project_status' => (string) ($project_row['status'] ?? ''),
+                'sync_status' => (string) ($sync_state['sync_status'] ?? 'pending'),
+            ];
+            $projects_calendar_totals['deadlines_count']++;
+            if (! isset($projects_calendar_seen_projects[$project_id])) {
+                $projects_calendar_seen_projects[$project_id] = true;
+                $projects_calendar_totals['projects_count']++;
+            }
+        }
+        $projects_calendar_grid_start = $projects_calendar_cursor->modify('-' . ((int) $projects_calendar_cursor->format('N') - 1) . ' days');
+        $projects_calendar_month_end = $projects_calendar_cursor->modify('last day of this month');
+        $projects_calendar_grid_end = $projects_calendar_month_end->modify('+' . (7 - (int) $projects_calendar_month_end->format('N')) . ' days');
+        $projects_calendar_weeks = [];
+        $projects_calendar_week = [];
+        $projects_calendar_period = new DatePeriod($projects_calendar_grid_start, new DateInterval('P1D'), $projects_calendar_grid_end->modify('+1 day'));
+        foreach ($projects_calendar_period as $projects_calendar_date) {
+            $projects_calendar_date_key = $projects_calendar_date->format('Y-m-d');
+            $projects_calendar_week[] = [
+                'day' => $projects_calendar_date->format('j'),
+                'is_current_month' => $projects_calendar_date->format('Y-m') === $projects_calendar_month,
+                'events' => $projects_calendar_events_by_date[$projects_calendar_date_key] ?? [],
+            ];
+            if (count($projects_calendar_week) === 7) {
+                $projects_calendar_weeks[] = $projects_calendar_week;
+                $projects_calendar_week = [];
+            }
+        }
         ?>
 
         <div class="erp-omd-section-header">
@@ -575,8 +619,8 @@
                 <?php
                 echo esc_html(sprintf(
                     __('Terminy: %1$s | Projekty: %2$s', 'erp-omd'),
-                    (int) ($projects_calendar_data['totals']['deadlines_count'] ?? 0),
-                    (int) ($projects_calendar_data['totals']['projects_count'] ?? 0)
+                    (int) $projects_calendar_totals['deadlines_count'],
+                    (int) $projects_calendar_totals['projects_count']
                 ));
                 ?>
             </p>
@@ -596,7 +640,7 @@
         <table class="widefat striped erp-omd-calendar-table">
             <thead><tr><th><?php esc_html_e('Pon', 'erp-omd'); ?></th><th><?php esc_html_e('Wt', 'erp-omd'); ?></th><th><?php esc_html_e('Śr', 'erp-omd'); ?></th><th><?php esc_html_e('Czw', 'erp-omd'); ?></th><th><?php esc_html_e('Pt', 'erp-omd'); ?></th><th><?php esc_html_e('Sob', 'erp-omd'); ?></th><th><?php esc_html_e('Nd', 'erp-omd'); ?></th></tr></thead>
             <tbody>
-            <?php foreach ((array) ($projects_calendar_data['weeks'] ?? []) as $week) : ?>
+            <?php foreach ((array) $projects_calendar_weeks as $week) : ?>
                 <tr>
                     <?php foreach ((array) $week as $day) : ?>
                         <td class="erp-omd-calendar-cell">
