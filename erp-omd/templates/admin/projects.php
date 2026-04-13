@@ -543,9 +543,13 @@
         $projects_list_view = in_array((string) ($projects_list_view ?? 'active'), ['active', 'archive'], true)
             ? (string) $projects_list_view
             : 'active';
+        $projects_active_tab = isset($_GET['projects_tab']) && in_array((string) $_GET['projects_tab'], ['projects', 'calendar'], true)
+            ? (string) $_GET['projects_tab']
+            : 'projects';
         $projects_is_archive_view = $projects_list_view === 'archive';
         $projects_list_base_args = [
             'page' => 'erp-omd-projects',
+            'projects_tab' => $projects_active_tab,
             'month' => $project_filters['month'] ?? '',
             'search' => $project_filters['search'] ?? '',
             'client_id' => (int) ($project_filters['client_id'] ?? 0),
@@ -560,6 +564,8 @@
             array_merge($projects_list_base_args, ['list_view' => 'archive', 'status' => '']),
             admin_url('admin.php')
         );
+        $projects_projects_tab_url = add_query_arg(array_merge($projects_list_base_args, ['projects_tab' => 'projects']), admin_url('admin.php'));
+        $projects_calendar_tab_url = add_query_arg(array_merge($projects_list_base_args, ['projects_tab' => 'calendar']), admin_url('admin.php'));
         $project_filter_statuses = $projects_is_archive_view
             ? ['archiwum']
             : ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony'];
@@ -613,6 +619,14 @@
         }
         ?>
 
+        <div class="erp-omd-section-header">
+            <div class="erp-omd-filter-form">
+                <a class="button <?php echo $projects_active_tab === 'projects' ? 'button-primary' : ''; ?>" href="<?php echo esc_url($projects_projects_tab_url); ?>"><?php esc_html_e('Projekty', 'erp-omd'); ?></a>
+                <a class="button <?php echo $projects_active_tab === 'calendar' ? 'button-primary' : ''; ?>" href="<?php echo esc_url($projects_calendar_tab_url); ?>"><?php esc_html_e('Kalendarz', 'erp-omd'); ?></a>
+            </div>
+        </div>
+
+        <?php if ($projects_active_tab === 'calendar') : ?>
         <div class="erp-omd-section-header">
             <h2><?php echo esc_html(sprintf(__('Kalendarz projektów %s', 'erp-omd'), $projects_calendar_month)); ?></h2>
             <p class="description">
@@ -674,11 +688,13 @@
             <?php endforeach; ?>
             </tbody>
         </table>
+        <?php endif; ?>
 
         <div class="erp-omd-section-header">
             <h2><?php esc_html_e('Lista projektów', 'erp-omd'); ?></h2>
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-projects" />
+                <input type="hidden" name="projects_tab" value="<?php echo esc_attr($projects_active_tab); ?>" />
                 <input type="hidden" name="list_view" value="<?php echo esc_attr($projects_list_view); ?>" />
                 <input type="month" name="month" value="<?php echo esc_attr($project_filters['month'] ?? ''); ?>" />
                 <button class="button" type="submit"><?php esc_html_e('Ustaw miesiąc', 'erp-omd'); ?></button>
@@ -687,6 +703,7 @@
         <div class="erp-omd-section-header">
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-projects" />
+                <input type="hidden" name="projects_tab" value="<?php echo esc_attr($projects_active_tab); ?>" />
                 <input type="hidden" name="list_view" value="<?php echo esc_attr($projects_list_view); ?>" />
                 <input type="hidden" name="month" value="<?php echo esc_attr($project_filters['month'] ?? ''); ?>" />
                 <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj projektu, klienta, managera…', 'erp-omd'); ?>" value="<?php echo esc_attr($project_filters['search'] ?? ''); ?>" />

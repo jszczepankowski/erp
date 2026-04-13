@@ -1090,12 +1090,6 @@ class ERP_OMD_Admin
             }
         }
 
-        usort($events, static function ($left, $right) {
-            $left_date = (string) ($left['date_start'] ?? '');
-            $right_date = (string) ($right['date_start'] ?? '');
-            return strcmp($left_date, $right_date);
-        });
-
         include ERP_OMD_PATH . 'templates/admin/calendar.php';
     }
 
