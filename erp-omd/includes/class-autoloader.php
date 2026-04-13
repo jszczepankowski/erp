@@ -31,6 +31,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Project_Financial_Repository' => 'includes/repositories/class-project-financial-repository.php',
         'ERP_OMD_Time_Entry_Repository' => 'includes/repositories/class-time-entry-repository.php',
         'ERP_OMD_Attachment_Repository' => 'includes/repositories/class-attachment-repository.php',
+        'ERP_OMD_Project_Calendar_Sync_Repository' => 'includes/repositories/class-project-calendar-sync-repository.php',
         'ERP_OMD_Period_Repository' => 'includes/repositories/class-omd-period-repository.php',
         'ERP_OMD_Adjustment_Audit_Repository' => 'includes/repositories/class-omd-adjustment-audit-repository.php',
         'ERP_OMD_Monthly_Hours_Service' => 'includes/services/class-monthly-hours-service.php',
@@ -42,6 +43,8 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Project_Financial_Service' => 'includes/services/class-project-financial-service.php',
         'ERP_OMD_Reporting_Service' => 'includes/services/class-reporting-service-v2.php',
         'ERP_OMD_Alert_Service' => 'includes/services/class-alert-service.php',
+        'ERP_OMD_Project_Attachment_Service' => 'includes/services/class-project-attachment-service.php',
+        'ERP_OMD_Google_Calendar_Sync_Service' => 'includes/services/class-google-calendar-sync-service.php',
         'ERP_OMD_Period_Service' => 'includes/services/class-omd-period-service.php',
     ];
 

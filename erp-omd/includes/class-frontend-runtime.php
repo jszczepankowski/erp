@@ -2,6 +2,7 @@
 
 require_once ERP_OMD_PATH . 'includes/class-front-estimate-decision-screen.php';
 
+if (! class_exists('ERP_OMD_Frontend')) {
 class ERP_OMD_Frontend
 {
     private $employees;
@@ -1540,6 +1541,17 @@ class ERP_OMD_Frontend
             $this->redirect_manager_with_notice('error', __('Nie możesz zmieniać statusu projektów spoza własnego zakresu odpowiedzialności.', 'erp-omd'));
         }
 
+        $project = $this->projects->find($project_id);
+        if (! $project) {
+            $this->redirect_manager_with_notice('error', __('Nie znaleziono projektu do zmiany statusu.', 'erp-omd'));
+        }
+
+        $payload = $this->client_project_service->prepare_project(['status' => $status], $project);
+        $errors = $this->client_project_service->validate_project($payload, $project);
+        if ($errors) {
+            $this->redirect_manager_with_notice('error', implode(' ', array_unique($errors)), ['project_id' => $project_id]);
+        }
+
         $this->projects->set_status($project_id, $status);
         $this->redirect_manager_with_notice('success', __('Status projektu został zaktualizowany.', 'erp-omd'), ['project_id' => $project_id]);
     }
@@ -2257,4 +2269,5 @@ class ERP_OMD_Frontend
 
         return strpos(trailingslashit($url), $front_base) === 0;
     }
+}
 }

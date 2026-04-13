@@ -135,6 +135,29 @@ if (! function_exists('get_post')) {
         return (object) ['ID' => (int) $post_id, 'post_name' => 'attachment-' . (int) $post_id];
     }
 }
+if (! function_exists('get_attached_file')) {
+    function get_attached_file($attachment_id)
+    {
+        return ((int) $attachment_id) === 556 ? '/tmp/mock-non-pdf.txt' : '/tmp/mock-file.pdf';
+    }
+}
+if (! function_exists('get_post_mime_type')) {
+    function get_post_mime_type($attachment_id)
+    {
+        return ((int) $attachment_id) === 556 ? 'text/plain' : 'application/pdf';
+    }
+}
+if (! function_exists('wp_check_filetype_and_ext')) {
+    function wp_check_filetype_and_ext($path, $filename)
+    {
+        $is_pdf = strpos((string) $path, '.pdf') !== false || strpos((string) $filename, '.pdf') !== false;
+        return [
+            'ext' => $is_pdf ? 'pdf' : 'txt',
+            'type' => $is_pdf ? 'application/pdf' : 'text/plain',
+            'proper_filename' => $filename,
+        ];
+    }
+}
 if (! function_exists('get_user_by')) {
     function get_user_by($field, $value)
     {
@@ -589,6 +612,7 @@ if (! class_exists('ERP_OMD_Adjustment_Audit_Repository')) {
     }
 }
 
+require_once __DIR__ . '/../erp-omd/includes/services/class-project-attachment-service.php';
 require_once __DIR__ . '/../erp-omd/includes/class-rest-api.php';
 
 final class RestApiTestRunner
