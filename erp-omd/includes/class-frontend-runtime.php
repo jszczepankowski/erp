@@ -2,6 +2,7 @@
 
 require_once ERP_OMD_PATH . 'includes/class-front-estimate-decision-screen.php';
 
+if (! class_exists('ERP_OMD_Frontend')) {
 class ERP_OMD_Frontend
 {
     private $employees;
@@ -2268,4 +2269,5 @@ class ERP_OMD_Frontend
 
         return strpos(trailingslashit($url), $front_base) === 0;
     }
+}
 }
