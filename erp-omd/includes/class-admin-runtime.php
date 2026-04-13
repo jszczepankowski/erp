@@ -930,12 +930,12 @@ class ERP_OMD_Admin
         $can_edit_any_entry = current_user_can('administrator');
         $can_delete_entries = $this->time_entry_service->can_delete_entry($current_user);
         $filters = [
-            'employee_id' => $_GET['employee_id'] ?? '',
-            'client_id' => $_GET['client_id'] ?? '',
-            'project_id' => $_GET['project_id'] ?? '',
-            'status' => $_GET['status'] ?? '',
-            'entry_date' => $_GET['entry_date'] ?? '',
-            'month' => sanitize_text_field(wp_unslash($_GET['month'] ?? '')),
+            'employee_id' => isset($_GET['employee_id']) ? $_GET['employee_id'] : '',
+            'client_id' => isset($_GET['client_id']) ? $_GET['client_id'] : '',
+            'project_id' => isset($_GET['project_id']) ? $_GET['project_id'] : '',
+            'status' => isset($_GET['status']) ? $_GET['status'] : '',
+            'entry_date' => isset($_GET['entry_date']) ? $_GET['entry_date'] : '',
+            'month' => sanitize_text_field(wp_unslash(isset($_GET['month']) ? $_GET['month'] : '')),
         ];
         $pagination = [
             'page_num' => max(1, (int) ($_GET['page_num'] ?? 1)),
