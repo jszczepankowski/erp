@@ -58,6 +58,7 @@ class ERP_OMD_Installer
         $time_entries_table = $wpdb->prefix . 'erp_omd_time_entries';
         $project_requests_table = $wpdb->prefix . 'erp_omd_project_requests';
         $attachments_table = $wpdb->prefix . 'erp_omd_attachments';
+        $project_calendar_sync_table = $wpdb->prefix . 'erp_omd_project_calendar_sync';
         $estimate_audit_table = $wpdb->prefix . 'erp_omd_estimate_audit';
         $periods_table = $wpdb->prefix . 'erp_omd_periods';
         $adjustment_audit_table = $wpdb->prefix . 'erp_omd_adjustment_audit';
@@ -422,6 +423,23 @@ class ERP_OMD_Installer
                 KEY entity_lookup (entity_type, entity_id),
                 KEY attachment_id (attachment_id),
                 KEY created_by_user_id (created_by_user_id)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+        dbDelta(
+            "CREATE TABLE {$project_calendar_sync_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                project_id BIGINT UNSIGNED NOT NULL,
+                range_event_id VARCHAR(191) NOT NULL DEFAULT '',
+                deadline_event_id VARCHAR(191) NOT NULL DEFAULT '',
+                sync_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                last_error TEXT NULL,
+                last_synced_at DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                UNIQUE KEY project_id (project_id),
+                KEY sync_status (sync_status)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
