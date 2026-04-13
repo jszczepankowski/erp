@@ -246,6 +246,65 @@
 
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
+                        <h3><?php esc_html_e('Google Calendar', 'erp-omd'); ?></h3>
+                        <p><?php esc_html_e('Konfiguracja OAuth i synchronizacji eventów projektów (globalny kalendarz).', 'erp-omd'); ?></p>
+                    </div>
+                    <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-google-calendar-client-id"><?php esc_html_e('Client ID', 'erp-omd'); ?></label>
+                            <input id="erp-omd-google-calendar-client-id" type="text" name="google_calendar_client_id" value="<?php echo esc_attr((string) $google_calendar_client_id); ?>" autocomplete="off" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-google-calendar-client-secret"><?php esc_html_e('Client Secret', 'erp-omd'); ?></label>
+                            <input id="erp-omd-google-calendar-client-secret" type="password" name="google_calendar_client_secret" value="" autocomplete="new-password" />
+                            <?php if ($google_calendar_client_secret_masked !== '') : ?>
+                                <p class="description"><?php echo esc_html(sprintf(__('Obecny secret: %s (pozostaw puste, aby nie zmieniać).', 'erp-omd'), $google_calendar_client_secret_masked)); ?></p>
+                            <?php endif; ?>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-google-calendar-redirect-uri"><?php esc_html_e('Redirect URI', 'erp-omd'); ?></label>
+                            <input id="erp-omd-google-calendar-redirect-uri" type="text" readonly value="<?php echo esc_attr((string) $google_calendar_redirect_uri); ?>" />
+                            <p class="description"><?php esc_html_e('Ten adres musi być wpisany 1:1 w Google Cloud Console (Authorized redirect URIs).', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-google-calendar-scope"><?php esc_html_e('Scope', 'erp-omd'); ?></label>
+                            <select id="erp-omd-google-calendar-scope" name="google_calendar_scope">
+                                <option value="https://www.googleapis.com/auth/calendar.events" <?php selected((string) $google_calendar_scope, 'https://www.googleapis.com/auth/calendar.events'); ?>>calendar.events</option>
+                                <option value="https://www.googleapis.com/auth/calendar" <?php selected((string) $google_calendar_scope, 'https://www.googleapis.com/auth/calendar'); ?>>calendar</option>
+                            </select>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-google-calendar-id"><?php esc_html_e('Calendar ID (globalny)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-google-calendar-id" type="text" name="google_calendar_calendar_id" value="<?php echo esc_attr((string) $google_calendar_calendar_id); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-google-calendar-technical-email"><?php esc_html_e('Konto techniczne (email)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-google-calendar-technical-email" type="email" name="google_calendar_technical_account_email" value="<?php echo esc_attr((string) $google_calendar_technical_account_email); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <p>
+                                <strong><?php esc_html_e('Status połączenia:', 'erp-omd'); ?></strong>
+                                <?php echo $google_calendar_connected ? esc_html__('Połączono', 'erp-omd') : esc_html__('Wymaga autoryzacji', 'erp-omd'); ?>
+                            </p>
+                            <p>
+                                <strong><?php esc_html_e('Ostatnia udana synchronizacja:', 'erp-omd'); ?></strong>
+                                <?php echo $google_calendar_last_sync_at !== '' ? esc_html($google_calendar_last_sync_at) : '—'; ?>
+                            </p>
+                            <p>
+                                <strong><?php esc_html_e('Ostatni błąd:', 'erp-omd'); ?></strong>
+                                <?php echo $google_calendar_last_error !== '' ? esc_html($google_calendar_last_error) : '—'; ?>
+                            </p>
+                            <p>
+                                <button type="submit" class="button button-secondary" form="erp-omd-google-calendar-connect-form"><?php esc_html_e('Połącz z Google', 'erp-omd'); ?></button>
+                                <button type="submit" class="button button-link-delete" form="erp-omd-google-calendar-disconnect-form"><?php esc_html_e('Odłącz', 'erp-omd'); ?></button>
+                                <button type="submit" class="button" form="erp-omd-google-calendar-sync-now-form"><?php esc_html_e('Synchronizuj teraz', 'erp-omd'); ?></button>
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="erp-omd-form-section">
+                    <div class="erp-omd-form-section-header">
                         <h3 id="reports-v1-slo-monitoring"><?php esc_html_e('Reports v1 — SLO i monitoring', 'erp-omd'); ?></h3>
                         <p><?php esc_html_e('Ustawienia i status kalibracji SLO wydzielone do osobnego boxu na końcu ekranu.', 'erp-omd'); ?></p>
                     </div>
@@ -333,6 +392,18 @@
         <form id="erp-omd-restore-backup-form" method="post" enctype="multipart/form-data">
             <?php wp_nonce_field('erp_omd_restore_backup_bundle'); ?>
             <input type="hidden" name="erp_omd_action" value="restore_backup_bundle" />
+        </form>
+        <form id="erp-omd-google-calendar-connect-form" method="post">
+            <?php wp_nonce_field('erp_omd_google_calendar_connect'); ?>
+            <input type="hidden" name="erp_omd_action" value="google_calendar_connect" />
+        </form>
+        <form id="erp-omd-google-calendar-disconnect-form" method="post">
+            <?php wp_nonce_field('erp_omd_google_calendar_disconnect'); ?>
+            <input type="hidden" name="erp_omd_action" value="google_calendar_disconnect" />
+        </form>
+        <form id="erp-omd-google-calendar-sync-now-form" method="post">
+            <?php wp_nonce_field('erp_omd_google_calendar_sync_now'); ?>
+            <input type="hidden" name="erp_omd_action" value="google_calendar_sync_now" />
         </form>
     </div>
 </div>

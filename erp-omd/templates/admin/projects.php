@@ -563,7 +563,73 @@
         $project_filter_statuses = $projects_is_archive_view
             ? ['archiwum']
             : ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony'];
+        $projects_calendar_month = (string) ($projects_calendar_data['month'] ?? current_time('Y-m'));
+        $projects_calendar_cursor = DateTimeImmutable::createFromFormat('Y-m-d', $projects_calendar_month . '-01') ?: new DateTimeImmutable(current_time('Y-m') . '-01');
+        $projects_calendar_prev_month = $projects_calendar_cursor->modify('-1 month')->format('Y-m');
+        $projects_calendar_next_month = $projects_calendar_cursor->modify('+1 month')->format('Y-m');
         ?>
+
+        <div class="erp-omd-section-header">
+            <h2><?php echo esc_html(sprintf(__('Kalendarz projektów %s', 'erp-omd'), $projects_calendar_month)); ?></h2>
+            <p class="description">
+                <?php
+                echo esc_html(sprintf(
+                    __('Terminy: %1$s | Projekty: %2$s', 'erp-omd'),
+                    (int) ($projects_calendar_data['totals']['deadlines_count'] ?? 0),
+                    (int) ($projects_calendar_data['totals']['projects_count'] ?? 0)
+                ));
+                ?>
+            </p>
+            <form method="get" class="erp-omd-filter-form">
+                <input type="hidden" name="page" value="erp-omd-projects" />
+                <input type="hidden" name="list_view" value="<?php echo esc_attr($projects_list_view); ?>" />
+                <input type="hidden" name="search" value="<?php echo esc_attr($project_filters['search'] ?? ''); ?>" />
+                <input type="hidden" name="client_id" value="<?php echo esc_attr((string) ($project_filters['client_id'] ?? 0)); ?>" />
+                <input type="hidden" name="manager_id" value="<?php echo esc_attr((string) ($project_filters['manager_id'] ?? 0)); ?>" />
+                <input type="hidden" name="status" value="<?php echo esc_attr((string) ($project_filters['status'] ?? '')); ?>" />
+                <input type="month" name="calendar_month" value="<?php echo esc_attr($projects_calendar_month); ?>" />
+                <button class="button" type="submit"><?php esc_html_e('Pokaż miesiąc', 'erp-omd'); ?></button>
+                <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($projects_list_base_args, ['list_view' => $projects_list_view, 'calendar_month' => $projects_calendar_prev_month]), admin_url('admin.php'))); ?>">&larr;</a>
+                <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($projects_list_base_args, ['list_view' => $projects_list_view, 'calendar_month' => $projects_calendar_next_month]), admin_url('admin.php'))); ?>">&rarr;</a>
+            </form>
+        </div>
+        <table class="widefat striped erp-omd-calendar-table">
+            <thead><tr><th><?php esc_html_e('Pon', 'erp-omd'); ?></th><th><?php esc_html_e('Wt', 'erp-omd'); ?></th><th><?php esc_html_e('Śr', 'erp-omd'); ?></th><th><?php esc_html_e('Czw', 'erp-omd'); ?></th><th><?php esc_html_e('Pt', 'erp-omd'); ?></th><th><?php esc_html_e('Sob', 'erp-omd'); ?></th><th><?php esc_html_e('Nd', 'erp-omd'); ?></th></tr></thead>
+            <tbody>
+            <?php foreach ((array) ($projects_calendar_data['weeks'] ?? []) as $week) : ?>
+                <tr>
+                    <?php foreach ((array) $week as $day) : ?>
+                        <td class="erp-omd-calendar-cell">
+                            <?php $is_current_month_day = (bool) ($day['is_current_month'] ?? false); ?>
+                            <div class="erp-omd-calendar-day" style="<?php echo $is_current_month_day ? '' : 'opacity:.45;'; ?>"><?php echo esc_html((string) ($day['day'] ?? '')); ?></div>
+                            <?php if (! empty($day['events'])) : ?>
+                                <ul style="margin:6px 0 0 18px;">
+                                    <?php foreach ((array) $day['events'] as $event) : ?>
+                                        <li style="margin-bottom:4px;">
+                                            <a href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-projects&id=' . (int) ($event['project_id'] ?? 0))); ?>">
+                                                <?php echo esc_html((string) ($event['project_name'] ?? '')); ?>
+                                            </a>
+                                            <div class="description">
+                                                <?php
+                                                echo esc_html(sprintf(
+                                                    __('Status: %1$s | Sync: %2$s', 'erp-omd'),
+                                                    $this->project_status_label((string) ($event['project_status'] ?? '')),
+                                                    (string) ($event['sync_status'] ?? 'pending')
+                                                ));
+                                                ?>
+                                            </div>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php else : ?>
+                                <div class="description">—</div>
+                            <?php endif; ?>
+                        </td>
+                    <?php endforeach; ?>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
 
         <div class="erp-omd-section-header">
             <h2><?php esc_html_e('Lista projektów', 'erp-omd'); ?></h2>
