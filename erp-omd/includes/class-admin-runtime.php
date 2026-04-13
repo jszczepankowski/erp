@@ -925,6 +925,9 @@ class ERP_OMD_Admin
             $month_start_ts = strtotime(current_time('Y-m') . '-01 00:00:00');
             $projects_calendar_month = date('Y-m', (int) $month_start_ts);
         }
+        $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
+        include ERP_OMD_PATH . 'templates/admin/time-entries.php';
+    }
 
         $month_end_ts = strtotime(date('Y-m-t 00:00:00', (int) $month_start_ts));
         $month_start_weekday = (int) date('N', (int) $month_start_ts);
@@ -957,6 +960,9 @@ class ERP_OMD_Admin
                 $totals['projects_count']++;
             }
         }
+        $can_set_status = current_user_can('administrator') || current_user_can('erp_omd_approve_time');
+        include ERP_OMD_PATH . 'templates/admin/time-entries.php';
+    }
 
         $weeks = [];
         $week = [];
