@@ -13,6 +13,13 @@ if (! function_exists('apply_filters')) {
     }
 }
 
+if (! function_exists('__')) {
+    function __($text, $domain = null)
+    {
+        return $text;
+    }
+}
+
 if (! function_exists('do_action')) {
     function do_action($tag, $value = null)
     {

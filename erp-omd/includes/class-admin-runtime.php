@@ -238,6 +238,15 @@ class ERP_OMD_Admin
 
     public function handle_forms()
     {
+        if (
+            is_admin()
+            && isset($_GET['page'], $_GET['erp_omd_google_oauth_callback'])
+            && (string) $_GET['page'] === 'erp-omd-settings'
+        ) {
+            $this->handle_google_calendar_oauth_callback();
+            return;
+        }
+
         if (! is_admin() || empty($_POST['erp_omd_action'])) {
             return;
         }
@@ -446,6 +455,8 @@ class ERP_OMD_Admin
             case 'add_attachment': $this->handle_attachment_add(); break;
             case 'delete_attachment': $this->handle_attachment_delete(); break;
             case 'save_settings': $this->handle_settings_save(); break;
+            case 'google_calendar_connect': $this->handle_google_calendar_connect(); break;
+            case 'google_calendar_disconnect': $this->handle_google_calendar_disconnect(); break;
             case 'delete_client': $this->handle_client_delete(); break;
             case 'delete_project': $this->handle_project_delete(); break;
         }
@@ -1048,6 +1059,15 @@ class ERP_OMD_Admin
         $last_backup_at = (string) get_option('erp_omd_last_backup_at', '');
         $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
         $last_backup_file = (string) get_option('erp_omd_last_backup_file', '');
+        $google_calendar_client_id = (string) get_option('erp_omd_google_calendar_client_id', '');
+        $google_calendar_client_secret_masked = $this->masked_secret($this->decrypt_option_value((string) get_option('erp_omd_google_calendar_client_secret_enc', '')));
+        $google_calendar_redirect_uri = $this->google_calendar_redirect_uri();
+        $google_calendar_scope = (string) get_option('erp_omd_google_calendar_scope', 'https://www.googleapis.com/auth/calendar.events');
+        $google_calendar_calendar_id = (string) get_option('erp_omd_google_calendar_calendar_id', 'primary');
+        $google_calendar_technical_account_email = (string) get_option('erp_omd_google_calendar_technical_account_email', '');
+        $google_calendar_connected = $this->decrypt_option_value((string) get_option('erp_omd_google_calendar_refresh_token_enc', '')) !== '';
+        $google_calendar_last_sync_at = (string) get_option('erp_omd_google_calendar_last_sync_at', '');
+        $google_calendar_last_error = (string) get_option('erp_omd_google_calendar_last_error', '');
 
         include ERP_OMD_PATH . 'templates/admin/settings.php';
     }
@@ -2733,7 +2753,177 @@ class ERP_OMD_Admin
         $fixed_items = $this->normalize_fixed_monthly_cost_items(wp_unslash($_POST['fixed_cost_items'] ?? []));
         update_option('erp_omd_fixed_monthly_cost_items', $fixed_items);
         update_option('erp_omd_fixed_monthly_cost', array_sum(wp_list_pluck($fixed_items, 'amount')));
+        $google_calendar_client_id = sanitize_text_field(wp_unslash($_POST['google_calendar_client_id'] ?? ''));
+        $google_calendar_client_secret = trim((string) wp_unslash($_POST['google_calendar_client_secret'] ?? ''));
+        $google_calendar_scope = sanitize_text_field(wp_unslash($_POST['google_calendar_scope'] ?? 'https://www.googleapis.com/auth/calendar.events'));
+        if (! in_array($google_calendar_scope, ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar'], true)) {
+            $google_calendar_scope = 'https://www.googleapis.com/auth/calendar.events';
+        }
+        $google_calendar_calendar_id = sanitize_text_field(wp_unslash($_POST['google_calendar_calendar_id'] ?? 'primary'));
+        if ($google_calendar_calendar_id === '') {
+            $google_calendar_calendar_id = 'primary';
+        }
+        $google_calendar_technical_account_email = sanitize_email(wp_unslash($_POST['google_calendar_technical_account_email'] ?? ''));
+        if ($google_calendar_technical_account_email !== '' && ! is_email($google_calendar_technical_account_email)) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres e-mail konta technicznego Google Calendar jest niepoprawny.', 'erp-omd'));
+        }
+
+        update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
+        update_option('erp_omd_google_calendar_scope', $google_calendar_scope);
+        update_option('erp_omd_google_calendar_calendar_id', $google_calendar_calendar_id);
+        update_option('erp_omd_google_calendar_technical_account_email', $google_calendar_technical_account_email);
+        if ($google_calendar_client_secret !== '') {
+            update_option('erp_omd_google_calendar_client_secret_enc', $this->encrypt_option_value($google_calendar_client_secret));
+        }
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
+    }
+
+    private function handle_google_calendar_connect()
+    {
+        check_admin_referer('erp_omd_google_calendar_connect');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $client_id = trim((string) get_option('erp_omd_google_calendar_client_id', ''));
+        $client_secret = trim((string) $this->decrypt_option_value((string) get_option('erp_omd_google_calendar_client_secret_enc', '')));
+        $scope = trim((string) get_option('erp_omd_google_calendar_scope', 'https://www.googleapis.com/auth/calendar.events'));
+        if ($client_id === '' || $client_secret === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Aby połączyć Google Calendar, najpierw uzupełnij client_id i client_secret w ustawieniach.', 'erp-omd'));
+        }
+
+        $state_payload = [
+            'nonce' => wp_generate_password(24, false, false),
+            'user_id' => (int) get_current_user_id(),
+            'created_at' => time(),
+        ];
+        update_option('erp_omd_google_calendar_oauth_state', wp_json_encode($state_payload));
+
+        $auth_url = add_query_arg(
+            [
+                'client_id' => $client_id,
+                'redirect_uri' => $this->google_calendar_redirect_uri(),
+                'response_type' => 'code',
+                'access_type' => 'offline',
+                'prompt' => 'consent',
+                'scope' => $scope,
+                'state' => $state_payload['nonce'],
+            ],
+            'https://accounts.google.com/o/oauth2/v2/auth'
+        );
+
+        wp_safe_redirect($auth_url);
+        exit;
+    }
+
+    private function handle_google_calendar_disconnect()
+    {
+        check_admin_referer('erp_omd_google_calendar_disconnect');
+        $this->require_capability('erp_omd_manage_settings');
+
+        update_option('erp_omd_google_calendar_access_token_enc', '');
+        update_option('erp_omd_google_calendar_refresh_token_enc', '');
+        update_option('erp_omd_google_calendar_access_token_expires_at', 0);
+        update_option('erp_omd_google_calendar_last_error', '');
+        update_option('erp_omd_google_calendar_last_sync_at', '');
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Połączenie Google Calendar zostało rozłączone.', 'erp-omd'));
+    }
+
+    private function handle_google_calendar_oauth_callback()
+    {
+        $this->require_capability('erp_omd_manage_settings');
+        $error = sanitize_text_field((string) ($_GET['error'] ?? ''));
+        if ($error !== '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Google OAuth zwrócił błąd: %s', 'erp-omd'), $error));
+        }
+
+        $code = sanitize_text_field((string) ($_GET['code'] ?? ''));
+        $state = sanitize_text_field((string) ($_GET['state'] ?? ''));
+        $state_payload = json_decode((string) get_option('erp_omd_google_calendar_oauth_state', ''), true);
+        $expected_state = is_array($state_payload) ? (string) ($state_payload['nonce'] ?? '') : '';
+        if ($code === '' || $state === '' || $expected_state === '' || ! hash_equals($expected_state, $state)) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Niepoprawna odpowiedź OAuth Google Calendar (state/code).', 'erp-omd'));
+        }
+
+        $client_id = trim((string) get_option('erp_omd_google_calendar_client_id', ''));
+        $client_secret = trim((string) $this->decrypt_option_value((string) get_option('erp_omd_google_calendar_client_secret_enc', '')));
+        if ($client_id === '' || $client_secret === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Brak client_id/client_secret dla Google OAuth.', 'erp-omd'));
+        }
+
+        $response = wp_remote_post('https://oauth2.googleapis.com/token', [
+            'timeout' => 20,
+            'body' => [
+                'code' => $code,
+                'client_id' => $client_id,
+                'client_secret' => $client_secret,
+                'redirect_uri' => $this->google_calendar_redirect_uri(),
+                'grant_type' => 'authorization_code',
+            ],
+        ]);
+
+        if (is_wp_error($response)) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Nie udało się połączyć z Google OAuth: %s', 'erp-omd'), $response->get_error_message()));
+        }
+
+        $payload = json_decode((string) wp_remote_retrieve_body($response), true);
+        $access_token = (string) ($payload['access_token'] ?? '');
+        $refresh_token = (string) ($payload['refresh_token'] ?? '');
+        $expires_in = max(60, (int) ($payload['expires_in'] ?? 3600));
+        if ($access_token === '' || $refresh_token === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Google OAuth nie zwrócił access_token lub refresh_token.', 'erp-omd'));
+        }
+
+        update_option('erp_omd_google_calendar_access_token_enc', $this->encrypt_option_value($access_token));
+        update_option('erp_omd_google_calendar_refresh_token_enc', $this->encrypt_option_value($refresh_token));
+        update_option('erp_omd_google_calendar_access_token_expires_at', time() + $expires_in);
+        update_option('erp_omd_google_calendar_last_error', '');
+        update_option('erp_omd_google_calendar_oauth_state', '');
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Google Calendar został pomyślnie połączony.', 'erp-omd'));
+    }
+
+    private function google_calendar_redirect_uri()
+    {
+        return admin_url('admin.php?page=erp-omd-settings&erp_omd_google_oauth_callback=1');
+    }
+
+    private function encrypt_option_value($raw_value)
+    {
+        $raw_value = (string) $raw_value;
+        if ($raw_value === '' || ! function_exists('openssl_encrypt')) {
+            return $raw_value;
+        }
+
+        $key = hash('sha256', (string) wp_salt('auth'), true);
+        $iv = substr(hash('sha256', (string) wp_salt('secure_auth')), 0, 16);
+        $encrypted = openssl_encrypt($raw_value, 'AES-256-CBC', $key, 0, $iv);
+
+        return is_string($encrypted) ? $encrypted : $raw_value;
+    }
+
+    private function decrypt_option_value($encrypted)
+    {
+        $encrypted = (string) $encrypted;
+        if ($encrypted === '' || ! function_exists('openssl_decrypt')) {
+            return $encrypted;
+        }
+
+        $key = hash('sha256', (string) wp_salt('auth'), true);
+        $iv = substr(hash('sha256', (string) wp_salt('secure_auth')), 0, 16);
+        $decrypted = openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
+
+        return is_string($decrypted) ? $decrypted : $encrypted;
+    }
+
+    private function masked_secret($secret)
+    {
+        $secret = (string) $secret;
+        if ($secret === '') {
+            return '';
+        }
+        if (strlen($secret) <= 6) {
+            return str_repeat('*', strlen($secret));
+        }
+
+        return substr($secret, 0, 3) . str_repeat('*', max(0, strlen($secret) - 6)) . substr($secret, -3);
     }
 
     private function normalize_fixed_monthly_cost_items(array $raw_items)
