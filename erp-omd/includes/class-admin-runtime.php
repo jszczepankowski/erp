@@ -1760,6 +1760,11 @@ class ERP_OMD_Admin
             $this->redirect_cost_invoice_page(['error' => 'supplier_name_required']);
         }
 
+        $contact_errors = $this->validate_supplier_contact_fields($payload);
+        if ($contact_errors !== []) {
+            $this->redirect_cost_invoice_page(['error' => rawurlencode(implode(' ', $contact_errors))]);
+        }
+
         $repository = new ERP_OMD_Supplier_Repository();
         if ($supplier_id > 0) {
             $repository->update($supplier_id, $payload);
@@ -2528,6 +2533,37 @@ class ERP_OMD_Admin
         }
 
         return $categories;
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @return array<int,string>
+     */
+    private function validate_supplier_contact_fields(array $payload)
+    {
+        $errors = [];
+        $contact_name = trim((string) ($payload['contact_person_name'] ?? ''));
+        $contact_email = trim((string) ($payload['contact_person_email'] ?? ''));
+        $contact_phone = trim((string) ($payload['contact_person_phone'] ?? ''));
+
+        $has_any_contact_field = ($contact_name !== '' || $contact_email !== '' || $contact_phone !== '');
+        if (! $has_any_contact_field) {
+            return $errors;
+        }
+
+        if ($contact_name === '') {
+            $errors[] = __('Imię opiekuna jest wymagane, jeśli podajesz dane kontaktowe.', 'erp-omd');
+        }
+
+        if ($contact_email === '' && $contact_phone === '') {
+            $errors[] = __('Podaj email lub telefon opiekuna.', 'erp-omd');
+        }
+
+        if ($contact_phone !== '' && preg_match('/^[0-9+\-\s()]{7,30}$/', $contact_phone) !== 1) {
+            $errors[] = __('Telefon opiekuna ma nieprawidłowy format.', 'erp-omd');
+        }
+
+        return $errors;
     }
 
     private function handle_project_cost_delete()

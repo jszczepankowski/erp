@@ -798,8 +798,8 @@ class ERP_OMD_REST_API
     }
     public function list_suppliers(WP_REST_Request $request) { return rest_ensure_response($this->suppliers->all_active()); }
     public function get_supplier(WP_REST_Request $request) { $supplier = $this->suppliers->find((int) $request['id']); if (! $supplier) { return new WP_Error('erp_omd_supplier_not_found', __('Supplier not found.', 'erp-omd'), ['status' => 404]); } return rest_ensure_response($supplier); }
-    public function create_supplier(WP_REST_Request $request) { $payload = $this->sanitize_supplier_payload($request); if ($payload['name'] === '') { return new WP_Error('erp_omd_supplier_invalid', __('Supplier name is required.', 'erp-omd'), ['status' => 422]); } if (! $this->is_supplier_category_allowed((string) ($payload['category'] ?? ''))) { return new WP_Error('erp_omd_supplier_invalid_category', __('Supplier category must match configured dictionary.', 'erp-omd'), ['status' => 422]); } $id = $this->suppliers->create($payload); return new WP_REST_Response($this->suppliers->find($id), 201); }
-    public function update_supplier(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->suppliers->find($id); if (! $existing) { return new WP_Error('erp_omd_supplier_not_found', __('Supplier not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_supplier_payload($request, $existing); if (trim((string) ($payload['name'] ?? '')) === '') { return new WP_Error('erp_omd_supplier_invalid', __('Supplier name is required.', 'erp-omd'), ['status' => 422]); } if (! $this->is_supplier_category_allowed((string) ($payload['category'] ?? ''))) { return new WP_Error('erp_omd_supplier_invalid_category', __('Supplier category must match configured dictionary.', 'erp-omd'), ['status' => 422]); } $this->suppliers->update($id, $payload); return rest_ensure_response($this->suppliers->find($id)); }
+    public function create_supplier(WP_REST_Request $request) { $payload = $this->sanitize_supplier_payload($request); if ($payload['name'] === '') { return new WP_Error('erp_omd_supplier_invalid', __('Supplier name is required.', 'erp-omd'), ['status' => 422]); } if (! $this->is_supplier_category_allowed((string) ($payload['category'] ?? ''))) { return new WP_Error('erp_omd_supplier_invalid_category', __('Supplier category must match configured dictionary.', 'erp-omd'), ['status' => 422]); } $contact_errors = $this->validate_supplier_contact_fields($payload); if ($contact_errors !== []) { return new WP_Error('erp_omd_supplier_contact_invalid', implode(' ', $contact_errors), ['status' => 422]); } $id = $this->suppliers->create($payload); return new WP_REST_Response($this->suppliers->find($id), 201); }
+    public function update_supplier(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->suppliers->find($id); if (! $existing) { return new WP_Error('erp_omd_supplier_not_found', __('Supplier not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_supplier_payload($request, $existing); if (trim((string) ($payload['name'] ?? '')) === '') { return new WP_Error('erp_omd_supplier_invalid', __('Supplier name is required.', 'erp-omd'), ['status' => 422]); } if (! $this->is_supplier_category_allowed((string) ($payload['category'] ?? ''))) { return new WP_Error('erp_omd_supplier_invalid_category', __('Supplier category must match configured dictionary.', 'erp-omd'), ['status' => 422]); } $contact_errors = $this->validate_supplier_contact_fields($payload); if ($contact_errors !== []) { return new WP_Error('erp_omd_supplier_contact_invalid', implode(' ', $contact_errors), ['status' => 422]); } $this->suppliers->update($id, $payload); return rest_ensure_response($this->suppliers->find($id)); }
     public function list_cost_invoices(WP_REST_Request $request) { $filters = ['supplier_id' => (int) $request->get_param('supplier_id'), 'project_id' => (int) $request->get_param('project_id'), 'status' => sanitize_text_field((string) $request->get_param('status'))]; return rest_ensure_response($this->cost_invoices->list($filters)); }
     public function get_cost_invoice(WP_REST_Request $request) { $invoice = $this->cost_invoices->find((int) $request['id']); if (! $invoice) { return new WP_Error('erp_omd_cost_invoice_not_found', __('Cost invoice not found.', 'erp-omd'), ['status' => 404]); } return rest_ensure_response($invoice); }
     public function create_cost_invoice(WP_REST_Request $request) { $payload = $this->sanitize_cost_invoice_payload($request); $payload['created_by_user_id'] = get_current_user_id(); $payload['updated_by_user_id'] = get_current_user_id(); $result = $this->cost_invoice_workflow->create_invoice($payload); if (! (bool) ($result['ok'] ?? false)) { return new WP_Error('erp_omd_cost_invoice_invalid', implode(' ', (array) ($result['errors'] ?? [])), ['status' => 422]); } return new WP_REST_Response($this->cost_invoices->find((int) $result['invoice_id']), 201); }
@@ -1718,6 +1718,36 @@ class ERP_OMD_REST_API
         }
 
         return $categories;
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @return array<int,string>
+     */
+    private function validate_supplier_contact_fields(array $payload)
+    {
+        $errors = [];
+        $contact_name = trim((string) ($payload['contact_person_name'] ?? ''));
+        $contact_email = trim((string) ($payload['contact_person_email'] ?? ''));
+        $contact_phone = trim((string) ($payload['contact_person_phone'] ?? ''));
+
+        if ($contact_name === '' && $contact_email === '' && $contact_phone === '') {
+            return $errors;
+        }
+
+        if ($contact_name === '') {
+            $errors[] = __('Contact person name is required when contact details are provided.', 'erp-omd');
+        }
+
+        if ($contact_email === '' && $contact_phone === '') {
+            $errors[] = __('Provide contact person email or phone.', 'erp-omd');
+        }
+
+        if ($contact_phone !== '' && preg_match('/^[0-9+\-\s()]{7,30}$/', $contact_phone) !== 1) {
+            $errors[] = __('Contact person phone format is invalid.', 'erp-omd');
+        }
+
+        return $errors;
     }
 
 

@@ -27,7 +27,9 @@ $requiredFragments = [
     'function import_ksef_documents(',
     'sanitize_cost_invoice_payload(WP_REST_Request $request, array $existing = null)',
     'supplier_description',
+    'erp_omd_supplier_contact_invalid',
     'function is_supplier_category_allowed(',
+    'function validate_supplier_contact_fields(',
     'function request_param_or_default(',
     'function get_client_portal_project_finance(',
 ];

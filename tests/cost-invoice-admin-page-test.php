@@ -18,6 +18,7 @@ $runtimeFragments = [
     'function handle_cost_invoice_save(',
     'function redirect_cost_invoice_page(',
     'normalize_supplier_categories',
+    'validate_supplier_contact_fields',
     'supplier_category_invalid',
     'selected_supplier_id',
     'selected_invoice',
