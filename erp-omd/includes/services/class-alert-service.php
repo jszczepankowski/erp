@@ -81,10 +81,13 @@ class ERP_OMD_Alert_Service
                 $alerts[] = $this->make_alert('warning', 'project_low_margin', 'project', $project_id, sprintf(__('Projekt %s ma niską marżę (%s%%, próg %s%%).', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id), number_format_i18n($margin, 2), number_format_i18n($margin_threshold, 2)));
             }
 
-            $project_rates = $this->project_rates->for_project($project_id);
-            $client_rates = $this->client_rates->for_client((int) ($project['client_id'] ?? 0));
-            if (empty($project_rates) && empty($client_rates)) {
-                $alerts[] = $this->make_alert('warning', 'project_missing_rates', 'project', $project_id, sprintf(__('Projekt %s nie ma skonfigurowanych stawek projektowych ani stawek klienta.', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id)));
+            $billing_type = (string) ($project['billing_type'] ?? '');
+            if ($billing_type !== 'retainer') {
+                $project_rates = $this->project_rates->for_project($project_id);
+                $client_rates = $this->client_rates->for_client((int) ($project['client_id'] ?? 0));
+                if (empty($project_rates) && empty($client_rates)) {
+                    $alerts[] = $this->make_alert('warning', 'project_missing_rates', 'project', $project_id, sprintf(__('Projekt %s nie ma skonfigurowanych stawek projektowych ani stawek klienta.', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id)));
+                }
             }
 
             $deadline_date = (string) ($project['deadline_date'] ?? '');

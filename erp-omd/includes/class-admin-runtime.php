@@ -1037,7 +1037,8 @@ class ERP_OMD_Admin
         $events = [];
         foreach ($this->projects->all() as $project) {
             $project_status = (string) ($project['status'] ?? '');
-            if ($project_status === 'archiwum') {
+            $billing_type = (string) ($project['billing_type'] ?? '');
+            if ($project_status === 'archiwum' || $billing_type === 'retainer') {
                 continue;
             }
 
@@ -2816,7 +2817,7 @@ class ERP_OMD_Admin
             'https://accounts.google.com/o/oauth2/v2/auth'
         );
 
-        wp_safe_redirect($auth_url);
+        wp_redirect($auth_url);
         exit;
     }
 

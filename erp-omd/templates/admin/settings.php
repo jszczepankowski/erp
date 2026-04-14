@@ -393,15 +393,15 @@
             <?php wp_nonce_field('erp_omd_restore_backup_bundle'); ?>
             <input type="hidden" name="erp_omd_action" value="restore_backup_bundle" />
         </form>
-        <form id="erp-omd-google-calendar-connect-form" method="post">
+        <form id="erp-omd-google-calendar-connect-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_connect'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_connect" />
         </form>
-        <form id="erp-omd-google-calendar-disconnect-form" method="post">
+        <form id="erp-omd-google-calendar-disconnect-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_disconnect'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_disconnect" />
         </form>
-        <form id="erp-omd-google-calendar-sync-now-form" method="post">
+        <form id="erp-omd-google-calendar-sync-now-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_sync_now'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_sync_now" />
         </form>
