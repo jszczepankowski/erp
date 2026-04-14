@@ -909,15 +909,6 @@ class ERP_OMD_Admin
 
             return true;
         }));
-        $projects_calendar_month = sanitize_text_field(wp_unslash($_GET['calendar_month'] ?? ($project_filters['month'] ?: current_time('Y-m'))));
-        if (! $this->is_valid_month_string($projects_calendar_month)) {
-            $projects_calendar_month = current_time('Y-m');
-        }
-        $projects_calendar_data = [
-            'month' => $projects_calendar_month,
-            'weeks' => [],
-            'totals' => ['deadlines_count' => 0, 'projects_count' => 0],
-        ];
         $project_attachments = $project ? $this->attachments->for_entity('project', (int) $project['id']) : [];
         include ERP_OMD_PATH . 'templates/admin/projects.php';
     }
