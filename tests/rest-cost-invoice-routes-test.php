@@ -27,6 +27,7 @@ $requiredFragments = [
     'function import_ksef_documents(',
     'supplier_description',
     'function is_supplier_category_allowed(',
+    'function request_param_or_default(',
     'function get_client_portal_project_finance(',
 ];
 

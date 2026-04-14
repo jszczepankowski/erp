@@ -71,7 +71,11 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
         $supplier_id = (int) ($invoice_data['supplier_id'] ?? 0);
         $project_id = (int) ($invoice_data['project_id'] ?? 0);
         $invoice_number = trim((string) ($invoice_data['invoice_number'] ?? ''));
+        $issue_date = trim((string) ($invoice_data['issue_date'] ?? ''));
         $status = $this->normalize_status((string) ($invoice_data['status'] ?? ''));
+        $net_amount = (float) ($invoice_data['net_amount'] ?? 0);
+        $vat_amount = (float) ($invoice_data['vat_amount'] ?? 0);
+        $gross_amount = (float) ($invoice_data['gross_amount'] ?? 0);
 
         if ($supplier_id <= 0) {
             $errors[] = __('Wybierz dostawcę dla faktury kosztowej.', 'erp-omd');
@@ -87,6 +91,12 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
 
         if ($invoice_number === '') {
             $errors[] = __('Numer faktury kosztowej jest wymagany.', 'erp-omd');
+        }
+
+        if ($issue_date === '') {
+            $errors[] = __('Data wystawienia faktury kosztowej jest wymagana.', 'erp-omd');
+        } elseif (! $this->is_valid_iso_date($issue_date)) {
+            $errors[] = __('Data wystawienia faktury kosztowej musi mieć format RRRR-MM-DD.', 'erp-omd');
         }
 
         if ($status === '') {
@@ -124,6 +134,14 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
                 $errors[] = __('Numer faktury musi być unikalny w obrębie dostawcy.', 'erp-omd');
                 break;
             }
+        }
+
+        if ($net_amount < 0 || $vat_amount < 0 || $gross_amount < 0) {
+            $errors[] = __('Kwoty faktury kosztowej nie mogą być ujemne.', 'erp-omd');
+        }
+
+        if ($this->is_totals_mismatch($net_amount, $vat_amount, $gross_amount)) {
+            $errors[] = __('Kwota brutto musi być równa netto + VAT.', 'erp-omd');
         }
 
         return $errors;
@@ -272,6 +290,28 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
         }
 
         return gmdate('Y-m-d H:i:s');
+    }
+
+    private function is_valid_iso_date($date)
+    {
+        if (! is_string($date) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
+            return false;
+        }
+
+        $timestamp = strtotime($date . ' 00:00:00');
+        if ($timestamp === false) {
+            return false;
+        }
+
+        return gmdate('Y-m-d', $timestamp) === $date;
+    }
+
+    private function is_totals_mismatch($net_amount, $vat_amount, $gross_amount)
+    {
+        $expected_gross = round((float) $net_amount + (float) $vat_amount, 2);
+        $actual_gross = round((float) $gross_amount, 2);
+
+        return abs($expected_gross - $actual_gross) > 0.01;
     }
 
     /**

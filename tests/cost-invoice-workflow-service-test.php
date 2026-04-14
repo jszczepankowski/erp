@@ -107,6 +107,10 @@ $errors = $service->validate_invoice_data(
         'supplier_id' => 2,
         'project_id' => 9,
         'invoice_number' => 'FV/2026/04/11',
+        'issue_date' => '2026-04-11',
+        'net_amount' => 100.00,
+        'vat_amount' => 23.00,
+        'gross_amount' => 123.00,
         'status' => 'weryfikacja',
     ],
     [
@@ -158,6 +162,10 @@ $created = $service->create_invoice(
         'supplier_id' => 2,
         'project_id' => 9,
         'invoice_number' => 'FV/2026/04/12',
+        'issue_date' => '2026-04-12',
+        'net_amount' => 200.00,
+        'vat_amount' => 46.00,
+        'gross_amount' => 246.00,
         'status' => 'zaimportowana',
     ]
 );
@@ -169,7 +177,7 @@ if (($created['ok'] ?? false) !== true || (int) ($created['invoice_id'] ?? 0) <=
 
 $updated = $service->update_invoice(
     (int) $created['invoice_id'],
-    ['status' => 'weryfikacja', 'gross_amount' => '100.00'],
+    ['status' => 'weryfikacja'],
     77
 );
 
@@ -188,6 +196,10 @@ $invalidRelationErrors = $service->validate_invoice_data(
         'supplier_id' => 999,
         'project_id' => 999,
         'invoice_number' => 'FV/INVALID',
+        'issue_date' => '2026-04-01',
+        'net_amount' => 0,
+        'vat_amount' => 0,
+        'gross_amount' => 0,
         'status' => 'zaimportowana',
     ]
 );
@@ -195,6 +207,24 @@ $invalidRelationErrors = $service->validate_invoice_data(
 $assertions++;
 if (count($invalidRelationErrors) < 2) {
     throw new RuntimeException('Expected relation errors for non-existing supplier and project.');
+}
+
+$invalidAmountsErrors = $service->validate_invoice_data(
+    [
+        'supplier_id' => 2,
+        'project_id' => 9,
+        'invoice_number' => 'FV/INVALID/2',
+        'issue_date' => '2026-15-40',
+        'net_amount' => -10,
+        'vat_amount' => 5,
+        'gross_amount' => 1,
+        'status' => 'zaimportowana',
+    ]
+);
+
+$assertions++;
+if (count($invalidAmountsErrors) < 3) {
+    throw new RuntimeException('Expected date, non-negative and gross-total validation errors.');
 }
 
 echo "Assertions: {$assertions}\n";
