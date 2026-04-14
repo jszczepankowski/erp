@@ -48,6 +48,22 @@ class ERP_OMD_Cost_Invoice_Repository_Fake
         $this->rows[(int) $id] = array_merge($this->rows[(int) $id], $data, ['id' => (int) $id]);
         return 1;
     }
+
+    public function find_by_ksef_reference($ksef_reference_number)
+    {
+        $needle = trim((string) $ksef_reference_number);
+        if ($needle === '') {
+            return null;
+        }
+
+        foreach ($this->rows as $row) {
+            if ((string) ($row['ksef_reference_number'] ?? '') === $needle) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
 }
 
 class ERP_OMD_Cost_Invoice_Audit_Repository_Fake
@@ -225,6 +241,40 @@ $invalidAmountsErrors = $service->validate_invoice_data(
 $assertions++;
 if (count($invalidAmountsErrors) < 3) {
     throw new RuntimeException('Expected date, non-negative and gross-total validation errors.');
+}
+
+$invoice_repository->rows[999] = [
+    'id' => 999,
+    'supplier_id' => 2,
+    'project_id' => 9,
+    'invoice_number' => 'FV/KSEF/EXISTING',
+    'issue_date' => '2026-04-13',
+    'status' => 'zaimportowana',
+    'source' => 'ksef',
+    'ksef_reference_number' => 'KSEF-REF-123',
+    'net_amount' => 10.00,
+    'vat_amount' => 2.30,
+    'gross_amount' => 12.30,
+];
+
+$ksefErrors = $service->validate_invoice_data(
+    [
+        'supplier_id' => 2,
+        'project_id' => 9,
+        'invoice_number' => 'FV/KSEF/NEW',
+        'issue_date' => '2026-04-14',
+        'status' => 'zaimportowana',
+        'source' => 'ksef',
+        'ksef_reference_number' => 'KSEF-REF-123',
+        'net_amount' => 100.00,
+        'vat_amount' => 23.00,
+        'gross_amount' => 123.00,
+    ]
+);
+
+$assertions++;
+if (count($ksefErrors) < 1 || strpos(implode(' ', $ksefErrors), 'KSeF') === false) {
+    throw new RuntimeException('Expected KSeF reference uniqueness validation error.');
 }
 
 echo "Assertions: {$assertions}\n";

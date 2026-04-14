@@ -83,6 +83,24 @@ class ERP_OMD_Cost_Invoice_Repository
         );
     }
 
+    public function find_by_ksef_reference($ksef_reference_number)
+    {
+        global $wpdb;
+
+        $ksef_reference_number = trim((string) $ksef_reference_number);
+        if ($ksef_reference_number === '') {
+            return null;
+        }
+
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM {$this->table_name()} WHERE ksef_reference_number = %s ORDER BY id DESC LIMIT 1",
+                $ksef_reference_number
+            ),
+            ARRAY_A
+        );
+    }
+
     public function create(array $data)
     {
         global $wpdb;

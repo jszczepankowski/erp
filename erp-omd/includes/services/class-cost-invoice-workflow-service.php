@@ -73,6 +73,8 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
         $invoice_number = trim((string) ($invoice_data['invoice_number'] ?? ''));
         $issue_date = trim((string) ($invoice_data['issue_date'] ?? ''));
         $status = $this->normalize_status((string) ($invoice_data['status'] ?? ''));
+        $source = trim((string) ($invoice_data['source'] ?? 'manual'));
+        $ksef_reference_number = trim((string) ($invoice_data['ksef_reference_number'] ?? ''));
         $net_amount = (float) ($invoice_data['net_amount'] ?? 0);
         $vat_amount = (float) ($invoice_data['vat_amount'] ?? 0);
         $gross_amount = (float) ($invoice_data['gross_amount'] ?? 0);
@@ -142,6 +144,14 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
 
         if ($this->is_totals_mismatch($net_amount, $vat_amount, $gross_amount)) {
             $errors[] = __('Kwota brutto musi być równa netto + VAT.', 'erp-omd');
+        }
+
+        if (mb_strtolower($source) === 'ksef') {
+            if ($ksef_reference_number === '') {
+                $errors[] = __('Dla faktury z KSeF numer referencyjny KSeF jest wymagany.', 'erp-omd');
+            } elseif ($this->ksef_reference_exists_on_other_invoice($ksef_reference_number, (int) ($invoice_data['id'] ?? 0))) {
+                $errors[] = __('Numer referencyjny KSeF musi być unikalny.', 'erp-omd');
+            }
         }
 
         return $errors;
@@ -312,6 +322,20 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
         $actual_gross = round((float) $gross_amount, 2);
 
         return abs($expected_gross - $actual_gross) > 0.01;
+    }
+
+    private function ksef_reference_exists_on_other_invoice($ksef_reference_number, $current_invoice_id)
+    {
+        if ($ksef_reference_number === '' || ! $this->invoice_repository || ! method_exists($this->invoice_repository, 'find_by_ksef_reference')) {
+            return false;
+        }
+
+        $existing = $this->invoice_repository->find_by_ksef_reference($ksef_reference_number);
+        if (! is_array($existing) || $existing === []) {
+            return false;
+        }
+
+        return (int) ($existing['id'] ?? 0) !== (int) $current_invoice_id;
     }
 
     /**

@@ -9,6 +9,7 @@ if ($source === '') {
 
 $required = [
     'function project_supplier_pairs(',
+    'function find_by_ksef_reference(',
     'GROUP BY project_id, supplier_id',
     'COUNT(*) AS invoices_count',
     'SUM(gross_amount) AS gross_total',
