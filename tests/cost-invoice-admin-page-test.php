@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+$runtimeSource = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-admin-runtime.php');
+$templateSource = (string) file_get_contents(__DIR__ . '/../erp-omd/templates/admin/cost-invoices.php');
+
+if ($runtimeSource === '' || $templateSource === '') {
+    throw new RuntimeException('Unable to read admin runtime/template source.');
+}
+
+$runtimeFragments = [
+    "'erp-omd-cost-invoices'",
+    'render_cost_invoices',
+    "case 'save_supplier'",
+    "case 'save_cost_invoice'",
+    'function handle_supplier_save(',
+    'function handle_cost_invoice_save(',
+    'function redirect_cost_invoice_page(',
+];
+
+$templateFragments = [
+    "name=\"erp_omd_action\" value=\"save_supplier\"",
+    "name=\"erp_omd_action\" value=\"save_cost_invoice\"",
+    'Lista faktur kosztowych',
+    'Audit faktury',
+];
+
+$assertions = 0;
+foreach ($runtimeFragments as $fragment) {
+    $assertions++;
+    if (strpos($runtimeSource, $fragment) === false) {
+        throw new RuntimeException('Missing admin runtime fragment: ' . $fragment);
+    }
+}
+
+foreach ($templateFragments as $fragment) {
+    $assertions++;
+    if (strpos($templateSource, $fragment) === false) {
+        throw new RuntimeException('Missing admin template fragment: ' . $fragment);
+    }
+}
+
+echo "Assertions: {$assertions}\n";
+echo "Cost invoice admin page test passed.\n";
