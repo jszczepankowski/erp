@@ -2780,13 +2780,6 @@ class ERP_OMD_Admin
         if (! wp_http_validate_url($google_calendar_redirect_uri)) {
             $this->redirect_with_notice('erp-omd-settings', 'error', __('Redirect URI Google Calendar jest niepoprawny.', 'erp-omd'));
         }
-        $google_calendar_redirect_uri = $this->normalize_google_calendar_redirect_uri_v2((string) wp_unslash($_POST['google_calendar_redirect_uri'] ?? ''));
-        if ($google_calendar_redirect_uri === '') {
-            $google_calendar_redirect_uri = admin_url('admin.php?page=erp-omd-settings');
-        }
-        if (! wp_http_validate_url($google_calendar_redirect_uri)) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('Redirect URI Google Calendar jest niepoprawny.', 'erp-omd'));
-        }
         $google_calendar_calendar_id = sanitize_text_field(wp_unslash($_POST['google_calendar_calendar_id'] ?? 'primary'));
         if ($google_calendar_calendar_id === '') {
             $google_calendar_calendar_id = 'primary';
