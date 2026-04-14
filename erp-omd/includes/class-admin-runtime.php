@@ -1037,7 +1037,8 @@ class ERP_OMD_Admin
         $events = [];
         foreach ($this->projects->all() as $project) {
             $project_status = (string) ($project['status'] ?? '');
-            if ($project_status === 'archiwum') {
+            $billing_type = (string) ($project['billing_type'] ?? '');
+            if ($project_status === 'archiwum' || $billing_type === 'retainer') {
                 continue;
             }
 
