@@ -2,6 +2,18 @@
 
 class ERP_OMD_Cost_Invoice_Workflow_Service
 {
+    /** @var mixed */
+    private $invoice_repository;
+
+    /** @var mixed */
+    private $audit_repository;
+
+    public function __construct($invoice_repository = null, $audit_repository = null)
+    {
+        $this->invoice_repository = $invoice_repository;
+        $this->audit_repository = $audit_repository;
+    }
+
     /**
      * @return array<int,string>
      */
@@ -138,6 +150,69 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
     }
 
     /**
+     * @param array<string,mixed> $invoice_data
+     * @return array<string,mixed>
+     */
+    public function create_invoice(array $invoice_data)
+    {
+        $existing_supplier_invoices = $this->load_supplier_invoices((int) ($invoice_data['supplier_id'] ?? 0));
+        $errors = $this->validate_invoice_data($invoice_data, $existing_supplier_invoices, null);
+        if ($errors !== []) {
+            return ['ok' => false, 'errors' => $errors];
+        }
+
+        if (! $this->invoice_repository || ! method_exists($this->invoice_repository, 'create')) {
+            return ['ok' => false, 'errors' => [__('Repozytorium faktur kosztowych nie jest dostępne.', 'erp-omd')]];
+        }
+
+        $invoice_id = (int) $this->invoice_repository->create($invoice_data);
+        if ($invoice_id <= 0) {
+            return ['ok' => false, 'errors' => [__('Nie udało się zapisać faktury kosztowej.', 'erp-omd')]];
+        }
+
+        return ['ok' => true, 'invoice_id' => $invoice_id, 'errors' => []];
+    }
+
+    /**
+     * @param int $invoice_id
+     * @param array<string,mixed> $invoice_data
+     * @param int $changed_by_user_id
+     * @return array<string,mixed>
+     */
+    public function update_invoice($invoice_id, array $invoice_data, $changed_by_user_id)
+    {
+        if (! $this->invoice_repository || ! method_exists($this->invoice_repository, 'find') || ! method_exists($this->invoice_repository, 'update')) {
+            return ['ok' => false, 'errors' => [__('Repozytorium faktur kosztowych nie jest dostępne.', 'erp-omd')]];
+        }
+
+        $before = (array) $this->invoice_repository->find((int) $invoice_id);
+        if ($before === []) {
+            return ['ok' => false, 'errors' => [__('Nie znaleziono faktury kosztowej do aktualizacji.', 'erp-omd')]];
+        }
+
+        $after = array_merge($before, $invoice_data, ['id' => (int) $invoice_id]);
+        $supplier_id = (int) ($after['supplier_id'] ?? 0);
+        $existing_supplier_invoices = $this->load_supplier_invoices($supplier_id);
+        $errors = $this->validate_invoice_data($after, $existing_supplier_invoices, $before);
+
+        if ($errors !== []) {
+            return ['ok' => false, 'errors' => $errors];
+        }
+
+        $updated = $this->invoice_repository->update((int) $invoice_id, $after);
+        if ($updated === false) {
+            return ['ok' => false, 'errors' => [__('Nie udało się zaktualizować faktury kosztowej.', 'erp-omd')]];
+        }
+
+        $audit_rows = $this->build_critical_audit_entries($before, $after, (int) $changed_by_user_id);
+        if ($audit_rows !== [] && $this->audit_repository && method_exists($this->audit_repository, 'insert_many')) {
+            $this->audit_repository->insert_many($audit_rows);
+        }
+
+        return ['ok' => true, 'invoice_id' => (int) $invoice_id, 'audit_rows' => $audit_rows, 'errors' => []];
+    }
+
+    /**
      * @param mixed $value
      * @return string
      */
@@ -185,5 +260,18 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
         }
 
         return gmdate('Y-m-d H:i:s');
+    }
+
+    /**
+     * @param int $supplier_id
+     * @return array<int,array<string,mixed>>
+     */
+    private function load_supplier_invoices($supplier_id)
+    {
+        if ($supplier_id <= 0 || ! $this->invoice_repository || ! method_exists($this->invoice_repository, 'for_supplier')) {
+            return [];
+        }
+
+        return (array) $this->invoice_repository->for_supplier($supplier_id);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 $serviceFiles = [
     __DIR__ . '/../erp-omd/includes/services/class-reporting-service.php',
     __DIR__ . '/../erp-omd/includes/services/class-reporting-service-v2.php',
+    __DIR__ . '/../erp-omd/includes/services/class-cost-invoice-workflow-service.php',
 ];
 
 $assertions = 0;
