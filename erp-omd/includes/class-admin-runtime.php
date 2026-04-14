@@ -465,6 +465,7 @@ class ERP_OMD_Admin
             case 'google_calendar_connect': $this->handle_google_calendar_connect(); break;
             case 'google_calendar_disconnect': $this->handle_google_calendar_disconnect(); break;
             case 'google_calendar_sync_now': $this->handle_google_calendar_sync_now(); break;
+            case 'google_calendar_fetch_calendars': $this->handle_google_calendar_fetch_calendars(); break;
             case 'delete_client': $this->handle_client_delete(); break;
             case 'delete_project': $this->handle_project_delete(); break;
         }
@@ -1012,6 +1013,7 @@ class ERP_OMD_Admin
         $google_calendar_redirect_uri = $this->google_calendar_redirect_uri();
         $google_calendar_scope = (string) get_option('erp_omd_google_calendar_scope', 'https://www.googleapis.com/auth/calendar.events');
         $google_calendar_calendar_id = (string) get_option('erp_omd_google_calendar_calendar_id', 'primary');
+        $google_calendar_available_calendars = (array) get_option('erp_omd_google_calendar_available_calendars', []);
         $google_calendar_technical_account_email = (string) get_option('erp_omd_google_calendar_technical_account_email', '');
         $google_calendar_connected = $this->decrypt_option_value((string) get_option('erp_omd_google_calendar_refresh_token_enc', '')) !== '';
         $google_calendar_last_sync_at = (string) get_option('erp_omd_google_calendar_last_sync_at', '');
@@ -2864,6 +2866,25 @@ class ERP_OMD_Admin
         }
 
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ręczna synchronizacja Google Calendar została uruchomiona.', 'erp-omd'));
+    }
+
+    private function handle_google_calendar_fetch_calendars()
+    {
+        check_admin_referer('erp_omd_google_calendar_fetch_calendars');
+        $this->require_capability('erp_omd_manage_settings');
+
+        try {
+            $sync_service = new ERP_OMD_Google_Calendar_Sync_Service(
+                $this->projects,
+                new ERP_OMD_Project_Calendar_Sync_Repository()
+            );
+            $calendars = $sync_service->list_calendars();
+            update_option('erp_omd_google_calendar_available_calendars', $calendars);
+        } catch (Throwable $exception) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Nie udało się pobrać listy kalendarzy Google: %s', 'erp-omd'), $exception->getMessage()));
+        }
+
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Lista kalendarzy Google została pobrana.', 'erp-omd'));
     }
 
     private function handle_google_calendar_oauth_callback()
