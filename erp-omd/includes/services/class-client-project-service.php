@@ -8,6 +8,7 @@ class ERP_OMD_Client_Project_Service
     private $projects;
     private $time_entries;
     private $alert_service;
+    private $project_attachment_service;
 
     public function __construct(
         ERP_OMD_Client_Repository $clients,
@@ -15,7 +16,8 @@ class ERP_OMD_Client_Project_Service
         ERP_OMD_Role_Repository $roles,
         ERP_OMD_Project_Repository $projects = null,
         ERP_OMD_Time_Entry_Repository $time_entries = null,
-        ERP_OMD_Alert_Service $alert_service = null
+        ERP_OMD_Alert_Service $alert_service = null,
+        ERP_OMD_Project_Attachment_Service $project_attachment_service = null
     ) {
         $this->clients = $clients;
         $this->employees = $employees;
@@ -23,6 +25,7 @@ class ERP_OMD_Client_Project_Service
         $this->projects = $projects;
         $this->time_entries = $time_entries;
         $this->alert_service = $alert_service;
+        $this->project_attachment_service = $project_attachment_service;
     }
 
     public function prepare_client(array $data)
@@ -336,6 +339,16 @@ class ERP_OMD_Client_Project_Service
 
                 if (! empty($critical_alerts)) {
                     $errors[] = __('Projekt nie może przejść do do_faktury, jeśli ma aktywne alerty krytyczne.', 'erp-omd');
+                }
+            }
+        }
+
+        if ($current_status === 'do_faktury' && $target_status === 'zakonczony') {
+            $project_id = (int) ($existing_project['id'] ?? 0);
+            if ($project_id > 0 && $this->project_attachment_service) {
+                $attachment_errors = [];
+                if (! $this->project_attachment_service->has_valid_final_invoice_pdf($project_id, $attachment_errors)) {
+                    $errors = array_merge($errors, $attachment_errors);
                 }
             }
         }

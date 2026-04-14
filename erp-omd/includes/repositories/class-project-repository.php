@@ -248,6 +248,10 @@ class ERP_OMD_Project_Repository
 
         $project_id = (int) $wpdb->insert_id;
         $this->sync_manager_ids($project_id, $data['manager_ids'] ?? array_filter([(int) ($data['manager_id'] ?? 0)]));
+        $created_project = $this->find($project_id);
+        if (function_exists('do_action')) {
+            do_action('erp_omd_project_saved', $created_project ?: ['id' => $project_id], 'create');
+        }
 
         return $project_id;
     }
@@ -283,6 +287,10 @@ class ERP_OMD_Project_Repository
         );
 
         $this->sync_manager_ids($id, $data['manager_ids'] ?? array_filter([(int) ($data['manager_id'] ?? 0)]));
+        $updated_project = $this->find($id);
+        if (function_exists('do_action')) {
+            do_action('erp_omd_project_saved', $updated_project ?: ['id' => (int) $id], 'update');
+        }
 
         return $updated;
     }
@@ -290,8 +298,12 @@ class ERP_OMD_Project_Repository
     public function delete($id)
     {
         global $wpdb;
+        $project = $this->find($id);
 
         $wpdb->delete($this->managers_table_name(), ['project_id' => $id], ['%d']);
+        if (function_exists('do_action') && $project) {
+            do_action('erp_omd_project_deleted', $project);
+        }
 
         return $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
     }
@@ -305,13 +317,21 @@ class ERP_OMD_Project_Repository
     {
         global $wpdb;
 
-        return $wpdb->update(
+        $result = $wpdb->update(
             $this->table_name(),
             ['status' => $status, 'updated_at' => current_time('mysql')],
             ['id' => $id],
             ['%s', '%s'],
             ['%d']
         );
+        if ($result !== false) {
+            $project = $this->find($id);
+            if (function_exists('do_action') && $project) {
+                do_action('erp_omd_project_saved', $project, 'status_change');
+            }
+        }
+
+        return $result;
     }
 
     private function enrich_projects(array $projects)

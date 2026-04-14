@@ -144,6 +144,26 @@ Legenda:
 
 ---
 
+## 2a) Status Sprintu 4 (ERP_4.0) — aktualizacja 2026-04-14
+
+### Zrealizowane (obszar kalendarza)
+- ✅ D1: widok kalendarza ERP dostępny w admin (`admin.php?page=erp-omd-calendar`) z miesięczną siatką i listą eventów.
+- ✅ D2: dwa eventy na projekt (`range` + `deadline`) w modelu synchronizacji.
+- ✅ D3: synchronizacja CRON co 2h (`erp_omd_google_calendar_sync` / `erp_omd_two_hours`).
+- ✅ D4: usuwanie eventów przy usuwaniu/archiwizacji projektu (kasowanie mapowań + remote delete).
+- ✅ D5: ślad błędu synchronizacji i status per projekt (repozytorium sync + status/error w UI kalendarza).
+
+### Co jeszcze zostało do domknięcia (hardening / doprecyzowanie)
+- ✅ Domknięto jeden docelowy tryb integracji (usunięty fallback „adapter TODO”, pozostaje docelowy transport Google API).
+- ✅ Domknięto checklistę odbiorową E2E dla OAuth + cyklicznego CRON + ścieżki „delete”: `docs/E2E_CHECKLIST_ERP4_SPRINT4_CALENDAR.md`.
+- ✅ Uzupełniono runbook operacyjny o procedurę re-autoryzacji i retry po błędach `sync_status=error`: `docs/RUNBOOK_GOOGLE_CALENDAR_SYNC_ERROR.md`.
+
+### Uwagi statusowe
+- Ten status dotyczy numeracji ERP_4.0 (Sprint 4 = EPIC D).
+- Równolegle historyczna numeracja V2 może wskazywać Sprint 10 dla tej samej paczki funkcjonalnej.
+
+---
+
 ## 3) Priorytety MoSCoW (globalnie)
 
 ## MUST
@@ -351,4 +371,3 @@ Element ERP_4.0 jest uznany za ukończony, gdy:
 3. Ma odpowiednie uprawnienia ról,
 4. Ma obsłużone walidacje i ścieżki błędów,
 5. Jest uwzględniony w dokumentacji operacyjnej wdrożenia.
-
