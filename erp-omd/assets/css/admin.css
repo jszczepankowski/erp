@@ -1081,6 +1081,50 @@
     margin-bottom: 6px;
 }
 
+.erp-omd-admin .erp-omd-calendar-markers {
+    display: grid;
+    gap: 4px;
+}
+
+.erp-omd-admin .erp-omd-calendar-chip {
+    align-items: center;
+    border-radius: 6px;
+    display: inline-flex;
+    font-size: 12px;
+    gap: 6px;
+    line-height: 1.2;
+    padding: 4px 8px;
+    text-decoration: none;
+}
+
+.erp-omd-admin .erp-omd-calendar-chip-range {
+    background: #e8f2ff;
+    color: #0a4b78;
+}
+
+.erp-omd-admin .erp-omd-calendar-chip-range-start {
+    border-left: 3px solid #0a4b78;
+    font-weight: 600;
+}
+
+.erp-omd-admin .erp-omd-calendar-chip-range-end {
+    border-right: 3px solid #0a4b78;
+}
+
+.erp-omd-admin .erp-omd-calendar-chip-deadline {
+    background: #fff4f4;
+    color: #8f1d1d;
+}
+
+.erp-omd-admin .erp-omd-calendar-chip-dot {
+    background: currentColor;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    height: 8px;
+    width: 8px;
+}
+
 .erp-omd-admin .erp-omd-table-tools {
     display: flex;
     gap: 10px;
