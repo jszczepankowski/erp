@@ -39,6 +39,52 @@ class ERP_OMD_Google_Calendar_Sync_Service
         }
     }
 
+    public function list_calendars()
+    {
+        $token = $this->ensure_access_token();
+        if ($token === '') {
+            throw new RuntimeException(__('Brak aktywnego tokenu dostępu Google Calendar.', 'erp-omd'));
+        }
+
+        $response = wp_remote_get(
+            'https://www.googleapis.com/calendar/v3/users/me/calendarList',
+            [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                ],
+                'timeout' => 20,
+            ]
+        );
+
+        if (is_wp_error($response)) {
+            throw new RuntimeException($response->get_error_message());
+        }
+
+        $status = (int) wp_remote_retrieve_response_code($response);
+        $payload = json_decode((string) wp_remote_retrieve_body($response), true);
+        if ($status >= 400) {
+            $message = (string) ($payload['error']['message'] ?? __('Nie udało się pobrać listy kalendarzy Google.', 'erp-omd'));
+            throw new RuntimeException($message);
+        }
+
+        $items = (array) ($payload['items'] ?? []);
+        $calendars = [];
+        foreach ($items as $item) {
+            $calendar_id = (string) ($item['id'] ?? '');
+            if ($calendar_id === '') {
+                continue;
+            }
+
+            $calendars[] = [
+                'id' => $calendar_id,
+                'summary' => (string) ($item['summary'] ?? $calendar_id),
+                'primary' => ! empty($item['primary']),
+            ];
+        }
+
+        return $calendars;
+    }
+
     public function sync_project_events(array $project)
     {
         $project_id = (int) ($project['id'] ?? 0);
