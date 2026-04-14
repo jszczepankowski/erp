@@ -263,19 +263,38 @@
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-google-calendar-redirect-uri"><?php esc_html_e('Redirect URI', 'erp-omd'); ?></label>
-                            <input id="erp-omd-google-calendar-redirect-uri" type="text" readonly value="<?php echo esc_attr((string) $google_calendar_redirect_uri); ?>" />
-                            <p class="description"><?php esc_html_e('Ten adres musi być wpisany 1:1 w Google Cloud Console (Authorized redirect URIs).', 'erp-omd'); ?></p>
+                            <input id="erp-omd-google-calendar-redirect-uri" type="text" name="google_calendar_redirect_uri" value="<?php echo esc_attr((string) $google_calendar_redirect_uri); ?>" />
+                            <p class="description"><?php esc_html_e('Ten adres musi być wpisany 1:1 w Google Cloud Console (Authorized redirect URIs). Uwaga: protokół (http/https), domena i parametry query muszą być identyczne.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-google-calendar-scope"><?php esc_html_e('Scope', 'erp-omd'); ?></label>
                             <select id="erp-omd-google-calendar-scope" name="google_calendar_scope">
-                                <option value="https://www.googleapis.com/auth/calendar.events" <?php selected((string) $google_calendar_scope, 'https://www.googleapis.com/auth/calendar.events'); ?>>calendar.events</option>
                                 <option value="https://www.googleapis.com/auth/calendar" <?php selected((string) $google_calendar_scope, 'https://www.googleapis.com/auth/calendar'); ?>>calendar</option>
+                                <option value="https://www.googleapis.com/auth/calendar.events" <?php selected((string) $google_calendar_scope, 'https://www.googleapis.com/auth/calendar.events'); ?>>calendar.events</option>
                             </select>
+                            <p class="description"><?php esc_html_e('Aby pobierać listę kalendarzy, użyj scope „calendar”. Po zmianie scope wymagane jest ponowne połączenie OAuth.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-google-calendar-id"><?php esc_html_e('Calendar ID (globalny)', 'erp-omd'); ?></label>
-                            <input id="erp-omd-google-calendar-id" type="text" name="google_calendar_calendar_id" value="<?php echo esc_attr((string) $google_calendar_calendar_id); ?>" />
+                            <?php if (! empty($google_calendar_available_calendars)) : ?>
+                                <select id="erp-omd-google-calendar-id" name="google_calendar_calendar_id">
+                                    <?php foreach ((array) $google_calendar_available_calendars as $google_calendar_item) : ?>
+                                        <?php
+                                        $calendar_option_id = (string) ($google_calendar_item['id'] ?? '');
+                                        $calendar_option_summary = (string) ($google_calendar_item['summary'] ?? $calendar_option_id);
+                                        if ($calendar_option_id === '') {
+                                            continue;
+                                        }
+                                        ?>
+                                        <option value="<?php echo esc_attr($calendar_option_id); ?>" <?php selected((string) $google_calendar_calendar_id, $calendar_option_id); ?>>
+                                            <?php echo esc_html($calendar_option_summary . (! empty($google_calendar_item['primary']) ? ' (primary)' : '')); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <p class="description"><?php esc_html_e('Nie widzisz kalendarza? Użyj przycisku „Pobierz kalendarze Google” poniżej.', 'erp-omd'); ?></p>
+                            <?php else : ?>
+                                <input id="erp-omd-google-calendar-id" type="text" name="google_calendar_calendar_id" value="<?php echo esc_attr((string) $google_calendar_calendar_id); ?>" />
+                            <?php endif; ?>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-google-calendar-technical-email"><?php esc_html_e('Konto techniczne (email)', 'erp-omd'); ?></label>
@@ -298,6 +317,7 @@
                                 <button type="submit" class="button button-secondary" form="erp-omd-google-calendar-connect-form"><?php esc_html_e('Połącz z Google', 'erp-omd'); ?></button>
                                 <button type="submit" class="button button-link-delete" form="erp-omd-google-calendar-disconnect-form"><?php esc_html_e('Odłącz', 'erp-omd'); ?></button>
                                 <button type="submit" class="button" form="erp-omd-google-calendar-sync-now-form"><?php esc_html_e('Synchronizuj teraz', 'erp-omd'); ?></button>
+                                <button type="submit" class="button" form="erp-omd-google-calendar-fetch-calendars-form"><?php esc_html_e('Pobierz kalendarze Google', 'erp-omd'); ?></button>
                             </p>
                         </div>
                     </div>
@@ -393,17 +413,21 @@
             <?php wp_nonce_field('erp_omd_restore_backup_bundle'); ?>
             <input type="hidden" name="erp_omd_action" value="restore_backup_bundle" />
         </form>
-        <form id="erp-omd-google-calendar-connect-form" method="post">
+        <form id="erp-omd-google-calendar-connect-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_connect'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_connect" />
         </form>
-        <form id="erp-omd-google-calendar-disconnect-form" method="post">
+        <form id="erp-omd-google-calendar-disconnect-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_disconnect'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_disconnect" />
         </form>
-        <form id="erp-omd-google-calendar-sync-now-form" method="post">
+        <form id="erp-omd-google-calendar-sync-now-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_sync_now'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_sync_now" />
+        </form>
+        <form id="erp-omd-google-calendar-fetch-calendars-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
+            <?php wp_nonce_field('erp_omd_google_calendar_fetch_calendars'); ?>
+            <input type="hidden" name="erp_omd_action" value="google_calendar_fetch_calendars" />
         </form>
     </div>
 </div>
