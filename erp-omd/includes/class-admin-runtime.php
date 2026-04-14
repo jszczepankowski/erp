@@ -106,6 +106,7 @@ class ERP_OMD_Admin
         add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
         add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
         add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
+        add_submenu_page('erp-omd', __('Dostawcy i faktury kosztowe', 'erp-omd'), __('Dostawcy i faktury kosztowe', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
         add_submenu_page('erp-omd', __('Kalendarz', 'erp-omd'), __('Kalendarz', 'erp-omd'), 'erp_omd_access', 'erp-omd-calendar', [$this, 'render_calendar']);
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
@@ -338,6 +339,8 @@ class ERP_OMD_Admin
                 exit;
                 break;
             case 'save_project': $this->handle_project_save(); break;
+            case 'save_supplier': $this->handle_supplier_save(); break;
+            case 'save_cost_invoice': $this->handle_cost_invoice_save(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
@@ -1403,6 +1406,27 @@ class ERP_OMD_Admin
         include ERP_OMD_PATH . 'templates/admin/project-requests.php';
     }
 
+    public function render_cost_invoices()
+    {
+        $this->require_capability('erp_omd_manage_projects');
+
+        $suppliers_repository = new ERP_OMD_Supplier_Repository();
+        $cost_invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
+        $cost_invoice_audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
+
+        $suppliers = (array) $suppliers_repository->all_active();
+        $projects = (array) $this->projects->all(['status' => 'active']);
+        $cost_invoices = (array) $cost_invoice_repository->list();
+        $project_supplier_pairs = (array) $cost_invoice_repository->project_supplier_pairs();
+        $selected_supplier_id = max(0, (int) ($_GET['supplier_id'] ?? 0));
+        $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));
+        $selected_supplier = $selected_supplier_id > 0 ? (array) $suppliers_repository->find($selected_supplier_id) : [];
+        $selected_invoice = $selected_invoice_id > 0 ? (array) $cost_invoice_repository->find($selected_invoice_id) : [];
+        $selected_invoice_audit = $selected_invoice_id > 0 ? (array) $cost_invoice_audit_repository->for_invoice($selected_invoice_id) : [];
+
+        include ERP_OMD_PATH . 'templates/admin/cost-invoices.php';
+    }
+
     private function handle_role_save() { /* retained */
         check_admin_referer('erp_omd_save_role');
         $this->require_capability('erp_omd_manage_roles');
@@ -1686,6 +1710,92 @@ class ERP_OMD_Admin
         $client_id = (int) ($_POST['client_id'] ?? 0);
         if ($id) { $this->client_rates->delete($id); }
         $this->redirect_with_notice('erp-omd-clients', 'success', __('Stawka klienta została usunięta.', 'erp-omd'), ['id' => $client_id]);
+    }
+
+    private function handle_supplier_save()
+    {
+        check_admin_referer('erp_omd_save_supplier');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $supplier_id = max(0, (int) ($_POST['supplier_id'] ?? 0));
+        $payload = [
+            'name' => sanitize_text_field((string) ($_POST['supplier_name'] ?? '')),
+            'company' => sanitize_text_field((string) ($_POST['supplier_company'] ?? '')),
+            'nip' => sanitize_text_field((string) ($_POST['supplier_nip'] ?? '')),
+            'email' => sanitize_email((string) ($_POST['supplier_email'] ?? '')),
+            'phone' => sanitize_text_field((string) ($_POST['supplier_phone'] ?? '')),
+            'contact_person_name' => sanitize_text_field((string) ($_POST['supplier_contact_person_name'] ?? '')),
+            'contact_person_email' => sanitize_email((string) ($_POST['supplier_contact_person_email'] ?? '')),
+            'contact_person_phone' => sanitize_text_field((string) ($_POST['supplier_contact_person_phone'] ?? '')),
+            'city' => sanitize_text_field((string) ($_POST['supplier_city'] ?? '')),
+            'street' => sanitize_text_field((string) ($_POST['supplier_street'] ?? '')),
+            'apartment_number' => sanitize_text_field((string) ($_POST['supplier_apartment_number'] ?? '')),
+            'postal_code' => sanitize_text_field((string) ($_POST['supplier_postal_code'] ?? '')),
+            'country' => sanitize_text_field((string) ($_POST['supplier_country'] ?? 'PL')),
+            'status' => 'active',
+        ];
+
+        if ($payload['name'] === '') {
+            $this->redirect_cost_invoice_page(['error' => 'supplier_name_required']);
+        }
+
+        $repository = new ERP_OMD_Supplier_Repository();
+        if ($supplier_id > 0) {
+            $repository->update($supplier_id, $payload);
+        } else {
+            $supplier_id = (int) $repository->create($payload);
+        }
+
+        $this->redirect_cost_invoice_page(['message' => 'supplier_saved', 'supplier_id' => $supplier_id]);
+    }
+
+    private function handle_cost_invoice_save()
+    {
+        check_admin_referer('erp_omd_save_cost_invoice');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $invoice_id = max(0, (int) ($_POST['cost_invoice_id'] ?? 0));
+        $payload = [
+            'supplier_id' => max(0, (int) ($_POST['cost_invoice_supplier_id'] ?? 0)),
+            'project_id' => max(0, (int) ($_POST['cost_invoice_project_id'] ?? 0)),
+            'invoice_number' => sanitize_text_field((string) ($_POST['cost_invoice_number'] ?? '')),
+            'issue_date' => sanitize_text_field((string) ($_POST['cost_invoice_issue_date'] ?? '')),
+            'status' => sanitize_text_field((string) ($_POST['cost_invoice_status'] ?? 'zaimportowana')),
+            'net_amount' => (float) ($_POST['cost_invoice_net_amount'] ?? 0),
+            'vat_amount' => (float) ($_POST['cost_invoice_vat_amount'] ?? 0),
+            'gross_amount' => (float) ($_POST['cost_invoice_gross_amount'] ?? 0),
+            'source' => sanitize_text_field((string) ($_POST['cost_invoice_source'] ?? 'manual')),
+            'ksef_reference_number' => sanitize_text_field((string) ($_POST['cost_invoice_ksef_reference_number'] ?? '')),
+            'updated_by_user_id' => get_current_user_id(),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+
+        $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            new ERP_OMD_Supplier_Repository(),
+            $this->projects
+        );
+
+        $result = $invoice_id > 0
+            ? $workflow->update_invoice($invoice_id, $payload, get_current_user_id())
+            : $workflow->create_invoice($payload);
+
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_cost_invoice_page(['error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
+        }
+
+        $this->redirect_cost_invoice_page(['message' => 'cost_invoice_saved', 'invoice_id' => (int) ($result['invoice_id'] ?? $invoice_id)]);
+    }
+
+    /**
+     * @param array<string,mixed> $args
+     * @return void
+     */
+    private function redirect_cost_invoice_page(array $args = [])
+    {
+        wp_safe_redirect(add_query_arg(array_merge(['page' => 'erp-omd-cost-invoices'], $args), admin_url('admin.php')));
+        exit;
     }
 
     private function handle_estimate_save()

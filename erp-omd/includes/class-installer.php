@@ -58,6 +58,9 @@ class ERP_OMD_Installer
         $time_entries_table = $wpdb->prefix . 'erp_omd_time_entries';
         $project_requests_table = $wpdb->prefix . 'erp_omd_project_requests';
         $attachments_table = $wpdb->prefix . 'erp_omd_attachments';
+        $suppliers_table = $wpdb->prefix . 'erp_omd_suppliers';
+        $cost_invoices_table = $wpdb->prefix . 'erp_omd_cost_invoices';
+        $cost_invoice_audit_table = $wpdb->prefix . 'erp_omd_cost_invoice_audit';
         $project_calendar_sync_table = $wpdb->prefix . 'erp_omd_project_calendar_sync';
         $estimate_audit_table = $wpdb->prefix . 'erp_omd_estimate_audit';
         $periods_table = $wpdb->prefix . 'erp_omd_periods';
@@ -423,6 +426,72 @@ class ERP_OMD_Installer
                 KEY entity_lookup (entity_type, entity_id),
                 KEY attachment_id (attachment_id),
                 KEY created_by_user_id (created_by_user_id)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+        dbDelta(
+            "CREATE TABLE {$suppliers_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                name VARCHAR(191) NOT NULL,
+                company VARCHAR(191) NOT NULL DEFAULT '',
+                nip VARCHAR(32) NOT NULL DEFAULT '',
+                email VARCHAR(191) NOT NULL DEFAULT '',
+                phone VARCHAR(64) NOT NULL DEFAULT '',
+                contact_person_name VARCHAR(191) NOT NULL DEFAULT '',
+                contact_person_email VARCHAR(191) NOT NULL DEFAULT '',
+                contact_person_phone VARCHAR(64) NOT NULL DEFAULT '',
+                city VARCHAR(191) NOT NULL DEFAULT '',
+                street VARCHAR(191) NOT NULL DEFAULT '',
+                apartment_number VARCHAR(64) NOT NULL DEFAULT '',
+                postal_code VARCHAR(16) NOT NULL DEFAULT '',
+                country VARCHAR(2) NOT NULL DEFAULT 'PL',
+                status VARCHAR(20) NOT NULL DEFAULT 'active',
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY name (name),
+                KEY status (status)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+        dbDelta(
+            "CREATE TABLE {$cost_invoices_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                supplier_id BIGINT UNSIGNED NOT NULL,
+                project_id BIGINT UNSIGNED NOT NULL,
+                invoice_number VARCHAR(191) NOT NULL,
+                issue_date DATE NULL,
+                status VARCHAR(20) NOT NULL DEFAULT 'zaimportowana',
+                net_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                vat_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                gross_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                source VARCHAR(20) NOT NULL DEFAULT 'manual',
+                ksef_reference_number VARCHAR(191) NOT NULL DEFAULT '',
+                created_by_user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+                updated_by_user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                UNIQUE KEY supplier_invoice_number (supplier_id, invoice_number),
+                KEY project_id (project_id),
+                KEY status (status),
+                KEY source (source)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+        dbDelta(
+            "CREATE TABLE {$cost_invoice_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                invoice_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                before_value LONGTEXT NULL,
+                after_value LONGTEXT NULL,
+                changed_by_user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY invoice_id (invoice_id),
+                KEY changed_by_user_id (changed_by_user_id),
+                KEY changed_at (changed_at)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
