@@ -23,6 +23,7 @@ $runtimeFragments = [
     'selected_supplier_id',
     'selected_invoice',
     'audit_user_labels',
+    '$this->projects->all()',
     'project_supplier_pairs',
     'supplier_categories',
 ];

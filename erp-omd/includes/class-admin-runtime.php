@@ -1418,7 +1418,7 @@ class ERP_OMD_Admin
         $cost_invoice_audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
 
         $suppliers = (array) $suppliers_repository->all_active();
-        $projects = (array) $this->projects->all(['status' => 'active']);
+        $projects = (array) $this->projects->all();
         $cost_invoices = (array) $cost_invoice_repository->list();
         $project_supplier_pairs = (array) $cost_invoice_repository->project_supplier_pairs();
         $supplier_categories = $this->normalize_supplier_categories((array) get_option('erp_omd_supplier_categories', []));
