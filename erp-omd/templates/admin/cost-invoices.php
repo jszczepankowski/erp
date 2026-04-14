@@ -258,12 +258,13 @@ foreach ((array) $projects as $project_row) {
                     <tr><td colspan="5"><?php esc_html_e('Brak wpisów audytowych.', 'erp-omd'); ?></td></tr>
                 <?php endif; ?>
                 <?php foreach ($selected_invoice_audit as $audit_row) : ?>
+                    <?php $changed_by_user_id = (int) ($audit_row['changed_by_user_id'] ?? 0); ?>
                     <tr>
                         <td><?php echo esc_html((string) ($audit_row['changed_at'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($audit_row['field_name'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($audit_row['before_value'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($audit_row['after_value'] ?? '')); ?></td>
-                        <td><?php echo esc_html((string) ((int) ($audit_row['changed_by_user_id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) ($audit_user_labels[$changed_by_user_id] ?? ('#' . $changed_by_user_id))); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

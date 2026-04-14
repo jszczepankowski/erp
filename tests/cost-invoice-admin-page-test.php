@@ -22,6 +22,7 @@ $runtimeFragments = [
     'supplier_category_invalid',
     'selected_supplier_id',
     'selected_invoice',
+    'audit_user_labels',
     'project_supplier_pairs',
     'supplier_categories',
 ];
