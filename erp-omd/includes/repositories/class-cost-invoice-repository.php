@@ -2,6 +2,44 @@
 
 class ERP_OMD_Cost_Invoice_Repository
 {
+    public function list(array $filters = [])
+    {
+        global $wpdb;
+
+        $where = [];
+        $params = [];
+
+        $supplier_id = (int) ($filters['supplier_id'] ?? 0);
+        if ($supplier_id > 0) {
+            $where[] = 'supplier_id = %d';
+            $params[] = $supplier_id;
+        }
+
+        $project_id = (int) ($filters['project_id'] ?? 0);
+        if ($project_id > 0) {
+            $where[] = 'project_id = %d';
+            $params[] = $project_id;
+        }
+
+        $status = trim((string) ($filters['status'] ?? ''));
+        if ($status !== '') {
+            $where[] = 'status = %s';
+            $params[] = $status;
+        }
+
+        $sql = "SELECT * FROM {$this->table_name()}";
+        if ($where !== []) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $sql .= ' ORDER BY issue_date DESC, id DESC';
+        if ($params !== []) {
+            $sql = $wpdb->prepare($sql, ...$params);
+        }
+
+        return $wpdb->get_results($sql, ARRAY_A);
+    }
+
     public function table_name()
     {
         global $wpdb;
