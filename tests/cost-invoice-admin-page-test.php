@@ -17,9 +17,12 @@ $runtimeFragments = [
     'function handle_supplier_save(',
     'function handle_cost_invoice_save(',
     'function redirect_cost_invoice_page(',
+    'normalize_supplier_categories',
+    'supplier_category_invalid',
     'selected_supplier_id',
     'selected_invoice',
     'project_supplier_pairs',
+    'supplier_categories',
 ];
 
 $templateFragments = [
@@ -32,6 +35,9 @@ $templateFragments = [
     'Edytuj fakturę kosztową',
     'Dostawcy',
     'Relacje projekt ↔ dostawca (E3)',
+    'supplier_category',
+    'supplier_description',
+    'supplier_categories_dictionary',
 ];
 
 $assertions = 0;

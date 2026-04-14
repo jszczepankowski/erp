@@ -43,6 +43,28 @@ foreach ((array) $projects as $project_row) {
                     <th><label for="supplier_contact_person_phone"><?php esc_html_e('Telefon opiekuna', 'erp-omd'); ?></label></th>
                     <td><input class="regular-text" type="text" id="supplier_contact_person_phone" name="supplier_contact_person_phone" value="<?php echo esc_attr((string) ($supplier_form['contact_person_phone'] ?? '')); ?>" /></td>
                 </tr>
+                <tr>
+                    <th><label for="supplier_category"><?php esc_html_e('Kategoria', 'erp-omd'); ?></label></th>
+                    <td>
+                        <select id="supplier_category" name="supplier_category">
+                            <option value=""><?php esc_html_e('Wybierz kategorię', 'erp-omd'); ?></option>
+                            <?php foreach ((array) ($supplier_categories ?? []) as $supplier_category_option) : ?>
+                                <option value="<?php echo esc_attr((string) $supplier_category_option); ?>" <?php selected((string) ($supplier_form['category'] ?? ''), (string) $supplier_category_option); ?>>
+                                    <?php echo esc_html((string) $supplier_category_option); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description"><?php esc_html_e('Słownik kategorii możesz zmienić poniżej (wartości oddzielone przecinkiem).', 'erp-omd'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="supplier_description"><?php esc_html_e('Opis dostawcy', 'erp-omd'); ?></label></th>
+                    <td><textarea id="supplier_description" name="supplier_description" class="large-text" rows="3"><?php echo esc_textarea((string) ($supplier_form['supplier_description'] ?? '')); ?></textarea></td>
+                </tr>
+                <tr>
+                    <th><label for="supplier_categories_dictionary"><?php esc_html_e('Słownik kategorii', 'erp-omd'); ?></label></th>
+                    <td><input class="large-text" type="text" id="supplier_categories_dictionary" name="supplier_categories_dictionary" value="<?php echo esc_attr(implode(', ', (array) ($supplier_categories ?? []))); ?>" /></td>
+                </tr>
             </table>
             <?php submit_button(! empty($supplier_form) ? __('Zaktualizuj dostawcę', 'erp-omd') : __('Zapisz dostawcę', 'erp-omd')); ?>
         </form>
@@ -50,15 +72,16 @@ foreach ((array) $projects as $project_row) {
 
     <h2 style="margin-top:24px;"><?php esc_html_e('Dostawcy', 'erp-omd'); ?></h2>
     <table class="widefat striped">
-        <thead><tr><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Opiekun', 'erp-omd'); ?></th><th><?php esc_html_e('Email opiekuna', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+        <thead><tr><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Kategoria', 'erp-omd'); ?></th><th><?php esc_html_e('Opiekun', 'erp-omd'); ?></th><th><?php esc_html_e('Email opiekuna', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
         <tbody>
             <?php if ($suppliers === []) : ?>
-                <tr><td colspan="5"><?php esc_html_e('Brak dostawców.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="6"><?php esc_html_e('Brak dostawców.', 'erp-omd'); ?></td></tr>
             <?php endif; ?>
             <?php foreach ($suppliers as $supplier) : ?>
                 <tr>
                     <td><?php echo esc_html((string) ((int) ($supplier['id'] ?? 0))); ?></td>
                     <td><?php echo esc_html((string) ($supplier['name'] ?? '')); ?></td>
+                    <td><?php echo esc_html((string) ($supplier['category'] ?? '—')); ?></td>
                     <td><?php echo esc_html((string) ($supplier['contact_person_name'] ?? '')); ?></td>
                     <td><?php echo esc_html((string) ($supplier['contact_person_email'] ?? '')); ?></td>
                     <td><a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'supplier_id' => (int) ($supplier['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a></td>

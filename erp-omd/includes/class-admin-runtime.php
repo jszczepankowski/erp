@@ -341,6 +341,7 @@ class ERP_OMD_Admin
             case 'save_project': $this->handle_project_save(); break;
             case 'save_supplier': $this->handle_supplier_save(); break;
             case 'save_cost_invoice': $this->handle_cost_invoice_save(); break;
+            case 'attach_cost_invoice_to_project': $this->handle_attach_cost_invoice_to_project(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
@@ -808,6 +809,7 @@ class ERP_OMD_Admin
         $project_notes = [];
         $project_rates = [];
         $project_cost_rows = [];
+        $project_cost_invoice_rows = [];
         $project_revenue_rows = [];
         $project_cost_edit_row = null;
         $project_revenue_edit_row = null;
@@ -819,6 +821,7 @@ class ERP_OMD_Admin
                 $project_notes = $this->project_notes->for_project((int) $project['id']);
                 $project_rates = $this->project_rates->for_project((int) $project['id']);
                 $project_cost_rows = $this->project_costs->for_project((int) $project['id']);
+                $project_cost_invoice_rows = (new ERP_OMD_Cost_Invoice_Repository())->list(['project_id' => (int) $project['id']]);
                 $project_revenue_rows = $this->project_revenues->for_project((int) $project['id']);
                 $edit_project_cost_id = (int) ($_GET['edit_project_cost_id'] ?? 0);
                 if ($edit_project_cost_id > 0) {
@@ -1418,6 +1421,7 @@ class ERP_OMD_Admin
         $projects = (array) $this->projects->all(['status' => 'active']);
         $cost_invoices = (array) $cost_invoice_repository->list();
         $project_supplier_pairs = (array) $cost_invoice_repository->project_supplier_pairs();
+        $supplier_categories = $this->normalize_supplier_categories((array) get_option('erp_omd_supplier_categories', []));
         $selected_supplier_id = max(0, (int) ($_GET['supplier_id'] ?? 0));
         $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));
         $selected_supplier = $selected_supplier_id > 0 ? (array) $suppliers_repository->find($selected_supplier_id) : [];
@@ -1718,6 +1722,21 @@ class ERP_OMD_Admin
         $this->require_capability('erp_omd_manage_projects');
 
         $supplier_id = max(0, (int) ($_POST['supplier_id'] ?? 0));
+        $supplier_categories_raw = sanitize_text_field((string) ($_POST['supplier_categories_dictionary'] ?? ''));
+        $supplier_categories = $this->normalize_supplier_categories(
+            array_map(
+                'trim',
+                explode(',', $supplier_categories_raw)
+            )
+        );
+
+        update_option('erp_omd_supplier_categories', $supplier_categories, false);
+
+        $supplier_category = sanitize_text_field((string) ($_POST['supplier_category'] ?? ''));
+        if ($supplier_category !== '' && ! in_array($supplier_category, $supplier_categories, true)) {
+            $this->redirect_cost_invoice_page(['error' => 'supplier_category_invalid']);
+        }
+
         $payload = [
             'name' => sanitize_text_field((string) ($_POST['supplier_name'] ?? '')),
             'company' => sanitize_text_field((string) ($_POST['supplier_company'] ?? '')),
@@ -1727,6 +1746,8 @@ class ERP_OMD_Admin
             'contact_person_name' => sanitize_text_field((string) ($_POST['supplier_contact_person_name'] ?? '')),
             'contact_person_email' => sanitize_email((string) ($_POST['supplier_contact_person_email'] ?? '')),
             'contact_person_phone' => sanitize_text_field((string) ($_POST['supplier_contact_person_phone'] ?? '')),
+            'category' => $supplier_category,
+            'supplier_description' => sanitize_textarea_field((string) ($_POST['supplier_description'] ?? '')),
             'city' => sanitize_text_field((string) ($_POST['supplier_city'] ?? '')),
             'street' => sanitize_text_field((string) ($_POST['supplier_street'] ?? '')),
             'apartment_number' => sanitize_text_field((string) ($_POST['supplier_apartment_number'] ?? '')),
@@ -2412,6 +2433,101 @@ class ERP_OMD_Admin
         }
         $this->project_financial_service->rebuild_for_project($project_id);
         $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $project_id]);
+    }
+
+    private function handle_attach_cost_invoice_to_project()
+    {
+        check_admin_referer('erp_omd_attach_cost_invoice_to_project');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $project_id = max(0, (int) ($_POST['project_id'] ?? 0));
+        $invoice_id = max(0, (int) ($_POST['cost_invoice_id'] ?? 0));
+        if ($project_id <= 0 || $invoice_id <= 0) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Wybierz projekt i fakturę kosztową.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        $project = $this->projects->find($project_id);
+        if (! is_array($project) || $project === []) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Projekt nie istnieje.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        if ($this->is_project_cost_locked_by_status((string) ($project['status'] ?? ''))) {
+            $this->redirect_with_notice(
+                'erp-omd-projects',
+                'error',
+                __('Koszty projektu po statusie Zakończony/Archiwum modyfikuj wyłącznie przez „Szybka korekta admina (po zamknięciu miesiąca)”.', 'erp-omd'),
+                ['id' => $project_id]
+            );
+        }
+
+        $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
+        $invoice = $invoice_repository->find($invoice_id);
+        if (! is_array($invoice) || $invoice === []) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono faktury kosztowej.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        if ((int) ($invoice['project_id'] ?? 0) !== $project_id) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Ta faktura kosztowa nie jest przypięta do wybranego projektu.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        $description = sprintf(
+            '%s #%d (%s)',
+            __('Faktura kosztowa', 'erp-omd'),
+            $invoice_id,
+            (string) ($invoice['invoice_number'] ?? '')
+        );
+
+        $existing_project_costs = (array) $this->project_costs->for_project($project_id);
+        foreach ($existing_project_costs as $existing_project_cost) {
+            if ((string) ($existing_project_cost['description'] ?? '') === $description) {
+                $this->redirect_with_notice('erp-omd-projects', 'success', __('Faktura kosztowa była już podpięta jako koszt projektu.', 'erp-omd'), ['id' => $project_id]);
+            }
+        }
+
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($invoice['net_amount'] ?? 0),
+            'description' => $description,
+            'cost_date' => (string) ($invoice['issue_date'] ?? gmdate('Y-m-d')),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+        $errors = $this->project_financial_service->validate_project_cost($payload);
+        if ($errors !== []) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), ['id' => $project_id]);
+        }
+
+        $this->project_costs->create($payload);
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Faktura kosztowa została dodana do kosztów projektu (netto).', 'erp-omd'), ['id' => $project_id]);
+    }
+
+    /**
+     * @param array<int,string> $categories
+     * @return array<int,string>
+     */
+    private function normalize_supplier_categories(array $categories)
+    {
+        $categories = array_values(
+            array_unique(
+                array_filter(
+                    array_map(
+                        static function ($category) {
+                            return sanitize_text_field((string) $category);
+                        },
+                        $categories
+                    ),
+                    static function ($category) {
+                        return $category !== '';
+                    }
+                )
+            )
+        );
+
+        if ($categories === []) {
+            return ['drukarnia', 'dostawca_gadzetow', 'podwykonawca', 'produkcja', 'inne'];
+        }
+
+        return $categories;
     }
 
     private function handle_project_cost_delete()

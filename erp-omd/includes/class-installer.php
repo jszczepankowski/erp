@@ -453,6 +453,8 @@ class ERP_OMD_Installer
                 KEY status (status)
             ) ENGINE=InnoDB {$charset_collate};"
         );
+        self::add_column_if_missing($suppliers_table, 'category', "ALTER TABLE {$suppliers_table} ADD COLUMN category VARCHAR(191) NOT NULL DEFAULT '' AFTER contact_person_phone");
+        self::add_column_if_missing($suppliers_table, 'supplier_description', "ALTER TABLE {$suppliers_table} ADD COLUMN supplier_description TEXT NULL AFTER category");
 
         dbDelta(
             "CREATE TABLE {$cost_invoices_table} (

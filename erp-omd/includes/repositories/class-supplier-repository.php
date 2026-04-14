@@ -45,6 +45,8 @@ class ERP_OMD_Supplier_Repository
                 'contact_person_name' => (string) ($data['contact_person_name'] ?? ''),
                 'contact_person_email' => (string) ($data['contact_person_email'] ?? ''),
                 'contact_person_phone' => (string) ($data['contact_person_phone'] ?? ''),
+                'category' => (string) ($data['category'] ?? ''),
+                'supplier_description' => (string) ($data['supplier_description'] ?? ''),
                 'city' => (string) ($data['city'] ?? ''),
                 'street' => (string) ($data['street'] ?? ''),
                 'apartment_number' => (string) ($data['apartment_number'] ?? ''),
@@ -54,7 +56,7 @@ class ERP_OMD_Supplier_Repository
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s']
+            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s']
         );
 
         return (int) $wpdb->insert_id;
@@ -75,6 +77,8 @@ class ERP_OMD_Supplier_Repository
                 'contact_person_name' => (string) ($data['contact_person_name'] ?? ''),
                 'contact_person_email' => (string) ($data['contact_person_email'] ?? ''),
                 'contact_person_phone' => (string) ($data['contact_person_phone'] ?? ''),
+                'category' => (string) ($data['category'] ?? ''),
+                'supplier_description' => (string) ($data['supplier_description'] ?? ''),
                 'city' => (string) ($data['city'] ?? ''),
                 'street' => (string) ($data['street'] ?? ''),
                 'apartment_number' => (string) ($data['apartment_number'] ?? ''),
@@ -84,7 +88,7 @@ class ERP_OMD_Supplier_Repository
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => (int) $id],
-            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'],
+            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'],
             ['%d']
         );
     }
