@@ -2773,7 +2773,7 @@ class ERP_OMD_Admin
         if (! in_array($google_calendar_scope, ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar'], true)) {
             $google_calendar_scope = 'https://www.googleapis.com/auth/calendar.events';
         }
-        $google_calendar_redirect_uri = $this->normalize_google_calendar_redirect_uri((string) wp_unslash($_POST['google_calendar_redirect_uri'] ?? ''));
+        $google_calendar_redirect_uri = $this->normalize_google_calendar_redirect_uri_v2((string) wp_unslash($_POST['google_calendar_redirect_uri'] ?? ''));
         if ($google_calendar_redirect_uri === '') {
             $google_calendar_redirect_uri = admin_url('admin.php?page=erp-omd-settings');
         }
@@ -2942,7 +2942,7 @@ class ERP_OMD_Admin
 
     private function google_calendar_redirect_uri()
     {
-        $stored_redirect_uri = $this->normalize_google_calendar_redirect_uri((string) get_option('erp_omd_google_calendar_redirect_uri', ''));
+        $stored_redirect_uri = $this->normalize_google_calendar_redirect_uri_v2((string) get_option('erp_omd_google_calendar_redirect_uri', ''));
         if ($stored_redirect_uri !== '' && wp_http_validate_url($stored_redirect_uri)) {
             return $stored_redirect_uri;
         }
@@ -2950,7 +2950,7 @@ class ERP_OMD_Admin
         return admin_url('admin.php?page=erp-omd-settings');
     }
 
-    private function normalize_google_calendar_redirect_uri($redirect_uri)
+    private function normalize_google_calendar_redirect_uri_v2($redirect_uri)
     {
         $normalized_redirect_uri = html_entity_decode(trim((string) $redirect_uri), ENT_QUOTES, 'UTF-8');
         $normalized_redirect_uri = str_replace('&amp;', '&', $normalized_redirect_uri);
@@ -2976,41 +2976,6 @@ class ERP_OMD_Admin
             $normalized_redirect_uri = add_query_arg(
                 [
                     'page' => 'erp-omd-settings',
-                ],
-                $base_uri
-            );
-        }
-
-        return esc_url_raw($normalized_redirect_uri);
-    }
-
-    private function normalize_google_calendar_redirect_uri($redirect_uri)
-    {
-        $normalized_redirect_uri = html_entity_decode(trim((string) $redirect_uri), ENT_QUOTES, 'UTF-8');
-        $normalized_redirect_uri = str_replace('&amp;', '&', $normalized_redirect_uri);
-        $parsed_redirect_uri = wp_parse_url($normalized_redirect_uri);
-        $query_string = isset($parsed_redirect_uri['query']) ? rawurldecode((string) $parsed_redirect_uri['query']) : '';
-        if ($query_string !== '' && strpos($query_string, 'page=erp-omd-settings') !== false) {
-            $base_uri = '';
-            if (isset($parsed_redirect_uri['scheme'])) {
-                $base_uri .= (string) $parsed_redirect_uri['scheme'] . '://';
-            }
-            if (isset($parsed_redirect_uri['user'])) {
-                $base_uri .= (string) $parsed_redirect_uri['user'];
-                if (isset($parsed_redirect_uri['pass'])) {
-                    $base_uri .= ':' . (string) $parsed_redirect_uri['pass'];
-                }
-                $base_uri .= '@';
-            }
-            $base_uri .= (string) ($parsed_redirect_uri['host'] ?? '');
-            if (isset($parsed_redirect_uri['port'])) {
-                $base_uri .= ':' . (int) $parsed_redirect_uri['port'];
-            }
-            $base_uri .= (string) ($parsed_redirect_uri['path'] ?? '');
-            $normalized_redirect_uri = add_query_arg(
-                [
-                    'page' => 'erp-omd-settings',
-                    'erp_omd_google_oauth_callback' => '1',
                 ],
                 $base_uri
             );
