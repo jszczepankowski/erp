@@ -2955,15 +2955,31 @@ class ERP_OMD_Admin
         $normalized_redirect_uri = html_entity_decode(trim((string) $redirect_uri), ENT_QUOTES, 'UTF-8');
         $normalized_redirect_uri = str_replace('&amp;', '&', $normalized_redirect_uri);
         $parsed_redirect_uri = wp_parse_url($normalized_redirect_uri);
-        $query_string = isset($parsed_redirect_uri['query']) ? (string) $parsed_redirect_uri['query'] : '';
-        if ($query_string !== '') {
-            parse_str($query_string, $query_params);
-            if (
-                (string) ($query_params['page'] ?? '') === 'erp-omd-settings'
-                && ! isset($query_params['erp_omd_google_oauth_callback'])
-            ) {
-                $normalized_redirect_uri = add_query_arg('erp_omd_google_oauth_callback', '1', $normalized_redirect_uri);
+        $query_string = isset($parsed_redirect_uri['query']) ? rawurldecode((string) $parsed_redirect_uri['query']) : '';
+        if ($query_string !== '' && strpos($query_string, 'page=erp-omd-settings') !== false) {
+            $base_uri = '';
+            if (isset($parsed_redirect_uri['scheme'])) {
+                $base_uri .= (string) $parsed_redirect_uri['scheme'] . '://';
             }
+            if (isset($parsed_redirect_uri['user'])) {
+                $base_uri .= (string) $parsed_redirect_uri['user'];
+                if (isset($parsed_redirect_uri['pass'])) {
+                    $base_uri .= ':' . (string) $parsed_redirect_uri['pass'];
+                }
+                $base_uri .= '@';
+            }
+            $base_uri .= (string) ($parsed_redirect_uri['host'] ?? '');
+            if (isset($parsed_redirect_uri['port'])) {
+                $base_uri .= ':' . (int) $parsed_redirect_uri['port'];
+            }
+            $base_uri .= (string) ($parsed_redirect_uri['path'] ?? '');
+            $normalized_redirect_uri = add_query_arg(
+                [
+                    'page' => 'erp-omd-settings',
+                    'erp_omd_google_oauth_callback' => '1',
+                ],
+                $base_uri
+            );
         }
 
         return esc_url_raw($normalized_redirect_uri);
