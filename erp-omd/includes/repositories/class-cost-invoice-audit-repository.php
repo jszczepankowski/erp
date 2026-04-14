@@ -39,4 +39,17 @@ class ERP_OMD_Cost_Invoice_Audit_Repository
 
         return $inserted;
     }
+
+    public function for_invoice($invoice_id)
+    {
+        global $wpdb;
+
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$this->table_name()} WHERE invoice_id = %d ORDER BY changed_at DESC, id DESC",
+                $invoice_id
+            ),
+            ARRAY_A
+        );
+    }
 }

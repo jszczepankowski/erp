@@ -8,10 +8,18 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
     /** @var mixed */
     private $audit_repository;
 
-    public function __construct($invoice_repository = null, $audit_repository = null)
+    /** @var mixed */
+    private $supplier_repository;
+
+    /** @var mixed */
+    private $project_repository;
+
+    public function __construct($invoice_repository = null, $audit_repository = null, $supplier_repository = null, $project_repository = null)
     {
         $this->invoice_repository = $invoice_repository;
         $this->audit_repository = $audit_repository;
+        $this->supplier_repository = $supplier_repository;
+        $this->project_repository = $project_repository;
     }
 
     /**
@@ -67,10 +75,14 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
 
         if ($supplier_id <= 0) {
             $errors[] = __('Wybierz dostawcę dla faktury kosztowej.', 'erp-omd');
+        } elseif (! $this->supplier_exists($supplier_id)) {
+            $errors[] = __('Wybrany dostawca nie istnieje.', 'erp-omd');
         }
 
         if ($project_id <= 0) {
             $errors[] = __('Wybierz projekt dla faktury kosztowej.', 'erp-omd');
+        } elseif (! $this->project_exists($project_id)) {
+            $errors[] = __('Wybrany projekt nie istnieje.', 'erp-omd');
         }
 
         if ($invoice_number === '') {
@@ -273,5 +285,31 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
         }
 
         return (array) $this->invoice_repository->for_supplier($supplier_id);
+    }
+
+    /**
+     * @param int $supplier_id
+     * @return bool
+     */
+    private function supplier_exists($supplier_id)
+    {
+        if (! $this->supplier_repository || ! method_exists($this->supplier_repository, 'find')) {
+            return true;
+        }
+
+        return is_array($this->supplier_repository->find((int) $supplier_id));
+    }
+
+    /**
+     * @param int $project_id
+     * @return bool
+     */
+    private function project_exists($project_id)
+    {
+        if (! $this->project_repository || ! method_exists($this->project_repository, 'find')) {
+            return true;
+        }
+
+        return is_array($this->project_repository->find((int) $project_id));
     }
 }

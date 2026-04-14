@@ -65,9 +65,30 @@ class ERP_OMD_Cost_Invoice_Audit_Repository_Fake
     }
 }
 
+class ERP_OMD_Supplier_Repository_Fake
+{
+    public function find($id)
+    {
+        return (int) $id === 2 ? ['id' => 2] : null;
+    }
+}
+
+class ERP_OMD_Project_Repository_Fake
+{
+    public function find($id)
+    {
+        return (int) $id === 9 ? ['id' => 9] : null;
+    }
+}
+
 $invoice_repository = new ERP_OMD_Cost_Invoice_Repository_Fake();
 $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository_Fake();
-$service = new ERP_OMD_Cost_Invoice_Workflow_Service($invoice_repository, $audit_repository);
+$service = new ERP_OMD_Cost_Invoice_Workflow_Service(
+    $invoice_repository,
+    $audit_repository,
+    new ERP_OMD_Supplier_Repository_Fake(),
+    new ERP_OMD_Project_Repository_Fake()
+);
 $assertions = 0;
 
 $assertions++;
@@ -160,6 +181,20 @@ if (($updated['ok'] ?? false) !== true || count((array) ($updated['audit_rows'] 
 $assertions++;
 if (count($audit_repository->inserted_rows) < 1) {
     throw new RuntimeException('Expected update_invoice() to persist audit rows.');
+}
+
+$invalidRelationErrors = $service->validate_invoice_data(
+    [
+        'supplier_id' => 999,
+        'project_id' => 999,
+        'invoice_number' => 'FV/INVALID',
+        'status' => 'zaimportowana',
+    ]
+);
+
+$assertions++;
+if (count($invalidRelationErrors) < 2) {
+    throw new RuntimeException('Expected relation errors for non-existing supplier and project.');
 }
 
 echo "Assertions: {$assertions}\n";

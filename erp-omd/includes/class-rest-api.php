@@ -28,6 +28,7 @@ class ERP_OMD_REST_API
     private $adjustment_audit;
     private $suppliers;
     private $cost_invoices;
+    private $cost_invoice_audit;
     private $cost_invoice_workflow;
     private $ksef_import_service;
     private $client_portal_service;
@@ -86,7 +87,8 @@ class ERP_OMD_REST_API
         $this->adjustment_audit = $adjustment_audit_repository ?: new ERP_OMD_Adjustment_Audit_Repository();
         $this->suppliers = new ERP_OMD_Supplier_Repository();
         $this->cost_invoices = new ERP_OMD_Cost_Invoice_Repository();
-        $this->cost_invoice_workflow = new ERP_OMD_Cost_Invoice_Workflow_Service($this->cost_invoices, new ERP_OMD_Cost_Invoice_Audit_Repository());
+        $this->cost_invoice_audit = new ERP_OMD_Cost_Invoice_Audit_Repository();
+        $this->cost_invoice_workflow = new ERP_OMD_Cost_Invoice_Workflow_Service($this->cost_invoices, $this->cost_invoice_audit, $this->suppliers, $this->projects);
         $this->ksef_import_service = new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow);
         $this->client_portal_service = new ERP_OMD_Client_Portal_Service($this->projects, new ERP_OMD_Project_Revenue_Repository(), $this->project_costs);
     }
@@ -617,6 +619,9 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/cost-invoices/(?P<id>\d+)/moderate', [
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'moderate_cost_invoice'], 'permission_callback' => [$this, 'can_manage_projects']],
         ]);
+        register_rest_route('erp-omd/v1', '/cost-invoices/(?P<id>\d+)/audit', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_cost_invoice_audit'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
         register_rest_route('erp-omd/v1', '/ksef/import', [
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'import_ksef_documents'], 'permission_callback' => [$this, 'can_manage_projects']],
         ]);
@@ -800,6 +805,7 @@ class ERP_OMD_REST_API
     public function create_cost_invoice(WP_REST_Request $request) { $payload = $this->sanitize_cost_invoice_payload($request); $payload['created_by_user_id'] = get_current_user_id(); $payload['updated_by_user_id'] = get_current_user_id(); $result = $this->cost_invoice_workflow->create_invoice($payload); if (! (bool) ($result['ok'] ?? false)) { return new WP_Error('erp_omd_cost_invoice_invalid', implode(' ', (array) ($result['errors'] ?? [])), ['status' => 422]); } return new WP_REST_Response($this->cost_invoices->find((int) $result['invoice_id']), 201); }
     public function update_cost_invoice(WP_REST_Request $request) { $invoice_id = (int) $request['id']; if (! $this->cost_invoices->find($invoice_id)) { return new WP_Error('erp_omd_cost_invoice_not_found', __('Cost invoice not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_cost_invoice_payload($request); $payload['updated_by_user_id'] = get_current_user_id(); $result = $this->cost_invoice_workflow->update_invoice($invoice_id, $payload, get_current_user_id()); if (! (bool) ($result['ok'] ?? false)) { return new WP_Error('erp_omd_cost_invoice_invalid', implode(' ', (array) ($result['errors'] ?? [])), ['status' => 422]); } return rest_ensure_response($this->cost_invoices->find($invoice_id)); }
     public function moderate_cost_invoice(WP_REST_Request $request) { $invoice_id = (int) $request['id']; if (! $this->cost_invoices->find($invoice_id)) { return new WP_Error('erp_omd_cost_invoice_not_found', __('Cost invoice not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_cost_invoice_payload($request); $result = $this->ksef_import_service->moderate_imported_invoice($invoice_id, $payload, get_current_user_id()); if (! (bool) ($result['ok'] ?? false)) { return new WP_Error('erp_omd_cost_invoice_moderation_invalid', implode(' ', (array) ($result['errors'] ?? [])), ['status' => 422]); } return rest_ensure_response($this->cost_invoices->find($invoice_id)); }
+    public function list_cost_invoice_audit(WP_REST_Request $request) { $invoice_id = (int) $request['id']; if (! $this->cost_invoices->find($invoice_id)) { return new WP_Error('erp_omd_cost_invoice_not_found', __('Cost invoice not found.', 'erp-omd'), ['status' => 404]); } return rest_ensure_response($this->cost_invoice_audit->for_invoice($invoice_id)); }
     public function import_ksef_documents(WP_REST_Request $request) { $documents = $request->get_param('documents'); if (! is_array($documents) || $documents === []) { return new WP_Error('erp_omd_ksef_import_invalid', __('KSeF import payload must include non-empty documents array.', 'erp-omd'), ['status' => 422]); } $sanitized_documents = array_map([$this, 'sanitize_ksef_document_payload'], $documents); return rest_ensure_response($this->ksef_import_service->import_documents($sanitized_documents, get_current_user_id())); }
     public function get_client(WP_REST_Request $request) { return $this->find_or_error($this->clients->find((int) $request['id']), 'erp_omd_client_not_found', __('Client not found.', 'erp-omd')); }
     public function create_client(WP_REST_Request $request) { $payload = $this->client_project_service->prepare_client($this->sanitize_client_payload($request)); $errors = $this->client_project_service->validate_client($payload); if ($errors) { return new WP_Error('erp_omd_client_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->clients->create($payload); return new WP_REST_Response($this->clients->find($id), 201); }
