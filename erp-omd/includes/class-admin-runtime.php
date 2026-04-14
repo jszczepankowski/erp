@@ -2817,7 +2817,7 @@ class ERP_OMD_Admin
             'https://accounts.google.com/o/oauth2/v2/auth'
         );
 
-        wp_safe_redirect($auth_url);
+        wp_redirect($auth_url);
         exit;
     }
 
