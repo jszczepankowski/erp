@@ -50,6 +50,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Google_Calendar_Sync_Service' => 'includes/services/class-google-calendar-sync-service.php',
         'ERP_OMD_Period_Service' => 'includes/services/class-omd-period-service.php',
         'ERP_OMD_Cost_Invoice_Workflow_Service' => 'includes/services/class-cost-invoice-workflow-service.php',
+        'ERP_OMD_KSeF_Import_Service' => 'includes/services/class-ksef-import-service.php',
     ];
 
     public static function register()

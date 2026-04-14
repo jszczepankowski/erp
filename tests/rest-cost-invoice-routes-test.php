@@ -12,12 +12,16 @@ $requiredFragments = [
     "'/suppliers/(?P<id>\\d+)'",
     "'/cost-invoices'",
     "'/cost-invoices/(?P<id>\\d+)'",
+    "'/cost-invoices/(?P<id>\\d+)/moderate'",
+    "'/ksef/import'",
     'function register_supplier_routes()',
     'function list_suppliers(',
     'function create_supplier(',
     'function list_cost_invoices(',
     'function create_cost_invoice(',
     'function update_cost_invoice(',
+    'function moderate_cost_invoice(',
+    'function import_ksef_documents(',
 ];
 
 $assertions = 0;
