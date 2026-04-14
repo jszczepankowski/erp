@@ -37,7 +37,8 @@ class ERP_OMD_Alert_Service
     {
         $alerts = array_merge(
             $this->project_alerts(),
-            $this->missing_time_entry_alerts()
+            $this->missing_time_entry_alerts(),
+            $this->google_calendar_auth_alerts()
         );
 
         usort($alerts, static function ($left, $right) {
@@ -51,6 +52,41 @@ class ERP_OMD_Alert_Service
 
             return $right_weight <=> $left_weight;
         });
+
+        return $alerts;
+    }
+
+    public function google_calendar_auth_alerts()
+    {
+        $alerts = [];
+        $client_id = trim((string) get_option('erp_omd_google_calendar_client_id', ''));
+        $client_secret = trim((string) get_option('erp_omd_google_calendar_client_secret_enc', ''));
+        if ($client_id === '' && $client_secret === '') {
+            return $alerts;
+        }
+
+        $refresh_token = trim((string) get_option('erp_omd_google_calendar_refresh_token_enc', ''));
+        if ($refresh_token === '') {
+            $alerts[] = $this->make_alert(
+                'warning',
+                'google_calendar_auth_required',
+                'system',
+                0,
+                __('Google Calendar wymaga ponownej autoryzacji OAuth. Wejdź w Ustawienia i kliknij „Połącz z Google”.', 'erp-omd')
+            );
+            return $alerts;
+        }
+
+        $last_error = trim((string) get_option('erp_omd_google_calendar_last_error', ''));
+        if ($last_error !== '' && preg_match('/invalid_grant|unauthorized|auth|token/i', $last_error) === 1) {
+            $alerts[] = $this->make_alert(
+                'warning',
+                'google_calendar_auth_expired',
+                'system',
+                0,
+                __('Google Calendar sygnalizuje problem autoryzacji/tokenu. Zalecane: Odłącz i Połącz z Google ponownie.', 'erp-omd')
+            );
+        }
 
         return $alerts;
     }
@@ -81,10 +117,13 @@ class ERP_OMD_Alert_Service
                 $alerts[] = $this->make_alert('warning', 'project_low_margin', 'project', $project_id, sprintf(__('Projekt %s ma niską marżę (%s%%, próg %s%%).', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id), number_format_i18n($margin, 2), number_format_i18n($margin_threshold, 2)));
             }
 
-            $project_rates = $this->project_rates->for_project($project_id);
-            $client_rates = $this->client_rates->for_client((int) ($project['client_id'] ?? 0));
-            if (empty($project_rates) && empty($client_rates)) {
-                $alerts[] = $this->make_alert('warning', 'project_missing_rates', 'project', $project_id, sprintf(__('Projekt %s nie ma skonfigurowanych stawek projektowych ani stawek klienta.', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id)));
+            $billing_type = (string) ($project['billing_type'] ?? '');
+            if ($billing_type !== 'retainer') {
+                $project_rates = $this->project_rates->for_project($project_id);
+                $client_rates = $this->client_rates->for_client((int) ($project['client_id'] ?? 0));
+                if (empty($project_rates) && empty($client_rates)) {
+                    $alerts[] = $this->make_alert('warning', 'project_missing_rates', 'project', $project_id, sprintf(__('Projekt %s nie ma skonfigurowanych stawek projektowych ani stawek klienta.', 'erp-omd'), (string) ($project['name'] ?? '#' . $project_id)));
+                }
             }
 
             $deadline_date = (string) ($project['deadline_date'] ?? '');
