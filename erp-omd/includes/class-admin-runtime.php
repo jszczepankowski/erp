@@ -1011,7 +1011,7 @@ class ERP_OMD_Admin
         $google_calendar_client_id = (string) get_option('erp_omd_google_calendar_client_id', '');
         $google_calendar_client_secret_masked = $this->masked_secret($this->decrypt_option_value((string) get_option('erp_omd_google_calendar_client_secret_enc', '')));
         $google_calendar_redirect_uri = $this->google_calendar_redirect_uri();
-        $google_calendar_scope = (string) get_option('erp_omd_google_calendar_scope', 'https://www.googleapis.com/auth/calendar.events');
+        $google_calendar_scope = (string) get_option('erp_omd_google_calendar_scope', 'https://www.googleapis.com/auth/calendar');
         $google_calendar_calendar_id = (string) get_option('erp_omd_google_calendar_calendar_id', 'primary');
         $google_calendar_available_calendars = (array) get_option('erp_omd_google_calendar_available_calendars', []);
         $google_calendar_technical_account_email = (string) get_option('erp_omd_google_calendar_technical_account_email', '');
@@ -2769,9 +2769,16 @@ class ERP_OMD_Admin
         update_option('erp_omd_fixed_monthly_cost', array_sum(wp_list_pluck($fixed_items, 'amount')));
         $google_calendar_client_id = sanitize_text_field(wp_unslash($_POST['google_calendar_client_id'] ?? ''));
         $google_calendar_client_secret = trim((string) wp_unslash($_POST['google_calendar_client_secret'] ?? ''));
-        $google_calendar_scope = sanitize_text_field(wp_unslash($_POST['google_calendar_scope'] ?? 'https://www.googleapis.com/auth/calendar.events'));
+        $google_calendar_scope = sanitize_text_field(wp_unslash($_POST['google_calendar_scope'] ?? 'https://www.googleapis.com/auth/calendar'));
         if (! in_array($google_calendar_scope, ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar'], true)) {
-            $google_calendar_scope = 'https://www.googleapis.com/auth/calendar.events';
+            $google_calendar_scope = 'https://www.googleapis.com/auth/calendar';
+        }
+        $google_calendar_redirect_uri = $this->normalize_google_calendar_redirect_uri_v2((string) wp_unslash($_POST['google_calendar_redirect_uri'] ?? ''));
+        if ($google_calendar_redirect_uri === '') {
+            $google_calendar_redirect_uri = admin_url('admin.php?page=erp-omd-settings');
+        }
+        if (! wp_http_validate_url($google_calendar_redirect_uri)) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Redirect URI Google Calendar jest niepoprawny.', 'erp-omd'));
         }
         $google_calendar_redirect_uri = $this->normalize_google_calendar_redirect_uri_v2((string) wp_unslash($_POST['google_calendar_redirect_uri'] ?? ''));
         if ($google_calendar_redirect_uri === '') {
@@ -2807,7 +2814,7 @@ class ERP_OMD_Admin
 
         $client_id = trim((string) get_option('erp_omd_google_calendar_client_id', ''));
         $client_secret = trim((string) $this->decrypt_option_value((string) get_option('erp_omd_google_calendar_client_secret_enc', '')));
-        $scope = trim((string) get_option('erp_omd_google_calendar_scope', 'https://www.googleapis.com/auth/calendar.events'));
+        $scope = trim((string) get_option('erp_omd_google_calendar_scope', 'https://www.googleapis.com/auth/calendar'));
         if ($client_id === '' || $client_secret === '') {
             $this->redirect_with_notice('erp-omd-settings', 'error', __('Aby połączyć Google Calendar, najpierw uzupełnij client_id i client_secret w ustawieniach.', 'erp-omd'));
         }
@@ -2881,6 +2888,9 @@ class ERP_OMD_Admin
             $calendars = $sync_service->list_calendars();
             update_option('erp_omd_google_calendar_available_calendars', $calendars);
         } catch (Throwable $exception) {
+            if (stripos($exception->getMessage(), 'insufficient authentication scopes') !== false) {
+                $this->redirect_with_notice('erp-omd-settings', 'error', __('Brak uprawnień scope do pobrania listy kalendarzy. Ustaw scope na „calendar”, zapisz ustawienia i połącz Google ponownie.', 'erp-omd'));
+            }
             $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Nie udało się pobrać listy kalendarzy Google: %s', 'erp-omd'), $exception->getMessage()));
         }
 

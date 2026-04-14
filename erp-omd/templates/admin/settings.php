@@ -269,9 +269,10 @@
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-google-calendar-scope"><?php esc_html_e('Scope', 'erp-omd'); ?></label>
                             <select id="erp-omd-google-calendar-scope" name="google_calendar_scope">
-                                <option value="https://www.googleapis.com/auth/calendar.events" <?php selected((string) $google_calendar_scope, 'https://www.googleapis.com/auth/calendar.events'); ?>>calendar.events</option>
                                 <option value="https://www.googleapis.com/auth/calendar" <?php selected((string) $google_calendar_scope, 'https://www.googleapis.com/auth/calendar'); ?>>calendar</option>
+                                <option value="https://www.googleapis.com/auth/calendar.events" <?php selected((string) $google_calendar_scope, 'https://www.googleapis.com/auth/calendar.events'); ?>>calendar.events</option>
                             </select>
+                            <p class="description"><?php esc_html_e('Aby pobierać listę kalendarzy, użyj scope „calendar”. Po zmianie scope wymagane jest ponowne połączenie OAuth.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-google-calendar-id"><?php esc_html_e('Calendar ID (globalny)', 'erp-omd'); ?></label>
