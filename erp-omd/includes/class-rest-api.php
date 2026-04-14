@@ -798,8 +798,8 @@ class ERP_OMD_REST_API
     }
     public function list_suppliers(WP_REST_Request $request) { return rest_ensure_response($this->suppliers->all_active()); }
     public function get_supplier(WP_REST_Request $request) { $supplier = $this->suppliers->find((int) $request['id']); if (! $supplier) { return new WP_Error('erp_omd_supplier_not_found', __('Supplier not found.', 'erp-omd'), ['status' => 404]); } return rest_ensure_response($supplier); }
-    public function create_supplier(WP_REST_Request $request) { $payload = $this->sanitize_supplier_payload($request); if ($payload['name'] === '') { return new WP_Error('erp_omd_supplier_invalid', __('Supplier name is required.', 'erp-omd'), ['status' => 422]); } $id = $this->suppliers->create($payload); return new WP_REST_Response($this->suppliers->find($id), 201); }
-    public function update_supplier(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->suppliers->find($id); if (! $existing) { return new WP_Error('erp_omd_supplier_not_found', __('Supplier not found.', 'erp-omd'), ['status' => 404]); } $payload = array_merge($existing, $this->sanitize_supplier_payload($request)); if (trim((string) ($payload['name'] ?? '')) === '') { return new WP_Error('erp_omd_supplier_invalid', __('Supplier name is required.', 'erp-omd'), ['status' => 422]); } $this->suppliers->update($id, $payload); return rest_ensure_response($this->suppliers->find($id)); }
+    public function create_supplier(WP_REST_Request $request) { $payload = $this->sanitize_supplier_payload($request); if ($payload['name'] === '') { return new WP_Error('erp_omd_supplier_invalid', __('Supplier name is required.', 'erp-omd'), ['status' => 422]); } if (! $this->is_supplier_category_allowed((string) ($payload['category'] ?? ''))) { return new WP_Error('erp_omd_supplier_invalid_category', __('Supplier category must match configured dictionary.', 'erp-omd'), ['status' => 422]); } $id = $this->suppliers->create($payload); return new WP_REST_Response($this->suppliers->find($id), 201); }
+    public function update_supplier(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->suppliers->find($id); if (! $existing) { return new WP_Error('erp_omd_supplier_not_found', __('Supplier not found.', 'erp-omd'), ['status' => 404]); } $payload = array_merge($existing, $this->sanitize_supplier_payload($request)); if (trim((string) ($payload['name'] ?? '')) === '') { return new WP_Error('erp_omd_supplier_invalid', __('Supplier name is required.', 'erp-omd'), ['status' => 422]); } if (! $this->is_supplier_category_allowed((string) ($payload['category'] ?? ''))) { return new WP_Error('erp_omd_supplier_invalid_category', __('Supplier category must match configured dictionary.', 'erp-omd'), ['status' => 422]); } $this->suppliers->update($id, $payload); return rest_ensure_response($this->suppliers->find($id)); }
     public function list_cost_invoices(WP_REST_Request $request) { $filters = ['supplier_id' => (int) $request->get_param('supplier_id'), 'project_id' => (int) $request->get_param('project_id'), 'status' => sanitize_text_field((string) $request->get_param('status'))]; return rest_ensure_response($this->cost_invoices->list($filters)); }
     public function get_cost_invoice(WP_REST_Request $request) { $invoice = $this->cost_invoices->find((int) $request['id']); if (! $invoice) { return new WP_Error('erp_omd_cost_invoice_not_found', __('Cost invoice not found.', 'erp-omd'), ['status' => 404]); } return rest_ensure_response($invoice); }
     public function create_cost_invoice(WP_REST_Request $request) { $payload = $this->sanitize_cost_invoice_payload($request); $payload['created_by_user_id'] = get_current_user_id(); $payload['updated_by_user_id'] = get_current_user_id(); $result = $this->cost_invoice_workflow->create_invoice($payload); if (! (bool) ($result['ok'] ?? false)) { return new WP_Error('erp_omd_cost_invoice_invalid', implode(' ', (array) ($result['errors'] ?? [])), ['status' => 422]); } return new WP_REST_Response($this->cost_invoices->find((int) $result['invoice_id']), 201); }
@@ -1626,7 +1626,7 @@ class ERP_OMD_REST_API
     private function sanitize_employee_payload(WP_REST_Request $request) { $role_ids = $request->get_param('role_ids'); return ['user_id' => (int) $request->get_param('user_id'), 'default_role_id' => (int) $request->get_param('default_role_id'), 'account_type' => sanitize_text_field((string) $request->get_param('account_type')) ?: 'worker', 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active', 'role_ids' => is_array($role_ids) ? array_map('intval', $role_ids) : []]; }
     private function sanitize_salary_payload(WP_REST_Request $request, $employee_id) { return ['employee_id' => $employee_id, 'monthly_salary' => (float) $request->get_param('monthly_salary'), 'monthly_hours' => (float) $request->get_param('monthly_hours'), 'valid_from' => sanitize_text_field((string) $request->get_param('valid_from')), 'valid_to' => sanitize_text_field((string) $request->get_param('valid_to'))]; }
     private function sanitize_client_payload(WP_REST_Request $request) { return ['name' => sanitize_text_field((string) $request->get_param('name')), 'company' => sanitize_text_field((string) $request->get_param('company')), 'nip' => sanitize_text_field((string) $request->get_param('nip')), 'email' => sanitize_email((string) $request->get_param('email')), 'phone' => sanitize_text_field((string) $request->get_param('phone')), 'contact_person_name' => sanitize_text_field((string) $request->get_param('contact_person_name')), 'contact_person_email' => sanitize_email((string) $request->get_param('contact_person_email')), 'contact_person_phone' => sanitize_text_field((string) $request->get_param('contact_person_phone')), 'city' => sanitize_text_field((string) $request->get_param('city')), 'street' => sanitize_text_field((string) $request->get_param('street')), 'apartment_number' => sanitize_text_field((string) $request->get_param('apartment_number')), 'postal_code' => sanitize_text_field((string) $request->get_param('postal_code')), 'country' => sanitize_text_field((string) $request->get_param('country')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active', 'account_manager_id' => (int) $request->get_param('account_manager_id'), 'alert_margin_threshold' => sanitize_text_field((string) $request->get_param('alert_margin_threshold'))]; }
-    private function sanitize_supplier_payload(WP_REST_Request $request) { return ['name' => sanitize_text_field((string) $request->get_param('name')), 'company' => sanitize_text_field((string) $request->get_param('company')), 'nip' => sanitize_text_field((string) $request->get_param('nip')), 'email' => sanitize_email((string) $request->get_param('email')), 'phone' => sanitize_text_field((string) $request->get_param('phone')), 'contact_person_name' => sanitize_text_field((string) $request->get_param('contact_person_name')), 'contact_person_email' => sanitize_email((string) $request->get_param('contact_person_email')), 'contact_person_phone' => sanitize_text_field((string) $request->get_param('contact_person_phone')), 'city' => sanitize_text_field((string) $request->get_param('city')), 'street' => sanitize_text_field((string) $request->get_param('street')), 'apartment_number' => sanitize_text_field((string) $request->get_param('apartment_number')), 'postal_code' => sanitize_text_field((string) $request->get_param('postal_code')), 'country' => sanitize_text_field((string) $request->get_param('country')) ?: 'PL', 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active']; }
+    private function sanitize_supplier_payload(WP_REST_Request $request) { return ['name' => sanitize_text_field((string) $request->get_param('name')), 'company' => sanitize_text_field((string) $request->get_param('company')), 'nip' => sanitize_text_field((string) $request->get_param('nip')), 'email' => sanitize_email((string) $request->get_param('email')), 'phone' => sanitize_text_field((string) $request->get_param('phone')), 'contact_person_name' => sanitize_text_field((string) $request->get_param('contact_person_name')), 'contact_person_email' => sanitize_email((string) $request->get_param('contact_person_email')), 'contact_person_phone' => sanitize_text_field((string) $request->get_param('contact_person_phone')), 'category' => sanitize_text_field((string) $request->get_param('category')), 'supplier_description' => sanitize_textarea_field((string) $request->get_param('supplier_description')), 'city' => sanitize_text_field((string) $request->get_param('city')), 'street' => sanitize_text_field((string) $request->get_param('street')), 'apartment_number' => sanitize_text_field((string) $request->get_param('apartment_number')), 'postal_code' => sanitize_text_field((string) $request->get_param('postal_code')), 'country' => sanitize_text_field((string) $request->get_param('country')) ?: 'PL', 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active']; }
     private function sanitize_cost_invoice_payload(WP_REST_Request $request) { return ['supplier_id' => (int) $request->get_param('supplier_id'), 'project_id' => (int) $request->get_param('project_id'), 'invoice_number' => sanitize_text_field((string) $request->get_param('invoice_number')), 'issue_date' => sanitize_text_field((string) $request->get_param('issue_date')), 'status' => sanitize_text_field((string) $request->get_param('status')), 'net_amount' => (float) $request->get_param('net_amount'), 'vat_amount' => (float) $request->get_param('vat_amount'), 'gross_amount' => (float) $request->get_param('gross_amount'), 'source' => sanitize_text_field((string) $request->get_param('source')) ?: 'manual', 'ksef_reference_number' => sanitize_text_field((string) $request->get_param('ksef_reference_number'))]; }
     private function sanitize_ksef_document_payload($document) { $document = is_array($document) ? $document : []; return ['supplier_id' => (int) ($document['supplier_id'] ?? 0), 'project_id' => (int) ($document['project_id'] ?? 0), 'invoice_number' => sanitize_text_field((string) ($document['invoice_number'] ?? '')), 'issue_date' => sanitize_text_field((string) ($document['issue_date'] ?? '')), 'net_amount' => (float) ($document['net_amount'] ?? 0), 'vat_amount' => (float) ($document['vat_amount'] ?? 0), 'gross_amount' => (float) ($document['gross_amount'] ?? 0), 'ksef_reference_number' => sanitize_text_field((string) ($document['ksef_reference_number'] ?? ''))]; }
     private function sanitize_estimate_payload(WP_REST_Request $request, array $existing = null) { return ['client_id' => (int) ($request->get_param('client_id') ?: ($existing['client_id'] ?? 0)), 'name' => sanitize_text_field((string) ($request->get_param('name') ?: ($existing['name'] ?? ''))), 'status' => sanitize_text_field((string) ($request->get_param('status') ?: ($existing['status'] ?? 'wstepny'))) ?: 'wstepny', 'accepted_by_user_id' => (int) ($existing['accepted_by_user_id'] ?? 0), 'accepted_at' => $existing['accepted_at'] ?? null]; }
@@ -1680,6 +1680,44 @@ class ERP_OMD_REST_API
             unset($state[$estimate_id]);
             update_option('erp_omd_estimate_client_link_tokens', $state, false);
         }
+    }
+
+    private function is_supplier_category_allowed($category)
+    {
+        $category = sanitize_text_field((string) $category);
+        if ($category === '') {
+            return true;
+        }
+
+        return in_array($category, $this->get_supplier_category_dictionary(), true);
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function get_supplier_category_dictionary()
+    {
+        $categories = array_values(
+            array_unique(
+                array_filter(
+                    array_map(
+                        static function ($category) {
+                            return sanitize_text_field((string) $category);
+                        },
+                        (array) get_option('erp_omd_supplier_categories', [])
+                    ),
+                    static function ($category) {
+                        return $category !== '';
+                    }
+                )
+            )
+        );
+
+        if ($categories === []) {
+            return ['drukarnia', 'dostawca_gadzetow', 'podwykonawca', 'produkcja', 'inne'];
+        }
+
+        return $categories;
     }
 
 

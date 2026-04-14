@@ -25,6 +25,8 @@ $requiredFragments = [
     'function moderate_cost_invoice(',
     'function list_cost_invoice_audit(',
     'function import_ksef_documents(',
+    'supplier_description',
+    'function is_supplier_category_allowed(',
     'function get_client_portal_project_finance(',
 ];
 
