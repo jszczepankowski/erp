@@ -2,6 +2,8 @@
 
 ERP_OMD V2 — wersja 3.2.0 przygotowana pod wdrożenie Sprintu 10.
 
+> Uwaga dot. numeracji: zakres „kalendarz projektów + Google Calendar” odpowiada Sprintowi 4 w planie ERP_4.0 (`docs/ERP_4_0_BACKLOG_MASTER.md`), mimo że w linii historycznej V2 występuje jako część pakietu Sprintu 10.
+
 ## Dokumentacja systemu
 - Pełny opis systemu i propozycje usprawnień: `../docs/ERP_OMD_SYSTEM_OVERVIEW.md`
 - Plan rozwoju frontendu dla pracowników i managerów (`FRONT`): `../docs/FRONT_PLAN.md`

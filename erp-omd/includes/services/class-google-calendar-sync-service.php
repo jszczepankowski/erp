@@ -117,25 +117,7 @@ class ERP_OMD_Google_Calendar_Sync_Service
         $event_payload['project_id'] = $project_id;
         $event_payload['event_type'] = $event_type;
 
-        if ($this->is_google_api_enabled()) {
-            return $this->upsert_google_event($existing_event_id, $event_payload);
-        }
-
-        $legacy_payload = [
-            'project_id' => $project_id,
-            'event_type' => $event_type,
-            'title' => sprintf('ERP OMD: %s', (string) ($project['name'] ?? ('#' . $project_id))),
-            'start_date' => (string) ($event_type === 'range' ? ($project['start_date'] ?? '') : ($project['deadline_date'] ?? '')),
-            'end_date' => (string) ($event_type === 'range' ? ($project['end_date'] ?? '') : ($project['deadline_date'] ?? '')),
-        ];
-
-        // TODO(EPIC D): replace filter-based adapter with native Google Calendar API client + OAuth token refresh.
-        $remote_event_id = apply_filters('erp_omd_google_calendar_sync_upsert_event', $existing_event_id, $legacy_payload);
-        if (! is_string($remote_event_id) || $remote_event_id === '') {
-            return sprintf('todo-%s-%d', $event_type, $project_id);
-        }
-
-        return $remote_event_id;
+        return $this->upsert_google_event($existing_event_id, $event_payload);
     }
 
     private function delete_remote_event($event_id)
@@ -144,13 +126,7 @@ class ERP_OMD_Google_Calendar_Sync_Service
             return;
         }
 
-        if ($this->is_google_api_enabled()) {
-            $this->delete_google_event($event_id);
-            return;
-        }
-
-        // TODO(EPIC D): wire remove call to Google Calendar API transport layer.
-        do_action('erp_omd_google_calendar_sync_delete_event', $event_id);
+        $this->delete_google_event($event_id);
     }
 
     private function build_event_payload($event_type, array $project)
@@ -197,15 +173,6 @@ class ERP_OMD_Google_Calendar_Sync_Service
             'start' => ['date' => $deadline_date],
             'end' => ['date' => $deadline_end],
         ];
-    }
-
-    private function is_google_api_enabled()
-    {
-        $client_id = trim((string) get_option(self::OPTION_CLIENT_ID, ''));
-        $calendar_id = trim((string) get_option(self::OPTION_CALENDAR_ID, ''));
-        $refresh_token = trim((string) $this->decrypt_option(self::OPTION_REFRESH_TOKEN_ENC));
-
-        return $client_id !== '' && $calendar_id !== '' && $refresh_token !== '';
     }
 
     private function upsert_google_event($existing_event_id, array $event_payload)
