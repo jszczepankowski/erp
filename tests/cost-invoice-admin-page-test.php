@@ -37,6 +37,15 @@ $templateFragments = [
     'Relacje projekt ↔ dostawca (E3)',
     'supplier_category',
     'supplier_description',
+    'supplier_company',
+    'supplier_nip',
+    'supplier_email',
+    'supplier_phone',
+    'supplier_city',
+    'supplier_street',
+    'supplier_apartment_number',
+    'supplier_postal_code',
+    'supplier_country',
     'supplier_categories_dictionary',
 ];
 

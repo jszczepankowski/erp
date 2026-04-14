@@ -32,6 +32,22 @@ foreach ((array) $projects as $project_row) {
                     <td><input class="regular-text" type="text" id="supplier_name" name="supplier_name" value="<?php echo esc_attr((string) ($supplier_form['name'] ?? '')); ?>" required /></td>
                 </tr>
                 <tr>
+                    <th><label for="supplier_company"><?php esc_html_e('Firma', 'erp-omd'); ?></label></th>
+                    <td><input class="regular-text" type="text" id="supplier_company" name="supplier_company" value="<?php echo esc_attr((string) ($supplier_form['company'] ?? '')); ?>" /></td>
+                </tr>
+                <tr>
+                    <th><label for="supplier_nip"><?php esc_html_e('NIP', 'erp-omd'); ?></label></th>
+                    <td><input class="regular-text" type="text" id="supplier_nip" name="supplier_nip" value="<?php echo esc_attr((string) ($supplier_form['nip'] ?? '')); ?>" /></td>
+                </tr>
+                <tr>
+                    <th><label for="supplier_email"><?php esc_html_e('Email główny', 'erp-omd'); ?></label></th>
+                    <td><input class="regular-text" type="email" id="supplier_email" name="supplier_email" value="<?php echo esc_attr((string) ($supplier_form['email'] ?? '')); ?>" /></td>
+                </tr>
+                <tr>
+                    <th><label for="supplier_phone"><?php esc_html_e('Telefon główny', 'erp-omd'); ?></label></th>
+                    <td><input class="regular-text" type="text" id="supplier_phone" name="supplier_phone" value="<?php echo esc_attr((string) ($supplier_form['phone'] ?? '')); ?>" /></td>
+                </tr>
+                <tr>
                     <th><label for="supplier_contact_person_name"><?php esc_html_e('Opiekun', 'erp-omd'); ?></label></th>
                     <td><input class="regular-text" type="text" id="supplier_contact_person_name" name="supplier_contact_person_name" value="<?php echo esc_attr((string) ($supplier_form['contact_person_name'] ?? '')); ?>" /></td>
                 </tr>
@@ -60,6 +76,26 @@ foreach ((array) $projects as $project_row) {
                 <tr>
                     <th><label for="supplier_description"><?php esc_html_e('Opis dostawcy', 'erp-omd'); ?></label></th>
                     <td><textarea id="supplier_description" name="supplier_description" class="large-text" rows="3"><?php echo esc_textarea((string) ($supplier_form['supplier_description'] ?? '')); ?></textarea></td>
+                </tr>
+                <tr>
+                    <th><label for="supplier_city"><?php esc_html_e('Miasto', 'erp-omd'); ?></label></th>
+                    <td><input class="regular-text" type="text" id="supplier_city" name="supplier_city" value="<?php echo esc_attr((string) ($supplier_form['city'] ?? '')); ?>" /></td>
+                </tr>
+                <tr>
+                    <th><label for="supplier_street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label></th>
+                    <td><input class="regular-text" type="text" id="supplier_street" name="supplier_street" value="<?php echo esc_attr((string) ($supplier_form['street'] ?? '')); ?>" /></td>
+                </tr>
+                <tr>
+                    <th><label for="supplier_apartment_number"><?php esc_html_e('Numer lokalu', 'erp-omd'); ?></label></th>
+                    <td><input class="regular-text" type="text" id="supplier_apartment_number" name="supplier_apartment_number" value="<?php echo esc_attr((string) ($supplier_form['apartment_number'] ?? '')); ?>" /></td>
+                </tr>
+                <tr>
+                    <th><label for="supplier_postal_code"><?php esc_html_e('Kod pocztowy', 'erp-omd'); ?></label></th>
+                    <td><input class="regular-text" type="text" id="supplier_postal_code" name="supplier_postal_code" value="<?php echo esc_attr((string) ($supplier_form['postal_code'] ?? '')); ?>" /></td>
+                </tr>
+                <tr>
+                    <th><label for="supplier_country"><?php esc_html_e('Kraj', 'erp-omd'); ?></label></th>
+                    <td><input class="regular-text" type="text" id="supplier_country" name="supplier_country" value="<?php echo esc_attr((string) ($supplier_form['country'] ?? 'PL')); ?>" /></td>
                 </tr>
                 <tr>
                     <th><label for="supplier_categories_dictionary"><?php esc_html_e('Słownik kategorii', 'erp-omd'); ?></label></th>
