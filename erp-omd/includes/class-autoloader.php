@@ -31,6 +31,9 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Project_Financial_Repository' => 'includes/repositories/class-project-financial-repository.php',
         'ERP_OMD_Time_Entry_Repository' => 'includes/repositories/class-time-entry-repository.php',
         'ERP_OMD_Attachment_Repository' => 'includes/repositories/class-attachment-repository.php',
+        'ERP_OMD_Supplier_Repository' => 'includes/repositories/class-supplier-repository.php',
+        'ERP_OMD_Cost_Invoice_Repository' => 'includes/repositories/class-cost-invoice-repository.php',
+        'ERP_OMD_Cost_Invoice_Audit_Repository' => 'includes/repositories/class-cost-invoice-audit-repository.php',
         'ERP_OMD_Project_Calendar_Sync_Repository' => 'includes/repositories/class-project-calendar-sync-repository.php',
         'ERP_OMD_Period_Repository' => 'includes/repositories/class-omd-period-repository.php',
         'ERP_OMD_Adjustment_Audit_Repository' => 'includes/repositories/class-omd-adjustment-audit-repository.php',
@@ -46,6 +49,9 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Project_Attachment_Service' => 'includes/services/class-project-attachment-service.php',
         'ERP_OMD_Google_Calendar_Sync_Service' => 'includes/services/class-google-calendar-sync-service.php',
         'ERP_OMD_Period_Service' => 'includes/services/class-omd-period-service.php',
+        'ERP_OMD_Cost_Invoice_Workflow_Service' => 'includes/services/class-cost-invoice-workflow-service.php',
+        'ERP_OMD_KSeF_Import_Service' => 'includes/services/class-ksef-import-service.php',
+        'ERP_OMD_Client_Portal_Service' => 'includes/services/class-client-portal-service.php',
     ];
 
     public static function register()
