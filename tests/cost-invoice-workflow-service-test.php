@@ -277,5 +277,31 @@ if (count($ksefErrors) < 1 || strpos(implode(' ', $ksefErrors), 'KSeF') === fals
     throw new RuntimeException('Expected KSeF reference uniqueness validation error.');
 }
 
+$relationLockErrors = $service->validate_invoice_data(
+    [
+        'id' => 1200,
+        'supplier_id' => 3,
+        'project_id' => 10,
+        'invoice_number' => 'FV/LOCK/1',
+        'issue_date' => '2026-04-14',
+        'status' => 'przypisana',
+        'net_amount' => 100,
+        'vat_amount' => 23,
+        'gross_amount' => 123,
+    ],
+    [],
+    [
+        'id' => 1200,
+        'supplier_id' => 2,
+        'project_id' => 9,
+        'status' => 'przypisana',
+    ]
+);
+
+$assertions++;
+if (count($relationLockErrors) < 2) {
+    throw new RuntimeException('Expected relation lock errors when changing supplier/project on przypisana status.');
+}
+
 echo "Assertions: {$assertions}\n";
 echo "Cost invoice workflow service test passed.\n";

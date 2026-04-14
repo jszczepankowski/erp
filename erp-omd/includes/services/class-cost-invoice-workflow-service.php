@@ -114,6 +114,17 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
             if ($previous_status !== '' && ! $this->can_transition($previous_status, $status)) {
                 $errors[] = __('Niedozwolona zmiana statusu faktury kosztowej.', 'erp-omd');
             }
+
+            if ($previous_status === 'przypisana' && $status === 'przypisana') {
+                $before_project_id = (int) ($before_state['project_id'] ?? 0);
+                $before_supplier_id = (int) ($before_state['supplier_id'] ?? 0);
+                if ($before_project_id > 0 && $before_project_id !== $project_id) {
+                    $errors[] = __('Aby zmienić projekt faktury, najpierw cofnij status z przypisana.', 'erp-omd');
+                }
+                if ($before_supplier_id > 0 && $before_supplier_id !== $supplier_id) {
+                    $errors[] = __('Aby zmienić dostawcę faktury, najpierw cofnij status z przypisana.', 'erp-omd');
+                }
+            }
         }
 
         if ($invoice_number !== '' && $supplier_id > 0) {
