@@ -51,6 +51,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Period_Service' => 'includes/services/class-omd-period-service.php',
         'ERP_OMD_Cost_Invoice_Workflow_Service' => 'includes/services/class-cost-invoice-workflow-service.php',
         'ERP_OMD_KSeF_Import_Service' => 'includes/services/class-ksef-import-service.php',
+        'ERP_OMD_Client_Portal_Service' => 'includes/services/class-client-portal-service.php',
     ];
 
     public static function register()

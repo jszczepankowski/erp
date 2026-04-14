@@ -30,6 +30,7 @@ class ERP_OMD_REST_API
     private $cost_invoices;
     private $cost_invoice_workflow;
     private $ksef_import_service;
+    private $client_portal_service;
 
 
     public function __construct(
@@ -87,6 +88,7 @@ class ERP_OMD_REST_API
         $this->cost_invoices = new ERP_OMD_Cost_Invoice_Repository();
         $this->cost_invoice_workflow = new ERP_OMD_Cost_Invoice_Workflow_Service($this->cost_invoices, new ERP_OMD_Cost_Invoice_Audit_Repository());
         $this->ksef_import_service = new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow);
+        $this->client_portal_service = new ERP_OMD_Client_Portal_Service($this->projects, new ERP_OMD_Project_Revenue_Repository(), $this->project_costs);
     }
 
     public function register_hooks()
@@ -714,6 +716,9 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/calendar', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_calendar'], 'permission_callback' => [$this, 'can_access_reports']],
         ]);
+        register_rest_route('erp-omd/v1', '/client-portal/projects/(?P<id>\\d+)/finance', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_client_portal_project_finance'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
     }
 
     private function register_hardening_routes()
@@ -1239,6 +1244,17 @@ class ERP_OMD_REST_API
         $this->set_reports_cache($cache_key, $payload);
 
         return rest_ensure_response($payload);
+    }
+
+    public function get_client_portal_project_finance(WP_REST_Request $request)
+    {
+        $project_id = (int) $request['id'];
+        $view = $this->client_portal_service->build_project_finance_view($project_id);
+        if (! is_array($view) || $view === []) {
+            return new WP_Error('erp_omd_client_portal_project_not_found', __('Project not found.', 'erp-omd'), ['status' => 404]);
+        }
+
+        return rest_ensure_response($view);
     }
 
     public function list_alerts(WP_REST_Request $request)

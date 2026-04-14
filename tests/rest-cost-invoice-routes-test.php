@@ -14,6 +14,7 @@ $requiredFragments = [
     "'/cost-invoices/(?P<id>\\d+)'",
     "'/cost-invoices/(?P<id>\\d+)/moderate'",
     "'/ksef/import'",
+    "'/client-portal/projects/(?P<id>\\\\d+)/finance'",
     'function register_supplier_routes()',
     'function list_suppliers(',
     'function create_supplier(',
@@ -22,6 +23,7 @@ $requiredFragments = [
     'function update_cost_invoice(',
     'function moderate_cost_invoice(',
     'function import_ksef_documents(',
+    'function get_client_portal_project_finance(',
 ];
 
 $assertions = 0;
