@@ -19,6 +19,7 @@ $runtimeFragments = [
     'function redirect_cost_invoice_page(',
     'selected_supplier_id',
     'selected_invoice',
+    'project_supplier_pairs',
 ];
 
 $templateFragments = [
@@ -30,6 +31,7 @@ $templateFragments = [
     'name="cost_invoice_id"',
     'Edytuj fakturę kosztową',
     'Dostawcy',
+    'Relacje projekt ↔ dostawca (E3)',
 ];
 
 $assertions = 0;

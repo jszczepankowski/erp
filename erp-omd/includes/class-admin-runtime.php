@@ -1417,6 +1417,7 @@ class ERP_OMD_Admin
         $suppliers = (array) $suppliers_repository->all_active();
         $projects = (array) $this->projects->all(['status' => 'active']);
         $cost_invoices = (array) $cost_invoice_repository->list();
+        $project_supplier_pairs = (array) $cost_invoice_repository->project_supplier_pairs();
         $selected_supplier_id = max(0, (int) ($_GET['supplier_id'] ?? 0));
         $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));
         $selected_supplier = $selected_supplier_id > 0 ? (array) $suppliers_repository->find($selected_supplier_id) : [];

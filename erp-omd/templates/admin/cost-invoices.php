@@ -163,6 +163,33 @@ foreach ((array) $projects as $project_row) {
         </tbody>
     </table>
 
+    <h2 style="margin-top:24px;"><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></h2>
+    <table class="widefat striped">
+        <thead>
+            <tr>
+                <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
+                <th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th>
+                <th><?php esc_html_e('Liczba faktur', 'erp-omd'); ?></th>
+                <th><?php esc_html_e('Suma brutto', 'erp-omd'); ?></th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if ((array) ($project_supplier_pairs ?? []) === []) : ?>
+                <tr><td colspan="4"><?php esc_html_e('Brak relacji projekt-dostawca.', 'erp-omd'); ?></td></tr>
+            <?php endif; ?>
+            <?php foreach ((array) ($project_supplier_pairs ?? []) as $pair) : ?>
+                <?php $pair_project_id = (int) ($pair['project_id'] ?? 0); ?>
+                <?php $pair_supplier_id = (int) ($pair['supplier_id'] ?? 0); ?>
+                <tr>
+                    <td><?php echo esc_html((string) ($project_name_by_id[$pair_project_id] ?? ('#' . $pair_project_id))); ?></td>
+                    <td><?php echo esc_html((string) ($supplier_name_by_id[$pair_supplier_id] ?? ('#' . $pair_supplier_id))); ?></td>
+                    <td><?php echo esc_html((string) ((int) ($pair['invoices_count'] ?? 0))); ?></td>
+                    <td><?php echo esc_html(number_format((float) ($pair['gross_total'] ?? 0), 2, '.', ' ')); ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+
     <?php if ($selected_invoice_id > 0) : ?>
         <h2 id="invoice-audit" style="margin-top:24px;"><?php echo esc_html(sprintf(__('Audit faktury #%d', 'erp-omd'), $selected_invoice_id)); ?></h2>
         <table class="widefat striped">

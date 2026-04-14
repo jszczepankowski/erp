@@ -40,6 +40,19 @@ class ERP_OMD_Cost_Invoice_Repository
         return $wpdb->get_results($sql, ARRAY_A);
     }
 
+    public function project_supplier_pairs()
+    {
+        global $wpdb;
+
+        return $wpdb->get_results(
+            "SELECT project_id, supplier_id, COUNT(*) AS invoices_count, SUM(gross_amount) AS gross_total
+            FROM {$this->table_name()}
+            GROUP BY project_id, supplier_id
+            ORDER BY project_id ASC, supplier_id ASC",
+            ARRAY_A
+        );
+    }
+
     public function table_name()
     {
         global $wpdb;
