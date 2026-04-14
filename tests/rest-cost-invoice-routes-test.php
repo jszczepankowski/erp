@@ -25,6 +25,7 @@ $requiredFragments = [
     'function moderate_cost_invoice(',
     'function list_cost_invoice_audit(',
     'function import_ksef_documents(',
+    'sanitize_cost_invoice_payload(WP_REST_Request $request, array $existing = null)',
     'supplier_description',
     'function is_supplier_category_allowed(',
     'function request_param_or_default(',
