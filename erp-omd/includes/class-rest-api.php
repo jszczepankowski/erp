@@ -26,6 +26,12 @@ class ERP_OMD_REST_API
     private $alert_service;
     private $period_service;
     private $adjustment_audit;
+    private $suppliers;
+    private $cost_invoices;
+    private $cost_invoice_audit;
+    private $cost_invoice_workflow;
+    private $ksef_import_service;
+    private $client_portal_service;
 
 
     public function __construct(
@@ -79,6 +85,12 @@ class ERP_OMD_REST_API
         $this->alert_service = $alert_service;
         $this->period_service = $period_service ?: new ERP_OMD_Period_Service(new ERP_OMD_Period_Repository());
         $this->adjustment_audit = $adjustment_audit_repository ?: new ERP_OMD_Adjustment_Audit_Repository();
+        $this->suppliers = new ERP_OMD_Supplier_Repository();
+        $this->cost_invoices = new ERP_OMD_Cost_Invoice_Repository();
+        $this->cost_invoice_audit = new ERP_OMD_Cost_Invoice_Audit_Repository();
+        $this->cost_invoice_workflow = new ERP_OMD_Cost_Invoice_Workflow_Service($this->cost_invoices, $this->cost_invoice_audit, $this->suppliers, $this->projects);
+        $this->ksef_import_service = new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow);
+        $this->client_portal_service = new ERP_OMD_Client_Portal_Service($this->projects, new ERP_OMD_Project_Revenue_Repository(), $this->project_costs);
     }
 
     public function register_hooks()
@@ -91,6 +103,7 @@ class ERP_OMD_REST_API
         $this->register_role_routes();
         $this->register_employee_routes();
         $this->register_client_routes();
+        $this->register_supplier_routes();
         $this->register_estimate_routes();
         $this->register_project_routes();
         $this->register_time_routes();
@@ -585,6 +598,35 @@ class ERP_OMD_REST_API
         ]);
     }
 
+    private function register_supplier_routes()
+    {
+        register_rest_route('erp-omd/v1', '/suppliers', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_suppliers'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_supplier'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/suppliers/(?P<id>\d+)', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_supplier'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_supplier'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/cost-invoices', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_cost_invoices'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_cost_invoice'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/cost-invoices/(?P<id>\d+)', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_cost_invoice'], 'permission_callback' => [$this, 'can_manage_projects']],
+            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_cost_invoice'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/cost-invoices/(?P<id>\d+)/moderate', [
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'moderate_cost_invoice'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/cost-invoices/(?P<id>\d+)/audit', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_cost_invoice_audit'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/ksef/import', [
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'import_ksef_documents'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+    }
+
     private function register_estimate_routes()
     {
         register_rest_route('erp-omd/v1', '/estimates', [
@@ -679,6 +721,9 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/calendar', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_calendar'], 'permission_callback' => [$this, 'can_access_reports']],
         ]);
+        register_rest_route('erp-omd/v1', '/client-portal/projects/(?P<id>\\d+)/finance', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_client_portal_project_finance'], 'permission_callback' => [$this, 'can_access_reports']],
+        ]);
     }
 
     private function register_hardening_routes()
@@ -751,6 +796,17 @@ class ERP_OMD_REST_API
 
         return $this->paginated_response($rows, $total, $pagination['page'], $pagination['per_page']);
     }
+    public function list_suppliers(WP_REST_Request $request) { return rest_ensure_response($this->suppliers->all_active()); }
+    public function get_supplier(WP_REST_Request $request) { $supplier = $this->suppliers->find((int) $request['id']); if (! $supplier) { return new WP_Error('erp_omd_supplier_not_found', __('Supplier not found.', 'erp-omd'), ['status' => 404]); } return rest_ensure_response($supplier); }
+    public function create_supplier(WP_REST_Request $request) { $payload = $this->sanitize_supplier_payload($request); if ($payload['name'] === '') { return new WP_Error('erp_omd_supplier_invalid', __('Supplier name is required.', 'erp-omd'), ['status' => 422]); } if (! $this->is_supplier_category_allowed((string) ($payload['category'] ?? ''))) { return new WP_Error('erp_omd_supplier_invalid_category', __('Supplier category must match configured dictionary.', 'erp-omd'), ['status' => 422]); } $id = $this->suppliers->create($payload); return new WP_REST_Response($this->suppliers->find($id), 201); }
+    public function update_supplier(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->suppliers->find($id); if (! $existing) { return new WP_Error('erp_omd_supplier_not_found', __('Supplier not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_supplier_payload($request, $existing); if (trim((string) ($payload['name'] ?? '')) === '') { return new WP_Error('erp_omd_supplier_invalid', __('Supplier name is required.', 'erp-omd'), ['status' => 422]); } if (! $this->is_supplier_category_allowed((string) ($payload['category'] ?? ''))) { return new WP_Error('erp_omd_supplier_invalid_category', __('Supplier category must match configured dictionary.', 'erp-omd'), ['status' => 422]); } $this->suppliers->update($id, $payload); return rest_ensure_response($this->suppliers->find($id)); }
+    public function list_cost_invoices(WP_REST_Request $request) { $filters = ['supplier_id' => (int) $request->get_param('supplier_id'), 'project_id' => (int) $request->get_param('project_id'), 'status' => sanitize_text_field((string) $request->get_param('status'))]; return rest_ensure_response($this->cost_invoices->list($filters)); }
+    public function get_cost_invoice(WP_REST_Request $request) { $invoice = $this->cost_invoices->find((int) $request['id']); if (! $invoice) { return new WP_Error('erp_omd_cost_invoice_not_found', __('Cost invoice not found.', 'erp-omd'), ['status' => 404]); } return rest_ensure_response($invoice); }
+    public function create_cost_invoice(WP_REST_Request $request) { $payload = $this->sanitize_cost_invoice_payload($request); $payload['created_by_user_id'] = get_current_user_id(); $payload['updated_by_user_id'] = get_current_user_id(); $result = $this->cost_invoice_workflow->create_invoice($payload); if (! (bool) ($result['ok'] ?? false)) { return new WP_Error('erp_omd_cost_invoice_invalid', implode(' ', (array) ($result['errors'] ?? [])), ['status' => 422]); } return new WP_REST_Response($this->cost_invoices->find((int) $result['invoice_id']), 201); }
+    public function update_cost_invoice(WP_REST_Request $request) { $invoice_id = (int) $request['id']; $existing = $this->cost_invoices->find($invoice_id); if (! $existing) { return new WP_Error('erp_omd_cost_invoice_not_found', __('Cost invoice not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_cost_invoice_payload($request, $existing); $payload['updated_by_user_id'] = get_current_user_id(); $result = $this->cost_invoice_workflow->update_invoice($invoice_id, $payload, get_current_user_id()); if (! (bool) ($result['ok'] ?? false)) { return new WP_Error('erp_omd_cost_invoice_invalid', implode(' ', (array) ($result['errors'] ?? [])), ['status' => 422]); } return rest_ensure_response($this->cost_invoices->find($invoice_id)); }
+    public function moderate_cost_invoice(WP_REST_Request $request) { $invoice_id = (int) $request['id']; if (! $this->cost_invoices->find($invoice_id)) { return new WP_Error('erp_omd_cost_invoice_not_found', __('Cost invoice not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_cost_invoice_payload($request); $result = $this->ksef_import_service->moderate_imported_invoice($invoice_id, $payload, get_current_user_id()); if (! (bool) ($result['ok'] ?? false)) { return new WP_Error('erp_omd_cost_invoice_moderation_invalid', implode(' ', (array) ($result['errors'] ?? [])), ['status' => 422]); } return rest_ensure_response($this->cost_invoices->find($invoice_id)); }
+    public function list_cost_invoice_audit(WP_REST_Request $request) { $invoice_id = (int) $request['id']; if (! $this->cost_invoices->find($invoice_id)) { return new WP_Error('erp_omd_cost_invoice_not_found', __('Cost invoice not found.', 'erp-omd'), ['status' => 404]); } return rest_ensure_response($this->cost_invoice_audit->for_invoice($invoice_id)); }
+    public function import_ksef_documents(WP_REST_Request $request) { $documents = $request->get_param('documents'); if (! is_array($documents) || $documents === []) { return new WP_Error('erp_omd_ksef_import_invalid', __('KSeF import payload must include non-empty documents array.', 'erp-omd'), ['status' => 422]); } $sanitized_documents = array_map([$this, 'sanitize_ksef_document_payload'], $documents); return rest_ensure_response($this->ksef_import_service->import_documents($sanitized_documents, get_current_user_id())); }
     public function get_client(WP_REST_Request $request) { return $this->find_or_error($this->clients->find((int) $request['id']), 'erp_omd_client_not_found', __('Client not found.', 'erp-omd')); }
     public function create_client(WP_REST_Request $request) { $payload = $this->client_project_service->prepare_client($this->sanitize_client_payload($request)); $errors = $this->client_project_service->validate_client($payload); if ($errors) { return new WP_Error('erp_omd_client_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->clients->create($payload); return new WP_REST_Response($this->clients->find($id), 201); }
     public function update_client(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->clients->find($id); if (! $existing) { return new WP_Error('erp_omd_client_not_found', __('Client not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->client_project_service->prepare_client(array_merge($existing, $this->sanitize_client_payload($request))); $errors = $this->client_project_service->validate_client($payload, $id); if ($errors) { return new WP_Error('erp_omd_client_invalid', implode(' ', $errors), ['status' => 422]); } $this->clients->update($id, $payload); return rest_ensure_response($this->clients->find($id)); }
@@ -1196,6 +1252,17 @@ class ERP_OMD_REST_API
         return rest_ensure_response($payload);
     }
 
+    public function get_client_portal_project_finance(WP_REST_Request $request)
+    {
+        $project_id = (int) $request['id'];
+        $view = $this->client_portal_service->build_project_finance_view($project_id);
+        if (! is_array($view) || $view === []) {
+            return new WP_Error('erp_omd_client_portal_project_not_found', __('Project not found.', 'erp-omd'), ['status' => 404]);
+        }
+
+        return rest_ensure_response($view);
+    }
+
     public function list_alerts(WP_REST_Request $request)
     {
         $entity_type = sanitize_key((string) $request->get_param('entity_type'));
@@ -1559,6 +1626,9 @@ class ERP_OMD_REST_API
     private function sanitize_employee_payload(WP_REST_Request $request) { $role_ids = $request->get_param('role_ids'); return ['user_id' => (int) $request->get_param('user_id'), 'default_role_id' => (int) $request->get_param('default_role_id'), 'account_type' => sanitize_text_field((string) $request->get_param('account_type')) ?: 'worker', 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active', 'role_ids' => is_array($role_ids) ? array_map('intval', $role_ids) : []]; }
     private function sanitize_salary_payload(WP_REST_Request $request, $employee_id) { return ['employee_id' => $employee_id, 'monthly_salary' => (float) $request->get_param('monthly_salary'), 'monthly_hours' => (float) $request->get_param('monthly_hours'), 'valid_from' => sanitize_text_field((string) $request->get_param('valid_from')), 'valid_to' => sanitize_text_field((string) $request->get_param('valid_to'))]; }
     private function sanitize_client_payload(WP_REST_Request $request) { return ['name' => sanitize_text_field((string) $request->get_param('name')), 'company' => sanitize_text_field((string) $request->get_param('company')), 'nip' => sanitize_text_field((string) $request->get_param('nip')), 'email' => sanitize_email((string) $request->get_param('email')), 'phone' => sanitize_text_field((string) $request->get_param('phone')), 'contact_person_name' => sanitize_text_field((string) $request->get_param('contact_person_name')), 'contact_person_email' => sanitize_email((string) $request->get_param('contact_person_email')), 'contact_person_phone' => sanitize_text_field((string) $request->get_param('contact_person_phone')), 'city' => sanitize_text_field((string) $request->get_param('city')), 'street' => sanitize_text_field((string) $request->get_param('street')), 'apartment_number' => sanitize_text_field((string) $request->get_param('apartment_number')), 'postal_code' => sanitize_text_field((string) $request->get_param('postal_code')), 'country' => sanitize_text_field((string) $request->get_param('country')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'active', 'account_manager_id' => (int) $request->get_param('account_manager_id'), 'alert_margin_threshold' => sanitize_text_field((string) $request->get_param('alert_margin_threshold'))]; }
+    private function sanitize_supplier_payload(WP_REST_Request $request, array $existing = null) { return ['name' => sanitize_text_field((string) $this->request_param_or_default($request, 'name', $existing['name'] ?? '')), 'company' => sanitize_text_field((string) $this->request_param_or_default($request, 'company', $existing['company'] ?? '')), 'nip' => sanitize_text_field((string) $this->request_param_or_default($request, 'nip', $existing['nip'] ?? '')), 'email' => sanitize_email((string) $this->request_param_or_default($request, 'email', $existing['email'] ?? '')), 'phone' => sanitize_text_field((string) $this->request_param_or_default($request, 'phone', $existing['phone'] ?? '')), 'contact_person_name' => sanitize_text_field((string) $this->request_param_or_default($request, 'contact_person_name', $existing['contact_person_name'] ?? '')), 'contact_person_email' => sanitize_email((string) $this->request_param_or_default($request, 'contact_person_email', $existing['contact_person_email'] ?? '')), 'contact_person_phone' => sanitize_text_field((string) $this->request_param_or_default($request, 'contact_person_phone', $existing['contact_person_phone'] ?? '')), 'category' => sanitize_text_field((string) $this->request_param_or_default($request, 'category', $existing['category'] ?? '')), 'supplier_description' => sanitize_textarea_field((string) $this->request_param_or_default($request, 'supplier_description', $existing['supplier_description'] ?? '')), 'city' => sanitize_text_field((string) $this->request_param_or_default($request, 'city', $existing['city'] ?? '')), 'street' => sanitize_text_field((string) $this->request_param_or_default($request, 'street', $existing['street'] ?? '')), 'apartment_number' => sanitize_text_field((string) $this->request_param_or_default($request, 'apartment_number', $existing['apartment_number'] ?? '')), 'postal_code' => sanitize_text_field((string) $this->request_param_or_default($request, 'postal_code', $existing['postal_code'] ?? '')), 'country' => sanitize_text_field((string) $this->request_param_or_default($request, 'country', $existing['country'] ?? 'PL')) ?: 'PL', 'status' => sanitize_text_field((string) $this->request_param_or_default($request, 'status', $existing['status'] ?? 'active')) ?: 'active']; }
+    private function sanitize_cost_invoice_payload(WP_REST_Request $request, array $existing = null) { return ['supplier_id' => (int) $this->request_param_or_default($request, 'supplier_id', $existing['supplier_id'] ?? 0), 'project_id' => (int) $this->request_param_or_default($request, 'project_id', $existing['project_id'] ?? 0), 'invoice_number' => sanitize_text_field((string) $this->request_param_or_default($request, 'invoice_number', $existing['invoice_number'] ?? '')), 'issue_date' => sanitize_text_field((string) $this->request_param_or_default($request, 'issue_date', $existing['issue_date'] ?? '')), 'status' => sanitize_text_field((string) $this->request_param_or_default($request, 'status', $existing['status'] ?? '')), 'net_amount' => (float) $this->request_param_or_default($request, 'net_amount', $existing['net_amount'] ?? 0), 'vat_amount' => (float) $this->request_param_or_default($request, 'vat_amount', $existing['vat_amount'] ?? 0), 'gross_amount' => (float) $this->request_param_or_default($request, 'gross_amount', $existing['gross_amount'] ?? 0), 'source' => sanitize_text_field((string) $this->request_param_or_default($request, 'source', $existing['source'] ?? 'manual')) ?: 'manual', 'ksef_reference_number' => sanitize_text_field((string) $this->request_param_or_default($request, 'ksef_reference_number', $existing['ksef_reference_number'] ?? ''))]; }
+    private function sanitize_ksef_document_payload($document) { $document = is_array($document) ? $document : []; return ['supplier_id' => (int) ($document['supplier_id'] ?? 0), 'project_id' => (int) ($document['project_id'] ?? 0), 'invoice_number' => sanitize_text_field((string) ($document['invoice_number'] ?? '')), 'issue_date' => sanitize_text_field((string) ($document['issue_date'] ?? '')), 'net_amount' => (float) ($document['net_amount'] ?? 0), 'vat_amount' => (float) ($document['vat_amount'] ?? 0), 'gross_amount' => (float) ($document['gross_amount'] ?? 0), 'ksef_reference_number' => sanitize_text_field((string) ($document['ksef_reference_number'] ?? ''))]; }
     private function sanitize_estimate_payload(WP_REST_Request $request, array $existing = null) { return ['client_id' => (int) ($request->get_param('client_id') ?: ($existing['client_id'] ?? 0)), 'name' => sanitize_text_field((string) ($request->get_param('name') ?: ($existing['name'] ?? ''))), 'status' => sanitize_text_field((string) ($request->get_param('status') ?: ($existing['status'] ?? 'wstepny'))) ?: 'wstepny', 'accepted_by_user_id' => (int) ($existing['accepted_by_user_id'] ?? 0), 'accepted_at' => $existing['accepted_at'] ?? null]; }
     private function sanitize_estimate_item_payload(WP_REST_Request $request, $estimate_id, array $existing = null) { return ['estimate_id' => (int) $estimate_id, 'name' => sanitize_text_field((string) ($request->get_param('name') ?: ($existing['name'] ?? ''))), 'qty' => (float) ($request->get_param('qty') !== null ? $request->get_param('qty') : ($existing['qty'] ?? 0)), 'price' => (float) ($request->get_param('price') !== null ? $request->get_param('price') : ($existing['price'] ?? 0)), 'cost_internal' => (float) ($request->get_param('cost_internal') !== null ? $request->get_param('cost_internal') : ($existing['cost_internal'] ?? 0)), 'comment' => sanitize_textarea_field((string) ($request->get_param('comment') !== null ? $request->get_param('comment') : ($existing['comment'] ?? '')) )]; }
     private function sanitize_project_payload(WP_REST_Request $request) { $manager_ids = $request->get_param('manager_ids'); $operational_close_month = sanitize_text_field((string) $request->get_param('operational_close_month')); if (preg_match('/^\\d{4}-\\d{2}$/', $operational_close_month) !== 1) { $operational_close_month = ''; } return ['client_id' => (int) $request->get_param('client_id'), 'name' => sanitize_text_field((string) $request->get_param('name')), 'billing_type' => sanitize_text_field((string) $request->get_param('billing_type')) ?: 'time_material', 'budget' => (float) $request->get_param('budget'), 'retainer_monthly_fee' => (float) $request->get_param('retainer_monthly_fee'), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'do_rozpoczecia', 'start_date' => sanitize_text_field((string) $request->get_param('start_date')), 'end_date' => sanitize_text_field((string) $request->get_param('end_date')), 'deadline_date' => sanitize_text_field((string) $request->get_param('deadline_date')), 'deadline_completed_at' => sanitize_text_field((string) $request->get_param('deadline_completed_at')), 'deadline_completed_by' => (int) $request->get_param('deadline_completed_by'), 'operational_close_month' => $operational_close_month, 'manager_id' => (int) $request->get_param('manager_id'), 'manager_ids' => is_array($manager_ids) ? array_map('intval', $manager_ids) : [], 'estimate_id' => (int) $request->get_param('estimate_id'), 'brief' => sanitize_textarea_field((string) $request->get_param('brief')), 'alert_margin_threshold' => sanitize_text_field((string) $request->get_param('alert_margin_threshold'))]; }
@@ -1612,6 +1682,44 @@ class ERP_OMD_REST_API
         }
     }
 
+    private function is_supplier_category_allowed($category)
+    {
+        $category = sanitize_text_field((string) $category);
+        if ($category === '') {
+            return true;
+        }
+
+        return in_array($category, $this->get_supplier_category_dictionary(), true);
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function get_supplier_category_dictionary()
+    {
+        $categories = array_values(
+            array_unique(
+                array_filter(
+                    array_map(
+                        static function ($category) {
+                            return sanitize_text_field((string) $category);
+                        },
+                        (array) get_option('erp_omd_supplier_categories', [])
+                    ),
+                    static function ($category) {
+                        return $category !== '';
+                    }
+                )
+            )
+        );
+
+        if ($categories === []) {
+            return ['drukarnia', 'dostawca_gadzetow', 'podwykonawca', 'produkcja', 'inne'];
+        }
+
+        return $categories;
+    }
+
 
     private function current_employee_id()
     {
@@ -1622,6 +1730,15 @@ class ERP_OMD_REST_API
     private function is_query_filter($value)
     {
         return $value !== '' && $value !== null;
+    }
+
+    private function request_param_or_default(WP_REST_Request $request, $param_name, $default = '')
+    {
+        if ($request->has_param($param_name)) {
+            return $request->get_param($param_name);
+        }
+
+        return $default;
     }
 
     private function resolve_pagination(WP_REST_Request $request)
