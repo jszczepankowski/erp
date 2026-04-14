@@ -263,8 +263,8 @@
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-google-calendar-redirect-uri"><?php esc_html_e('Redirect URI', 'erp-omd'); ?></label>
-                            <input id="erp-omd-google-calendar-redirect-uri" type="text" readonly value="<?php echo esc_attr((string) $google_calendar_redirect_uri); ?>" />
-                            <p class="description"><?php esc_html_e('Ten adres musi być wpisany 1:1 w Google Cloud Console (Authorized redirect URIs).', 'erp-omd'); ?></p>
+                            <input id="erp-omd-google-calendar-redirect-uri" type="text" name="google_calendar_redirect_uri" value="<?php echo esc_attr((string) $google_calendar_redirect_uri); ?>" />
+                            <p class="description"><?php esc_html_e('Ten adres musi być wpisany 1:1 w Google Cloud Console (Authorized redirect URIs). Uwaga: protokół (http/https), domena i parametry query muszą być identyczne.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-google-calendar-scope"><?php esc_html_e('Scope', 'erp-omd'); ?></label>

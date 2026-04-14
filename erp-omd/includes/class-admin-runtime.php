@@ -242,8 +242,13 @@ class ERP_OMD_Admin
     {
         if (
             is_admin()
-            && isset($_GET['page'], $_GET['erp_omd_google_oauth_callback'])
+            && isset($_GET['page'])
             && (string) $_GET['page'] === 'erp-omd-settings'
+            && (
+                isset($_GET['erp_omd_google_oauth_callback'])
+                || isset($_GET['code'])
+                || isset($_GET['error'])
+            )
         ) {
             $this->handle_google_calendar_oauth_callback();
             return;
@@ -2766,6 +2771,13 @@ class ERP_OMD_Admin
         if (! in_array($google_calendar_scope, ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar'], true)) {
             $google_calendar_scope = 'https://www.googleapis.com/auth/calendar.events';
         }
+        $google_calendar_redirect_uri = esc_url_raw(trim((string) wp_unslash($_POST['google_calendar_redirect_uri'] ?? '')));
+        if ($google_calendar_redirect_uri === '') {
+            $google_calendar_redirect_uri = admin_url('admin.php?page=erp-omd-settings&erp_omd_google_oauth_callback=1');
+        }
+        if (! wp_http_validate_url($google_calendar_redirect_uri)) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Redirect URI Google Calendar jest niepoprawny.', 'erp-omd'));
+        }
         $google_calendar_calendar_id = sanitize_text_field(wp_unslash($_POST['google_calendar_calendar_id'] ?? 'primary'));
         if ($google_calendar_calendar_id === '') {
             $google_calendar_calendar_id = 'primary';
@@ -2777,6 +2789,7 @@ class ERP_OMD_Admin
 
         update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
         update_option('erp_omd_google_calendar_scope', $google_calendar_scope);
+        update_option('erp_omd_google_calendar_redirect_uri', $google_calendar_redirect_uri);
         update_option('erp_omd_google_calendar_calendar_id', $google_calendar_calendar_id);
         update_option('erp_omd_google_calendar_technical_account_email', $google_calendar_technical_account_email);
         if ($google_calendar_client_secret !== '') {
@@ -2907,6 +2920,11 @@ class ERP_OMD_Admin
 
     private function google_calendar_redirect_uri()
     {
+        $stored_redirect_uri = esc_url_raw(trim((string) get_option('erp_omd_google_calendar_redirect_uri', '')));
+        if ($stored_redirect_uri !== '' && wp_http_validate_url($stored_redirect_uri)) {
+            return $stored_redirect_uri;
+        }
+
         return admin_url('admin.php?page=erp-omd-settings&erp_omd_google_oauth_callback=1');
     }
 
