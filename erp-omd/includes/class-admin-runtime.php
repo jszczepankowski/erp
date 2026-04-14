@@ -1417,7 +1417,10 @@ class ERP_OMD_Admin
         $suppliers = (array) $suppliers_repository->all_active();
         $projects = (array) $this->projects->all(['status' => 'active']);
         $cost_invoices = (array) $cost_invoice_repository->list();
+        $selected_supplier_id = max(0, (int) ($_GET['supplier_id'] ?? 0));
         $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));
+        $selected_supplier = $selected_supplier_id > 0 ? (array) $suppliers_repository->find($selected_supplier_id) : [];
+        $selected_invoice = $selected_invoice_id > 0 ? (array) $cost_invoice_repository->find($selected_invoice_id) : [];
         $selected_invoice_audit = $selected_invoice_id > 0 ? (array) $cost_invoice_audit_repository->for_invoice($selected_invoice_id) : [];
 
         include ERP_OMD_PATH . 'templates/admin/cost-invoices.php';

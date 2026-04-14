@@ -17,6 +17,8 @@ $runtimeFragments = [
     'function handle_supplier_save(',
     'function handle_cost_invoice_save(',
     'function redirect_cost_invoice_page(',
+    'selected_supplier_id',
+    'selected_invoice',
 ];
 
 $templateFragments = [
@@ -24,6 +26,10 @@ $templateFragments = [
     "name=\"erp_omd_action\" value=\"save_cost_invoice\"",
     'Lista faktur kosztowych',
     'Audit faktury',
+    'name="supplier_id"',
+    'name="cost_invoice_id"',
+    'Edytuj fakturę kosztową',
+    'Dostawcy',
 ];
 
 $assertions = 0;
