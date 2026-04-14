@@ -263,8 +263,8 @@
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-google-calendar-redirect-uri"><?php esc_html_e('Redirect URI', 'erp-omd'); ?></label>
-                            <input id="erp-omd-google-calendar-redirect-uri" type="text" readonly value="<?php echo esc_attr((string) $google_calendar_redirect_uri); ?>" />
-                            <p class="description"><?php esc_html_e('Ten adres musi być wpisany 1:1 w Google Cloud Console (Authorized redirect URIs).', 'erp-omd'); ?></p>
+                            <input id="erp-omd-google-calendar-redirect-uri" type="text" name="google_calendar_redirect_uri" value="<?php echo esc_attr((string) $google_calendar_redirect_uri); ?>" />
+                            <p class="description"><?php esc_html_e('Ten adres musi być wpisany 1:1 w Google Cloud Console (Authorized redirect URIs). Uwaga: protokół (http/https), domena i parametry query muszą być identyczne.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-google-calendar-scope"><?php esc_html_e('Scope', 'erp-omd'); ?></label>
@@ -393,15 +393,15 @@
             <?php wp_nonce_field('erp_omd_restore_backup_bundle'); ?>
             <input type="hidden" name="erp_omd_action" value="restore_backup_bundle" />
         </form>
-        <form id="erp-omd-google-calendar-connect-form" method="post">
+        <form id="erp-omd-google-calendar-connect-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_connect'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_connect" />
         </form>
-        <form id="erp-omd-google-calendar-disconnect-form" method="post">
+        <form id="erp-omd-google-calendar-disconnect-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_disconnect'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_disconnect" />
         </form>
-        <form id="erp-omd-google-calendar-sync-now-form" method="post">
+        <form id="erp-omd-google-calendar-sync-now-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_sync_now'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_sync_now" />
         </form>
