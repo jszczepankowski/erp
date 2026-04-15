@@ -273,6 +273,17 @@ if (($salesImport['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATU
     throw new RuntimeException('Expected sales KSeF document to be registered in dedicated sales inbox.');
 }
 
+$attachSales = $service->attach_sales_document_to_project(1, 77, true, 91);
+$assertions++;
+if (! (bool) ($attachSales['ok'] ?? false) || (int) (($attachSales['row']['project_id'] ?? 0)) !== 77 || (int) (($attachSales['row']['is_final'] ?? 0)) !== 1) {
+    throw new RuntimeException('Expected manual attachment of sales KSeF invoice to project with final flag.');
+}
+
+$assertions++;
+if (! $service->has_final_sales_invoice_for_project(77)) {
+    throw new RuntimeException('Expected service to detect final sales invoice attached to project.');
+}
+
 $xmlImport = $service->import_sales_xml('<?xml version="1.0"?><Fa><Naglowek><P_1>2026-04-15</P_1><P_2>XML/SALE/1</P_2></Naglowek><Podmiot1><DaneIdentyfikacyjne><NIP>1111111111</NIP></DaneIdentyfikacyjne></Podmiot1><Podmiot2><DaneIdentyfikacyjne><NIP>5555555555</NIP></DaneIdentyfikacyjne></Podmiot2><NumerKSeF>XML-SALES-REF</NumerKSeF><FaCtrl><B>100</B><V>23</V><WartoscFaktury>123</WartoscFaktury></FaCtrl></Fa>', 91);
 $assertions++;
 if ((int) ($xmlImport['imported'] ?? 0) !== 1 || count($service->list_sales_inbox()) < 2) {

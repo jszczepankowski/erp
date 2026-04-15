@@ -348,6 +348,7 @@ class ERP_OMD_Admin
             case 'bulk_ksef_queue': $this->handle_ksef_queue_bulk_action(); break;
             case 'import_ksef_sales_xml': $this->handle_import_ksef_sales_xml_action(); break;
             case 'import_ksef_cost_xml': $this->handle_import_ksef_cost_xml_action(); break;
+            case 'attach_ksef_sales_invoice': $this->handle_attach_ksef_sales_invoice_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
@@ -2080,6 +2081,36 @@ class ERP_OMD_Admin
         }
 
         $this->redirect_cost_invoice_page(['tab' => 'ksef-cost', 'message' => 'ksef_cost_xml_imported']);
+    }
+
+    private function handle_attach_ksef_sales_invoice_action()
+    {
+        check_admin_referer('erp_omd_attach_ksef_sales_invoice');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $sales_id = (int) ($_POST['sales_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $is_final = ! empty($_POST['is_final']);
+        if ($sales_id <= 0 || $project_id <= 0) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wskaż dokument sprzedażowy i projekt.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository(),
+            $this->clients
+        );
+
+        $result = $service->attach_sales_document_to_project($sales_id, $project_id, $is_final, (int) get_current_user_id());
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_attached']);
     }
 
     private function delete_cost_invoice_with_side_effects(array $invoice)

@@ -56,6 +56,13 @@ if (! function_exists('wp_check_filetype_and_ext')) {
     }
 }
 
+if (! function_exists('get_option')) {
+    function get_option($key, $default = false)
+    {
+        return $GLOBALS['erp_omd_test_options'][$key] ?? $default;
+    }
+}
+
 if (! class_exists('ERP_OMD_Client_Repository')) {
     class ERP_OMD_Client_Repository
     {
@@ -204,6 +211,12 @@ final class ClientProjectServiceTestRunner
             1002 => 'text/plain',
             1003 => 'application/pdf',
             1004 => 'application/pdf',
+        ];
+        $GLOBALS['erp_omd_test_options'] = [
+            'erp_omd_ksef_sales_inbox' => [
+                ['id' => 1, 'project_id' => 13, 'is_final' => 1],
+                ['id' => 2, 'project_id' => 13, 'is_final' => 0],
+            ],
         ];
 
         $attachment_service = new ERP_OMD_Project_Attachment_Service(
@@ -384,6 +397,7 @@ final class ClientProjectServiceTestRunner
             ]
         );
         $this->assertTrue(in_array('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury PDF.', $missingPdfErrors, true), 'Project should not close without a final PDF invoice.');
+        $this->assertTrue(in_array('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury sprzedażowej.', $missingPdfErrors, true), 'Project should not close without a final sales invoice attached to the project.');
 
         $invalidMimeErrors = $service->validate_project(
             ['client_id' => 1, 'name' => 'Projekt z błędnym MIME', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'zakonczony', 'manager_id' => 5],

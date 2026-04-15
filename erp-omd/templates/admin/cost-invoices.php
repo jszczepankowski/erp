@@ -410,10 +410,10 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         </form>
 
         <table class="widefat striped">
-            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Project ID', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Project ID', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
             <tbody>
             <?php if (empty($ksef_sales_inbox)) : ?>
-                <tr><td colspan="6"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="8"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
             <?php else : ?>
                 <?php foreach ((array) $ksef_sales_inbox as $sales_row) : ?>
                     <tr>
@@ -422,7 +422,21 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                         <td><?php echo esc_html((string) ($sales_row['buyer_nip'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ((int) ($sales_row['client_id'] ?? 0))); ?></td>
                         <td><?php echo esc_html((string) ((int) ($sales_row['project_id'] ?? 0))); ?></td>
+                        <td><?php echo ((int) ($sales_row['is_final'] ?? 0) === 1) ? esc_html__('Tak', 'erp-omd') : esc_html__('Nie', 'erp-omd'); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['status'] ?? '')); ?></td>
+                        <td>
+                            <form method="post" style="display:flex;gap:6px;align-items:center;">
+                                <?php wp_nonce_field('erp_omd_attach_ksef_sales_invoice'); ?>
+                                <input type="hidden" name="erp_omd_action" value="attach_ksef_sales_invoice" />
+                                <input type="hidden" name="sales_id" value="<?php echo esc_attr((string) ((int) ($sales_row['id'] ?? 0))); ?>" />
+                                <input type="number" min="1" name="project_id" value="<?php echo esc_attr((string) ((int) ($sales_row['project_id'] ?? 0))); ?>" placeholder="<?php esc_attr_e('project_id', 'erp-omd'); ?>" style="width:90px;" required />
+                                <label style="display:flex;gap:3px;align-items:center;">
+                                    <input type="checkbox" name="is_final" value="1" <?php checked((int) ($sales_row['is_final'] ?? 0), 1); ?> />
+                                    <span><?php esc_html_e('końcowa', 'erp-omd'); ?></span>
+                                </label>
+                                <button type="submit" class="button button-small"><?php esc_html_e('Zapisz', 'erp-omd'); ?></button>
+                            </form>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
