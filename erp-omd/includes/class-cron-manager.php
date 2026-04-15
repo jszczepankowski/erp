@@ -6,6 +6,7 @@ class ERP_OMD_Cron_Manager
     const MISSING_HOURS_HOOK = 'erp_omd_daily_missing_hours_notifications';
     const PROJECT_DEADLINE_HOOK = 'erp_omd_daily_project_deadline_notifications';
     const GOOGLE_CALENDAR_SYNC_HOOK = 'erp_omd_google_calendar_sync';
+    const KSEF_RETRY_PIPELINE_HOOK = 'erp_omd_ksef_retry_pipeline';
 
     public static function register_hooks()
     {
@@ -14,6 +15,7 @@ class ERP_OMD_Cron_Manager
         add_action(self::MISSING_HOURS_HOOK, [__CLASS__, 'run_missing_hours_notifications']);
         add_action(self::PROJECT_DEADLINE_HOOK, [__CLASS__, 'run_project_deadline_notifications']);
         add_action(self::GOOGLE_CALENDAR_SYNC_HOOK, [__CLASS__, 'run_google_calendar_sync']);
+        add_action(self::KSEF_RETRY_PIPELINE_HOOK, [__CLASS__, 'run_ksef_retry_pipeline']);
         self::schedule_events();
     }
 
@@ -28,6 +30,7 @@ class ERP_OMD_Cron_Manager
         wp_clear_scheduled_hook(self::MISSING_HOURS_HOOK);
         wp_clear_scheduled_hook(self::PROJECT_DEADLINE_HOOK);
         wp_clear_scheduled_hook(self::GOOGLE_CALENDAR_SYNC_HOOK);
+        wp_clear_scheduled_hook(self::KSEF_RETRY_PIPELINE_HOOK);
     }
 
     public static function register_weekly_schedule($schedules)
@@ -43,6 +46,12 @@ class ERP_OMD_Cron_Manager
             $schedules['erp_omd_two_hours'] = [
                 'interval' => 2 * HOUR_IN_SECONDS,
                 'display' => 'ERP OMD Every 2 Hours',
+            ];
+        }
+        if (! isset($schedules['erp_omd_five_minutes'])) {
+            $schedules['erp_omd_five_minutes'] = [
+                'interval' => 5 * MINUTE_IN_SECONDS,
+                'display' => 'ERP OMD Every 5 Minutes',
             ];
         }
 
@@ -63,6 +72,9 @@ class ERP_OMD_Cron_Manager
         }
         if (! wp_next_scheduled(self::GOOGLE_CALENDAR_SYNC_HOOK)) {
             wp_schedule_event(time() + HOUR_IN_SECONDS, 'erp_omd_two_hours', self::GOOGLE_CALENDAR_SYNC_HOOK);
+        }
+        if (! wp_next_scheduled(self::KSEF_RETRY_PIPELINE_HOOK)) {
+            wp_schedule_event(time() + 5 * MINUTE_IN_SECONDS, 'erp_omd_five_minutes', self::KSEF_RETRY_PIPELINE_HOOK);
         }
     }
 
@@ -197,6 +209,22 @@ class ERP_OMD_Cron_Manager
         $service->sync_all_projects();
     }
 
+
+    public static function run_ksef_retry_pipeline()
+    {
+        $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
+        $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
+        $supplier_repository = new ERP_OMD_Supplier_Repository();
+        $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
+            $invoice_repository,
+            $audit_repository,
+            $supplier_repository,
+            new ERP_OMD_Project_Repository()
+        );
+        $service = new ERP_OMD_KSeF_Import_Service($workflow, $invoice_repository, $audit_repository, null, null, $supplier_repository);
+        $service->process_retry_queue(20);
+    }
+
     private static function notification_settings()
     {
         $defaults = [
@@ -250,6 +278,25 @@ class ERP_OMD_Cron_Manager
 
         $threshold = $today->modify('-' . (int) $settings['after_days'] . ' days');
         return $last_date->format('Y-m-d') <= $threshold->format('Y-m-d');
+    }
+
+
+    public static function restore_backup_bundle_from_zip($zip_path)
+    {
+        if (class_exists('ERP_OMD_Backup_Manager') && method_exists('ERP_OMD_Backup_Manager', 'restore_backup_bundle_from_zip')) {
+            return ERP_OMD_Backup_Manager::restore_backup_bundle_from_zip($zip_path);
+        }
+
+        return ['success' => false, 'error' => 'backup_restore_not_available'];
+    }
+
+    public static function import_sql_dump($sql_path)
+    {
+        if (class_exists('ERP_OMD_Backup_Manager') && method_exists('ERP_OMD_Backup_Manager', 'import_sql_dump')) {
+            return ERP_OMD_Backup_Manager::import_sql_dump($sql_path);
+        }
+
+        return false;
     }
 
     private static function render_template($template, array $employee, $last_entry_date)
