@@ -24,6 +24,10 @@ if ($invoice_form_net_amount > 0) {
 if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)) {
     $invoice_form_vat_rate = 'zw';
 }
+$active_tab = sanitize_key((string) ($_GET['tab'] ?? 'suppliers'));
+if (! in_array($active_tab, ['suppliers', 'invoices', 'relations'], true)) {
+    $active_tab = 'suppliers';
+}
 ?>
 <div class="wrap erp-omd-admin erp-omd-cost-invoices-admin">
     <h1><?php esc_html_e('Dostawcy i faktury kosztowe', 'erp-omd'); ?></h1>
@@ -35,6 +39,13 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
         <div class="notice notice-error"><p><?php echo esc_html(rawurldecode((string) wp_unslash($_GET['error']))); ?></p></div>
     <?php endif; ?>
 
+    <nav class="nav-tab-wrapper erp-omd-nav-tabs">
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'suppliers'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'suppliers' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Dostawcy', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'invoices'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'invoices' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Faktury kosztowe', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'relations'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'relations' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></a>
+    </nav>
+
+    <?php if ($active_tab === 'suppliers') : ?>
     <section class="erp-omd-card">
         <h2><?php echo ! empty($supplier_form) ? esc_html__('Edytuj dostawcę', 'erp-omd') : esc_html__('Nowy dostawca', 'erp-omd'); ?></h2>
         <form method="post">
@@ -164,7 +175,7 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
                     <td><?php echo esc_html((string) ($supplier['contact_person_name'] ?? '')); ?></td>
                     <td><?php echo esc_html((string) ($supplier['contact_person_email'] ?? '')); ?></td>
                     <td>
-                        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'supplier_id' => (int) ($supplier['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'suppliers', 'supplier_id' => (int) ($supplier['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                         |
                         <form method="post" style="display:inline;" onsubmit="return confirm('<?php echo esc_js(__('Czy na pewno chcesz usunąć dostawcę wraz z jego fakturami?', 'erp-omd')); ?>');">
                             <?php wp_nonce_field('erp_omd_delete_supplier'); ?>
@@ -177,7 +188,9 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
             <?php endforeach; ?>
         </tbody>
     </table>
+    <?php endif; ?>
 
+    <?php if ($active_tab === 'invoices') : ?>
     <section class="erp-omd-card">
         <h2><?php esc_html_e('Faktury kosztowe', 'erp-omd'); ?></h2>
         <section class="erp-omd-form-section">
@@ -297,9 +310,9 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
                             <td><?php echo esc_html((string) ($invoice['status'] ?? '')); ?></td>
                             <td><?php echo esc_html(number_format((float) ($invoice['gross_amount'] ?? 0), 2, '.', ' ')); ?></td>
                             <td>
-                                <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'invoice_id' => $invoice_id], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'invoices', 'invoice_id' => $invoice_id], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                 |
-                                <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'invoice_id' => $invoice_id], admin_url('admin.php'))); ?>#invoice-audit"><?php esc_html_e('Audit', 'erp-omd'); ?></a>
+                                <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'invoices', 'invoice_id' => $invoice_id], admin_url('admin.php'))); ?>#invoice-audit"><?php esc_html_e('Audit', 'erp-omd'); ?></a>
                                 |
                                 <form method="post" style="display:inline;" onsubmit="return confirm('<?php echo esc_js(__('Czy na pewno chcesz usunąć fakturę kosztową?', 'erp-omd')); ?>');">
                                     <?php wp_nonce_field('erp_omd_delete_cost_invoice'); ?>
@@ -313,39 +326,39 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
                 </tbody>
             </table>
         </section>
-        <section class="erp-omd-form-section">
-            <div class="erp-omd-section-header">
-                <div>
-                    <h3><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></h3>
-                </div>
-            </div>
-            <table class="widefat striped">
-                <thead>
-                    <tr>
-                        <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
-                        <th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th>
-                        <th><?php esc_html_e('Liczba faktur', 'erp-omd'); ?></th>
-                        <th><?php esc_html_e('Suma brutto', 'erp-omd'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if ((array) ($project_supplier_pairs ?? []) === []) : ?>
-                        <tr><td colspan="4"><?php esc_html_e('Brak relacji projekt-dostawca.', 'erp-omd'); ?></td></tr>
-                    <?php endif; ?>
-                    <?php foreach ((array) ($project_supplier_pairs ?? []) as $pair) : ?>
-                        <?php $pair_project_id = (int) ($pair['project_id'] ?? 0); ?>
-                        <?php $pair_supplier_id = (int) ($pair['supplier_id'] ?? 0); ?>
-                        <tr>
-                            <td><?php echo esc_html((string) ($project_name_by_id[$pair_project_id] ?? ('#' . $pair_project_id))); ?></td>
-                            <td><?php echo esc_html((string) ($supplier_name_by_id[$pair_supplier_id] ?? ('#' . $pair_supplier_id))); ?></td>
-                            <td><?php echo esc_html((string) ((int) ($pair['invoices_count'] ?? 0))); ?></td>
-                            <td><?php echo esc_html(number_format((float) ($pair['gross_total'] ?? 0), 2, '.', ' ')); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </section>
     </section>
+    <?php endif; ?>
+
+    <?php if ($active_tab === 'relations') : ?>
+    <section class="erp-omd-card">
+        <h2><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></h2>
+        <table class="widefat striped">
+            <thead>
+                <tr>
+                    <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Liczba faktur', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Suma brutto', 'erp-omd'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if ((array) ($project_supplier_pairs ?? []) === []) : ?>
+                    <tr><td colspan="4"><?php esc_html_e('Brak relacji projekt-dostawca.', 'erp-omd'); ?></td></tr>
+                <?php endif; ?>
+                <?php foreach ((array) ($project_supplier_pairs ?? []) as $pair) : ?>
+                    <?php $pair_project_id = (int) ($pair['project_id'] ?? 0); ?>
+                    <?php $pair_supplier_id = (int) ($pair['supplier_id'] ?? 0); ?>
+                    <tr>
+                        <td><?php echo esc_html((string) ($project_name_by_id[$pair_project_id] ?? ('#' . $pair_project_id))); ?></td>
+                        <td><?php echo esc_html((string) ($supplier_name_by_id[$pair_supplier_id] ?? ('#' . $pair_supplier_id))); ?></td>
+                        <td><?php echo esc_html((string) ((int) ($pair['invoices_count'] ?? 0))); ?></td>
+                        <td><?php echo esc_html(number_format((float) ($pair['gross_total'] ?? 0), 2, '.', ' ')); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </section>
+    <?php endif; ?>
     <script>
     (function () {
         var netField = document.getElementById('cost_invoice_net_amount');
@@ -373,7 +386,7 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
     </script>
 
 
-    <?php if ($selected_invoice_id > 0) : ?>
+    <?php if ($active_tab === 'invoices' && $selected_invoice_id > 0) : ?>
         <h2 id="invoice-audit" style="margin-top:24px;"><?php echo esc_html(sprintf(__('Audit faktury #%d', 'erp-omd'), $selected_invoice_id)); ?></h2>
         <table class="widefat striped">
             <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Pole', 'erp-omd'); ?></th><th><?php esc_html_e('Przed', 'erp-omd'); ?></th><th><?php esc_html_e('Po', 'erp-omd'); ?></th><th><?php esc_html_e('Użytkownik', 'erp-omd'); ?></th></tr></thead>

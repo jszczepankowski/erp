@@ -68,6 +68,10 @@ $templateFragments = [
     'Dane identyfikujące i klasyfikujące dostawcę.',
     'Połączenia faktury z dostawcą i projektem oraz dane dokumentu.',
     'Netto + stawka VAT, a kwoty VAT/Brutto wyliczane automatycznie.',
+    'nav-tab-wrapper erp-omd-nav-tabs',
+    "'tab' => 'suppliers'",
+    "'tab' => 'invoices'",
+    "'tab' => 'relations'",
 ];
 
 $assertions = 0;
