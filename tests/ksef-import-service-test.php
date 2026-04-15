@@ -11,6 +11,21 @@ if (! function_exists('__')) {
     }
 }
 
+if (! function_exists('get_option')) {
+    function get_option($key, $default = false)
+    {
+        return $GLOBALS['erp_omd_test_options'][$key] ?? $default;
+    }
+}
+
+if (! function_exists('update_option')) {
+    function update_option($key, $value)
+    {
+        $GLOBALS['erp_omd_test_options'][$key] = $value;
+        return true;
+    }
+}
+
 class ERP_OMD_Cost_Invoice_Workflow_Service_Fake
 {
     /** @var array<int,array<string,mixed>> */
@@ -22,7 +37,7 @@ class ERP_OMD_Cost_Invoice_Workflow_Service_Fake
     public function create_invoice(array $payload)
     {
         $this->created_payloads[] = $payload;
-        if (($payload['invoice_number'] ?? '') === 'FAIL') {
+        if (($payload['invoice_number'] ?? '') === 'FAIL' || ($payload['invoice_number'] ?? '') === 'RETRY-ME') {
             return ['ok' => false, 'errors' => ['forced failure']];
         }
 
@@ -92,6 +107,11 @@ class ERP_OMD_Cost_Invoice_Audit_Repository_Fake
     }
 }
 
+$GLOBALS['erp_omd_test_options'] = [
+    'erp_omd_company_nip' => '1111111111',
+    ERP_OMD_KSeF_Import_Service::OPTION_RETRY_QUEUE => [],
+];
+
 $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service_Fake();
 $repo = new ERP_OMD_Cost_Invoice_Repository_Fake([
     ['id' => 20, 'supplier_id' => 7, 'invoice_number' => 'FV/2026/1', 'ksef_reference_number' => 'EXISTS-REF'],
@@ -111,7 +131,6 @@ $result = $service->import_documents([
         'ksef_reference_number' => 'NEW-REF',
         'buyer_nip' => '111-111-11-11',
         'seller_nip' => '2222222222',
-        'our_company_nip' => '1111111111',
     ],
     [
         'supplier_id' => 7,
@@ -119,7 +138,6 @@ $result = $service->import_documents([
         'ksef_reference_number' => 'EXISTS-REF',
         'buyer_nip' => '1111111111',
         'seller_nip' => '2222222222',
-        'our_company_nip' => '1111111111',
     ],
     [
         'supplier_id' => 5,
@@ -127,7 +145,6 @@ $result = $service->import_documents([
         'ksef_reference_number' => 'NEW-REF-2',
         'buyer_nip' => '1111111111',
         'seller_nip' => '2222222222',
-        'our_company_nip' => '1111111111',
     ],
     [
         'supplier_id' => 1,
@@ -135,7 +152,6 @@ $result = $service->import_documents([
         'ksef_reference_number' => 'NEW-REF-3',
         'buyer_nip' => '9999999999',
         'seller_nip' => '8888888888',
-        'our_company_nip' => '1111111111',
     ],
 ], 91);
 
@@ -163,7 +179,6 @@ if (($result['errors'][1]['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPO
 $classification = $service->classify_document([
     'buyer_nip' => '555-55-55-555',
     'seller_nip' => '1111111111',
-    'our_company_nip' => '1111111111',
 ]);
 $assertions++;
 if (($classification['kind'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_KIND_SALES) {
@@ -190,6 +205,61 @@ $manual = $service->build_retry_decision([
 $assertions++;
 if (($manual['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_MANUAL_REQUIRED || ($manual['should_retry'] ?? true) !== false) {
     throw new RuntimeException('Expected manual_required after 90 minutes of unsuccessful retries.');
+}
+
+$service->enqueue_retry([
+    'supplier_id' => 1,
+    'invoice_number' => 'RETRY-ME',
+    'ksef_reference_number' => 'RETRY-REF-1',
+    'buyer_nip' => '1111111111',
+    'seller_nip' => '2222222222',
+], 91, 'forced failure');
+
+$queue = (array) ($GLOBALS['erp_omd_test_options'][ERP_OMD_KSeF_Import_Service::OPTION_RETRY_QUEUE] ?? []);
+$assertions++;
+$retryEntryFound = false;
+foreach ($queue as $queueRow) {
+    if ((string) ($queueRow['retry_key'] ?? '') !== 'ref:retry-ref-1') {
+        continue;
+    }
+
+    $retryEntryFound = (string) ($queueRow['status'] ?? '') === ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_RETRYING;
+    break;
+}
+if (! $retryEntryFound) {
+    throw new RuntimeException('Expected enqueue_retry() to persist retry queue state for RETRY-REF-1.');
+}
+
+$retryNow = '';
+foreach ($queue as $queueRow) {
+    if ((string) ($queueRow['retry_key'] ?? '') === 'ref:retry-ref-1') {
+        $retryNow = (string) ($queueRow['next_retry_at'] ?? '');
+        break;
+    }
+}
+if ($retryNow === '') {
+    $retryNow = '2026-04-15 09:00:00';
+}
+
+$retryRun = $service->process_retry_queue(20, $retryNow);
+$assertions++;
+if ((int) ($retryRun['processed'] ?? 0) < 1) {
+    throw new RuntimeException('Expected process_retry_queue() to process at least one due retry entry.');
+}
+
+$queueAfterRun = (array) ($GLOBALS['erp_omd_test_options'][ERP_OMD_KSeF_Import_Service::OPTION_RETRY_QUEUE] ?? []);
+$assertions++;
+$updatedRetryAttempts = false;
+foreach ($queueAfterRun as $queueRow) {
+    if ((string) ($queueRow['retry_key'] ?? '') !== 'ref:retry-ref-1') {
+        continue;
+    }
+
+    $updatedRetryAttempts = (int) ($queueRow['retry_attempts'] ?? 0) >= 2;
+    break;
+}
+if (! $updatedRetryAttempts) {
+    throw new RuntimeException('Expected retry queue state to update retry attempts for RETRY-REF-1 after failed retry run.');
 }
 
 $moderation = $service->moderate_imported_invoice(15, ['status' => 'weryfikacja', 'supplier_id' => 5, 'project_id' => 8, 'invoice_number' => 'FV-15'], 44);

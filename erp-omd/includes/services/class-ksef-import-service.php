@@ -10,6 +10,8 @@ class ERP_OMD_KSeF_Import_Service
     const IMPORT_STATUS_MANUAL_REQUIRED = 'manual_required';
     const IMPORT_STATUS_RETRYING = 'retrying';
 
+    const OPTION_RETRY_QUEUE = 'erp_omd_ksef_retry_queue';
+
     /** @var mixed */
     private $workflow_service;
 
@@ -55,55 +57,31 @@ class ERP_OMD_KSeF_Import_Service
         $duplicates = 0;
 
         foreach ($documents as $index => $document) {
-            $classification = $this->classify_document($document);
-            if (! (bool) ($classification['ok'] ?? false)) {
-                $failed++;
-                $errors[] = [
-                    'index' => $index,
-                    'invoice_number' => (string) ($document['invoice_number'] ?? ''),
-                    'status' => self::IMPORT_STATUS_MANUAL_REQUIRED,
-                    'kind' => '',
-                    'errors' => (array) ($classification['errors'] ?? [__('Nie udało się sklasyfikować dokumentu KSeF.', 'erp-omd')]),
-                ];
-                continue;
-            }
+            $attempt = $this->attempt_import_document((array) $document, (int) $user_id, true);
+            $status = (string) ($attempt['status'] ?? '');
 
-            $kind = (string) ($classification['kind'] ?? '');
-            $payload = $this->map_ksef_document_to_invoice($document, (int) $user_id, $kind);
-
-            $duplicate = $this->detect_duplicate($payload);
-            if ((bool) ($duplicate['is_primary_duplicate'] ?? false)) {
-                $duplicates++;
-                continue;
-            }
-
-            if ((bool) ($duplicate['is_fallback_conflict'] ?? false)) {
-                $conflicts++;
-                $conflictErrors = [__('Wykryto konflikt idempotencji: supplier_id + invoice_number.', 'erp-omd')];
-                $this->record_audit_reason($duplicate, $conflictErrors[0], (int) $user_id);
-                $errors[] = [
-                    'index' => $index,
-                    'invoice_number' => (string) ($payload['invoice_number'] ?? ''),
-                    'status' => self::IMPORT_STATUS_CONFLICT,
-                    'kind' => $kind,
-                    'errors' => $conflictErrors,
-                ];
-                continue;
-            }
-
-            $result = $this->workflow_service->create_invoice($payload);
-            if ((bool) ($result['ok'] ?? false)) {
+            if ($status === self::IMPORT_STATUS_IMPORTED) {
                 $imported++;
                 continue;
             }
 
-            $failed++;
+            if ($status === 'duplicate') {
+                $duplicates++;
+                continue;
+            }
+
+            if ($status === self::IMPORT_STATUS_CONFLICT) {
+                $conflicts++;
+            } else {
+                $failed++;
+            }
+
             $errors[] = [
                 'index' => $index,
-                'invoice_number' => (string) ($payload['invoice_number'] ?? ''),
-                'status' => self::IMPORT_STATUS_MANUAL_REQUIRED,
-                'kind' => $kind,
-                'errors' => (array) ($result['errors'] ?? []),
+                'invoice_number' => (string) ($attempt['invoice_number'] ?? ''),
+                'status' => $status,
+                'kind' => (string) ($attempt['kind'] ?? ''),
+                'errors' => (array) ($attempt['errors'] ?? []),
             ];
         }
 
@@ -119,13 +97,222 @@ class ERP_OMD_KSeF_Import_Service
 
     /**
      * @param array<string,mixed> $document
+     * @param int $user_id
+     * @param bool $enqueue_retry
+     * @return array<string,mixed>
+     */
+    public function attempt_import_document(array $document, $user_id, $enqueue_retry = true)
+    {
+        $classification = $this->classify_document($document);
+        if (! (bool) ($classification['ok'] ?? false)) {
+            $errors = (array) ($classification['errors'] ?? [__('Nie udało się sklasyfikować dokumentu KSeF.', 'erp-omd')]);
+            if ($enqueue_retry) {
+                $this->enqueue_retry($document, (int) $user_id, implode(' ', $errors));
+            }
+
+            return [
+                'status' => self::IMPORT_STATUS_MANUAL_REQUIRED,
+                'kind' => '',
+                'invoice_number' => (string) ($document['invoice_number'] ?? ''),
+                'errors' => $errors,
+            ];
+        }
+
+        $kind = (string) ($classification['kind'] ?? '');
+        $payload = $this->map_ksef_document_to_invoice($document, (int) $user_id, $kind);
+
+        $duplicate = $this->detect_duplicate($payload);
+        if ((bool) ($duplicate['is_primary_duplicate'] ?? false)) {
+            return [
+                'status' => 'duplicate',
+                'kind' => $kind,
+                'invoice_number' => (string) ($payload['invoice_number'] ?? ''),
+                'errors' => [],
+            ];
+        }
+
+        if ((bool) ($duplicate['is_fallback_conflict'] ?? false)) {
+            $conflict_reason = __('Wykryto konflikt idempotencji: supplier_id + invoice_number.', 'erp-omd');
+            $this->record_audit_reason($duplicate, $conflict_reason, (int) $user_id);
+
+            return [
+                'status' => self::IMPORT_STATUS_CONFLICT,
+                'kind' => $kind,
+                'invoice_number' => (string) ($payload['invoice_number'] ?? ''),
+                'errors' => [$conflict_reason],
+            ];
+        }
+
+        $result = $this->workflow_service->create_invoice($payload);
+        if ((bool) ($result['ok'] ?? false)) {
+            return [
+                'status' => self::IMPORT_STATUS_IMPORTED,
+                'kind' => $kind,
+                'invoice_number' => (string) ($payload['invoice_number'] ?? ''),
+                'errors' => [],
+            ];
+        }
+
+        $errors = (array) ($result['errors'] ?? [__('Błąd importu KSeF.', 'erp-omd')]);
+        if ($enqueue_retry) {
+            $this->enqueue_retry($document, (int) $user_id, implode(' ', $errors));
+        }
+
+        return [
+            'status' => self::IMPORT_STATUS_MANUAL_REQUIRED,
+            'kind' => $kind,
+            'invoice_number' => (string) ($payload['invoice_number'] ?? ''),
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * @param int $batch_limit
+     * @param string|null $now_mysql
+     * @return array<string,int>
+     */
+    public function process_retry_queue($batch_limit = 20, $now_mysql = null)
+    {
+        $now_mysql = (string) ($now_mysql ?: $this->now());
+        $queue = $this->load_retry_queue();
+        $processed = 0;
+        $imported = 0;
+        $manual_required = 0;
+        $still_retrying = 0;
+
+        foreach ($queue as &$item) {
+            if ($processed >= max(1, (int) $batch_limit)) {
+                break;
+            }
+
+            $status = (string) ($item['status'] ?? self::IMPORT_STATUS_RETRYING);
+            if ($status !== self::IMPORT_STATUS_RETRYING) {
+                continue;
+            }
+
+            $next_retry_at = (string) ($item['next_retry_at'] ?? '');
+            if ($next_retry_at !== '' && $this->to_timestamp($next_retry_at) > $this->to_timestamp($now_mysql)) {
+                continue;
+            }
+
+            $processed++;
+            $attempt = $this->attempt_import_document((array) ($item['document'] ?? []), (int) ($item['user_id'] ?? 0), false);
+            if ((string) ($attempt['status'] ?? '') === self::IMPORT_STATUS_IMPORTED || (string) ($attempt['status'] ?? '') === 'duplicate') {
+                $item['status'] = self::IMPORT_STATUS_IMPORTED;
+                $item['last_error'] = '';
+                $item['last_retry_at'] = $now_mysql;
+                $item['next_retry_at'] = '';
+                $imported++;
+                continue;
+            }
+
+            if ((string) ($attempt['status'] ?? '') === self::IMPORT_STATUS_CONFLICT) {
+                $item['status'] = self::IMPORT_STATUS_MANUAL_REQUIRED;
+                $item['last_error'] = implode(' ', (array) ($attempt['errors'] ?? []));
+                $item['last_retry_at'] = $now_mysql;
+                $item['next_retry_at'] = '';
+                $manual_required++;
+                continue;
+            }
+
+            $decision = $this->build_retry_decision([
+                'retry_attempts' => (int) ($item['retry_attempts'] ?? 0),
+                'first_failed_at' => (string) ($item['first_failed_at'] ?? ''),
+                'last_error' => implode(' ', (array) ($attempt['errors'] ?? [])),
+            ], $now_mysql);
+
+            $item['status'] = (string) ($decision['status'] ?? self::IMPORT_STATUS_MANUAL_REQUIRED);
+            $item['retry_attempts'] = (int) ($decision['retry_attempts'] ?? ((int) ($item['retry_attempts'] ?? 0) + 1));
+            $item['first_failed_at'] = (string) ($decision['first_failed_at'] ?? $item['first_failed_at'] ?? $now_mysql);
+            $item['last_error'] = (string) ($decision['last_error'] ?? '');
+            $item['last_retry_at'] = (string) ($decision['last_retry_at'] ?? $now_mysql);
+            $item['next_retry_at'] = (string) ($decision['next_retry_at'] ?? '');
+
+            if ($item['status'] === self::IMPORT_STATUS_MANUAL_REQUIRED) {
+                $manual_required++;
+            } else {
+                $still_retrying++;
+            }
+        }
+        unset($item);
+
+        $this->save_retry_queue($queue);
+
+        return [
+            'processed' => $processed,
+            'imported' => $imported,
+            'manual_required' => $manual_required,
+            'retrying' => $still_retrying,
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $document
+     * @param int $user_id
+     * @param string $last_error
+     * @return void
+     */
+    public function enqueue_retry(array $document, $user_id, $last_error)
+    {
+        $queue = $this->load_retry_queue();
+        $retry_key = $this->build_retry_key($document);
+
+        foreach ($queue as &$row) {
+            if ((string) ($row['retry_key'] ?? '') !== $retry_key) {
+                continue;
+            }
+
+            if ((string) ($row['status'] ?? '') === self::IMPORT_STATUS_IMPORTED) {
+                return;
+            }
+
+            $decision = $this->build_retry_decision([
+                'retry_attempts' => (int) ($row['retry_attempts'] ?? 0),
+                'first_failed_at' => (string) ($row['first_failed_at'] ?? ''),
+                'last_error' => (string) $last_error,
+            ]);
+
+            $row['status'] = (string) ($decision['status'] ?? self::IMPORT_STATUS_MANUAL_REQUIRED);
+            $row['retry_attempts'] = (int) ($decision['retry_attempts'] ?? 1);
+            $row['first_failed_at'] = (string) ($decision['first_failed_at'] ?? $this->now());
+            $row['last_error'] = (string) ($decision['last_error'] ?? '');
+            $row['last_retry_at'] = (string) ($decision['last_retry_at'] ?? $this->now());
+            $row['next_retry_at'] = (string) ($decision['next_retry_at'] ?? '');
+            $this->save_retry_queue($queue);
+            return;
+        }
+        unset($row);
+
+        $decision = $this->build_retry_decision([
+            'retry_attempts' => 0,
+            'first_failed_at' => '',
+            'last_error' => (string) $last_error,
+        ]);
+
+        $queue[] = [
+            'retry_key' => $retry_key,
+            'document' => $document,
+            'user_id' => (int) $user_id,
+            'status' => (string) ($decision['status'] ?? self::IMPORT_STATUS_RETRYING),
+            'retry_attempts' => (int) ($decision['retry_attempts'] ?? 1),
+            'first_failed_at' => (string) ($decision['first_failed_at'] ?? $this->now()),
+            'last_error' => (string) ($decision['last_error'] ?? ''),
+            'last_retry_at' => (string) ($decision['last_retry_at'] ?? $this->now()),
+            'next_retry_at' => (string) ($decision['next_retry_at'] ?? ''),
+        ];
+
+        $this->save_retry_queue($queue);
+    }
+
+    /**
+     * @param array<string,mixed> $document
      * @return array<string,mixed>
      */
     public function classify_document(array $document)
     {
         $buyer_nip = $this->extract_nip_value($document, ['buyer_nip', 'nabywca_nip', 'buyer', 'podmiot2', 'podmiot2_nip']);
         $seller_nip = $this->extract_nip_value($document, ['seller_nip', 'sprzedawca_nip', 'seller', 'podmiot1', 'podmiot1_nip']);
-        $our_nip = $this->normalize_nip((string) ($document['our_company_nip'] ?? $document['company_nip'] ?? ''));
+        $our_nip = $this->normalize_nip((string) ($document['our_company_nip'] ?? $document['company_nip'] ?? $this->get_our_company_nip()));
 
         if ($our_nip === '') {
             return [
@@ -357,6 +544,60 @@ class ERP_OMD_KSeF_Import_Service
     {
         $nip = preg_replace('/[^0-9]/', '', (string) $nip);
         return is_string($nip) ? $nip : '';
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    private function load_retry_queue()
+    {
+        if (! function_exists('get_option')) {
+            return [];
+        }
+
+        $queue = (array) get_option(self::OPTION_RETRY_QUEUE, []);
+        return array_values(array_filter($queue, static function ($item) {
+            return is_array($item) && ! empty($item['retry_key']);
+        }));
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $queue
+     * @return void
+     */
+    private function save_retry_queue(array $queue)
+    {
+        if (! function_exists('update_option')) {
+            return;
+        }
+
+        update_option(self::OPTION_RETRY_QUEUE, array_values($queue), false);
+    }
+
+    /**
+     * @param array<string,mixed> $document
+     * @return string
+     */
+    private function build_retry_key(array $document)
+    {
+        $reference = trim((string) ($document['ksef_reference_number'] ?? ''));
+        if ($reference !== '') {
+            return 'ref:' . mb_strtolower($reference);
+        }
+
+        return 'fallback:' . (int) ($document['supplier_id'] ?? 0) . ':' . mb_strtolower(trim((string) ($document['invoice_number'] ?? '')));
+    }
+
+    /**
+     * @return string
+     */
+    private function get_our_company_nip()
+    {
+        if (! function_exists('get_option')) {
+            return '';
+        }
+
+        return (string) get_option('erp_omd_company_nip', '');
     }
 
     /**

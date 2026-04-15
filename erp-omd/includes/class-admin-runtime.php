@@ -942,6 +942,7 @@ class ERP_OMD_Admin
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
         $front_admin_redirect_enabled = (bool) get_option('erp_omd_front_admin_redirect_enabled', true);
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
+        $company_nip = preg_replace('/[^0-9]/', '', (string) get_option('erp_omd_company_nip', ''));
         $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
         $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
         $reports_v1_slo_recommended_p95_max = $reports_v1_slo_generation_p95_max;
@@ -3154,7 +3155,16 @@ class ERP_OMD_Admin
         update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
         update_option('erp_omd_front_admin_redirect_enabled', ! empty($_POST['front_admin_redirect_enabled']));
         update_option('erp_omd_reports_v1_rollout', 'all');
+        $company_nip = preg_replace('/[^0-9]/', '', (string) wp_unslash($_POST['company_nip'] ?? ''));
+        if (! is_string($company_nip)) {
+            $company_nip = '';
+        }
+        if ($company_nip !== '' && strlen($company_nip) !== 10) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('NIP firmy musi mieć 10 cyfr.', 'erp-omd'));
+        }
+
         update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
+        update_option('erp_omd_company_nip', $company_nip);
         update_option('erp_omd_reports_v1_metrics_freshness_minutes', max(5, (int) ($_POST['reports_v1_metrics_freshness_minutes'] ?? 1440)));
         $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) ($_POST['reports_v1_slo_generation_p95_max'] ?? 2500)));
         if (! empty($_POST['apply_reports_v1_recommended_p95_max'])) {
