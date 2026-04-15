@@ -106,7 +106,7 @@ class ERP_OMD_Admin
         add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
         add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
         add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
-        add_submenu_page('erp-omd', __('Dostawcy i faktury kosztowe', 'erp-omd'), __('Dostawcy i faktury kosztowe', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
+        add_submenu_page('erp-omd', __('Dostawcy i koszty', 'erp-omd'), __('Dostawcy i koszty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
         add_submenu_page('erp-omd', __('Kalendarz', 'erp-omd'), __('Kalendarz', 'erp-omd'), 'erp_omd_access', 'erp-omd-calendar', [$this, 'render_calendar']);
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
