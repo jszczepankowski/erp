@@ -56,6 +56,8 @@ ERP_OMD V2 — wersja 3.2.0 przygotowana pod wdrożenie Sprintu 10.
 - Automatyczne sanity checki: `./scripts/test-sprint-6.sh`
 - Test domenowy raportów: `php tests/reporting-service-test.php`
 - Checklista odbiorowa Sprintu 6: `docs/SPRINT_6_CHECKLIST.md`
+- Tickety + Definition of Done Sprintu 6: `docs/SPRINT_6_TICKETS_DOD.md`
+- Prompt startowy realizacji Sprintu 6: `docs/PROMPT_SPRINT_6_EXECUTION.md`
 
 ## Testy Sprintu 7
 - Automatyczne sanity checki: `./scripts/test-sprint-7.sh`
