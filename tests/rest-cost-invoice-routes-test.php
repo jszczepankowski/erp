@@ -27,6 +27,8 @@ $requiredFragments = [
     'function moderate_cost_invoice(',
     'function list_cost_invoice_audit(',
     'function import_ksef_documents(',
+    'function list_ksef_sales_documents(',
+    'function import_ksef_sales_xml(',
     'function list_ksef_moderation_queue(',
     'function moderate_ksef_queue_entry(',
     'function bulk_moderate_ksef_queue_entries(',

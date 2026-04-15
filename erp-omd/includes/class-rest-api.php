@@ -89,7 +89,7 @@ class ERP_OMD_REST_API
         $this->cost_invoices = new ERP_OMD_Cost_Invoice_Repository();
         $this->cost_invoice_audit = new ERP_OMD_Cost_Invoice_Audit_Repository();
         $this->cost_invoice_workflow = new ERP_OMD_Cost_Invoice_Workflow_Service($this->cost_invoices, $this->cost_invoice_audit, $this->suppliers, $this->projects);
-        $this->ksef_import_service = new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow, $this->cost_invoices, $this->cost_invoice_audit, null, null, $this->suppliers);
+        $this->ksef_import_service = new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow, $this->cost_invoices, $this->cost_invoice_audit, null, null, $this->suppliers, $this->clients);
         $this->client_portal_service = new ERP_OMD_Client_Portal_Service($this->projects, new ERP_OMD_Project_Revenue_Repository(), $this->project_costs);
     }
 
@@ -636,6 +636,12 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/ksef/moderation/bulk', [
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'bulk_moderate_ksef_queue_entries'], 'permission_callback' => [$this, 'can_manage_projects']],
         ]);
+        register_rest_route('erp-omd/v1', '/ksef/sales', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_ksef_sales_documents'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
+        register_rest_route('erp-omd/v1', '/ksef/sales/import-xml', [
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'import_ksef_sales_xml'], 'permission_callback' => [$this, 'can_manage_projects']],
+        ]);
     }
 
     private function register_estimate_routes()
@@ -823,6 +829,8 @@ class ERP_OMD_REST_API
     public function list_ksef_moderation_queue(WP_REST_Request $request) { $status = sanitize_text_field((string) $request->get_param('status')); return rest_ensure_response($this->ksef_import_service->list_moderation_queue(['status' => $status])); }
     public function moderate_ksef_queue_entry(WP_REST_Request $request) { $retry_key = sanitize_text_field((string) $request['retry_key']); $action = sanitize_text_field((string) $request->get_param('action')); $payload = ['supplier_id' => (int) $request->get_param('supplier_id'), 'project_id' => (int) $request->get_param('project_id')]; $result = $this->ksef_import_service->moderate_queue_entry($retry_key, $action, $payload, get_current_user_id()); if (! (bool) ($result['ok'] ?? false)) { return new WP_Error('erp_omd_ksef_moderation_invalid', implode(' ', (array) ($result['errors'] ?? [])), ['status' => 422]); } return rest_ensure_response($result['item'] ?? []); }
     public function bulk_moderate_ksef_queue_entries(WP_REST_Request $request) { $retry_keys = (array) $request->get_param('retry_keys'); $retry_keys = array_values(array_filter(array_map('sanitize_text_field', $retry_keys))); if ($retry_keys === []) { return new WP_Error('erp_omd_ksef_bulk_invalid', __('KSeF bulk moderation requires retry_keys.', 'erp-omd'), ['status' => 422]); } $action = sanitize_text_field((string) $request->get_param('action')); $payload = ['supplier_id' => (int) $request->get_param('supplier_id'), 'project_id' => (int) $request->get_param('project_id')]; $result = $this->ksef_import_service->bulk_moderate_queue_entries($retry_keys, $action, $payload, get_current_user_id()); if (! (bool) ($result['ok'] ?? false) && ! empty($result['errors'])) { return new WP_Error('erp_omd_ksef_bulk_partial', __('Część rekordów nie została zmodyfikowana.', 'erp-omd'), ['status' => 207, 'details' => $result]); } return rest_ensure_response($result); }
+    public function list_ksef_sales_documents(WP_REST_Request $request) { return rest_ensure_response($this->ksef_import_service->list_sales_inbox()); }
+    public function import_ksef_sales_xml(WP_REST_Request $request) { $xml_content = (string) $request->get_param('xml_content'); if (trim($xml_content) === '') { return new WP_Error('erp_omd_ksef_sales_xml_invalid', __('XML content is required.', 'erp-omd'), ['status' => 422]); } return rest_ensure_response($this->ksef_import_service->import_sales_xml($xml_content, get_current_user_id())); }
     public function get_client(WP_REST_Request $request) { return $this->find_or_error($this->clients->find((int) $request['id']), 'erp_omd_client_not_found', __('Client not found.', 'erp-omd')); }
     public function create_client(WP_REST_Request $request) { $payload = $this->client_project_service->prepare_client($this->sanitize_client_payload($request)); $errors = $this->client_project_service->validate_client($payload); if ($errors) { return new WP_Error('erp_omd_client_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->clients->create($payload); return new WP_REST_Response($this->clients->find($id), 201); }
     public function update_client(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->clients->find($id); if (! $existing) { return new WP_Error('erp_omd_client_not_found', __('Client not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->client_project_service->prepare_client(array_merge($existing, $this->sanitize_client_payload($request))); $errors = $this->client_project_service->validate_client($payload, $id); if ($errors) { return new WP_Error('erp_omd_client_invalid', implode(' ', $errors), ['status' => 422]); } $this->clients->update($id, $payload); return rest_ensure_response($this->clients->find($id)); }

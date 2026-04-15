@@ -25,7 +25,7 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
     $invoice_form_vat_rate = 'zw';
 }
 $active_tab = sanitize_key((string) ($_GET['tab'] ?? 'suppliers'));
-if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderation'], true)) {
+if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderation', 'ksef-sales'], true)) {
     $active_tab = 'suppliers';
 }
 ?>
@@ -43,6 +43,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'suppliers'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'suppliers' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Dostawcy', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'invoices'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'invoices' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Faktury kosztowe', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-moderation'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-moderation' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kolejka moderacji KSeF', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-sales' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Sprzedażowe KSeF', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'relations'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'relations' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></a>
     </nav>
 
@@ -387,6 +388,40 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                 </tbody>
             </table>
         </form>
+    </section>
+    <?php endif; ?>
+
+
+    <?php if ($active_tab === 'ksef-sales') : ?>
+    <section class="erp-omd-card">
+        <h2><?php esc_html_e('KSeF — faktury sprzedażowe', 'erp-omd'); ?></h2>
+        <form method="post" style="margin-bottom:14px;">
+            <?php wp_nonce_field('erp_omd_import_ksef_sales_xml'); ?>
+            <input type="hidden" name="erp_omd_action" value="import_ksef_sales_xml" />
+            <p><label for="ksef-sales-xml"><?php esc_html_e('Manual import XML z KSeF', 'erp-omd'); ?></label></p>
+            <textarea id="ksef-sales-xml" name="ksef_sales_xml_content" rows="8" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
+            <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML sprzedażowy', 'erp-omd'); ?></button></p>
+        </form>
+
+        <table class="widefat striped">
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Project ID', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th></tr></thead>
+            <tbody>
+            <?php if (empty($ksef_sales_inbox)) : ?>
+                <tr><td colspan="6"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+            <?php else : ?>
+                <?php foreach ((array) $ksef_sales_inbox as $sales_row) : ?>
+                    <tr>
+                        <td><?php echo esc_html((string) ((int) ($sales_row['id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) ($sales_row['invoice_number'] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ($sales_row['buyer_nip'] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ((int) ($sales_row['client_id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) ((int) ($sales_row['project_id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) ($sales_row['status'] ?? '')); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
     </section>
     <?php endif; ?>
 

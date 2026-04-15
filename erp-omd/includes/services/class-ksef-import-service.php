@@ -12,6 +12,7 @@ class ERP_OMD_KSeF_Import_Service
 
     const OPTION_RETRY_QUEUE = 'erp_omd_ksef_retry_queue';
     const OPTION_MODERATION_AUDIT = 'erp_omd_ksef_moderation_audit';
+    const OPTION_SALES_INBOX = 'erp_omd_ksef_sales_inbox';
 
     /** @var mixed */
     private $workflow_service;
@@ -24,6 +25,9 @@ class ERP_OMD_KSeF_Import_Service
 
     /** @var mixed */
     private $supplier_repository;
+
+    /** @var mixed */
+    private $client_repository;
 
     /** @var int */
     private $retry_max_window_seconds;
@@ -38,8 +42,9 @@ class ERP_OMD_KSeF_Import_Service
      * @param int|null $retry_max_window_seconds
      * @param array<int,int>|null $retry_schedule_seconds
      * @param mixed $supplier_repository
+     * @param mixed $client_repository
      */
-    public function __construct($workflow_service, $invoice_repository = null, $audit_repository = null, $retry_max_window_seconds = null, array $retry_schedule_seconds = null, $supplier_repository = null)
+    public function __construct($workflow_service, $invoice_repository = null, $audit_repository = null, $retry_max_window_seconds = null, array $retry_schedule_seconds = null, $supplier_repository = null, $client_repository = null)
     {
         $this->workflow_service = $workflow_service;
         $this->invoice_repository = $invoice_repository;
@@ -47,6 +52,7 @@ class ERP_OMD_KSeF_Import_Service
         $this->retry_max_window_seconds = is_int($retry_max_window_seconds) && $retry_max_window_seconds > 0 ? $retry_max_window_seconds : 90 * 60;
         $this->retry_schedule_seconds = $retry_schedule_seconds ?: [300, 900, 1800, 3600, 5400];
         $this->supplier_repository = $supplier_repository;
+        $this->client_repository = $client_repository;
     }
 
     /**
@@ -141,6 +147,16 @@ class ERP_OMD_KSeF_Import_Service
             }
 
             $document['supplier_id'] = (int) ($supplier_match['supplier_id'] ?? 0);
+        }
+
+        if ($kind === self::IMPORT_KIND_SALES) {
+            $sales_result = $this->register_sales_document($document, (int) $user_id);
+            return [
+                'status' => (string) ($sales_result['status'] ?? self::IMPORT_STATUS_MANUAL_REQUIRED),
+                'kind' => $kind,
+                'invoice_number' => (string) ($document['invoice_number'] ?? ''),
+                'errors' => (array) ($sales_result['errors'] ?? []),
+            ];
         }
 
         $payload = $this->map_ksef_document_to_invoice($document, (int) $user_id, $kind);
@@ -360,6 +376,150 @@ class ERP_OMD_KSeF_Import_Service
         return ['ok' => false, 'supplier_id' => 0, 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Brak dopasowania dostawcy po NIP. Wymagana moderacja manualna.', 'erp-omd')]];
     }
 
+
+
+    /**
+     * @param array<string,mixed> $document
+     * @param int $user_id
+     * @return array<string,mixed>
+     */
+    private function register_sales_document(array $document, $user_id)
+    {
+        $client_match = $this->match_client_for_sales_document($document);
+        if (! (bool) ($client_match['ok'] ?? false)) {
+            return [
+                'status' => (string) ($client_match['status'] ?? self::IMPORT_STATUS_MANUAL_REQUIRED),
+                'errors' => (array) ($client_match['errors'] ?? []),
+            ];
+        }
+
+        $rows = $this->load_sales_inbox();
+        $ksef_reference = trim((string) ($document['ksef_reference_number'] ?? ''));
+        $invoice_number = trim((string) ($document['invoice_number'] ?? ''));
+
+        foreach ($rows as $row) {
+            if ($ksef_reference !== '' && (string) ($row['ksef_reference_number'] ?? '') === $ksef_reference) {
+                return ['status' => 'duplicate', 'errors' => []];
+            }
+
+            if ($ksef_reference === '' && (string) ($row['invoice_number'] ?? '') === $invoice_number && (int) ($row['client_id'] ?? 0) === (int) ($client_match['client_id'] ?? 0)) {
+                return ['status' => self::IMPORT_STATUS_CONFLICT, 'errors' => [__('Wykryto konflikt sprzedażowej faktury KSeF (client_id + invoice_number).', 'erp-omd')]];
+            }
+        }
+
+        $rows[] = [
+            'id' => $this->next_sales_inbox_id($rows),
+            'invoice_number' => $invoice_number,
+            'issue_date' => (string) ($document['issue_date'] ?? ''),
+            'ksef_reference_number' => $ksef_reference,
+            'buyer_nip' => $this->extract_nip_value($document, ['buyer_nip', 'nabywca_nip', 'buyer', 'podmiot2', 'podmiot2_nip']),
+            'seller_nip' => $this->extract_nip_value($document, ['seller_nip', 'sprzedawca_nip', 'seller', 'podmiot1', 'podmiot1_nip']),
+            'net_amount' => (float) ($document['net_amount'] ?? 0),
+            'vat_amount' => (float) ($document['vat_amount'] ?? 0),
+            'gross_amount' => (float) ($document['gross_amount'] ?? 0),
+            'client_id' => (int) ($client_match['client_id'] ?? 0),
+            'project_id' => 0,
+            'status' => 'ready',
+            'source' => 'ksef_sales',
+            'created_by_user_id' => (int) $user_id,
+            'created_at' => $this->now(),
+        ];
+
+        $this->save_sales_inbox($rows);
+
+        return ['status' => self::IMPORT_STATUS_IMPORTED, 'errors' => []];
+    }
+
+    /**
+     * @param array<string,mixed> $document
+     * @return array<string,mixed>
+     */
+    private function match_client_for_sales_document(array $document)
+    {
+        if (! $this->client_repository || ! method_exists($this->client_repository, 'find_by_nip')) {
+            return ['ok' => false, 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Repozytorium klientów nie wspiera wyszukiwania po NIP.', 'erp-omd')]];
+        }
+
+        $buyer_nip = $this->extract_nip_value($document, ['buyer_nip', 'nabywca_nip', 'buyer', 'podmiot2', 'podmiot2_nip']);
+        if ($buyer_nip === '') {
+            return ['ok' => false, 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Brak NIP nabywcy do mapowania klienta.', 'erp-omd')]];
+        }
+
+        $matches = (array) $this->client_repository->find_by_nip($buyer_nip);
+        if (count($matches) === 1) {
+            return ['ok' => true, 'client_id' => (int) ($matches[0]['id'] ?? 0), 'status' => 'ready', 'errors' => []];
+        }
+
+        if (count($matches) > 1) {
+            return ['ok' => false, 'status' => self::IMPORT_STATUS_CONFLICT, 'errors' => [__('Wiele dopasowań klienta po NIP. Wymagana moderacja manualna.', 'erp-omd')]];
+        }
+
+        return ['ok' => false, 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Brak dopasowania klienta po NIP. Wymagana moderacja manualna.', 'erp-omd')]];
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    public function list_sales_inbox()
+    {
+        return $this->load_sales_inbox();
+    }
+
+    /**
+     * @param string $xml_content
+     * @param int $user_id
+     * @return array<string,mixed>
+     */
+    public function import_sales_xml($xml_content, $user_id)
+    {
+        $document = $this->parse_ksef_xml_to_document((string) $xml_content);
+        if (! is_array($document) || $document === []) {
+            return ['total' => 1, 'imported' => 0, 'failed' => 1, 'errors' => [['index' => 0, 'invoice_number' => '', 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Nie udało się sparsować XML KSeF.', 'erp-omd')]]]];
+        }
+
+        return $this->import_documents([$document], (int) $user_id);
+    }
+
+    /**
+     * @param string $xml_content
+     * @return array<string,mixed>
+     */
+    private function parse_ksef_xml_to_document($xml_content)
+    {
+        if (! function_exists('simplexml_load_string')) {
+            return [];
+        }
+
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($xml_content);
+        if (! ($xml instanceof SimpleXMLElement)) {
+            return [];
+        }
+
+        $invoice_number = (string) ($xml->xpath('//*[local-name()="P_2"]')[0] ?? '');
+        $issue_date = (string) ($xml->xpath('//*[local-name()="P_1"]')[0] ?? '');
+        $buyer_nip = (string) ($xml->xpath('//*[local-name()="Podmiot2"]//*[local-name()="NIP"]')[0] ?? '');
+        $seller_nip = (string) ($xml->xpath('//*[local-name()="Podmiot1"]//*[local-name()="NIP"]')[0] ?? '');
+        $ksef_reference = (string) ($xml->xpath('//*[local-name()="NumerKSeF"]')[0] ?? '');
+        $net_amount = (float) ((string) ($xml->xpath('//*[local-name()="FaCtrl"]//*[local-name()="B"]')[0] ?? '0'));
+        $vat_amount = (float) ((string) ($xml->xpath('//*[local-name()="FaCtrl"]//*[local-name()="V"]')[0] ?? '0'));
+        $gross_amount = (float) ((string) ($xml->xpath('//*[local-name()="FaCtrl"]//*[local-name()="WartoscFaktury"]')[0] ?? ($net_amount + $vat_amount)));
+
+        if ($invoice_number === '' && $ksef_reference === '') {
+            return [];
+        }
+
+        return [
+            'invoice_number' => $invoice_number,
+            'issue_date' => $issue_date,
+            'buyer_nip' => $buyer_nip,
+            'seller_nip' => $seller_nip,
+            'ksef_reference_number' => $ksef_reference,
+            'net_amount' => $net_amount,
+            'vat_amount' => $vat_amount,
+            'gross_amount' => $gross_amount,
+        ];
+    }
 
     /**
      * @param array<string,mixed> $filters
@@ -817,6 +977,46 @@ class ERP_OMD_KSeF_Import_Service
         }
 
         update_option(self::OPTION_MODERATION_AUDIT, $log, false);
+    }
+
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    private function load_sales_inbox()
+    {
+        if (! function_exists('get_option')) {
+            return [];
+        }
+
+        return (array) get_option(self::OPTION_SALES_INBOX, []);
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $rows
+     * @return void
+     */
+    private function save_sales_inbox(array $rows)
+    {
+        if (! function_exists('update_option')) {
+            return;
+        }
+
+        update_option(self::OPTION_SALES_INBOX, array_values($rows), false);
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $rows
+     * @return int
+     */
+    private function next_sales_inbox_id(array $rows)
+    {
+        $max_id = 0;
+        foreach ($rows as $row) {
+            $max_id = max($max_id, (int) ($row['id'] ?? 0));
+        }
+
+        return $max_id + 1;
     }
 
     /**

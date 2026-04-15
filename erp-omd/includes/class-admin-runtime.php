@@ -346,6 +346,7 @@ class ERP_OMD_Admin
             case 'attach_cost_invoice_to_project': $this->handle_attach_cost_invoice_to_project(); break;
             case 'moderate_ksef_queue': $this->handle_ksef_queue_moderation_action(); break;
             case 'bulk_ksef_queue': $this->handle_ksef_queue_bulk_action(); break;
+            case 'import_ksef_sales_xml': $this->handle_import_ksef_sales_xml_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
@@ -1445,6 +1446,7 @@ class ERP_OMD_Admin
         );
         $ksef_moderation_filter_status = sanitize_key((string) ($_GET['ksef_status'] ?? ''));
         $ksef_moderation_queue = $ksef_service->list_moderation_queue(['status' => $ksef_moderation_filter_status]);
+        $ksef_sales_inbox = $ksef_service->list_sales_inbox();
         $supplier_categories = $this->normalize_supplier_categories((array) get_option('erp_omd_supplier_categories', []));
         $selected_supplier_id = max(0, (int) ($_GET['supplier_id'] ?? 0));
         $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));
@@ -1983,6 +1985,36 @@ class ERP_OMD_Admin
         }
 
         $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'message' => 'ksef_bulk_moderation_saved']);
+    }
+
+
+    private function handle_import_ksef_sales_xml_action()
+    {
+        check_admin_referer('erp_omd_import_ksef_sales_xml');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $xml_content = (string) wp_unslash($_POST['ksef_sales_xml_content'] ?? '');
+        if (trim($xml_content) === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository(),
+            $this->clients
+        );
+
+        $result = $service->import_sales_xml($xml_content, (int) get_current_user_id());
+        if ((int) ($result['imported'] ?? 0) < 1) {
+            $errors = (array) (($result['errors'][0]['errors'] ?? []) ?: []);
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', $errors))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_xml_imported']);
     }
 
     private function delete_cost_invoice_with_side_effects(array $invoice)
