@@ -89,7 +89,7 @@ class ERP_OMD_REST_API
         $this->cost_invoices = new ERP_OMD_Cost_Invoice_Repository();
         $this->cost_invoice_audit = new ERP_OMD_Cost_Invoice_Audit_Repository();
         $this->cost_invoice_workflow = new ERP_OMD_Cost_Invoice_Workflow_Service($this->cost_invoices, $this->cost_invoice_audit, $this->suppliers, $this->projects);
-        $this->ksef_import_service = new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow, $this->cost_invoices, $this->cost_invoice_audit);
+        $this->ksef_import_service = new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow, $this->cost_invoices, $this->cost_invoice_audit, null, null, $this->suppliers);
         $this->client_portal_service = new ERP_OMD_Client_Portal_Service($this->projects, new ERP_OMD_Project_Revenue_Repository(), $this->project_costs);
     }
 

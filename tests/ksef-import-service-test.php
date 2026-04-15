@@ -107,6 +107,28 @@ class ERP_OMD_Cost_Invoice_Audit_Repository_Fake
     }
 }
 
+
+class ERP_OMD_Supplier_Repository_Fake
+{
+    /** @var array<string,array<int,array<string,mixed>>> */
+    private $matches = [];
+
+    public function __construct(array $matches)
+    {
+        $this->matches = $matches;
+    }
+
+    public function find_by_nip($nip)
+    {
+        $nip = preg_replace('/[^0-9]/', '', (string) $nip);
+        if (! is_string($nip)) {
+            return [];
+        }
+
+        return (array) ($this->matches[$nip] ?? []);
+    }
+}
+
 $GLOBALS['erp_omd_test_options'] = [
     'erp_omd_company_nip' => '1111111111',
     ERP_OMD_KSeF_Import_Service::OPTION_RETRY_QUEUE => [],
@@ -118,7 +140,11 @@ $repo = new ERP_OMD_Cost_Invoice_Repository_Fake([
     ['id' => 21, 'supplier_id' => 5, 'invoice_number' => 'DUP-SUPP', 'ksef_reference_number' => 'OTHER-REF'],
 ]);
 $audit = new ERP_OMD_Cost_Invoice_Audit_Repository_Fake();
-$service = new ERP_OMD_KSeF_Import_Service($workflow, $repo, $audit);
+$suppliers = new ERP_OMD_Supplier_Repository_Fake([
+    '2222222222' => [['id' => 1, 'nip' => '2222222222']],
+    '3333333333' => [['id' => 6, 'nip' => '3333333333'], ['id' => 7, 'nip' => '3333333333']],
+]);
+$service = new ERP_OMD_KSeF_Import_Service($workflow, $repo, $audit, null, null, $suppliers);
 $assertions = 0;
 
 $result = $service->import_documents([
@@ -174,6 +200,40 @@ $assertions++;
 $manualErrors = (array) ($result['errors'][1]['errors'] ?? []);
 if (($result['errors'][1]['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_MANUAL_REQUIRED || strpos(implode(' ', $manualErrors), 'Nie rozpoznano roli NIP') === false) {
     throw new RuntimeException('Expected unclassified document to be marked as manual_required with readable error.');
+}
+
+
+$singleMatchImport = $service->attempt_import_document([
+    'invoice_number' => 'SUPP-SINGLE',
+    'ksef_reference_number' => 'NEW-SUPP-SINGLE',
+    'buyer_nip' => '1111111111',
+    'seller_nip' => '2222222222',
+], 91, false);
+$assertions++;
+if (($singleMatchImport['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_IMPORTED || (int) ($workflow->created_payloads[1]['supplier_id'] ?? 0) !== 1) {
+    throw new RuntimeException('Expected single supplier NIP match to auto-assign supplier_id for cost invoice.');
+}
+
+$multiMatchImport = $service->attempt_import_document([
+    'invoice_number' => 'SUPP-MULTI',
+    'ksef_reference_number' => 'NEW-SUPP-MULTI',
+    'buyer_nip' => '1111111111',
+    'seller_nip' => '3333333333',
+], 91, false);
+$assertions++;
+if (($multiMatchImport['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_CONFLICT) {
+    throw new RuntimeException('Expected multi supplier NIP match to produce conflict/manual path.');
+}
+
+$noMatchImport = $service->attempt_import_document([
+    'invoice_number' => 'SUPP-NONE',
+    'ksef_reference_number' => 'NEW-SUPP-NONE',
+    'buyer_nip' => '1111111111',
+    'seller_nip' => '4444444444',
+], 91, false);
+$assertions++;
+if (($noMatchImport['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_MANUAL_REQUIRED) {
+    throw new RuntimeException('Expected no supplier NIP match to produce manual_required path.');
 }
 
 $classification = $service->classify_document([

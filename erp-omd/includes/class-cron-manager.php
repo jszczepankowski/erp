@@ -214,13 +214,14 @@ class ERP_OMD_Cron_Manager
     {
         $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
         $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
+        $supplier_repository = new ERP_OMD_Supplier_Repository();
         $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
             $invoice_repository,
             $audit_repository,
-            new ERP_OMD_Supplier_Repository(),
+            $supplier_repository,
             new ERP_OMD_Project_Repository()
         );
-        $service = new ERP_OMD_KSeF_Import_Service($workflow, $invoice_repository, $audit_repository);
+        $service = new ERP_OMD_KSeF_Import_Service($workflow, $invoice_repository, $audit_repository, null, null, $supplier_repository);
         $service->process_retry_queue(20);
     }
 

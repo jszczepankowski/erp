@@ -21,6 +21,9 @@ class ERP_OMD_KSeF_Import_Service
     /** @var mixed */
     private $audit_repository;
 
+    /** @var mixed */
+    private $supplier_repository;
+
     /** @var int */
     private $retry_max_window_seconds;
 
@@ -33,14 +36,16 @@ class ERP_OMD_KSeF_Import_Service
      * @param mixed $audit_repository
      * @param int|null $retry_max_window_seconds
      * @param array<int,int>|null $retry_schedule_seconds
+     * @param mixed $supplier_repository
      */
-    public function __construct($workflow_service, $invoice_repository = null, $audit_repository = null, $retry_max_window_seconds = null, array $retry_schedule_seconds = null)
+    public function __construct($workflow_service, $invoice_repository = null, $audit_repository = null, $retry_max_window_seconds = null, array $retry_schedule_seconds = null, $supplier_repository = null)
     {
         $this->workflow_service = $workflow_service;
         $this->invoice_repository = $invoice_repository;
         $this->audit_repository = $audit_repository;
         $this->retry_max_window_seconds = is_int($retry_max_window_seconds) && $retry_max_window_seconds > 0 ? $retry_max_window_seconds : 90 * 60;
         $this->retry_schedule_seconds = $retry_schedule_seconds ?: [300, 900, 1800, 3600, 5400];
+        $this->supplier_repository = $supplier_repository;
     }
 
     /**
@@ -119,6 +124,24 @@ class ERP_OMD_KSeF_Import_Service
         }
 
         $kind = (string) ($classification['kind'] ?? '');
+
+        if ($kind === self::IMPORT_KIND_COST) {
+            $supplier_match = $this->match_supplier_for_cost_document($document);
+            if (! (bool) ($supplier_match['ok'] ?? false)) {
+                $errors = (array) ($supplier_match['errors'] ?? [__('Nie udało się dopasować dostawcy po NIP.', 'erp-omd')]);
+                $status = (string) ($supplier_match['status'] ?? self::IMPORT_STATUS_MANUAL_REQUIRED);
+
+                return [
+                    'status' => $status,
+                    'kind' => $kind,
+                    'invoice_number' => (string) ($document['invoice_number'] ?? ''),
+                    'errors' => $errors,
+                ];
+            }
+
+            $document['supplier_id'] = (int) ($supplier_match['supplier_id'] ?? 0);
+        }
+
         $payload = $this->map_ksef_document_to_invoice($document, (int) $user_id, $kind);
 
         $duplicate = $this->detect_duplicate($payload);
@@ -302,6 +325,38 @@ class ERP_OMD_KSeF_Import_Service
         ];
 
         $this->save_retry_queue($queue);
+    }
+
+    /**
+     * @param array<string,mixed> $document
+     * @return array<string,mixed>
+     */
+    private function match_supplier_for_cost_document(array $document)
+    {
+        $supplier_id = (int) ($document['supplier_id'] ?? 0);
+        if ($supplier_id > 0) {
+            return ['ok' => true, 'supplier_id' => $supplier_id, 'status' => self::IMPORT_STATUS_IMPORTED, 'errors' => []];
+        }
+
+        if (! $this->supplier_repository || ! method_exists($this->supplier_repository, 'find_by_nip')) {
+            return ['ok' => false, 'supplier_id' => 0, 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Repozytorium dostawców nie wspiera wyszukiwania po NIP.', 'erp-omd')]];
+        }
+
+        $supplier_nip = $this->extract_nip_value($document, ['seller_nip', 'sprzedawca_nip', 'seller', 'podmiot1', 'podmiot1_nip']);
+        if ($supplier_nip === '') {
+            return ['ok' => false, 'supplier_id' => 0, 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Brak NIP sprzedawcy do dopasowania dostawcy.', 'erp-omd')]];
+        }
+
+        $matches = (array) $this->supplier_repository->find_by_nip($supplier_nip);
+        if (count($matches) === 1) {
+            return ['ok' => true, 'supplier_id' => (int) ($matches[0]['id'] ?? 0), 'status' => self::IMPORT_STATUS_IMPORTED, 'errors' => []];
+        }
+
+        if (count($matches) > 1) {
+            return ['ok' => false, 'supplier_id' => 0, 'status' => self::IMPORT_STATUS_CONFLICT, 'errors' => [__('Wiele dopasowań dostawcy po NIP. Wymagana moderacja manualna.', 'erp-omd')]];
+        }
+
+        return ['ok' => false, 'supplier_id' => 0, 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Brak dopasowania dostawcy po NIP. Wymagana moderacja manualna.', 'erp-omd')]];
     }
 
     /**
