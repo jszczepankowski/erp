@@ -344,6 +344,8 @@ class ERP_OMD_Admin
             case 'save_cost_invoice': $this->handle_cost_invoice_save(); break;
             case 'delete_cost_invoice': $this->handle_cost_invoice_delete(); break;
             case 'attach_cost_invoice_to_project': $this->handle_attach_cost_invoice_to_project(); break;
+            case 'moderate_ksef_queue': $this->handle_ksef_queue_moderation_action(); break;
+            case 'bulk_ksef_queue': $this->handle_ksef_queue_bulk_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
@@ -942,6 +944,7 @@ class ERP_OMD_Admin
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
         $front_admin_redirect_enabled = (bool) get_option('erp_omd_front_admin_redirect_enabled', true);
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
+        $company_nip = preg_replace('/[^0-9]/', '', (string) get_option('erp_omd_company_nip', ''));
         $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
         $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
         $reports_v1_slo_recommended_p95_max = $reports_v1_slo_generation_p95_max;
@@ -1432,6 +1435,16 @@ class ERP_OMD_Admin
         unset($project_row);
         $cost_invoices = (array) $cost_invoice_repository->list();
         $project_supplier_pairs = (array) $cost_invoice_repository->project_supplier_pairs();
+        $ksef_service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service($cost_invoice_repository, $cost_invoice_audit_repository, $suppliers_repository, $this->projects),
+            $cost_invoice_repository,
+            $cost_invoice_audit_repository,
+            null,
+            null,
+            $suppliers_repository
+        );
+        $ksef_moderation_filter_status = sanitize_key((string) ($_GET['ksef_status'] ?? ''));
+        $ksef_moderation_queue = $ksef_service->list_moderation_queue(['status' => $ksef_moderation_filter_status]);
         $supplier_categories = $this->normalize_supplier_categories((array) get_option('erp_omd_supplier_categories', []));
         $selected_supplier_id = max(0, (int) ($_GET['supplier_id'] ?? 0));
         $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));
@@ -1907,6 +1920,71 @@ class ERP_OMD_Admin
      * @param array<string,mixed> $invoice
      * @return void
      */
+
+    private function handle_ksef_queue_moderation_action()
+    {
+        check_admin_referer('erp_omd_moderate_ksef_queue');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $retry_key = sanitize_text_field((string) ($_POST['retry_key'] ?? ''));
+        $action = sanitize_key((string) ($_POST['ksef_action'] ?? ''));
+        if ($retry_key === '' || $action === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(__('Brakuje danych moderacji KSeF.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository()
+        );
+
+        $result = $service->moderate_queue_entry($retry_key, $action, [
+            'supplier_id' => (int) ($_POST['supplier_id'] ?? 0),
+            'project_id' => (int) ($_POST['project_id'] ?? 0),
+        ], (int) get_current_user_id());
+
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'message' => 'ksef_moderation_saved']);
+    }
+
+    private function handle_ksef_queue_bulk_action()
+    {
+        check_admin_referer('erp_omd_bulk_ksef_queue');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $retry_keys = array_values(array_filter(array_map('sanitize_text_field', (array) ($_POST['retry_keys'] ?? []))));
+        $action = sanitize_key((string) ($_POST['ksef_bulk_action'] ?? ''));
+        if ($retry_keys === [] || $action === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(__('Wybierz rekordy i akcję bulk KSeF.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository()
+        );
+
+        $result = $service->bulk_moderate_queue_entries($retry_keys, $action, [
+            'supplier_id' => (int) ($_POST['supplier_id'] ?? 0),
+            'project_id' => (int) ($_POST['project_id'] ?? 0),
+        ], (int) get_current_user_id());
+
+        if (! (bool) ($result['ok'] ?? false) && ! empty($result['errors'])) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(__('Część rekordów KSeF nie została zmoderowana.', 'erp-omd'))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'message' => 'ksef_bulk_moderation_saved']);
+    }
+
     private function delete_cost_invoice_with_side_effects(array $invoice)
     {
         $invoice_id = (int) ($invoice['id'] ?? 0);
@@ -3154,7 +3232,16 @@ class ERP_OMD_Admin
         update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
         update_option('erp_omd_front_admin_redirect_enabled', ! empty($_POST['front_admin_redirect_enabled']));
         update_option('erp_omd_reports_v1_rollout', 'all');
+        $company_nip = preg_replace('/[^0-9]/', '', (string) wp_unslash($_POST['company_nip'] ?? ''));
+        if (! is_string($company_nip)) {
+            $company_nip = '';
+        }
+        if ($company_nip !== '' && strlen($company_nip) !== 10) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('NIP firmy musi mieć 10 cyfr.', 'erp-omd'));
+        }
+
         update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
+        update_option('erp_omd_company_nip', $company_nip);
         update_option('erp_omd_reports_v1_metrics_freshness_minutes', max(5, (int) ($_POST['reports_v1_metrics_freshness_minutes'] ?? 1440)));
         $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) ($_POST['reports_v1_slo_generation_p95_max'] ?? 2500)));
         if (! empty($_POST['apply_reports_v1_recommended_p95_max'])) {
