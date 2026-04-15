@@ -340,6 +340,7 @@ class ERP_OMD_Admin
                 break;
             case 'save_project': $this->handle_project_save(); break;
             case 'save_supplier': $this->handle_supplier_save(); break;
+            case 'delete_supplier': $this->handle_supplier_delete(); break;
             case 'save_cost_invoice': $this->handle_cost_invoice_save(); break;
             case 'delete_cost_invoice': $this->handle_cost_invoice_delete(); break;
             case 'attach_cost_invoice_to_project': $this->handle_attach_cost_invoice_to_project(); break;
@@ -1797,6 +1798,32 @@ class ERP_OMD_Admin
         $this->redirect_cost_invoice_page(['message' => 'supplier_saved', 'supplier_id' => $supplier_id]);
     }
 
+    private function handle_supplier_delete()
+    {
+        check_admin_referer('erp_omd_delete_supplier');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $supplier_id = max(0, (int) ($_POST['supplier_id'] ?? 0));
+        if ($supplier_id <= 0) {
+            $this->redirect_cost_invoice_page(['error' => 'supplier_not_found']);
+        }
+
+        $supplier_repository = new ERP_OMD_Supplier_Repository();
+        $supplier = $supplier_repository->find($supplier_id);
+        if (! is_array($supplier) || $supplier === []) {
+            $this->redirect_cost_invoice_page(['error' => 'supplier_not_found']);
+        }
+
+        $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
+        $supplier_invoices = (array) $invoice_repository->list(['supplier_id' => $supplier_id]);
+        foreach ($supplier_invoices as $supplier_invoice) {
+            $this->delete_cost_invoice_with_side_effects((array) $supplier_invoice);
+        }
+
+        $supplier_repository->delete($supplier_id);
+        $this->redirect_cost_invoice_page(['message' => 'supplier_deleted']);
+    }
+
     private function handle_cost_invoice_save()
     {
         check_admin_referer('erp_omd_save_cost_invoice');
@@ -1871,8 +1898,23 @@ class ERP_OMD_Admin
             $this->redirect_cost_invoice_page(['error' => 'cost_invoice_not_found']);
         }
 
-        $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
-        $audit_repository->insert_many([
+        $this->delete_cost_invoice_with_side_effects($invoice);
+
+        $this->redirect_cost_invoice_page(['message' => 'cost_invoice_deleted']);
+    }
+
+    /**
+     * @param array<string,mixed> $invoice
+     * @return void
+     */
+    private function delete_cost_invoice_with_side_effects(array $invoice)
+    {
+        $invoice_id = (int) ($invoice['id'] ?? 0);
+        if ($invoice_id <= 0) {
+            return;
+        }
+
+        (new ERP_OMD_Cost_Invoice_Audit_Repository())->insert_many([
             [
                 'invoice_id' => $invoice_id,
                 'field_name' => '__deleted__',
@@ -1899,12 +1941,10 @@ class ERP_OMD_Admin
             }
         }
 
-        $invoice_repository->delete($invoice_id);
+        (new ERP_OMD_Cost_Invoice_Repository())->delete($invoice_id);
         if ($project_id > 0) {
             $this->project_financial_service->rebuild_for_project($project_id);
         }
-
-        $this->redirect_cost_invoice_page(['message' => 'cost_invoice_deleted']);
     }
 
     /**

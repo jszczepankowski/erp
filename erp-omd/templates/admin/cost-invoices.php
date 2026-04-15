@@ -135,7 +135,16 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
                     <td><?php echo esc_html((string) ($supplier['category'] ?? '—')); ?></td>
                     <td><?php echo esc_html((string) ($supplier['contact_person_name'] ?? '')); ?></td>
                     <td><?php echo esc_html((string) ($supplier['contact_person_email'] ?? '')); ?></td>
-                    <td><a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'supplier_id' => (int) ($supplier['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a></td>
+                    <td>
+                        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'supplier_id' => (int) ($supplier['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                        |
+                        <form method="post" style="display:inline;" onsubmit="return confirm('<?php echo esc_js(__('Czy na pewno chcesz usunąć dostawcę wraz z jego fakturami?', 'erp-omd')); ?>');">
+                            <?php wp_nonce_field('erp_omd_delete_supplier'); ?>
+                            <input type="hidden" name="erp_omd_action" value="delete_supplier" />
+                            <input type="hidden" name="supplier_id" value="<?php echo esc_attr((string) ((int) ($supplier['id'] ?? 0))); ?>" />
+                            <button type="submit" class="button-link-delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                        </form>
+                    </td>
                 </tr>
             <?php endforeach; ?>
         </tbody>

@@ -19,6 +19,7 @@ $requiredFragments = [
     'function register_supplier_routes()',
     'function list_suppliers(',
     'function create_supplier(',
+    'function delete_supplier(',
     'function list_cost_invoices(',
     'function create_cost_invoice(',
     'function update_cost_invoice(',
