@@ -162,19 +162,30 @@ Legenda:
 - Ten status dotyczy numeracji ERP_4.0 (Sprint 4 = EPIC D).
 - Równolegle historyczna numeracja V2 może wskazywać Sprint 10 dla tej samej paczki funkcjonalnej.
 
-## 2b) Status Sprintu 5 (ERP_4.0) — aktualizacja 2026-04-14
+## 2b) Status Sprintu 5 (ERP_4.0) — aktualizacja 2026-04-15
 
 ### Zrealizowane (fundamenty domenowe)
 - ✅ Dodano serwis workflow faktur kosztowych z walidacją przejść statusów zgodnie z E2 (`zaimportowana -> weryfikacja -> zatwierdzona -> przypisana`).
 - ✅ Dodano walidację unikalności numeru faktury w obrębie dostawcy (E4) na poziomie serwisu domenowego.
 - ✅ Dodano generator wpisów audytowych dla krytycznych pól faktury kosztowej (E5 MVP: status, projekt, dostawca, kwoty).
 - ✅ Dodano testy regresyjne dla workflow, duplikatów numerów i wpisów audytowych.
+- ✅ Zrealizowano E1: pełny moduł dostawców (repozytorium + CRUD UI admin z polami opiekuna).
+- ✅ Zrealizowano E3: trwałe relacje faktura/projekt/dostawca na poziomie tabel + ekranów administracyjnych.
+- ✅ Zrealizowano E5: persystencja audit log do dedykowanej tabeli + widok historii.
 
-### Co jeszcze zostało do domknięcia (kolejne kroki implementacyjne)
-- ⏳ E1: pełny moduł dostawców (repozytorium + CRUD UI admin z polami opiekuna).
-- ⏳ E3: trwałe relacje faktura/projekt/dostawca na poziomie tabel + ekranów administracyjnych.
-- ⏳ E5: persystencja audit log do dedykowanej tabeli + widok historii.
-- ⏳ F1/F2: podpięcie importu KSeF do workflow oraz UI moderacji.
+### Decyzja release
+- ✅ **Sprint 5 formalnie zamknięty (CLOSED / DONE)**.
+- 📄 Dokument zamknięcia: `docs/RELEASE_CLOSURE_SPRINT_5_2026-04-15.md`.
+
+## 2c) Status Sprintu 6 (ERP_4.0) — start 2026-04-15
+
+### Zakres
+- F1: import KSeF do statusu `zaimportowana`.
+- F2: moderacja importów KSeF i przejścia workflow po stronie admina/API.
+
+### Status bieżący
+- 🚀 Sprint 6 rozpoczęty.
+- 🔄 Trwa realizacja etapów F1/F2 zgodnie z kolejnością z sekcji „Kolejność sprintów”.
 
 ---
 
