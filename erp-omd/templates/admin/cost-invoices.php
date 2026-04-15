@@ -81,29 +81,9 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Adres i kontakt', 'erp-omd'); ?></h3>
-                        <p><?php esc_html_e('Główne kanały kontaktu i dane adresowe dostawcy.', 'erp-omd'); ?></p>
+                        <p><?php esc_html_e('Najpierw dane adresowe, następnie kontakt główny i opiekun.', 'erp-omd'); ?></p>
                     </div>
                     <div class="erp-omd-form-grid">
-                        <div class="erp-omd-form-field">
-                            <label for="supplier_email"><?php esc_html_e('Email główny', 'erp-omd'); ?></label>
-                            <input class="regular-text" type="email" id="supplier_email" name="supplier_email" value="<?php echo esc_attr((string) ($supplier_form['email'] ?? '')); ?>" />
-                        </div>
-                        <div class="erp-omd-form-field">
-                            <label for="supplier_phone"><?php esc_html_e('Telefon główny', 'erp-omd'); ?></label>
-                            <input class="regular-text" type="text" id="supplier_phone" name="supplier_phone" value="<?php echo esc_attr((string) ($supplier_form['phone'] ?? '')); ?>" />
-                        </div>
-                        <div class="erp-omd-form-field">
-                            <label for="supplier_contact_person_name"><?php esc_html_e('Opiekun', 'erp-omd'); ?></label>
-                            <input class="regular-text" type="text" id="supplier_contact_person_name" name="supplier_contact_person_name" value="<?php echo esc_attr((string) ($supplier_form['contact_person_name'] ?? '')); ?>" />
-                        </div>
-                        <div class="erp-omd-form-field">
-                            <label for="supplier_contact_person_email"><?php esc_html_e('Email opiekuna', 'erp-omd'); ?></label>
-                            <input class="regular-text" type="email" id="supplier_contact_person_email" name="supplier_contact_person_email" value="<?php echo esc_attr((string) ($supplier_form['contact_person_email'] ?? '')); ?>" />
-                        </div>
-                        <div class="erp-omd-form-field">
-                            <label for="supplier_contact_person_phone"><?php esc_html_e('Telefon opiekuna', 'erp-omd'); ?></label>
-                            <input class="regular-text" type="text" id="supplier_contact_person_phone" name="supplier_contact_person_phone" value="<?php echo esc_attr((string) ($supplier_form['contact_person_phone'] ?? '')); ?>" />
-                        </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-client-address-row erp-omd-form-field-span-full">
                             <div class="erp-omd-form-field">
                                 <label for="supplier_street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label>
@@ -125,6 +105,26 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
                                 <label for="supplier_country"><?php esc_html_e('Kraj', 'erp-omd'); ?></label>
                                 <input class="regular-text" type="text" id="supplier_country" name="supplier_country" value="<?php echo esc_attr((string) ($supplier_form['country'] ?? 'PL')); ?>" />
                             </div>
+                        </div>
+                        <div class="erp-omd-form-field">
+                            <label for="supplier_email"><?php esc_html_e('Email główny', 'erp-omd'); ?></label>
+                            <input class="regular-text" type="email" id="supplier_email" name="supplier_email" value="<?php echo esc_attr((string) ($supplier_form['email'] ?? '')); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field">
+                            <label for="supplier_phone"><?php esc_html_e('Telefon główny', 'erp-omd'); ?></label>
+                            <input class="regular-text" type="text" id="supplier_phone" name="supplier_phone" value="<?php echo esc_attr((string) ($supplier_form['phone'] ?? '')); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field">
+                            <label for="supplier_contact_person_name"><?php esc_html_e('Opiekun', 'erp-omd'); ?></label>
+                            <input class="regular-text" type="text" id="supplier_contact_person_name" name="supplier_contact_person_name" value="<?php echo esc_attr((string) ($supplier_form['contact_person_name'] ?? '')); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field">
+                            <label for="supplier_contact_person_email"><?php esc_html_e('Email opiekuna', 'erp-omd'); ?></label>
+                            <input class="regular-text" type="email" id="supplier_contact_person_email" name="supplier_contact_person_email" value="<?php echo esc_attr((string) ($supplier_form['contact_person_email'] ?? '')); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field">
+                            <label for="supplier_contact_person_phone"><?php esc_html_e('Telefon opiekuna', 'erp-omd'); ?></label>
+                            <input class="regular-text" type="text" id="supplier_contact_person_phone" name="supplier_contact_person_phone" value="<?php echo esc_attr((string) ($supplier_form['contact_person_phone'] ?? '')); ?>" />
                         </div>
                     </div>
                 </section>
@@ -179,91 +179,172 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
     </table>
 
     <section class="erp-omd-card">
-        <h2><?php echo ! empty($invoice_form) ? esc_html__('Edytuj fakturę kosztową', 'erp-omd') : esc_html__('Nowa faktura kosztowa', 'erp-omd'); ?></h2>
-        <form method="post">
-            <?php wp_nonce_field('erp_omd_save_cost_invoice'); ?>
-            <input type="hidden" name="erp_omd_action" value="save_cost_invoice" />
-            <input type="hidden" name="cost_invoice_id" value="<?php echo esc_attr((string) ((int) ($invoice_form['id'] ?? 0))); ?>" />
-            <div class="erp-omd-form-sections">
-                <section class="erp-omd-form-section">
-                    <div class="erp-omd-form-section-header">
-                        <h3><?php esc_html_e('Relacje i dokument', 'erp-omd'); ?></h3>
-                        <p><?php esc_html_e('Połączenia faktury z dostawcą i projektem oraz dane dokumentu.', 'erp-omd'); ?></p>
-                    </div>
-                    <div class="erp-omd-form-grid">
-                        <div class="erp-omd-form-field">
-                            <label for="cost_invoice_supplier_id"><?php esc_html_e('Dostawca', 'erp-omd'); ?></label>
-                            <select id="cost_invoice_supplier_id" name="cost_invoice_supplier_id" required>
-                                <option value=""><?php esc_html_e('Wybierz dostawcę', 'erp-omd'); ?></option>
-                                <?php foreach ($suppliers as $supplier) : ?>
-                                    <?php $supplier_id = (int) ($supplier['id'] ?? 0); ?>
-                                    <option value="<?php echo esc_attr((string) $supplier_id); ?>" <?php selected((int) ($invoice_form['supplier_id'] ?? 0), $supplier_id); ?>><?php echo esc_html((string) ($supplier['name'] ?? '')); ?></option>
-                                <?php endforeach; ?>
-                            </select>
+        <h2><?php esc_html_e('Faktury kosztowe', 'erp-omd'); ?></h2>
+        <section class="erp-omd-form-section">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h3><?php echo ! empty($invoice_form) ? esc_html__('Edytuj fakturę kosztową', 'erp-omd') : esc_html__('Nowa faktura kosztowa', 'erp-omd'); ?></h3>
+                </div>
+            </div>
+            <form method="post">
+                <?php wp_nonce_field('erp_omd_save_cost_invoice'); ?>
+                <input type="hidden" name="erp_omd_action" value="save_cost_invoice" />
+                <input type="hidden" name="cost_invoice_id" value="<?php echo esc_attr((string) ((int) ($invoice_form['id'] ?? 0))); ?>" />
+                <div class="erp-omd-form-sections">
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Relacje i dokument', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Połączenia faktury z dostawcą i projektem oraz dane dokumentu.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-form-field">
-                            <label for="cost_invoice_project_id"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
-                            <select id="cost_invoice_project_id" name="cost_invoice_project_id" required>
-                                <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
-                                <?php foreach ($projects as $project) : ?>
-                                    <?php $project_id = (int) ($project['id'] ?? 0); ?>
-                                    <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
-                                    <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($invoice_form['project_id'] ?? 0), $project_id); ?>><?php echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '')); ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                        <div class="erp-omd-form-grid">
+                            <div class="erp-omd-form-field">
+                                <label for="cost_invoice_supplier_id"><?php esc_html_e('Dostawca', 'erp-omd'); ?></label>
+                                <select id="cost_invoice_supplier_id" name="cost_invoice_supplier_id" required>
+                                    <option value=""><?php esc_html_e('Wybierz dostawcę', 'erp-omd'); ?></option>
+                                    <?php foreach ($suppliers as $supplier) : ?>
+                                        <?php $supplier_id = (int) ($supplier['id'] ?? 0); ?>
+                                        <option value="<?php echo esc_attr((string) $supplier_id); ?>" <?php selected((int) ($invoice_form['supplier_id'] ?? 0), $supplier_id); ?>><?php echo esc_html((string) ($supplier['name'] ?? '')); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <label for="cost_invoice_project_id"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
+                                <select id="cost_invoice_project_id" name="cost_invoice_project_id" required>
+                                    <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
+                                    <?php foreach ($projects as $project) : ?>
+                                        <?php $project_id = (int) ($project['id'] ?? 0); ?>
+                                        <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
+                                        <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($invoice_form['project_id'] ?? 0), $project_id); ?>><?php echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '')); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field">
+                                <label for="cost_invoice_number"><?php esc_html_e('Numer faktury', 'erp-omd'); ?></label>
+                                <input class="regular-text" type="text" id="cost_invoice_number" name="cost_invoice_number" value="<?php echo esc_attr((string) ($invoice_form['invoice_number'] ?? '')); ?>" required />
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="cost_invoice_issue_date"><?php esc_html_e('Data wystawienia', 'erp-omd'); ?></label>
+                                <input type="date" id="cost_invoice_issue_date" name="cost_invoice_issue_date" value="<?php echo esc_attr((string) ($invoice_form['issue_date'] ?? '')); ?>" />
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="cost_invoice_status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
+                                <select id="cost_invoice_status" name="cost_invoice_status" required>
+                                    <?php foreach (['zaimportowana', 'weryfikacja', 'zatwierdzona', 'przypisana'] as $status) : ?>
+                                        <option value="<?php echo esc_attr($status); ?>" <?php selected((string) ($invoice_form['status'] ?? 'zaimportowana'), $status); ?>><?php echo esc_html($status); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         </div>
-                        <div class="erp-omd-form-field">
-                            <label for="cost_invoice_number"><?php esc_html_e('Numer faktury', 'erp-omd'); ?></label>
-                            <input class="regular-text" type="text" id="cost_invoice_number" name="cost_invoice_number" value="<?php echo esc_attr((string) ($invoice_form['invoice_number'] ?? '')); ?>" required />
-                        </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="cost_invoice_issue_date"><?php esc_html_e('Data wystawienia', 'erp-omd'); ?></label>
-                            <input type="date" id="cost_invoice_issue_date" name="cost_invoice_issue_date" value="<?php echo esc_attr((string) ($invoice_form['issue_date'] ?? '')); ?>" />
-                        </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="cost_invoice_status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
-                            <select id="cost_invoice_status" name="cost_invoice_status" required>
-                                <?php foreach (['zaimportowana', 'weryfikacja', 'zatwierdzona', 'przypisana'] as $status) : ?>
-                                    <option value="<?php echo esc_attr($status); ?>" <?php selected((string) ($invoice_form['status'] ?? 'zaimportowana'), $status); ?>><?php echo esc_html($status); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                </section>
+                    </section>
 
-                <section class="erp-omd-form-section">
-                    <div class="erp-omd-form-section-header">
-                        <h3><?php esc_html_e('Kwoty', 'erp-omd'); ?></h3>
-                        <p><?php esc_html_e('Netto + stawka VAT, a kwoty VAT/Brutto wyliczane automatycznie.', 'erp-omd'); ?></p>
-                    </div>
-                    <div class="erp-omd-form-grid">
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="cost_invoice_net_amount"><?php esc_html_e('Netto', 'erp-omd'); ?></label>
-                            <input type="number" step="0.01" min="0" id="cost_invoice_net_amount" name="cost_invoice_net_amount" value="<?php echo esc_attr((string) $invoice_form_net_amount); ?>" required />
+                    <section class="erp-omd-form-section">
+                        <div class="erp-omd-form-section-header">
+                            <h3><?php esc_html_e('Kwoty', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Netto + stawka VAT, a kwoty VAT/Brutto wyliczane automatycznie.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="cost_invoice_vat_rate"><?php esc_html_e('Stawka VAT', 'erp-omd'); ?></label>
-                            <select id="cost_invoice_vat_rate" name="cost_invoice_vat_rate">
-                                <?php foreach (['23', '8', '5', '0', 'zw'] as $vat_rate_option) : ?>
-                                    <option value="<?php echo esc_attr($vat_rate_option); ?>" <?php selected($invoice_form_vat_rate, $vat_rate_option); ?>><?php echo esc_html($vat_rate_option . (is_numeric($vat_rate_option) ? '%' : '')); ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                        <div class="erp-omd-form-grid">
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="cost_invoice_net_amount"><?php esc_html_e('Netto', 'erp-omd'); ?></label>
+                                <input type="number" step="0.01" min="0" id="cost_invoice_net_amount" name="cost_invoice_net_amount" value="<?php echo esc_attr((string) $invoice_form_net_amount); ?>" required />
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="cost_invoice_vat_rate"><?php esc_html_e('Stawka VAT', 'erp-omd'); ?></label>
+                                <select id="cost_invoice_vat_rate" name="cost_invoice_vat_rate">
+                                    <?php foreach (['23', '8', '5', '0', 'zw'] as $vat_rate_option) : ?>
+                                        <option value="<?php echo esc_attr($vat_rate_option); ?>" <?php selected($invoice_form_vat_rate, $vat_rate_option); ?>><?php echo esc_html($vat_rate_option . (is_numeric($vat_rate_option) ? '%' : '')); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="cost_invoice_vat_amount"><?php esc_html_e('Kwota VAT (auto)', 'erp-omd'); ?></label>
+                                <input type="number" step="0.01" min="0" id="cost_invoice_vat_amount" value="<?php echo esc_attr((string) $invoice_form_vat_amount); ?>" readonly />
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="cost_invoice_gross_amount"><?php esc_html_e('Brutto (auto)', 'erp-omd'); ?></label>
+                                <input type="number" step="0.01" min="0" id="cost_invoice_gross_amount" value="<?php echo esc_attr((string) ((float) ($invoice_form['gross_amount'] ?? 0))); ?>" readonly />
+                            </div>
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="cost_invoice_vat_amount"><?php esc_html_e('Kwota VAT (auto)', 'erp-omd'); ?></label>
-                            <input type="number" step="0.01" min="0" id="cost_invoice_vat_amount" value="<?php echo esc_attr((string) $invoice_form_vat_amount); ?>" readonly />
-                        </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="cost_invoice_gross_amount"><?php esc_html_e('Brutto (auto)', 'erp-omd'); ?></label>
-                            <input type="number" step="0.01" min="0" id="cost_invoice_gross_amount" value="<?php echo esc_attr((string) ((float) ($invoice_form['gross_amount'] ?? 0))); ?>" readonly />
-                        </div>
-                    </div>
-                </section>
+                    </section>
+                </div>
+                <div class="erp-omd-form-actions">
+                    <?php submit_button(! empty($invoice_form) ? __('Zaktualizuj fakturę kosztową', 'erp-omd') : __('Zapisz fakturę kosztową', 'erp-omd')); ?>
+                </div>
+            </form>
+        </section>
+        <section class="erp-omd-form-section">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h3><?php esc_html_e('Lista faktur kosztowych', 'erp-omd'); ?></h3>
+                </div>
             </div>
-            <div class="erp-omd-form-actions">
-                <?php submit_button(! empty($invoice_form) ? __('Zaktualizuj fakturę kosztową', 'erp-omd') : __('Zapisz fakturę kosztową', 'erp-omd')); ?>
+            <table class="widefat striped">
+                <thead>
+                    <tr>
+                        <th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($cost_invoices === []) : ?>
+                        <tr><td colspan="7"><?php esc_html_e('Brak faktur kosztowych.', 'erp-omd'); ?></td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($cost_invoices as $invoice) : ?>
+                        <?php $invoice_id = (int) ($invoice['id'] ?? 0); ?>
+                        <tr>
+                            <td><?php echo esc_html((string) $invoice_id); ?></td>
+                            <td><?php echo esc_html((string) ($invoice['invoice_number'] ?? '')); ?></td>
+                            <td><?php echo esc_html((string) ($supplier_name_by_id[(int) ($invoice['supplier_id'] ?? 0)] ?? ('#' . (int) ($invoice['supplier_id'] ?? 0)))); ?></td>
+                            <td><?php echo esc_html((string) ($project_name_by_id[(int) ($invoice['project_id'] ?? 0)] ?? ('#' . (int) ($invoice['project_id'] ?? 0)))); ?></td>
+                            <td><?php echo esc_html((string) ($invoice['status'] ?? '')); ?></td>
+                            <td><?php echo esc_html(number_format((float) ($invoice['gross_amount'] ?? 0), 2, '.', ' ')); ?></td>
+                            <td>
+                                <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'invoice_id' => $invoice_id], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                |
+                                <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'invoice_id' => $invoice_id], admin_url('admin.php'))); ?>#invoice-audit"><?php esc_html_e('Audit', 'erp-omd'); ?></a>
+                                |
+                                <form method="post" style="display:inline;" onsubmit="return confirm('<?php echo esc_js(__('Czy na pewno chcesz usunąć fakturę kosztową?', 'erp-omd')); ?>');">
+                                    <?php wp_nonce_field('erp_omd_delete_cost_invoice'); ?>
+                                    <input type="hidden" name="erp_omd_action" value="delete_cost_invoice" />
+                                    <input type="hidden" name="cost_invoice_id" value="<?php echo esc_attr((string) $invoice_id); ?>" />
+                                    <button type="submit" class="button-link-delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </section>
+        <section class="erp-omd-form-section">
+            <div class="erp-omd-section-header">
+                <div>
+                    <h3><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></h3>
+                </div>
             </div>
-        </form>
+            <table class="widefat striped">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Liczba faktur', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Suma brutto', 'erp-omd'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ((array) ($project_supplier_pairs ?? []) === []) : ?>
+                        <tr><td colspan="4"><?php esc_html_e('Brak relacji projekt-dostawca.', 'erp-omd'); ?></td></tr>
+                    <?php endif; ?>
+                    <?php foreach ((array) ($project_supplier_pairs ?? []) as $pair) : ?>
+                        <?php $pair_project_id = (int) ($pair['project_id'] ?? 0); ?>
+                        <?php $pair_supplier_id = (int) ($pair['supplier_id'] ?? 0); ?>
+                        <tr>
+                            <td><?php echo esc_html((string) ($project_name_by_id[$pair_project_id] ?? ('#' . $pair_project_id))); ?></td>
+                            <td><?php echo esc_html((string) ($supplier_name_by_id[$pair_supplier_id] ?? ('#' . $pair_supplier_id))); ?></td>
+                            <td><?php echo esc_html((string) ((int) ($pair['invoices_count'] ?? 0))); ?></td>
+                            <td><?php echo esc_html(number_format((float) ($pair['gross_total'] ?? 0), 2, '.', ' ')); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </section>
     </section>
     <script>
     (function () {
@@ -291,69 +372,6 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
     }());
     </script>
 
-    <h2 style="margin-top:24px;"><?php esc_html_e('Lista faktur kosztowych', 'erp-omd'); ?></h2>
-    <table class="widefat striped">
-        <thead>
-            <tr>
-                <th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if ($cost_invoices === []) : ?>
-                <tr><td colspan="7"><?php esc_html_e('Brak faktur kosztowych.', 'erp-omd'); ?></td></tr>
-            <?php endif; ?>
-            <?php foreach ($cost_invoices as $invoice) : ?>
-                <?php $invoice_id = (int) ($invoice['id'] ?? 0); ?>
-                <tr>
-                    <td><?php echo esc_html((string) $invoice_id); ?></td>
-                    <td><?php echo esc_html((string) ($invoice['invoice_number'] ?? '')); ?></td>
-                    <td><?php echo esc_html((string) ($supplier_name_by_id[(int) ($invoice['supplier_id'] ?? 0)] ?? ('#' . (int) ($invoice['supplier_id'] ?? 0)))); ?></td>
-                    <td><?php echo esc_html((string) ($project_name_by_id[(int) ($invoice['project_id'] ?? 0)] ?? ('#' . (int) ($invoice['project_id'] ?? 0)))); ?></td>
-                    <td><?php echo esc_html((string) ($invoice['status'] ?? '')); ?></td>
-                    <td><?php echo esc_html(number_format((float) ($invoice['gross_amount'] ?? 0), 2, '.', ' ')); ?></td>
-                    <td>
-                        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'invoice_id' => $invoice_id], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
-                        |
-                        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'invoice_id' => $invoice_id], admin_url('admin.php'))); ?>#invoice-audit"><?php esc_html_e('Audit', 'erp-omd'); ?></a>
-                        |
-                        <form method="post" style="display:inline;" onsubmit="return confirm('<?php echo esc_js(__('Czy na pewno chcesz usunąć fakturę kosztową?', 'erp-omd')); ?>');">
-                            <?php wp_nonce_field('erp_omd_delete_cost_invoice'); ?>
-                            <input type="hidden" name="erp_omd_action" value="delete_cost_invoice" />
-                            <input type="hidden" name="cost_invoice_id" value="<?php echo esc_attr((string) $invoice_id); ?>" />
-                            <button type="submit" class="button-link-delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
-                        </form>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-
-    <h2 style="margin-top:24px;"><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></h2>
-    <table class="widefat striped">
-        <thead>
-            <tr>
-                <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
-                <th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th>
-                <th><?php esc_html_e('Liczba faktur', 'erp-omd'); ?></th>
-                <th><?php esc_html_e('Suma brutto', 'erp-omd'); ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if ((array) ($project_supplier_pairs ?? []) === []) : ?>
-                <tr><td colspan="4"><?php esc_html_e('Brak relacji projekt-dostawca.', 'erp-omd'); ?></td></tr>
-            <?php endif; ?>
-            <?php foreach ((array) ($project_supplier_pairs ?? []) as $pair) : ?>
-                <?php $pair_project_id = (int) ($pair['project_id'] ?? 0); ?>
-                <?php $pair_supplier_id = (int) ($pair['supplier_id'] ?? 0); ?>
-                <tr>
-                    <td><?php echo esc_html((string) ($project_name_by_id[$pair_project_id] ?? ('#' . $pair_project_id))); ?></td>
-                    <td><?php echo esc_html((string) ($supplier_name_by_id[$pair_supplier_id] ?? ('#' . $pair_supplier_id))); ?></td>
-                    <td><?php echo esc_html((string) ((int) ($pair['invoices_count'] ?? 0))); ?></td>
-                    <td><?php echo esc_html(number_format((float) ($pair['gross_total'] ?? 0), 2, '.', ' ')); ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
 
     <?php if ($selected_invoice_id > 0) : ?>
         <h2 id="invoice-audit" style="margin-top:24px;"><?php echo esc_html(sprintf(__('Audit faktury #%d', 'erp-omd'), $selected_invoice_id)); ?></h2>
