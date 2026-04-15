@@ -159,9 +159,7 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
         }
 
         if (mb_strtolower($source) === 'ksef') {
-            if ($ksef_reference_number === '') {
-                $errors[] = __('Dla faktury z KSeF numer referencyjny KSeF jest wymagany.', 'erp-omd');
-            } elseif ($this->ksef_reference_exists_on_other_invoice($ksef_reference_number, (int) ($invoice_data['id'] ?? 0))) {
+            if ($ksef_reference_number !== '' && $this->ksef_reference_exists_on_other_invoice($ksef_reference_number, (int) ($invoice_data['id'] ?? 0))) {
                 $errors[] = __('Numer referencyjny KSeF musi być unikalny.', 'erp-omd');
             }
         }
