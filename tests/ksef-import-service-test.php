@@ -3,6 +3,29 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../erp-omd/includes/services/class-ksef-import-service.php';
+$serviceSource = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/services/class-ksef-import-service.php');
+
+if (! function_exists('__')) {
+    function __($text)
+    {
+        return $text;
+    }
+}
+
+if (! function_exists('get_option')) {
+    function get_option($key, $default = false)
+    {
+        return $GLOBALS['erp_omd_test_options'][$key] ?? $default;
+    }
+}
+
+if (! function_exists('update_option')) {
+    function update_option($key, $value)
+    {
+        $GLOBALS['erp_omd_test_options'][$key] = $value;
+        return true;
+    }
+}
 
 if (! function_exists('__')) {
     function __($text)
@@ -171,6 +194,11 @@ $clients = new ERP_OMD_Client_Repository_Fake([
 ]);
 $service = new ERP_OMD_KSeF_Import_Service($workflow, $repo, $audit, null, null, $suppliers, $clients);
 $assertions = 0;
+
+$assertions++;
+if (preg_match_all('/function\s+process_retry_queue\s*\(/', $serviceSource) !== 1) {
+    throw new RuntimeException('Expected exactly one process_retry_queue() declaration in KSeF import service.');
+}
 
 $result = $service->import_documents([
     [
