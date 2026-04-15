@@ -85,9 +85,10 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
             $errors[] = __('Wybrany dostawca nie istnieje.', 'erp-omd');
         }
 
-        if ($project_id <= 0) {
+        $is_ksef_source = mb_strtolower($source) === 'ksef';
+        if ($project_id <= 0 && ! $is_ksef_source) {
             $errors[] = __('Wybierz projekt dla faktury kosztowej.', 'erp-omd');
-        } elseif (! $this->project_exists($project_id)) {
+        } elseif ($project_id > 0 && ! $this->project_exists($project_id)) {
             $errors[] = __('Wybrany projekt nie istnieje.', 'erp-omd');
         }
 
