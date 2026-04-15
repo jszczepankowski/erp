@@ -14,6 +14,7 @@ $fragments = [
     "'ksef-moderation'",
     'Kolejka moderacji KSeF',
     'name="ksef_bulk_action"',
+    'Usuń z kolejki',
     'name="retry_keys[]"',
     "case 'bulk_ksef_queue'",
     'function handle_ksef_queue_bulk_action(',

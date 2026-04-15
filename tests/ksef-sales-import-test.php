@@ -24,6 +24,7 @@ $fragments = [
     [$rest, 'function import_ksef_sales_xml(', 'REST should expose sales XML callback.'],
     [$rest, 'function import_ksef_cost_xml(', 'REST should expose cost XML callback.'],
     [$template, "'ksef-sales'", 'Admin template should provide sales KSeF tab.'],
+    [$template, "'ksef-cost'", 'Admin template should provide cost KSeF tab.'],
     [$template, 'name="ksef_sales_xml_content"', 'Admin template should provide XML textarea.'],
     [$template, 'name="ksef_sales_xml_file"', 'Admin template should provide XML file upload.'],
     [$template, 'name="ksef_cost_xml_content"', 'Admin template should provide cost XML textarea.'],

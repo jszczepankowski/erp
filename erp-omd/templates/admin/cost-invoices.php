@@ -25,7 +25,7 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
     $invoice_form_vat_rate = 'zw';
 }
 $active_tab = sanitize_key((string) ($_GET['tab'] ?? 'suppliers'));
-if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderation', 'ksef-sales'], true)) {
+if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderation', 'ksef-sales', 'ksef-cost'], true)) {
     $active_tab = 'suppliers';
 }
 ?>
@@ -44,6 +44,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'invoices'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'invoices' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Faktury kosztowe', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-moderation'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-moderation' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kolejka moderacji KSeF', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-sales' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Sprzedażowe KSeF', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-cost'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-cost' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kosztowe KSeF', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'relations'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'relations' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></a>
     </nav>
 
@@ -360,6 +361,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     <option value=""><?php esc_html_e('Akcja bulk', 'erp-omd'); ?></option>
                     <option value="approve"><?php esc_html_e('Zatwierdź', 'erp-omd'); ?></option>
                     <option value="reject"><?php esc_html_e('Odrzuć', 'erp-omd'); ?></option>
+                    <option value="delete"><?php esc_html_e('Usuń z kolejki', 'erp-omd'); ?></option>
                     <option value="assign_supplier"><?php esc_html_e('Przypisz dostawcę', 'erp-omd'); ?></option>
                     <option value="assign_project"><?php esc_html_e('Przypisz projekt', 'erp-omd'); ?></option>
                 </select>
@@ -407,18 +409,6 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML sprzedażowy', 'erp-omd'); ?></button></p>
         </form>
 
-        <form method="post" enctype="multipart/form-data" style="margin-bottom:18px;">
-            <?php wp_nonce_field('erp_omd_import_ksef_cost_xml'); ?>
-            <input type="hidden" name="erp_omd_action" value="import_ksef_cost_xml" />
-            <p><label for="ksef-cost-xml"><?php esc_html_e('Manual import XML kosztowy z KSeF', 'erp-omd'); ?></label></p>
-            <textarea id="ksef-cost-xml" name="ksef_cost_xml_content" rows="6" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
-            <p>
-                <label for="ksef-cost-xml-file"><?php esc_html_e('lub wybierz plik XML', 'erp-omd'); ?></label><br />
-                <input id="ksef-cost-xml-file" type="file" name="ksef_cost_xml_file" accept=".xml,text/xml,application/xml" />
-            </p>
-            <p><button type="submit" class="button button-secondary"><?php esc_html_e('Importuj XML kosztowy', 'erp-omd'); ?></button></p>
-        </form>
-
         <table class="widefat striped">
             <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Project ID', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th></tr></thead>
             <tbody>
@@ -438,6 +428,24 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             <?php endif; ?>
             </tbody>
         </table>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($active_tab === 'ksef-cost') : ?>
+    <section class="erp-omd-card">
+        <h2><?php esc_html_e('KSeF — faktury kosztowe', 'erp-omd'); ?></h2>
+        <form method="post" enctype="multipart/form-data" style="margin-bottom:18px;">
+            <?php wp_nonce_field('erp_omd_import_ksef_cost_xml'); ?>
+            <input type="hidden" name="erp_omd_action" value="import_ksef_cost_xml" />
+            <p><label for="ksef-cost-xml"><?php esc_html_e('Manual import XML kosztowy z KSeF', 'erp-omd'); ?></label></p>
+            <textarea id="ksef-cost-xml" name="ksef_cost_xml_content" rows="8" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
+            <p>
+                <label for="ksef-cost-xml-file"><?php esc_html_e('lub wybierz plik XML', 'erp-omd'); ?></label><br />
+                <input id="ksef-cost-xml-file" type="file" name="ksef_cost_xml_file" accept=".xml,text/xml,application/xml" />
+            </p>
+            <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML kosztowy', 'erp-omd'); ?></button></p>
+        </form>
+        <p class="description"><?php esc_html_e('Zaimportowane dokumenty kosztowe znajdziesz w zakładce "Faktury kosztowe".', 'erp-omd'); ?></p>
     </section>
     <?php endif; ?>
 

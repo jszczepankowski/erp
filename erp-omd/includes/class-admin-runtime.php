@@ -2060,7 +2060,7 @@ class ERP_OMD_Admin
 
         $xml_content = $this->read_ksef_xml_from_request('ksef_cost_xml_content', 'ksef_cost_xml_file');
         if (trim($xml_content) === '') {
-            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz plik XML.', 'erp-omd'))]);
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-cost', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz plik XML.', 'erp-omd'))]);
         }
 
         $service = new ERP_OMD_KSeF_Import_Service(
@@ -2076,10 +2076,10 @@ class ERP_OMD_Admin
         $result = $service->import_cost_xml($xml_content, (int) get_current_user_id());
         if ((int) ($result['imported'] ?? 0) < 1) {
             $errors = (array) (($result['errors'][0]['errors'] ?? []) ?: []);
-            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', $errors))]);
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-cost', 'error' => rawurlencode(implode(' ', $errors))]);
         }
 
-        $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_cost_xml_imported']);
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-cost', 'message' => 'ksef_cost_xml_imported']);
     }
 
     private function delete_cost_invoice_with_side_effects(array $invoice)

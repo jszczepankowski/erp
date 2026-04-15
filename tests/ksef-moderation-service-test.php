@@ -15,6 +15,7 @@ $requiredFragments = [
     'assign_project',
     'approve',
     'reject',
+    'delete',
     'function match_supplier_for_cost_document(',
     'Wiele dopasowań dostawcy po NIP',
     'Brak dopasowania dostawcy po NIP',

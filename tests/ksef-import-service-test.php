@@ -285,6 +285,18 @@ if ((int) ($costXmlImport['imported'] ?? 0) !== 1) {
     throw new RuntimeException('Expected manual cost XML import to create a cost invoice.');
 }
 
+$costXmlWithSummaryImport = $service->import_cost_xml('<?xml version="1.0"?><Fa><Naglowek><P_1>2026-04-15</P_1><P_2>XML/COST/2</P_2></Naglowek><Podmiot1><DaneIdentyfikacyjne><NIP>2222222222</NIP></DaneIdentyfikacyjne></Podmiot1><Podmiot2><DaneIdentyfikacyjne><NIP>1111111111</NIP></DaneIdentyfikacyjne></Podmiot2><P_13_1>100,50</P_13_1><P_14_1>23,12</P_14_1><P_15>123,62</P_15></Fa>', 91);
+$assertions++;
+if ((int) ($costXmlWithSummaryImport['imported'] ?? 0) !== 1) {
+    throw new RuntimeException('Expected cost XML import to use summary amounts when FaCtrl is not available.');
+}
+
+$lastPayload = $workflow->created_payloads[count($workflow->created_payloads) - 1] ?? [];
+$assertions++;
+if (abs((float) ($lastPayload['net_amount'] ?? 0) - 100.50) > 0.001 || abs((float) ($lastPayload['vat_amount'] ?? 0) - 23.12) > 0.001) {
+    throw new RuntimeException('Expected manual XML parser to extract net and VAT amounts including decimal comma notation.');
+}
+
 $classification = $service->classify_document([
     'buyer_nip' => '555-55-55-555',
     'seller_nip' => '1111111111',
@@ -337,6 +349,27 @@ foreach ($queue as $queueRow) {
 }
 if (! $retryEntryFound) {
     throw new RuntimeException('Expected enqueue_retry() to persist retry queue state for RETRY-REF-1.');
+}
+
+$service->enqueue_retry([
+    'supplier_id' => 1,
+    'invoice_number' => 'DELETE-ME',
+    'ksef_reference_number' => 'RETRY-REF-DELETE',
+    'buyer_nip' => '1111111111',
+    'seller_nip' => '2222222222',
+], 91, 'forced delete test');
+$deleteModeration = $service->moderate_queue_entry('ref:retry-ref-delete', 'delete', [], 91);
+$assertions++;
+if (! (bool) ($deleteModeration['ok'] ?? false)) {
+    throw new RuntimeException('Expected moderation delete action to remove entry from queue.');
+}
+
+$queueAfterDelete = (array) ($GLOBALS['erp_omd_test_options'][ERP_OMD_KSeF_Import_Service::OPTION_RETRY_QUEUE] ?? []);
+$assertions++;
+foreach ($queueAfterDelete as $queueRow) {
+    if ((string) ($queueRow['retry_key'] ?? '') === 'ref:retry-ref-delete') {
+        throw new RuntimeException('Expected deleted moderation entry to be removed from retry queue.');
+    }
 }
 
 $retryNow = '';

@@ -220,7 +220,7 @@ class ERP_OMD_KSeF_Import_Service
         $manual_required = 0;
         $still_retrying = 0;
 
-        foreach ($queue as &$item) {
+        foreach ($queue as $index => &$item) {
             if ($processed >= max(1, (int) $batch_limit)) {
                 break;
             }
@@ -511,14 +511,50 @@ class ERP_OMD_KSeF_Import_Service
             return [];
         }
 
-        $invoice_number = (string) ($xml->xpath('//*[local-name()="P_2"]')[0] ?? '');
-        $issue_date = (string) ($xml->xpath('//*[local-name()="P_1"]')[0] ?? '');
-        $buyer_nip = (string) ($xml->xpath('//*[local-name()="Podmiot2"]//*[local-name()="NIP"]')[0] ?? '');
-        $seller_nip = (string) ($xml->xpath('//*[local-name()="Podmiot1"]//*[local-name()="NIP"]')[0] ?? '');
-        $ksef_reference = (string) ($xml->xpath('//*[local-name()="NumerKSeF"]')[0] ?? '');
-        $net_amount = (float) ((string) ($xml->xpath('//*[local-name()="FaCtrl"]//*[local-name()="B"]')[0] ?? '0'));
-        $vat_amount = (float) ((string) ($xml->xpath('//*[local-name()="FaCtrl"]//*[local-name()="V"]')[0] ?? '0'));
-        $gross_amount = (float) ((string) ($xml->xpath('//*[local-name()="FaCtrl"]//*[local-name()="WartoscFaktury"]')[0] ?? ($net_amount + $vat_amount)));
+        $invoice_number = $this->xpath_first_text($xml, ['//*[local-name()="P_2"]']);
+        $issue_date = $this->xpath_first_text($xml, ['//*[local-name()="P_1"]']);
+        $buyer_nip = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="NIP"]']);
+        $seller_nip = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot1"]//*[local-name()="NIP"]']);
+        $ksef_reference = $this->xpath_first_text($xml, ['//*[local-name()="NumerKSeF"]']);
+
+        $net_amount = $this->xpath_first_decimal($xml, [
+            '//*[local-name()="FaCtrl"]//*[local-name()="B"]',
+            '//*[local-name()="P_13_1"]',
+            '//*[local-name()="P_13_2"]',
+            '//*[local-name()="P_13_3"]',
+            '//*[local-name()="P_13_4"]',
+            '//*[local-name()="P_13_5"]',
+        ]);
+        if ($net_amount <= 0) {
+            $net_amount = $this->xpath_sum_decimals($xml, [
+                '//*[local-name()="FaWiersz"]//*[local-name()="P_11"]',
+                '//*[local-name()="FaWiersz"]//*[local-name()="P_11A"]',
+            ]);
+        }
+
+        $vat_amount = $this->xpath_first_decimal($xml, [
+            '//*[local-name()="FaCtrl"]//*[local-name()="V"]',
+            '//*[local-name()="P_14_1"]',
+            '//*[local-name()="P_14_2"]',
+            '//*[local-name()="P_14_3"]',
+            '//*[local-name()="P_14_4"]',
+            '//*[local-name()="P_14_5"]',
+        ]);
+
+        $gross_amount = $this->xpath_first_decimal($xml, [
+            '//*[local-name()="FaCtrl"]//*[local-name()="WartoscFaktury"]',
+            '//*[local-name()="P_15"]',
+        ]);
+        if ($gross_amount <= 0) {
+            $gross_amount = $net_amount + $vat_amount;
+        }
+
+        $vat_rate = $this->xpath_first_decimal($xml, [
+            '//*[local-name()="FaWiersz"]//*[local-name()="P_12"]',
+        ]);
+        if ($vat_rate <= 0 && $net_amount > 0 && $vat_amount > 0) {
+            $vat_rate = round(($vat_amount / $net_amount) * 100, 2);
+        }
 
         if ($invoice_number === '' && $ksef_reference === '') {
             return [];
@@ -533,7 +569,98 @@ class ERP_OMD_KSeF_Import_Service
             'net_amount' => $net_amount,
             'vat_amount' => $vat_amount,
             'gross_amount' => $gross_amount,
+            'vat_rate' => $vat_rate,
         ];
+    }
+
+    /**
+     * @param SimpleXMLElement $xml
+     * @param array<int,string> $paths
+     * @return string
+     */
+    private function xpath_first_text(SimpleXMLElement $xml, array $paths)
+    {
+        foreach ($paths as $path) {
+            $nodes = $xml->xpath($path);
+            if (! is_array($nodes) || $nodes === []) {
+                continue;
+            }
+
+            foreach ($nodes as $node) {
+                $value = trim((string) $node);
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @param SimpleXMLElement $xml
+     * @param array<int,string> $paths
+     * @return float
+     */
+    private function xpath_first_decimal(SimpleXMLElement $xml, array $paths)
+    {
+        foreach ($paths as $path) {
+            $nodes = $xml->xpath($path);
+            if (! is_array($nodes) || $nodes === []) {
+                continue;
+            }
+
+            foreach ($nodes as $node) {
+                $value = $this->parse_decimal((string) $node);
+                if ($value !== 0.0) {
+                    return $value;
+                }
+            }
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * @param SimpleXMLElement $xml
+     * @param array<int,string> $paths
+     * @return float
+     */
+    private function xpath_sum_decimals(SimpleXMLElement $xml, array $paths)
+    {
+        $sum = 0.0;
+        foreach ($paths as $path) {
+            $nodes = $xml->xpath($path);
+            if (! is_array($nodes) || $nodes === []) {
+                continue;
+            }
+
+            foreach ($nodes as $node) {
+                $sum += $this->parse_decimal((string) $node);
+            }
+        }
+
+        return $sum;
+    }
+
+    /**
+     * @param string $value
+     * @return float
+     */
+    private function parse_decimal($value)
+    {
+        $normalized = preg_replace('/[^0-9,.\-]/', '', (string) $value);
+        if (! is_string($normalized) || $normalized === '') {
+            return 0.0;
+        }
+
+        if (strpos($normalized, ',') !== false && strpos($normalized, '.') === false) {
+            $normalized = str_replace(',', '.', $normalized);
+        } elseif (strpos($normalized, ',') !== false && strpos($normalized, '.') !== false) {
+            $normalized = str_replace(',', '', $normalized);
+        }
+
+        return (float) $normalized;
     }
 
     /**
@@ -580,7 +707,7 @@ class ERP_OMD_KSeF_Import_Service
         $action = trim((string) $action);
         $queue = $this->load_retry_queue();
 
-        foreach ($queue as &$item) {
+        foreach ($queue as $index => &$item) {
             if ((string) ($item['retry_key'] ?? '') !== $retry_key) {
                 continue;
             }
@@ -604,6 +731,17 @@ class ERP_OMD_KSeF_Import_Service
                 $item['last_error'] = __('Odrzucone manualnie przez operatora.', 'erp-omd');
                 $item['last_retry_at'] = $this->now();
                 $item['next_retry_at'] = '';
+            } elseif ($action === 'delete') {
+                $deleted_item = $item;
+                $deleted_item['status'] = 'deleted';
+                $deleted_item['last_error'] = __('Usunięte manualnie z kolejki przez operatora.', 'erp-omd');
+                unset($queue[$index]);
+                $queue = array_values($queue);
+
+                $this->append_moderation_audit($retry_key, $action, $payload, (int) $user_id, $deleted_item);
+                $this->save_retry_queue($queue);
+
+                return ['ok' => true, 'item' => $deleted_item, 'errors' => []];
             } else {
                 return ['ok' => false, 'errors' => [__('Nieobsługiwana akcja moderacji KSeF.', 'erp-omd')]];
             }
