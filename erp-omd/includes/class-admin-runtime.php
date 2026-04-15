@@ -1419,6 +1419,15 @@ class ERP_OMD_Admin
 
         $suppliers = (array) $suppliers_repository->all_active();
         $projects = (array) $this->projects->all();
+        $clients = (array) $this->clients->all();
+        $client_name_by_id = [];
+        foreach ($clients as $client) {
+            $client_name_by_id[(int) ($client['id'] ?? 0)] = (string) ($client['name'] ?? '');
+        }
+        foreach ($projects as &$project_row) {
+            $project_row['client_name'] = (string) ($client_name_by_id[(int) ($project_row['client_id'] ?? 0)] ?? '');
+        }
+        unset($project_row);
         $cost_invoices = (array) $cost_invoice_repository->list();
         $project_supplier_pairs = (array) $cost_invoice_repository->project_supplier_pairs();
         $supplier_categories = $this->normalize_supplier_categories((array) get_option('erp_omd_supplier_categories', []));
@@ -1793,15 +1802,27 @@ class ERP_OMD_Admin
         $this->require_capability('erp_omd_manage_projects');
 
         $invoice_id = max(0, (int) ($_POST['cost_invoice_id'] ?? 0));
+        $net_amount = (float) ($_POST['cost_invoice_net_amount'] ?? 0);
+        $vat_rate_raw = sanitize_text_field((string) ($_POST['cost_invoice_vat_rate'] ?? '23'));
+        $vat_rate_map = [
+            '23' => 23.0,
+            '8' => 8.0,
+            '5' => 5.0,
+            '0' => 0.0,
+            'zw' => 0.0,
+        ];
+        $vat_rate = (float) ($vat_rate_map[$vat_rate_raw] ?? 23.0);
+        $vat_amount = round($net_amount * ($vat_rate / 100), 2);
+        $gross_amount = round($net_amount + $vat_amount, 2);
         $payload = [
             'supplier_id' => max(0, (int) ($_POST['cost_invoice_supplier_id'] ?? 0)),
             'project_id' => max(0, (int) ($_POST['cost_invoice_project_id'] ?? 0)),
             'invoice_number' => sanitize_text_field((string) ($_POST['cost_invoice_number'] ?? '')),
             'issue_date' => sanitize_text_field((string) ($_POST['cost_invoice_issue_date'] ?? '')),
             'status' => sanitize_text_field((string) ($_POST['cost_invoice_status'] ?? 'zaimportowana')),
-            'net_amount' => (float) ($_POST['cost_invoice_net_amount'] ?? 0),
-            'vat_amount' => (float) ($_POST['cost_invoice_vat_amount'] ?? 0),
-            'gross_amount' => (float) ($_POST['cost_invoice_gross_amount'] ?? 0),
+            'net_amount' => $net_amount,
+            'vat_amount' => $vat_amount,
+            'gross_amount' => $gross_amount,
             'source' => sanitize_text_field((string) ($_POST['cost_invoice_source'] ?? 'manual')),
             'ksef_reference_number' => sanitize_text_field((string) ($_POST['cost_invoice_ksef_reference_number'] ?? '')),
             'updated_by_user_id' => get_current_user_id(),
@@ -1821,6 +1842,13 @@ class ERP_OMD_Admin
 
         if (! (bool) ($result['ok'] ?? false)) {
             $this->redirect_cost_invoice_page(['error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
+        }
+
+        if ((string) ($payload['status'] ?? '') === 'przypisana') {
+            $attach_errors = $this->sync_attached_cost_invoice_to_project_cost((int) ($result['invoice_id'] ?? $invoice_id));
+            if ($attach_errors !== []) {
+                $this->redirect_cost_invoice_page(['error' => rawurlencode(implode(' ', $attach_errors))]);
+            }
         }
 
         $this->redirect_cost_invoice_page(['message' => 'cost_invoice_saved', 'invoice_id' => (int) ($result['invoice_id'] ?? $invoice_id)]);
@@ -2576,6 +2604,61 @@ class ERP_OMD_Admin
         }
 
         return $errors;
+    }
+
+    /**
+     * @param int $invoice_id
+     * @return array<int,string>
+     */
+    private function sync_attached_cost_invoice_to_project_cost($invoice_id)
+    {
+        $invoice = (new ERP_OMD_Cost_Invoice_Repository())->find((int) $invoice_id);
+        if (! is_array($invoice) || $invoice === []) {
+            return [__('Nie znaleziono faktury kosztowej do synchronizacji.', 'erp-omd')];
+        }
+
+        $project_id = (int) ($invoice['project_id'] ?? 0);
+        if ($project_id <= 0) {
+            return [__('Faktura kosztowa musi mieć przypięty projekt.', 'erp-omd')];
+        }
+
+        $project = $this->projects->find($project_id);
+        if (! is_array($project) || $project === []) {
+            return [__('Projekt dla faktury kosztowej nie istnieje.', 'erp-omd')];
+        }
+        if ($this->is_project_cost_locked_by_status((string) ($project['status'] ?? ''))) {
+            return [__('Nie można zsynchronizować kosztu dla projektu zamkniętego/archiwalnego.', 'erp-omd')];
+        }
+
+        $description = sprintf(
+            '%s #%d (%s)',
+            __('Faktura kosztowa', 'erp-omd'),
+            (int) $invoice_id,
+            (string) ($invoice['invoice_number'] ?? '')
+        );
+        $existing_project_costs = (array) $this->project_costs->for_project($project_id);
+        foreach ($existing_project_costs as $existing_project_cost) {
+            if ((string) ($existing_project_cost['description'] ?? '') === $description) {
+                return [];
+            }
+        }
+
+        $payload = [
+            'project_id' => $project_id,
+            'amount' => (float) ($invoice['net_amount'] ?? 0),
+            'description' => $description,
+            'cost_date' => (string) ($invoice['issue_date'] ?? gmdate('Y-m-d')),
+            'created_by_user_id' => get_current_user_id(),
+        ];
+        $errors = $this->project_financial_service->validate_project_cost($payload);
+        if ($errors !== []) {
+            return array_values(array_filter(array_map('strval', $errors)));
+        }
+
+        $this->project_costs->create($payload);
+        $this->project_financial_service->rebuild_for_project($project_id);
+
+        return [];
     }
 
     private function handle_project_cost_delete()

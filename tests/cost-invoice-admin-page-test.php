@@ -16,6 +16,7 @@ $runtimeFragments = [
     "case 'save_cost_invoice'",
     'function handle_supplier_save(',
     'function handle_cost_invoice_save(',
+    'sync_attached_cost_invoice_to_project_cost',
     'function redirect_cost_invoice_page(',
     'normalize_supplier_categories',
     'validate_supplier_contact_fields',
@@ -50,6 +51,10 @@ $templateFragments = [
     'supplier_postal_code',
     'supplier_country',
     'supplier_categories_dictionary',
+    'cost_invoice_vat_rate',
+    'Kwota VAT (auto)',
+    'Brutto (auto)',
+    'client_name',
 ];
 
 $assertions = 0;

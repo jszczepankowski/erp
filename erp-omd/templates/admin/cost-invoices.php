@@ -9,6 +9,21 @@ foreach ((array) $suppliers as $supplier_row) {
 foreach ((array) $projects as $project_row) {
     $project_name_by_id[(int) ($project_row['id'] ?? 0)] = (string) ($project_row['name'] ?? '');
 }
+$invoice_form_net_amount = (float) ($invoice_form['net_amount'] ?? 0);
+$invoice_form_vat_amount = (float) ($invoice_form['vat_amount'] ?? 0);
+$invoice_form_vat_rate = '23';
+if ($invoice_form_net_amount > 0) {
+    $calculated_rate = round(($invoice_form_vat_amount / $invoice_form_net_amount) * 100, 2);
+    foreach (['23', '8', '5', '0'] as $rate_option) {
+        if (abs($calculated_rate - (float) $rate_option) < 0.01) {
+            $invoice_form_vat_rate = $rate_option;
+            break;
+        }
+    }
+}
+if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)) {
+    $invoice_form_vat_rate = 'zw';
+}
 ?>
 <div class="wrap erp-omd-admin erp-omd-cost-invoices-admin">
     <h1><?php esc_html_e('Dostawcy i faktury kosztowe', 'erp-omd'); ?></h1>
@@ -152,7 +167,8 @@ foreach ((array) $projects as $project_row) {
                             <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
                             <?php foreach ($projects as $project) : ?>
                                 <?php $project_id = (int) ($project['id'] ?? 0); ?>
-                                <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($invoice_form['project_id'] ?? 0), $project_id); ?>><?php echo esc_html((string) ($project['name'] ?? '')); ?></option>
+                                <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
+                                <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($invoice_form['project_id'] ?? 0), $project_id); ?>><?php echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '')); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </td>
@@ -177,20 +193,55 @@ foreach ((array) $projects as $project_row) {
                 </tr>
                 <tr>
                     <th><label for="cost_invoice_net_amount"><?php esc_html_e('Netto', 'erp-omd'); ?></label></th>
-                    <td><input type="number" step="0.01" min="0" id="cost_invoice_net_amount" name="cost_invoice_net_amount" value="<?php echo esc_attr((string) ((float) ($invoice_form['net_amount'] ?? 0))); ?>" /></td>
+                    <td><input type="number" step="0.01" min="0" id="cost_invoice_net_amount" name="cost_invoice_net_amount" value="<?php echo esc_attr((string) $invoice_form_net_amount); ?>" required /></td>
                 </tr>
                 <tr>
-                    <th><label for="cost_invoice_vat_amount"><?php esc_html_e('VAT', 'erp-omd'); ?></label></th>
-                    <td><input type="number" step="0.01" min="0" id="cost_invoice_vat_amount" name="cost_invoice_vat_amount" value="<?php echo esc_attr((string) ((float) ($invoice_form['vat_amount'] ?? 0))); ?>" /></td>
+                    <th><label for="cost_invoice_vat_rate"><?php esc_html_e('Stawka VAT', 'erp-omd'); ?></label></th>
+                    <td>
+                        <select id="cost_invoice_vat_rate" name="cost_invoice_vat_rate">
+                            <?php foreach (['23', '8', '5', '0', 'zw'] as $vat_rate_option) : ?>
+                                <option value="<?php echo esc_attr($vat_rate_option); ?>" <?php selected($invoice_form_vat_rate, $vat_rate_option); ?>><?php echo esc_html($vat_rate_option . (is_numeric($vat_rate_option) ? '%' : '')); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
                 </tr>
                 <tr>
-                    <th><label for="cost_invoice_gross_amount"><?php esc_html_e('Brutto', 'erp-omd'); ?></label></th>
-                    <td><input type="number" step="0.01" min="0" id="cost_invoice_gross_amount" name="cost_invoice_gross_amount" value="<?php echo esc_attr((string) ((float) ($invoice_form['gross_amount'] ?? 0))); ?>" /></td>
+                    <th><label for="cost_invoice_vat_amount"><?php esc_html_e('Kwota VAT (auto)', 'erp-omd'); ?></label></th>
+                    <td><input type="number" step="0.01" min="0" id="cost_invoice_vat_amount" value="<?php echo esc_attr((string) $invoice_form_vat_amount); ?>" readonly /></td>
+                </tr>
+                <tr>
+                    <th><label for="cost_invoice_gross_amount"><?php esc_html_e('Brutto (auto)', 'erp-omd'); ?></label></th>
+                    <td><input type="number" step="0.01" min="0" id="cost_invoice_gross_amount" value="<?php echo esc_attr((string) ((float) ($invoice_form['gross_amount'] ?? 0))); ?>" readonly /></td>
                 </tr>
             </table>
             <?php submit_button(! empty($invoice_form) ? __('Zaktualizuj fakturę kosztową', 'erp-omd') : __('Zapisz fakturę kosztową', 'erp-omd')); ?>
         </form>
     </div>
+    <script>
+    (function () {
+        var netField = document.getElementById('cost_invoice_net_amount');
+        var vatRateField = document.getElementById('cost_invoice_vat_rate');
+        var vatAmountField = document.getElementById('cost_invoice_vat_amount');
+        var grossAmountField = document.getElementById('cost_invoice_gross_amount');
+        if (!netField || !vatRateField || !vatAmountField || !grossAmountField) { return; }
+
+        var recalculate = function () {
+            var net = parseFloat(netField.value || '0');
+            if (isNaN(net) || net < 0) { net = 0; }
+            var vatRateRaw = String(vatRateField.value || '0');
+            var vatRate = vatRateRaw === 'zw' ? 0 : parseFloat(vatRateRaw || '0');
+            if (isNaN(vatRate) || vatRate < 0) { vatRate = 0; }
+            var vatAmount = Math.round((net * (vatRate / 100)) * 100) / 100;
+            var gross = Math.round((net + vatAmount) * 100) / 100;
+            vatAmountField.value = vatAmount.toFixed(2);
+            grossAmountField.value = gross.toFixed(2);
+        };
+
+        netField.addEventListener('input', recalculate);
+        vatRateField.addEventListener('change', recalculate);
+        recalculate();
+    }());
+    </script>
 
     <h2 style="margin-top:24px;"><?php esc_html_e('Lista faktur kosztowych', 'erp-omd'); ?></h2>
     <table class="widefat striped">
