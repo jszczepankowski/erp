@@ -63,6 +63,11 @@ $templateFragments = [
     'client_name',
     'erp_omd_delete_cost_invoice',
     'delete_cost_invoice',
+    'erp-omd-card',
+    'erp-omd-form-sections',
+    'Dane identyfikujące i klasyfikujące dostawcę.',
+    'Połączenia faktury z dostawcą i projektem oraz dane dokumentu.',
+    'Netto + stawka VAT, a kwoty VAT/Brutto wyliczane automatycznie.',
 ];
 
 $assertions = 0;
