@@ -350,6 +350,37 @@
                                     <?php endif; ?>
                                 </div>
                             </form>
+
+                            <form method="post" style="margin-top:12px;">
+                                <?php wp_nonce_field('erp_omd_attach_cost_invoice_to_project'); ?>
+                                <input type="hidden" name="erp_omd_action" value="attach_cost_invoice_to_project" />
+                                <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                <div class="erp-omd-form-grid">
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                        <label for="attach-cost-invoice-id"><?php esc_html_e('Dodaj koszt z faktury kosztowej (netto)', 'erp-omd'); ?></label>
+                                        <select id="attach-cost-invoice-id" name="cost_invoice_id">
+                                            <option value=""><?php esc_html_e('Wybierz fakturę przypisaną do tego projektu', 'erp-omd'); ?></option>
+                                            <?php foreach ((array) ($project_cost_invoice_rows ?? []) as $project_cost_invoice_row) : ?>
+                                                <option value="<?php echo esc_attr((string) ((int) ($project_cost_invoice_row['id'] ?? 0))); ?>">
+                                                    <?php
+                                                    echo esc_html(
+                                                        sprintf(
+                                                            '#%d • %s • netto %s',
+                                                            (int) ($project_cost_invoice_row['id'] ?? 0),
+                                                            (string) ($project_cost_invoice_row['invoice_number'] ?? '—'),
+                                                            number_format_i18n((float) ($project_cost_invoice_row['net_amount'] ?? 0), 2)
+                                                        )
+                                                    );
+                                                    ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="erp-omd-form-actions">
+                                    <?php submit_button(__('Podłącz fakturę kosztową jako koszt netto', 'erp-omd'), 'secondary', '', false); ?>
+                                </div>
+                            </form>
                         <?php endif; ?>
                         <table class="widefat striped">
                             <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
