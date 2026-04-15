@@ -512,7 +512,13 @@ class ERP_OMD_KSeF_Import_Service
         }
 
         $invoice_number = $this->xpath_first_text($xml, ['//*[local-name()="P_2"]']);
-        $issue_date = $this->xpath_first_text($xml, ['//*[local-name()="P_1"]']);
+        $issue_date = $this->xpath_first_text($xml, [
+            '//*[local-name()="P_1"]',
+            '//*[local-name()="issueDate"]',
+            '//*[local-name()="IssueDate"]',
+            '//*[local-name()="DataWystawienia"]',
+        ]);
+        $issue_date = $this->normalize_issue_date($issue_date);
         $buyer_nip = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="NIP"]']);
         $seller_nip = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot1"]//*[local-name()="NIP"]']);
         $ksef_reference = $this->xpath_first_text($xml, ['//*[local-name()="NumerKSeF"]']);
@@ -661,6 +667,28 @@ class ERP_OMD_KSeF_Import_Service
         }
 
         return (float) $normalized;
+    }
+
+    /**
+     * @param string $value
+     * @return string
+     */
+    private function normalize_issue_date($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
+            return $value;
+        }
+
+        if (preg_match('/^(\d{4}-\d{2}-\d{2})[T ]/', $value, $matches) === 1) {
+            return (string) ($matches[1] ?? '');
+        }
+
+        return $value;
     }
 
     /**

@@ -297,6 +297,18 @@ if (abs((float) ($lastPayload['net_amount'] ?? 0) - 100.50) > 0.001 || abs((floa
     throw new RuntimeException('Expected manual XML parser to extract net and VAT amounts including decimal comma notation.');
 }
 
+$costXmlWithIssueDateImport = $service->import_cost_xml('<?xml version="1.0"?><Invoice><issueDate>2026-04-16T09:15:00</issueDate><P_2>XML/COST/3</P_2><Podmiot1><DaneIdentyfikacyjne><NIP>2222222222</NIP></DaneIdentyfikacyjne></Podmiot1><Podmiot2><DaneIdentyfikacyjne><NIP>1111111111</NIP></DaneIdentyfikacyjne></Podmiot2><P_13_1>50,00</P_13_1><P_14_1>11,50</P_14_1><P_15>61,50</P_15></Invoice>', 91);
+$assertions++;
+if ((int) ($costXmlWithIssueDateImport['imported'] ?? 0) !== 1) {
+    throw new RuntimeException('Expected cost XML import to support issueDate field from KSeF metadata/export.');
+}
+
+$lastPayload = $workflow->created_payloads[count($workflow->created_payloads) - 1] ?? [];
+$assertions++;
+if ((string) ($lastPayload['issue_date'] ?? '') !== '2026-04-16') {
+    throw new RuntimeException('Expected issue_date to be derived from XML issueDate/Data wystawienia field.');
+}
+
 $classification = $service->classify_document([
     'buyer_nip' => '555-55-55-555',
     'seller_nip' => '1111111111',
