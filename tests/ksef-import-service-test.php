@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../erp-omd/includes/services/class-ksef-import-service.php';
 
+if (! function_exists('__')) {
+    function __($text)
+    {
+        return $text;
+    }
+}
+
 class ERP_OMD_Cost_Invoice_Workflow_Service_Fake
 {
     /** @var array<int,array<string,mixed>> */
@@ -29,23 +36,160 @@ class ERP_OMD_Cost_Invoice_Workflow_Service_Fake
     }
 }
 
+class ERP_OMD_Cost_Invoice_Repository_Fake
+{
+    /** @var array<int,array<string,mixed>> */
+    public $rows = [];
+
+    public function __construct(array $rows)
+    {
+        $this->rows = $rows;
+    }
+
+    public function find_by_ksef_reference($ksef_reference_number)
+    {
+        $needle = trim((string) $ksef_reference_number);
+        if ($needle === '') {
+            return null;
+        }
+
+        foreach ($this->rows as $row) {
+            if ((string) ($row['ksef_reference_number'] ?? '') === $needle) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
+
+    public function find_by_supplier_and_invoice_number($supplier_id, $invoice_number)
+    {
+        $supplier_id = (int) $supplier_id;
+        $invoice_number = mb_strtolower(trim((string) $invoice_number));
+
+        foreach ($this->rows as $row) {
+            if ((int) ($row['supplier_id'] ?? 0) === $supplier_id && mb_strtolower((string) ($row['invoice_number'] ?? '')) === $invoice_number) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
+}
+
+class ERP_OMD_Cost_Invoice_Audit_Repository_Fake
+{
+    /** @var array<int,array<string,mixed>> */
+    public $inserted_rows = [];
+
+    public function insert_many(array $rows)
+    {
+        foreach ($rows as $row) {
+            $this->inserted_rows[] = $row;
+        }
+
+        return count($rows);
+    }
+}
+
 $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service_Fake();
-$service = new ERP_OMD_KSeF_Import_Service($workflow);
+$repo = new ERP_OMD_Cost_Invoice_Repository_Fake([
+    ['id' => 20, 'supplier_id' => 7, 'invoice_number' => 'FV/2026/1', 'ksef_reference_number' => 'EXISTS-REF'],
+    ['id' => 21, 'supplier_id' => 5, 'invoice_number' => 'DUP-SUPP', 'ksef_reference_number' => 'OTHER-REF'],
+]);
+$audit = new ERP_OMD_Cost_Invoice_Audit_Repository_Fake();
+$service = new ERP_OMD_KSeF_Import_Service($workflow, $repo, $audit);
 $assertions = 0;
 
 $result = $service->import_documents([
-    ['supplier_id' => 1, 'project_id' => 2, 'invoice_number' => 'OK/1', 'issue_date' => '2026-04-14', 'gross_amount' => 123.45],
-    ['supplier_id' => 1, 'project_id' => 2, 'invoice_number' => 'FAIL', 'issue_date' => '2026-04-14', 'gross_amount' => 50.00],
+    [
+        'supplier_id' => 1,
+        'project_id' => 99,
+        'invoice_number' => 'OK/1',
+        'issue_date' => '2026-04-14',
+        'gross_amount' => 123.45,
+        'ksef_reference_number' => 'NEW-REF',
+        'buyer_nip' => '111-111-11-11',
+        'seller_nip' => '2222222222',
+        'our_company_nip' => '1111111111',
+    ],
+    [
+        'supplier_id' => 7,
+        'invoice_number' => 'ANY',
+        'ksef_reference_number' => 'EXISTS-REF',
+        'buyer_nip' => '1111111111',
+        'seller_nip' => '2222222222',
+        'our_company_nip' => '1111111111',
+    ],
+    [
+        'supplier_id' => 5,
+        'invoice_number' => 'dup-supp',
+        'ksef_reference_number' => 'NEW-REF-2',
+        'buyer_nip' => '1111111111',
+        'seller_nip' => '2222222222',
+        'our_company_nip' => '1111111111',
+    ],
+    [
+        'supplier_id' => 1,
+        'invoice_number' => 'MANUAL',
+        'ksef_reference_number' => 'NEW-REF-3',
+        'buyer_nip' => '9999999999',
+        'seller_nip' => '8888888888',
+        'our_company_nip' => '1111111111',
+    ],
 ], 91);
 
 $assertions++;
-if (($result['total'] ?? 0) !== 2 || ($result['imported'] ?? 0) !== 1 || ($result['failed'] ?? 0) !== 1) {
-    throw new RuntimeException('Expected import summary for 1 success and 1 failure.');
+if (($result['total'] ?? 0) !== 4 || ($result['imported'] ?? 0) !== 1 || ($result['duplicates'] ?? 0) !== 1 || ($result['conflicts'] ?? 0) !== 1 || ($result['failed'] ?? 0) !== 1) {
+    throw new RuntimeException('Expected 1 imported, 1 primary duplicate, 1 fallback conflict and 1 manual-required failure.');
 }
 
 $assertions++;
-if (($workflow->created_payloads[0]['status'] ?? '') !== 'zaimportowana' || ($workflow->created_payloads[0]['source'] ?? '') !== 'ksef') {
-    throw new RuntimeException('Expected KSeF import to enforce zaimportowana status and ksef source.');
+if (($workflow->created_payloads[0]['document_kind'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_KIND_COST || (int) ($workflow->created_payloads[0]['project_id'] ?? -1) !== 0) {
+    throw new RuntimeException('Expected cost classification and empty project assignment for imported cost invoice.');
+}
+
+$assertions++;
+if (count($audit->inserted_rows) !== 1 || (string) ($audit->inserted_rows[0]['field_name'] ?? '') !== 'ksef_import_conflict_reason') {
+    throw new RuntimeException('Expected fallback conflict to be audited.');
+}
+
+$assertions++;
+$manualErrors = (array) ($result['errors'][1]['errors'] ?? []);
+if (($result['errors'][1]['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_MANUAL_REQUIRED || strpos(implode(' ', $manualErrors), 'Nie rozpoznano roli NIP') === false) {
+    throw new RuntimeException('Expected unclassified document to be marked as manual_required with readable error.');
+}
+
+$classification = $service->classify_document([
+    'buyer_nip' => '555-55-55-555',
+    'seller_nip' => '1111111111',
+    'our_company_nip' => '1111111111',
+]);
+$assertions++;
+if (($classification['kind'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_KIND_SALES) {
+    throw new RuntimeException('Expected seller-side classification to mark document as sales.');
+}
+
+$retrying = $service->build_retry_decision([
+    'retry_attempts' => 2,
+    'first_failed_at' => '2026-04-15 08:00:00',
+    'last_error' => 'timeout',
+], '2026-04-15 08:10:00');
+
+$assertions++;
+if (($retrying['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_RETRYING || ($retrying['should_retry'] ?? false) !== true || ($retrying['next_retry_at'] ?? '') === '') {
+    throw new RuntimeException('Expected retry decision inside 90-minute window.');
+}
+
+$manual = $service->build_retry_decision([
+    'retry_attempts' => 6,
+    'first_failed_at' => '2026-04-15 08:00:00',
+    'last_error' => 'timeout',
+], '2026-04-15 09:45:00');
+
+$assertions++;
+if (($manual['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_MANUAL_REQUIRED || ($manual['should_retry'] ?? true) !== false) {
+    throw new RuntimeException('Expected manual_required after 90 minutes of unsuccessful retries.');
 }
 
 $moderation = $service->moderate_imported_invoice(15, ['status' => 'weryfikacja', 'supplier_id' => 5, 'project_id' => 8, 'invoice_number' => 'FV-15'], 44);
