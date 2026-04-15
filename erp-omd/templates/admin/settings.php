@@ -16,6 +16,11 @@
                             <label for="erp-omd-alert-margin-threshold"><?php esc_html_e('Próg alertu niskiej marży (%)', 'erp-omd'); ?></label>
                             <input id="erp-omd-alert-margin-threshold" type="number" min="0" step="0.01" name="alert_margin_threshold" value="<?php echo esc_attr($margin_threshold); ?>" />
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-company-nip"><?php esc_html_e('NIP naszej firmy (KSeF)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-company-nip" type="text" name="company_nip" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" value="<?php echo esc_attr((string) $company_nip); ?>" />
+                            <p class="description"><?php esc_html_e('Używany do klasyfikacji KSeF: Nabywca = kosztowa, Sprzedawca = sprzedażowa.', 'erp-omd'); ?></p>
+                        </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label class="erp-omd-form-label">
                                 <input type="checkbox" name="delete_data_on_uninstall" value="1" <?php checked($delete_data); ?> />

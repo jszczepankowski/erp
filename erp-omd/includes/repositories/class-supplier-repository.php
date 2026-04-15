@@ -29,6 +29,24 @@ class ERP_OMD_Supplier_Repository
         );
     }
 
+    public function find_by_nip($nip)
+    {
+        global $wpdb;
+
+        $nip = preg_replace('/[^0-9]/', '', (string) $nip);
+        if (! is_string($nip) || $nip === '') {
+            return [];
+        }
+
+        return (array) $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$this->table_name()} WHERE REPLACE(REPLACE(REPLACE(nip, '-', ''), ' ', ''), '.', '') = %s ORDER BY id ASC",
+                $nip
+            ),
+            ARRAY_A
+        );
+    }
+
     public function create(array $data)
     {
         global $wpdb;
