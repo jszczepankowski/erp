@@ -395,11 +395,15 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
     <?php if ($active_tab === 'ksef-sales') : ?>
     <section class="erp-omd-card">
         <h2><?php esc_html_e('KSeF — faktury sprzedażowe', 'erp-omd'); ?></h2>
-        <form method="post" style="margin-bottom:14px;">
+        <form method="post" enctype="multipart/form-data" style="margin-bottom:14px;">
             <?php wp_nonce_field('erp_omd_import_ksef_sales_xml'); ?>
             <input type="hidden" name="erp_omd_action" value="import_ksef_sales_xml" />
             <p><label for="ksef-sales-xml"><?php esc_html_e('Manual import XML z KSeF', 'erp-omd'); ?></label></p>
             <textarea id="ksef-sales-xml" name="ksef_sales_xml_content" rows="8" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
+            <p>
+                <label for="ksef-sales-xml-file"><?php esc_html_e('lub wybierz plik XML', 'erp-omd'); ?></label><br />
+                <input id="ksef-sales-xml-file" type="file" name="ksef_sales_xml_file" accept=".xml,text/xml,application/xml" />
+            </p>
             <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML sprzedażowy', 'erp-omd'); ?></button></p>
         </form>
 

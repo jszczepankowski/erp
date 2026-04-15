@@ -23,7 +23,9 @@ $fragments = [
     [$rest, 'function import_ksef_sales_xml(', 'REST should expose sales XML callback.'],
     [$template, "'ksef-sales'", 'Admin template should provide sales KSeF tab.'],
     [$template, 'name="ksef_sales_xml_content"', 'Admin template should provide XML textarea.'],
+    [$template, 'name="ksef_sales_xml_file"', 'Admin template should provide XML file upload.'],
     [$admin, "case 'import_ksef_sales_xml'", 'Admin runtime should process XML import action.'],
+    [$admin, 'function read_ksef_sales_xml_from_request(', 'Admin runtime should read XML from textarea or file upload.'],
     [$clientRepo, 'function find_by_nip(', 'Client repository should support NIP mapping.'],
 ];
 

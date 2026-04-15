@@ -1993,9 +1993,9 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_import_ksef_sales_xml');
         $this->require_capability('erp_omd_manage_projects');
 
-        $xml_content = (string) wp_unslash($_POST['ksef_sales_xml_content'] ?? '');
+        $xml_content = $this->read_ksef_sales_xml_from_request();
         if (trim($xml_content) === '') {
-            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF.', 'erp-omd'))]);
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz plik XML.', 'erp-omd'))]);
         }
 
         $service = new ERP_OMD_KSeF_Import_Service(
@@ -2015,6 +2015,35 @@ class ERP_OMD_Admin
         }
 
         $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_xml_imported']);
+    }
+
+    /**
+     * @return string
+     */
+    private function read_ksef_sales_xml_from_request()
+    {
+        $inline_xml = (string) wp_unslash($_POST['ksef_sales_xml_content'] ?? '');
+        if (trim($inline_xml) !== '') {
+            return $inline_xml;
+        }
+
+        if (! isset($_FILES['ksef_sales_xml_file']) || ! is_array($_FILES['ksef_sales_xml_file'])) {
+            return '';
+        }
+
+        $upload = (array) $_FILES['ksef_sales_xml_file'];
+        $error = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error !== UPLOAD_ERR_OK) {
+            return '';
+        }
+
+        $tmp_name = (string) ($upload['tmp_name'] ?? '');
+        if ($tmp_name === '' || ! is_uploaded_file($tmp_name)) {
+            return '';
+        }
+
+        $content = file_get_contents($tmp_name);
+        return is_string($content) ? $content : '';
     }
 
     private function delete_cost_invoice_with_side_effects(array $invoice)
