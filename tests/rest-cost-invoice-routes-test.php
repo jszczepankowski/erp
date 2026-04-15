@@ -22,6 +22,7 @@ $requiredFragments = [
     'function list_cost_invoices(',
     'function create_cost_invoice(',
     'function update_cost_invoice(',
+    'function delete_cost_invoice(',
     'function moderate_cost_invoice(',
     'function list_cost_invoice_audit(',
     'function import_ksef_documents(',

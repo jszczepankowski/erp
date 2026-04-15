@@ -155,4 +155,15 @@ class ERP_OMD_Cost_Invoice_Repository
             ['%d']
         );
     }
+
+    public function delete($id)
+    {
+        global $wpdb;
+
+        return $wpdb->delete(
+            $this->table_name(),
+            ['id' => (int) $id],
+            ['%d']
+        );
+    }
 }

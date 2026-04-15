@@ -341,6 +341,7 @@ class ERP_OMD_Admin
             case 'save_project': $this->handle_project_save(); break;
             case 'save_supplier': $this->handle_supplier_save(); break;
             case 'save_cost_invoice': $this->handle_cost_invoice_save(); break;
+            case 'delete_cost_invoice': $this->handle_cost_invoice_delete(); break;
             case 'attach_cost_invoice_to_project': $this->handle_attach_cost_invoice_to_project(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
@@ -1852,6 +1853,58 @@ class ERP_OMD_Admin
         }
 
         $this->redirect_cost_invoice_page(['message' => 'cost_invoice_saved', 'invoice_id' => (int) ($result['invoice_id'] ?? $invoice_id)]);
+    }
+
+    private function handle_cost_invoice_delete()
+    {
+        check_admin_referer('erp_omd_delete_cost_invoice');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $invoice_id = max(0, (int) ($_POST['cost_invoice_id'] ?? 0));
+        if ($invoice_id <= 0) {
+            $this->redirect_cost_invoice_page(['error' => 'cost_invoice_not_found']);
+        }
+
+        $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
+        $invoice = $invoice_repository->find($invoice_id);
+        if (! is_array($invoice) || $invoice === []) {
+            $this->redirect_cost_invoice_page(['error' => 'cost_invoice_not_found']);
+        }
+
+        $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
+        $audit_repository->insert_many([
+            [
+                'invoice_id' => $invoice_id,
+                'field_name' => '__deleted__',
+                'before_value' => wp_json_encode($invoice),
+                'after_value' => '',
+                'changed_by_user_id' => get_current_user_id(),
+                'changed_at' => current_time('mysql'),
+            ],
+        ]);
+
+        $description = sprintf(
+            '%s #%d (%s)',
+            __('Faktura kosztowa', 'erp-omd'),
+            $invoice_id,
+            (string) ($invoice['invoice_number'] ?? '')
+        );
+        $project_id = (int) ($invoice['project_id'] ?? 0);
+        if ($project_id > 0) {
+            $project_cost_rows = (array) $this->project_costs->for_project($project_id);
+            foreach ($project_cost_rows as $project_cost_row) {
+                if ((string) ($project_cost_row['description'] ?? '') === $description) {
+                    $this->project_costs->delete((int) ($project_cost_row['id'] ?? 0));
+                }
+            }
+        }
+
+        $invoice_repository->delete($invoice_id);
+        if ($project_id > 0) {
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+
+        $this->redirect_cost_invoice_page(['message' => 'cost_invoice_deleted']);
     }
 
     /**

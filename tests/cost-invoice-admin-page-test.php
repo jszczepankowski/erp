@@ -14,8 +14,10 @@ $runtimeFragments = [
     'render_cost_invoices',
     "case 'save_supplier'",
     "case 'save_cost_invoice'",
+    "case 'delete_cost_invoice'",
     'function handle_supplier_save(',
     'function handle_cost_invoice_save(',
+    'function handle_cost_invoice_delete(',
     'sync_attached_cost_invoice_to_project_cost',
     'function redirect_cost_invoice_page(',
     'normalize_supplier_categories',
@@ -55,6 +57,8 @@ $templateFragments = [
     'Kwota VAT (auto)',
     'Brutto (auto)',
     'client_name',
+    'erp_omd_delete_cost_invoice',
+    'delete_cost_invoice',
 ];
 
 $assertions = 0;

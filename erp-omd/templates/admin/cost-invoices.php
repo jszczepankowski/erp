@@ -267,6 +267,13 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
                         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'invoice_id' => $invoice_id], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                         |
                         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'invoice_id' => $invoice_id], admin_url('admin.php'))); ?>#invoice-audit"><?php esc_html_e('Audit', 'erp-omd'); ?></a>
+                        |
+                        <form method="post" style="display:inline;" onsubmit="return confirm('<?php echo esc_js(__('Czy na pewno chcesz usunąć fakturę kosztową?', 'erp-omd')); ?>');">
+                            <?php wp_nonce_field('erp_omd_delete_cost_invoice'); ?>
+                            <input type="hidden" name="erp_omd_action" value="delete_cost_invoice" />
+                            <input type="hidden" name="cost_invoice_id" value="<?php echo esc_attr((string) $invoice_id); ?>" />
+                            <button type="submit" class="button-link-delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                        </form>
                     </td>
                 </tr>
             <?php endforeach; ?>
