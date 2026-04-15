@@ -20,12 +20,17 @@ $fragments = [
     [$service, 'function match_client_for_sales_document(', 'Service should map client by NIP.'],
     [$rest, "'/ksef/sales'", 'REST should expose sales list route.'],
     [$rest, "'/ksef/sales/import-xml'", 'REST should expose sales XML import route.'],
+    [$rest, "'/ksef/cost/import-xml'", 'REST should expose cost XML import route.'],
     [$rest, 'function import_ksef_sales_xml(', 'REST should expose sales XML callback.'],
+    [$rest, 'function import_ksef_cost_xml(', 'REST should expose cost XML callback.'],
     [$template, "'ksef-sales'", 'Admin template should provide sales KSeF tab.'],
     [$template, 'name="ksef_sales_xml_content"', 'Admin template should provide XML textarea.'],
     [$template, 'name="ksef_sales_xml_file"', 'Admin template should provide XML file upload.'],
+    [$template, 'name="ksef_cost_xml_content"', 'Admin template should provide cost XML textarea.'],
+    [$template, 'name="ksef_cost_xml_file"', 'Admin template should provide cost XML file upload.'],
     [$admin, "case 'import_ksef_sales_xml'", 'Admin runtime should process XML import action.'],
-    [$admin, 'function read_ksef_sales_xml_from_request(', 'Admin runtime should read XML from textarea or file upload.'],
+    [$admin, "case 'import_ksef_cost_xml'", 'Admin runtime should process cost XML import action.'],
+    [$admin, 'function read_ksef_xml_from_request(', 'Admin runtime should read XML from textarea or file upload.'],
     [$clientRepo, 'function find_by_nip(', 'Client repository should support NIP mapping.'],
 ];
 

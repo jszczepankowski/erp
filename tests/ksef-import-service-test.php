@@ -279,6 +279,12 @@ if ((int) ($xmlImport['imported'] ?? 0) !== 1 || count($service->list_sales_inbo
     throw new RuntimeException('Expected manual sales XML import to append row into sales inbox.');
 }
 
+$costXmlImport = $service->import_cost_xml('<?xml version="1.0"?><Fa><Naglowek><P_1>2026-04-15</P_1><P_2>XML/COST/1</P_2></Naglowek><Podmiot1><DaneIdentyfikacyjne><NIP>2222222222</NIP></DaneIdentyfikacyjne></Podmiot1><Podmiot2><DaneIdentyfikacyjne><NIP>1111111111</NIP></DaneIdentyfikacyjne></Podmiot2><NumerKSeF>XML-COST-REF</NumerKSeF><FaCtrl><B>200</B><V>46</V><WartoscFaktury>246</WartoscFaktury></FaCtrl></Fa>', 91);
+$assertions++;
+if ((int) ($costXmlImport['imported'] ?? 0) !== 1) {
+    throw new RuntimeException('Expected manual cost XML import to create a cost invoice.');
+}
+
 $classification = $service->classify_document([
     'buyer_nip' => '555-55-55-555',
     'seller_nip' => '1111111111',

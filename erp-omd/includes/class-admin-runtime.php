@@ -347,6 +347,7 @@ class ERP_OMD_Admin
             case 'moderate_ksef_queue': $this->handle_ksef_queue_moderation_action(); break;
             case 'bulk_ksef_queue': $this->handle_ksef_queue_bulk_action(); break;
             case 'import_ksef_sales_xml': $this->handle_import_ksef_sales_xml_action(); break;
+            case 'import_ksef_cost_xml': $this->handle_import_ksef_cost_xml_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
@@ -1993,7 +1994,7 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_import_ksef_sales_xml');
         $this->require_capability('erp_omd_manage_projects');
 
-        $xml_content = $this->read_ksef_sales_xml_from_request();
+        $xml_content = $this->read_ksef_xml_from_request('ksef_sales_xml_content', 'ksef_sales_xml_file');
         if (trim($xml_content) === '') {
             $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz plik XML.', 'erp-omd'))]);
         }
@@ -2020,18 +2021,24 @@ class ERP_OMD_Admin
     /**
      * @return string
      */
-    private function read_ksef_sales_xml_from_request()
+    private function read_ksef_xml_from_request($content_field_name, $file_field_name)
     {
-        $inline_xml = (string) wp_unslash($_POST['ksef_sales_xml_content'] ?? '');
+        $content_field_name = sanitize_key((string) $content_field_name);
+        $file_field_name = sanitize_key((string) $file_field_name);
+        if ($content_field_name === '' || $file_field_name === '') {
+            return '';
+        }
+
+        $inline_xml = (string) wp_unslash($_POST[$content_field_name] ?? '');
         if (trim($inline_xml) !== '') {
             return $inline_xml;
         }
 
-        if (! isset($_FILES['ksef_sales_xml_file']) || ! is_array($_FILES['ksef_sales_xml_file'])) {
+        if (! isset($_FILES[$file_field_name]) || ! is_array($_FILES[$file_field_name])) {
             return '';
         }
 
-        $upload = (array) $_FILES['ksef_sales_xml_file'];
+        $upload = (array) $_FILES[$file_field_name];
         $error = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
         if ($error !== UPLOAD_ERR_OK) {
             return '';
@@ -2044,6 +2051,35 @@ class ERP_OMD_Admin
 
         $content = file_get_contents($tmp_name);
         return is_string($content) ? $content : '';
+    }
+
+    private function handle_import_ksef_cost_xml_action()
+    {
+        check_admin_referer('erp_omd_import_ksef_cost_xml');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $xml_content = $this->read_ksef_xml_from_request('ksef_cost_xml_content', 'ksef_cost_xml_file');
+        if (trim($xml_content) === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz plik XML.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository(),
+            $this->clients
+        );
+
+        $result = $service->import_cost_xml($xml_content, (int) get_current_user_id());
+        if ((int) ($result['imported'] ?? 0) < 1) {
+            $errors = (array) (($result['errors'][0]['errors'] ?? []) ?: []);
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', $errors))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_cost_xml_imported']);
     }
 
     private function delete_cost_invoice_with_side_effects(array $invoice)

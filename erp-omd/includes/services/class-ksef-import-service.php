@@ -482,6 +482,21 @@ class ERP_OMD_KSeF_Import_Service
 
     /**
      * @param string $xml_content
+     * @param int $user_id
+     * @return array<string,mixed>
+     */
+    public function import_cost_xml($xml_content, $user_id)
+    {
+        $document = $this->parse_ksef_xml_to_document((string) $xml_content);
+        if (! is_array($document) || $document === []) {
+            return ['total' => 1, 'imported' => 0, 'failed' => 1, 'errors' => [['index' => 0, 'invoice_number' => '', 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Nie udało się sparsować XML KSeF.', 'erp-omd')]]]];
+        }
+
+        return $this->import_documents([$document], (int) $user_id);
+    }
+
+    /**
+     * @param string $xml_content
      * @return array<string,mixed>
      */
     private function parse_ksef_xml_to_document($xml_content)

@@ -407,6 +407,18 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML sprzedażowy', 'erp-omd'); ?></button></p>
         </form>
 
+        <form method="post" enctype="multipart/form-data" style="margin-bottom:18px;">
+            <?php wp_nonce_field('erp_omd_import_ksef_cost_xml'); ?>
+            <input type="hidden" name="erp_omd_action" value="import_ksef_cost_xml" />
+            <p><label for="ksef-cost-xml"><?php esc_html_e('Manual import XML kosztowy z KSeF', 'erp-omd'); ?></label></p>
+            <textarea id="ksef-cost-xml" name="ksef_cost_xml_content" rows="6" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
+            <p>
+                <label for="ksef-cost-xml-file"><?php esc_html_e('lub wybierz plik XML', 'erp-omd'); ?></label><br />
+                <input id="ksef-cost-xml-file" type="file" name="ksef_cost_xml_file" accept=".xml,text/xml,application/xml" />
+            </p>
+            <p><button type="submit" class="button button-secondary"><?php esc_html_e('Importuj XML kosztowy', 'erp-omd'); ?></button></p>
+        </form>
+
         <table class="widefat striped">
             <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Project ID', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th></tr></thead>
             <tbody>
