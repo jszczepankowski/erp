@@ -101,6 +101,28 @@ class ERP_OMD_Cost_Invoice_Repository
         );
     }
 
+
+    public function find_by_supplier_and_invoice_number($supplier_id, $invoice_number)
+    {
+        global $wpdb;
+
+        $supplier_id = (int) $supplier_id;
+        $invoice_number = trim((string) $invoice_number);
+
+        if ($supplier_id <= 0 || $invoice_number === '') {
+            return null;
+        }
+
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM {$this->table_name()} WHERE supplier_id = %d AND LOWER(invoice_number) = LOWER(%s) ORDER BY id DESC LIMIT 1",
+                $supplier_id,
+                $invoice_number
+            ),
+            ARRAY_A
+        );
+    }
+
     public function create(array $data)
     {
         global $wpdb;
