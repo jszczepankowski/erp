@@ -95,7 +95,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations'], true)) {
                         <p><?php esc_html_e('Najpierw dane adresowe, następnie kontakt główny i opiekun.', 'erp-omd'); ?></p>
                     </div>
                     <div class="erp-omd-form-grid">
-                        <div class="erp-omd-form-grid erp-omd-form-grid-client-address-row erp-omd-form-field-span-full">
+                        <div class="erp-omd-form-field erp-omd-form-field-span-full erp-omd-form-grid erp-omd-form-grid-client-address-row">
                             <div class="erp-omd-form-field">
                                 <label for="supplier_street"><?php esc_html_e('Ulica', 'erp-omd'); ?></label>
                                 <input class="regular-text" type="text" id="supplier_street" name="supplier_street" value="<?php echo esc_attr((string) ($supplier_form['street'] ?? '')); ?>" />
@@ -117,7 +117,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations'], true)) {
                                 <input class="regular-text" type="text" id="supplier_country" name="supplier_country" value="<?php echo esc_attr((string) ($supplier_form['country'] ?? 'PL')); ?>" />
                             </div>
                         </div>
-                        <div class="erp-omd-form-grid erp-omd-form-grid-cost-supplier-contact-row erp-omd-form-field-span-full">
+                        <div class="erp-omd-form-field erp-omd-form-field-span-full erp-omd-form-grid erp-omd-form-grid-cost-supplier-contact-row">
                             <div class="erp-omd-form-field">
                                 <label for="supplier_email"><?php esc_html_e('Email główny', 'erp-omd'); ?></label>
                                 <input class="regular-text" type="email" id="supplier_email" name="supplier_email" value="<?php echo esc_attr((string) ($supplier_form['email'] ?? '')); ?>" />
@@ -233,7 +233,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations'], true)) {
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="erp-omd-form-grid erp-omd-form-grid-cost-invoice-document-row erp-omd-form-field-span-full">
+                            <div class="erp-omd-form-field erp-omd-form-field-span-full erp-omd-form-grid erp-omd-form-grid-cost-invoice-document-row">
                                 <div class="erp-omd-form-field">
                                     <label for="cost_invoice_number"><?php esc_html_e('Numer faktury', 'erp-omd'); ?></label>
                                     <input class="regular-text" type="text" id="cost_invoice_number" name="cost_invoice_number" value="<?php echo esc_attr((string) ($invoice_form['invoice_number'] ?? '')); ?>" required />
