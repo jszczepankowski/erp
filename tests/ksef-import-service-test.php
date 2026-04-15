@@ -129,6 +129,28 @@ class ERP_OMD_Supplier_Repository_Fake
     }
 }
 
+
+class ERP_OMD_Client_Repository_Fake
+{
+    /** @var array<string,array<int,array<string,mixed>>> */
+    private $matches = [];
+
+    public function __construct(array $matches)
+    {
+        $this->matches = $matches;
+    }
+
+    public function find_by_nip($nip)
+    {
+        $nip = preg_replace('/[^0-9]/', '', (string) $nip);
+        if (! is_string($nip)) {
+            return [];
+        }
+
+        return (array) ($this->matches[$nip] ?? []);
+    }
+}
+
 $GLOBALS['erp_omd_test_options'] = [
     'erp_omd_company_nip' => '1111111111',
     ERP_OMD_KSeF_Import_Service::OPTION_RETRY_QUEUE => [],
@@ -144,7 +166,10 @@ $suppliers = new ERP_OMD_Supplier_Repository_Fake([
     '2222222222' => [['id' => 1, 'nip' => '2222222222']],
     '3333333333' => [['id' => 6, 'nip' => '3333333333'], ['id' => 7, 'nip' => '3333333333']],
 ]);
-$service = new ERP_OMD_KSeF_Import_Service($workflow, $repo, $audit, null, null, $suppliers);
+$clients = new ERP_OMD_Client_Repository_Fake([
+    '5555555555' => [['id' => 9, 'nip' => '5555555555']],
+]);
+$service = new ERP_OMD_KSeF_Import_Service($workflow, $repo, $audit, null, null, $suppliers, $clients);
 $assertions = 0;
 
 $result = $service->import_documents([
@@ -234,6 +259,24 @@ $noMatchImport = $service->attempt_import_document([
 $assertions++;
 if (($noMatchImport['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_MANUAL_REQUIRED) {
     throw new RuntimeException('Expected no supplier NIP match to produce manual_required path.');
+}
+
+
+$salesImport = $service->attempt_import_document([
+    'invoice_number' => 'SALES-1',
+    'ksef_reference_number' => 'SALES-REF-1',
+    'buyer_nip' => '5555555555',
+    'seller_nip' => '1111111111',
+], 91, false);
+$assertions++;
+if (($salesImport['status'] ?? '') !== ERP_OMD_KSeF_Import_Service::IMPORT_STATUS_IMPORTED || count($service->list_sales_inbox()) !== 1) {
+    throw new RuntimeException('Expected sales KSeF document to be registered in dedicated sales inbox.');
+}
+
+$xmlImport = $service->import_sales_xml('<?xml version="1.0"?><Fa><Naglowek><P_1>2026-04-15</P_1><P_2>XML/SALE/1</P_2></Naglowek><Podmiot1><DaneIdentyfikacyjne><NIP>1111111111</NIP></DaneIdentyfikacyjne></Podmiot1><Podmiot2><DaneIdentyfikacyjne><NIP>5555555555</NIP></DaneIdentyfikacyjne></Podmiot2><NumerKSeF>XML-SALES-REF</NumerKSeF><FaCtrl><B>100</B><V>23</V><WartoscFaktury>123</WartoscFaktury></FaCtrl></Fa>', 91);
+$assertions++;
+if ((int) ($xmlImport['imported'] ?? 0) !== 1 || count($service->list_sales_inbox()) < 2) {
+    throw new RuntimeException('Expected manual sales XML import to append row into sales inbox.');
 }
 
 $classification = $service->classify_document([

@@ -344,6 +344,9 @@ class ERP_OMD_Admin
             case 'save_cost_invoice': $this->handle_cost_invoice_save(); break;
             case 'delete_cost_invoice': $this->handle_cost_invoice_delete(); break;
             case 'attach_cost_invoice_to_project': $this->handle_attach_cost_invoice_to_project(); break;
+            case 'moderate_ksef_queue': $this->handle_ksef_queue_moderation_action(); break;
+            case 'bulk_ksef_queue': $this->handle_ksef_queue_bulk_action(); break;
+            case 'import_ksef_sales_xml': $this->handle_import_ksef_sales_xml_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
@@ -1433,6 +1436,17 @@ class ERP_OMD_Admin
         unset($project_row);
         $cost_invoices = (array) $cost_invoice_repository->list();
         $project_supplier_pairs = (array) $cost_invoice_repository->project_supplier_pairs();
+        $ksef_service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service($cost_invoice_repository, $cost_invoice_audit_repository, $suppliers_repository, $this->projects),
+            $cost_invoice_repository,
+            $cost_invoice_audit_repository,
+            null,
+            null,
+            $suppliers_repository
+        );
+        $ksef_moderation_filter_status = sanitize_key((string) ($_GET['ksef_status'] ?? ''));
+        $ksef_moderation_queue = $ksef_service->list_moderation_queue(['status' => $ksef_moderation_filter_status]);
+        $ksef_sales_inbox = $ksef_service->list_sales_inbox();
         $supplier_categories = $this->normalize_supplier_categories((array) get_option('erp_omd_supplier_categories', []));
         $selected_supplier_id = max(0, (int) ($_GET['supplier_id'] ?? 0));
         $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));
@@ -1908,6 +1922,130 @@ class ERP_OMD_Admin
      * @param array<string,mixed> $invoice
      * @return void
      */
+
+    private function handle_ksef_queue_moderation_action()
+    {
+        check_admin_referer('erp_omd_moderate_ksef_queue');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $retry_key = sanitize_text_field((string) ($_POST['retry_key'] ?? ''));
+        $action = sanitize_key((string) ($_POST['ksef_action'] ?? ''));
+        if ($retry_key === '' || $action === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(__('Brakuje danych moderacji KSeF.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository()
+        );
+
+        $result = $service->moderate_queue_entry($retry_key, $action, [
+            'supplier_id' => (int) ($_POST['supplier_id'] ?? 0),
+            'project_id' => (int) ($_POST['project_id'] ?? 0),
+        ], (int) get_current_user_id());
+
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'message' => 'ksef_moderation_saved']);
+    }
+
+    private function handle_ksef_queue_bulk_action()
+    {
+        check_admin_referer('erp_omd_bulk_ksef_queue');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $retry_keys = array_values(array_filter(array_map('sanitize_text_field', (array) ($_POST['retry_keys'] ?? []))));
+        $action = sanitize_key((string) ($_POST['ksef_bulk_action'] ?? ''));
+        if ($retry_keys === [] || $action === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(__('Wybierz rekordy i akcję bulk KSeF.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository()
+        );
+
+        $result = $service->bulk_moderate_queue_entries($retry_keys, $action, [
+            'supplier_id' => (int) ($_POST['supplier_id'] ?? 0),
+            'project_id' => (int) ($_POST['project_id'] ?? 0),
+        ], (int) get_current_user_id());
+
+        if (! (bool) ($result['ok'] ?? false) && ! empty($result['errors'])) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(__('Część rekordów KSeF nie została zmoderowana.', 'erp-omd'))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'message' => 'ksef_bulk_moderation_saved']);
+    }
+
+
+    private function handle_import_ksef_sales_xml_action()
+    {
+        check_admin_referer('erp_omd_import_ksef_sales_xml');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $xml_content = $this->read_ksef_sales_xml_from_request();
+        if (trim($xml_content) === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz plik XML.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository(),
+            $this->clients
+        );
+
+        $result = $service->import_sales_xml($xml_content, (int) get_current_user_id());
+        if ((int) ($result['imported'] ?? 0) < 1) {
+            $errors = (array) (($result['errors'][0]['errors'] ?? []) ?: []);
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', $errors))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_xml_imported']);
+    }
+
+    /**
+     * @return string
+     */
+    private function read_ksef_sales_xml_from_request()
+    {
+        $inline_xml = (string) wp_unslash($_POST['ksef_sales_xml_content'] ?? '');
+        if (trim($inline_xml) !== '') {
+            return $inline_xml;
+        }
+
+        if (! isset($_FILES['ksef_sales_xml_file']) || ! is_array($_FILES['ksef_sales_xml_file'])) {
+            return '';
+        }
+
+        $upload = (array) $_FILES['ksef_sales_xml_file'];
+        $error = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error !== UPLOAD_ERR_OK) {
+            return '';
+        }
+
+        $tmp_name = (string) ($upload['tmp_name'] ?? '');
+        if ($tmp_name === '' || ! is_uploaded_file($tmp_name)) {
+            return '';
+        }
+
+        $content = file_get_contents($tmp_name);
+        return is_string($content) ? $content : '';
+    }
+
     private function delete_cost_invoice_with_side_effects(array $invoice)
     {
         $invoice_id = (int) ($invoice['id'] ?? 0);
