@@ -27,6 +27,28 @@ if (! function_exists('update_option')) {
     }
 }
 
+if (! function_exists('__')) {
+    function __($text)
+    {
+        return $text;
+    }
+}
+
+if (! function_exists('get_option')) {
+    function get_option($key, $default = false)
+    {
+        return $GLOBALS['erp_omd_test_options'][$key] ?? $default;
+    }
+}
+
+if (! function_exists('update_option')) {
+    function update_option($key, $value)
+    {
+        $GLOBALS['erp_omd_test_options'][$key] = $value;
+        return true;
+    }
+}
+
 class ERP_OMD_Cost_Invoice_Workflow_Service_Fake
 {
     /** @var array<int,array<string,mixed>> */
