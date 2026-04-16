@@ -336,7 +336,7 @@ class ERP_OMD_KSeF_API_Sync_Service
             return '';
         }
         $challenge = (string) ($challenge_row['challenge'] ?? '');
-        $timestamp = (string) ($challenge_row['timestamp'] ?? '');
+        $timestamp = $this->normalize_challenge_timestamp_millis($challenge_row['timestamp'] ?? '');
         if ($challenge === '' || $timestamp === '') {
             return '';
         }
@@ -344,8 +344,13 @@ class ERP_OMD_KSeF_API_Sync_Service
         if ($encrypted_token === '') {
             return '';
         }
-        $authentication_token = $this->authenticate_with_ksef_token($challenge, $company_nip, $encrypted_token);
-        if ($authentication_token === '') {
+        $auth_payload = $this->authenticate_with_ksef_token($challenge, $company_nip, $encrypted_token);
+        $authentication_token = trim((string) ($auth_payload['authentication_token'] ?? ''));
+        $reference_number = trim((string) ($auth_payload['reference_number'] ?? ''));
+        if ($authentication_token === '' || $reference_number === '') {
+            return '';
+        }
+        if (! $this->wait_for_authentication_ready($reference_number, $authentication_token)) {
             return '';
         }
         $redeemed = $this->redeem_authentication_token($authentication_token);
@@ -399,10 +404,16 @@ class ERP_OMD_KSeF_API_Sync_Service
             return '';
         }
         if ((int) wp_remote_retrieve_response_code($response) >= 400) {
-            return '';
+            return [];
         }
         $row = json_decode((string) wp_remote_retrieve_body($response), true);
-        return trim((string) ($row['authenticationToken']['token'] ?? $row['authenticationToken'] ?? ''));
+        if (! is_array($row)) {
+            return [];
+        }
+        return [
+            'authentication_token' => trim((string) ($row['authenticationToken']['token'] ?? $row['authenticationToken'] ?? '')),
+            'reference_number' => trim((string) ($row['referenceNumber'] ?? '')),
+        ];
     }
 
     private function redeem_authentication_token($authentication_token)
@@ -442,6 +453,60 @@ class ERP_OMD_KSeF_API_Sync_Service
             return '';
         }
         return base64_encode($encrypted);
+    }
+
+    private function wait_for_authentication_ready($reference_number, $authentication_token)
+    {
+        $reference_number = trim((string) $reference_number);
+        $authentication_token = trim((string) $authentication_token);
+        if ($reference_number === '' || $authentication_token === '') {
+            return false;
+        }
+        $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/auth/' . rawurlencode($reference_number);
+        $max_checks = 20;
+        for ($attempt = 0; $attempt < $max_checks; $attempt++) {
+            $response = wp_remote_get($endpoint, [
+                'timeout' => 20,
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $authentication_token,
+                    'Content-Type' => 'application/json',
+                ],
+            ]);
+            if (is_wp_error($response)) {
+                return false;
+            }
+            if ((int) wp_remote_retrieve_response_code($response) >= 400) {
+                return false;
+            }
+            $row = json_decode((string) wp_remote_retrieve_body($response), true);
+            $status_code = (int) ($row['status']['code'] ?? 0);
+            if ($status_code >= 200 && $status_code < 400 && $status_code !== 100) {
+                return true;
+            }
+            if ($status_code >= 400) {
+                return false;
+            }
+            sleep(1);
+        }
+
+        return false;
+    }
+
+    private function normalize_challenge_timestamp_millis($timestamp)
+    {
+        if (is_int($timestamp) || is_float($timestamp) || (is_string($timestamp) && is_numeric($timestamp))) {
+            $value = (int) $timestamp;
+            if ($value > 0 && $value < 2000000000) {
+                $value *= 1000;
+            }
+            return $value > 0 ? (string) $value : '';
+        }
+        $parsed = strtotime((string) $timestamp);
+        if ($parsed === false || $parsed <= 0) {
+            return '';
+        }
+
+        return (string) ($parsed * 1000);
     }
 
     private function api_base_url()
