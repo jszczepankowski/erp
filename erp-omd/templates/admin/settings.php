@@ -280,6 +280,19 @@
                                 <p class="description"><?php echo esc_html(sprintf(__('Obecny refreshToken: %s (pozostaw puste, aby nie zmieniać).', 'erp-omd'), $ksef_api_refresh_token_masked)); ?></p>
                             <?php endif; ?>
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-ap-token"><?php esc_html_e('Token KSeF z AP (opcjonalny)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-ap-token" type="password" name="ksef_ap_token" value="" autocomplete="new-password" />
+                            <p class="description"><?php esc_html_e('Używany w flow challenge → auth/ksef-token → redeem, gdy brak accessToken JWT.', 'erp-omd'); ?></p>
+                            <?php if ($ksef_ap_token_masked !== '') : ?>
+                                <p class="description"><?php echo esc_html(sprintf(__('Obecny token AP: %s (pozostaw puste, aby nie zmieniać).', 'erp-omd'), $ksef_ap_token_masked)); ?></p>
+                            <?php endif; ?>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-public-key-pem"><?php esc_html_e('KSeF klucz publiczny PEM', 'erp-omd'); ?></label>
+                            <textarea id="erp-omd-ksef-public-key-pem" name="ksef_public_key_pem" rows="4" class="large-text"><?php echo esc_textarea((string) $ksef_public_key_pem); ?></textarea>
+                            <p class="description"><?php esc_html_e('Klucz używany do szyfrowania token|timestamp (encryptedToken).', 'erp-omd'); ?></p>
+                        </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-ksef-sync-mode"><?php esc_html_e('Domyślny tryb sync', 'erp-omd'); ?></label>
                             <select id="erp-omd-ksef-sync-mode" name="ksef_api_mode">

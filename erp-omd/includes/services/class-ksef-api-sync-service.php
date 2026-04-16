@@ -4,6 +4,8 @@ class ERP_OMD_KSeF_API_Sync_Service
 {
     const OPTION_TOKEN_ENC = 'erp_omd_ksef_api_token_enc';
     const OPTION_REFRESH_TOKEN_ENC = 'erp_omd_ksef_api_refresh_token_enc';
+    const OPTION_AP_TOKEN_ENC = 'erp_omd_ksef_ap_token_enc';
+    const OPTION_PUBLIC_KEY_PEM = 'erp_omd_ksef_public_key_pem';
     const OPTION_ENABLED = 'erp_omd_ksef_api_enabled';
     const OPTION_MODE = 'erp_omd_ksef_sync_mode';
     const OPTION_REGISTRATION_DATE = 'erp_omd_ksef_registration_date';
@@ -46,8 +48,14 @@ class ERP_OMD_KSeF_API_Sync_Service
                 $token = $refreshed;
             }
         }
+        if ($token === '' || substr_count($token, '.') < 2) {
+            $redeemed = $this->redeem_access_token_from_ap_token();
+            if ($redeemed !== '') {
+                $token = $redeemed;
+            }
+        }
         if ($token === '') {
-            return $this->fail(__('Brak accessToken KSeF API. Uzupełnij accessToken JWT lub refreshToken.', 'erp-omd'));
+            return $this->fail(__('Brak accessToken KSeF API. Uzupełnij accessToken JWT, refreshToken lub token KSeF z AP + NIP.', 'erp-omd'));
         }
         if (substr_count($token, '.') < 2) {
             return $this->fail(__('Podany token nie jest accessToken JWT. Token KSeF wymaga osobnego flow uwierzytelnienia (challenge + encryptedToken) w API KSeF 2.0.', 'erp-omd'));
@@ -310,6 +318,136 @@ class ERP_OMD_KSeF_API_Sync_Service
         }
         update_option(self::OPTION_TOKEN_ENC, $this->encrypt_value($new_access_token));
         return $new_access_token;
+    }
+
+    private function redeem_access_token_from_ap_token()
+    {
+        $ap_token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_AP_TOKEN_ENC, '')));
+        $public_key_pem = trim((string) get_option(self::OPTION_PUBLIC_KEY_PEM, ''));
+        $company_nip = preg_replace('/[^0-9]/', '', (string) $this->company_nip);
+        if ($ap_token === '' || $public_key_pem === '' || $company_nip === '') {
+            return '';
+        }
+        $challenge_row = $this->request_challenge();
+        if (! is_array($challenge_row)) {
+            return '';
+        }
+        $challenge = (string) ($challenge_row['challenge'] ?? '');
+        $timestamp = (string) ($challenge_row['timestamp'] ?? '');
+        if ($challenge === '' || $timestamp === '') {
+            return '';
+        }
+        $encrypted_token = $this->encrypt_ap_token($ap_token, $timestamp, $public_key_pem);
+        if ($encrypted_token === '') {
+            return '';
+        }
+        $authentication_token = $this->authenticate_with_ksef_token($challenge, $company_nip, $encrypted_token);
+        if ($authentication_token === '') {
+            return '';
+        }
+        $redeemed = $this->redeem_authentication_token($authentication_token);
+        if (! is_array($redeemed)) {
+            return '';
+        }
+        $new_access_token = trim((string) ($redeemed['accessToken'] ?? $redeemed['accessToken']['token'] ?? ''));
+        $new_refresh_token = trim((string) ($redeemed['refreshToken'] ?? $redeemed['refreshToken']['token'] ?? ''));
+        if ($new_access_token === '') {
+            return '';
+        }
+        update_option(self::OPTION_TOKEN_ENC, $this->encrypt_value($new_access_token));
+        if ($new_refresh_token !== '') {
+            update_option(self::OPTION_REFRESH_TOKEN_ENC, $this->encrypt_value($new_refresh_token));
+        }
+        return $new_access_token;
+    }
+
+    private function request_challenge()
+    {
+        $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/auth/challenge';
+        $response = wp_remote_post($endpoint, [
+            'timeout' => 20,
+            'headers' => ['Content-Type' => 'application/json'],
+            'body' => '{}',
+        ]);
+        if (is_wp_error($response)) {
+            return [];
+        }
+        if ((int) wp_remote_retrieve_response_code($response) >= 400) {
+            return [];
+        }
+        $payload = json_decode((string) wp_remote_retrieve_body($response), true);
+        return is_array($payload) ? $payload : [];
+    }
+
+    private function authenticate_with_ksef_token($challenge, $company_nip, $encrypted_token)
+    {
+        $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/auth/ksef-token';
+        $payload = [
+            'challenge' => (string) $challenge,
+            'contextIdentifier' => ['type' => 'onip', 'value' => (string) $company_nip],
+            'encryptedToken' => (string) $encrypted_token,
+        ];
+        $response = wp_remote_post($endpoint, [
+            'timeout' => 20,
+            'headers' => ['Content-Type' => 'application/json'],
+            'body' => wp_json_encode($payload),
+        ]);
+        if (is_wp_error($response)) {
+            return '';
+        }
+        if ((int) wp_remote_retrieve_response_code($response) >= 400) {
+            return '';
+        }
+        $row = json_decode((string) wp_remote_retrieve_body($response), true);
+        return trim((string) ($row['authenticationToken']['token'] ?? $row['authenticationToken'] ?? ''));
+    }
+
+    private function redeem_authentication_token($authentication_token)
+    {
+        $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/auth/token/redeem';
+        $response = wp_remote_post($endpoint, [
+            'timeout' => 20,
+            'headers' => [
+                'Authorization' => 'Bearer ' . (string) $authentication_token,
+                'Content-Type' => 'application/json',
+            ],
+            'body' => '{}',
+        ]);
+        if (is_wp_error($response)) {
+            return [];
+        }
+        if ((int) wp_remote_retrieve_response_code($response) >= 400) {
+            return [];
+        }
+        $row = json_decode((string) wp_remote_retrieve_body($response), true);
+        return is_array($row) ? $row : [];
+    }
+
+    private function encrypt_ap_token($ap_token, $timestamp, $public_key_pem)
+    {
+        $plain = (string) $ap_token . '|' . (string) $timestamp;
+        $public_key = openssl_pkey_get_public((string) $public_key_pem);
+        if ($public_key === false) {
+            return '';
+        }
+        $encrypted = '';
+        $ok = openssl_public_encrypt($plain, $encrypted, $public_key, OPENSSL_PKCS1_OAEP_PADDING);
+        if (is_resource($public_key)) {
+            openssl_free_key($public_key);
+        }
+        if (! $ok || $encrypted === '') {
+            return '';
+        }
+        return base64_encode($encrypted);
+    }
+
+    private function api_base_url()
+    {
+        $api_base_url = trim((string) get_option(self::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl'));
+        if ($api_base_url === '' || ! wp_http_validate_url($api_base_url)) {
+            $api_base_url = 'https://api.ksef.mf.gov.pl';
+        }
+        return $api_base_url;
     }
 
     private function encrypt_value($value)
