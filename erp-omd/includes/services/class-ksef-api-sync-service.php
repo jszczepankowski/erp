@@ -316,7 +316,7 @@ class ERP_OMD_KSeF_API_Sync_Service
             return $redeemed;
         }
 
-        if ($stored_token !== '') {
+        if ($stored_token !== '' && $this->auth_diagnostic === '') {
             $message = __('Podany token nie jest accessToken JWT. Token KSeF wymaga osobnego flow uwierzytelnienia (challenge + encryptedToken) w API KSeF 2.0.', 'erp-omd');
             $this->auth_diagnostic = trim($this->auth_diagnostic . ' ' . $message);
         }
@@ -495,9 +495,11 @@ class ERP_OMD_KSeF_API_Sync_Service
         $challenge = $this->extract_challenge_value($challenge_row);
         $timestamp = $this->normalize_challenge_timestamp_millis($this->extract_challenge_timestamp_value($challenge_row));
         if ($challenge === '' || $timestamp === '') {
+            $keys = array_keys($challenge_row);
+            $keys_text = empty($keys) ? __('(brak kluczy)', 'erp-omd') : implode(', ', $keys);
             $this->auth_diagnostic = sprintf(
                 __('Challenge KSeF nie zawiera challenge/timestamp. Odpowiedź zawiera klucze: %s', 'erp-omd'),
-                implode(', ', array_keys($challenge_row))
+                $keys_text
             );
             return '';
         }
@@ -555,10 +557,23 @@ class ERP_OMD_KSeF_API_Sync_Service
         }
         $payload = json_decode((string) wp_remote_retrieve_body($response), true);
         if (! is_array($payload)) {
+            $body_preview = trim((string) wp_remote_retrieve_body($response));
+            if ($body_preview !== '') {
+                $this->auth_diagnostic = sprintf(
+                    __('Błąd /auth/challenge. Odpowiedź nie jest JSON: %s', 'erp-omd'),
+                    mb_substr($body_preview, 0, 250)
+                );
+            }
             return [];
         }
 
-        return $this->normalize_challenge_response_payload($payload);
+        $normalized = $this->normalize_challenge_response_payload($payload);
+        if (! is_array($normalized) || empty($normalized)) {
+            $this->auth_diagnostic = __('Błąd /auth/challenge. Odpowiedź JSON jest pusta.', 'erp-omd');
+            return [];
+        }
+
+        return $normalized;
     }
 
     private function authenticate_with_ksef_token($challenge, $company_nip, $encrypted_token)
