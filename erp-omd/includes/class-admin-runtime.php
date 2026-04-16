@@ -478,6 +478,7 @@ class ERP_OMD_Admin
             case 'google_calendar_sync_now': $this->handle_google_calendar_sync_now(); break;
             case 'google_calendar_fetch_calendars': $this->handle_google_calendar_fetch_calendars(); break;
             case 'ksef_api_sync_now': $this->handle_ksef_api_sync_now(); break;
+            case 'ksef_fetch_public_key': $this->handle_ksef_fetch_public_key(); break;
             case 'delete_client': $this->handle_client_delete(); break;
             case 'delete_project': $this->handle_project_delete(); break;
         }
@@ -3634,25 +3635,7 @@ class ERP_OMD_Admin
         }
         $backfill_days = max(1, min(90, (int) ($_POST['ksef_sync_backfill_days'] ?? get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90))));
 
-        $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
-        $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
-        $supplier_repository = new ERP_OMD_Supplier_Repository();
-        $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
-            $invoice_repository,
-            $audit_repository,
-            $supplier_repository,
-            new ERP_OMD_Project_Repository()
-        );
-        $import_service = new ERP_OMD_KSeF_Import_Service(
-            $workflow,
-            $invoice_repository,
-            $audit_repository,
-            null,
-            null,
-            $supplier_repository,
-            new ERP_OMD_Client_Repository()
-        );
-        $sync_service = new ERP_OMD_KSeF_API_Sync_Service($import_service, (string) get_option('erp_omd_company_nip', ''));
+        $sync_service = $this->build_ksef_api_sync_service();
         $result = $sync_service->sync([
             'scope' => $scope,
             'mode' => $mode,
@@ -3673,6 +3656,47 @@ class ERP_OMD_Admin
                 (int) ($result['failed'] ?? 0)
             )
         );
+    }
+
+    private function handle_ksef_fetch_public_key()
+    {
+        check_admin_referer('erp_omd_ksef_fetch_public_key');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $sync_service = $this->build_ksef_api_sync_service();
+        $result = $sync_service->fetch_and_store_token_encryption_public_key();
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_with_notice(
+                'erp-omd-settings',
+                'error',
+                sprintf(__('Pobranie klucza publicznego KSeF nie powiodło się: %s', 'erp-omd'), (string) ($result['message'] ?? ''))
+            );
+        }
+        $this->redirect_with_notice('erp-omd-settings', 'success', (string) ($result['message'] ?? __('Pobrano klucz publiczny KSeF (MF).', 'erp-omd')));
+    }
+
+    private function build_ksef_api_sync_service()
+    {
+        $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
+        $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
+        $supplier_repository = new ERP_OMD_Supplier_Repository();
+        $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
+            $invoice_repository,
+            $audit_repository,
+            $supplier_repository,
+            new ERP_OMD_Project_Repository()
+        );
+        $import_service = new ERP_OMD_KSeF_Import_Service(
+            $workflow,
+            $invoice_repository,
+            $audit_repository,
+            null,
+            null,
+            $supplier_repository,
+            new ERP_OMD_Client_Repository()
+        );
+
+        return new ERP_OMD_KSeF_API_Sync_Service($import_service, (string) get_option('erp_omd_company_nip', ''));
     }
 
     private function handle_google_calendar_oauth_callback()

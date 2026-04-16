@@ -305,7 +305,11 @@
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-ksef-public-key-pem"><?php esc_html_e('KSeF klucz publiczny PEM', 'erp-omd'); ?></label>
                             <textarea id="erp-omd-ksef-public-key-pem" name="ksef_public_key_pem" rows="4" class="large-text"><?php echo esc_textarea((string) $ksef_public_key_pem); ?></textarea>
-                            <p class="description"><?php esc_html_e('Klucz używany do szyfrowania token|timestamp (encryptedToken).', 'erp-omd'); ?></p>
+                            <p class="description"><?php esc_html_e('Klucz RSA w formacie PEM używany do szyfrowania token|timestamp (encryptedToken).', 'erp-omd'); ?></p>
+                            <p class="description"><?php esc_html_e('Uwaga: to musi być klucz publiczny KSeF (MF) dla danego środowiska API, a nie certyfikat uwierzytelniający podatnika.', 'erp-omd'); ?></p>
+                            <p style="margin-top:8px;">
+                                <button type="submit" class="button button-secondary" form="erp-omd-ksef-fetch-public-key-form"><?php esc_html_e('Pobierz klucz publiczny KSeF (MF)', 'erp-omd'); ?></button>
+                            </p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-ksef-sync-mode"><?php esc_html_e('Domyślny tryb sync', 'erp-omd'); ?></label>
@@ -555,6 +559,10 @@
         <form id="erp-omd-ksef-api-sync-now-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_ksef_api_sync_now'); ?>
             <input type="hidden" name="erp_omd_action" value="ksef_api_sync_now" />
+        </form>
+        <form id="erp-omd-ksef-fetch-public-key-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
+            <?php wp_nonce_field('erp_omd_ksef_fetch_public_key'); ?>
+            <input type="hidden" name="erp_omd_action" value="ksef_fetch_public_key" />
         </form>
     </div>
 </div>

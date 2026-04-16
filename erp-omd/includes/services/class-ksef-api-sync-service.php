@@ -112,6 +112,64 @@ class ERP_OMD_KSeF_API_Sync_Service
         return $payload;
     }
 
+    public function fetch_and_store_token_encryption_public_key()
+    {
+        $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/security/public-key-certificates';
+        $response = wp_remote_get($endpoint, [
+            'timeout' => 20,
+            'headers' => ['Content-Type' => 'application/json'],
+        ]);
+        if (is_wp_error($response)) {
+            return [
+                'ok' => false,
+                'message' => sprintf(__('Nie udało się pobrać kluczy publicznych KSeF: %s', 'erp-omd'), $response->get_error_message()),
+            ];
+        }
+        $response_code = (int) wp_remote_retrieve_response_code($response);
+        $payload = json_decode((string) wp_remote_retrieve_body($response), true);
+        if ($response_code >= 400) {
+            return [
+                'ok' => false,
+                'message' => $this->http_response_diagnostic($payload, $response_code, __('Błąd pobierania certyfikatów klucza publicznego KSeF.', 'erp-omd')),
+            ];
+        }
+
+        $items = $payload['certificates'] ?? $payload['items'] ?? $payload;
+        if (! is_array($items)) {
+            return ['ok' => false, 'message' => __('KSeF nie zwrócił listy certyfikatów klucza publicznego.', 'erp-omd')];
+        }
+        $selected = $this->find_token_encryption_certificate($items);
+        if (! is_array($selected)) {
+            return ['ok' => false, 'message' => __('Nie znaleziono certyfikatu KSeF z usage=KsefTokenEncryption.', 'erp-omd')];
+        }
+
+        $raw_certificate = trim((string) ($selected['certificate'] ?? $selected['cert'] ?? $selected['publicKey'] ?? $selected['publicKeyCertificate'] ?? ''));
+        if ($raw_certificate === '') {
+            return ['ok' => false, 'message' => __('Wybrany rekord certyfikatu KSeF nie zawiera pola certificate/publicKey.', 'erp-omd')];
+        }
+        $pem = $this->normalize_certificate_to_pem($raw_certificate);
+        if ($pem === '') {
+            return ['ok' => false, 'message' => __('Nie udało się znormalizować certyfikatu KSeF do formatu PEM.', 'erp-omd')];
+        }
+
+        $public_key = $this->resolve_public_key($pem);
+        if ($public_key === false) {
+            return ['ok' => false, 'message' => __('Pobrany certyfikat KSeF nie zawiera prawidłowego klucza publicznego.', 'erp-omd')];
+        }
+        $details = openssl_pkey_get_details($public_key);
+        $this->free_openssl_key($public_key);
+        if ((int) ($details['type'] ?? -1) !== OPENSSL_KEYTYPE_RSA) {
+            return ['ok' => false, 'message' => __('Pobrany certyfikat KSeF nie zawiera klucza RSA wymaganego dla encryptedToken.', 'erp-omd')];
+        }
+
+        update_option(self::OPTION_PUBLIC_KEY_PEM, $pem);
+
+        return [
+            'ok' => true,
+            'message' => __('Pobrano i zapisano klucz publiczny KSeF (MF) dla usage=KsefTokenEncryption.', 'erp-omd'),
+        ];
+    }
+
     private function build_window($mode, array $params)
     {
         $to = current_time('mysql');
@@ -528,6 +586,48 @@ class ERP_OMD_KSeF_API_Sync_Service
 
         $this->auth_diagnostic = __('Timeout oczekiwania na zakończenie autoryzacji KSeF.', 'erp-omd');
         return false;
+    }
+
+    private function find_token_encryption_certificate(array $items)
+    {
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $usages = $item['usage'] ?? $item['usages'] ?? [];
+            if (is_string($usages)) {
+                $usages = [$usages];
+            }
+            if (! is_array($usages)) {
+                continue;
+            }
+            foreach ($usages as $usage) {
+                if (strcasecmp(trim((string) $usage), 'KsefTokenEncryption') === 0) {
+                    return $item;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function normalize_certificate_to_pem($certificate)
+    {
+        $certificate = trim((string) $certificate);
+        if ($certificate === '') {
+            return '';
+        }
+        $certificate = str_replace(["\r\n", "\r"], "\n", $certificate);
+        $certificate = str_replace('\\n', "\n", $certificate);
+        if (strpos($certificate, 'BEGIN') !== false) {
+            return trim($certificate);
+        }
+        $base64 = preg_replace('/\s+/', '', $certificate);
+        if ($base64 === '') {
+            return '';
+        }
+
+        return "-----BEGIN CERTIFICATE-----\n" . chunk_split($base64, 64, "\n") . "-----END CERTIFICATE-----";
     }
 
     private function http_response_diagnostic($response_or_payload, $http_code, $fallback)
