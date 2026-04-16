@@ -1038,6 +1038,7 @@ class ERP_OMD_Admin
         $ksef_api_registration_date = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, '');
         $ksef_api_backfill_days = max(1, min(90, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90)));
         $ksef_api_alert_after_hours = max(1, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, 24));
+        $ksef_auto_create_supplier = (bool) get_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, false);
         $ksef_api_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, '')));
         $ksef_api_last_sync_at = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_SYNC_AT, '');
         $ksef_api_last_error = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_ERROR, '');
@@ -3475,6 +3476,7 @@ class ERP_OMD_Admin
         $ksef_api_backfill_days = max(1, min(90, (int) wp_unslash($_POST['ksef_api_backfill_days'] ?? 90)));
         $ksef_api_alert_after_hours = max(1, min(168, (int) wp_unslash($_POST['ksef_api_alert_after_hours'] ?? 24)));
         $ksef_api_token = trim((string) wp_unslash($_POST['ksef_api_token'] ?? ''));
+        $ksef_auto_create_supplier = ! empty($_POST['ksef_auto_create_supplier']);
 
         update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
         update_option('erp_omd_google_calendar_scope', $google_calendar_scope);
@@ -3489,6 +3491,7 @@ class ERP_OMD_Admin
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, $ksef_api_registration_date);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, $ksef_api_backfill_days);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, $ksef_api_alert_after_hours);
+        update_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, $ksef_auto_create_supplier);
         if ($ksef_api_token !== '') {
             update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, $this->encrypt_option_value($ksef_api_token));
         }

@@ -14,6 +14,7 @@ class ERP_OMD_KSeF_Import_Service
     const OPTION_MODERATION_AUDIT = 'erp_omd_ksef_moderation_audit';
     const OPTION_SALES_INBOX = 'erp_omd_ksef_sales_inbox';
     const OPTION_SALES_AUDIT = 'erp_omd_ksef_sales_audit';
+    const OPTION_AUTO_CREATE_SUPPLIER = 'erp_omd_ksef_auto_create_supplier';
 
     /** @var mixed */
     private $workflow_service;
@@ -374,6 +375,24 @@ class ERP_OMD_KSeF_Import_Service
             return ['ok' => false, 'supplier_id' => 0, 'status' => self::IMPORT_STATUS_CONFLICT, 'errors' => [__('Wiele dopasowań dostawcy po NIP. Wymagana moderacja manualna.', 'erp-omd')]];
         }
 
+        if ((bool) get_option(self::OPTION_AUTO_CREATE_SUPPLIER, false) && method_exists($this->supplier_repository, 'create')) {
+            $supplier_name = trim((string) ($document['seller_name'] ?? $document['sprzedawca_nazwa'] ?? ''));
+            if ($supplier_name === '') {
+                $supplier_name = sprintf(__('Dostawca %s', 'erp-omd'), $supplier_nip);
+            }
+            $created_supplier_id = (int) $this->supplier_repository->create([
+                'name' => $supplier_name,
+                'company' => $supplier_name,
+                'nip' => $supplier_nip,
+                'status' => 'active',
+                'country' => 'PL',
+                'supplier_description' => __('Utworzony automatycznie podczas importu KSeF.', 'erp-omd'),
+            ]);
+            if ($created_supplier_id > 0) {
+                return ['ok' => true, 'supplier_id' => $created_supplier_id, 'status' => self::IMPORT_STATUS_IMPORTED, 'errors' => []];
+            }
+        }
+
         return ['ok' => false, 'supplier_id' => 0, 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Brak dopasowania dostawcy po NIP. Wymagana moderacja manualna.', 'erp-omd')]];
     }
 
@@ -592,6 +611,11 @@ class ERP_OMD_KSeF_Import_Service
         $issue_date = $this->normalize_issue_date($issue_date);
         $buyer_nip = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="NIP"]']);
         $seller_nip = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot1"]//*[local-name()="NIP"]']);
+        $seller_name = $this->xpath_first_text($xml, [
+            '//*[local-name()="Podmiot1"]//*[local-name()="PelnaNazwa"]',
+            '//*[local-name()="Podmiot1"]//*[local-name()="Nazwa"]',
+            '//*[local-name()="Podmiot1"]//*[local-name()="NazwaSkrocona"]',
+        ]);
         $ksef_reference = $this->xpath_first_text($xml, ['//*[local-name()="NumerKSeF"]']);
 
         $net_amount = $this->xpath_first_decimal($xml, [
@@ -642,6 +666,7 @@ class ERP_OMD_KSeF_Import_Service
             'issue_date' => $issue_date,
             'buyer_nip' => $buyer_nip,
             'seller_nip' => $seller_nip,
+            'seller_name' => $seller_name,
             'ksef_reference_number' => $ksef_reference,
             'net_amount' => $net_amount,
             'vat_amount' => $vat_amount,

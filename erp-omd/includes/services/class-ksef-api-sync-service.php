@@ -144,6 +144,7 @@ class ERP_OMD_KSeF_API_Sync_Service
             $ksef_reference = (string) ($row['ksefReferenceNumber'] ?? $row['ksefNumber'] ?? $row['referenceNumber'] ?? '');
             $buyer_nip = preg_replace('/[^0-9]/', '', (string) ($row['buyerNip'] ?? $row['buyerTaxNumber'] ?? ''));
             $seller_nip = preg_replace('/[^0-9]/', '', (string) ($row['sellerNip'] ?? $row['sellerTaxNumber'] ?? ''));
+            $seller_name = trim((string) ($row['sellerName'] ?? $row['seller']['name'] ?? ''));
             $issue_date = (string) ($row['issueDate'] ?? $row['invoiceDate'] ?? '');
             if (strpos($issue_date, 'T') !== false) {
                 $issue_date = substr($issue_date, 0, 10);
@@ -165,6 +166,7 @@ class ERP_OMD_KSeF_API_Sync_Service
                 'issue_date' => $issue_date,
                 'buyer_nip' => $buyer_nip,
                 'seller_nip' => $seller_nip,
+                'seller_name' => $seller_name,
                 'our_company_nip' => $this->company_nip,
                 'ksef_reference_number' => $ksef_reference,
                 'net_amount' => (float) ($row['netAmount'] ?? 0),

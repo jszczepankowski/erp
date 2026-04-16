@@ -260,6 +260,10 @@
                                 <input type="checkbox" name="ksef_api_enabled" value="1" <?php checked(! empty($ksef_api_enabled)); ?> />
                                 <?php esc_html_e('Włącz automatyczny sync KSeF API (PROD)', 'erp-omd'); ?>
                             </label>
+                            <label class="erp-omd-form-label" style="margin-top:8px;">
+                                <input type="checkbox" name="ksef_auto_create_supplier" value="1" <?php checked(! empty($ksef_auto_create_supplier)); ?> />
+                                <?php esc_html_e('Auto-dodawanie dostawcy po NIP, jeśli brak dopasowania (KSeF cost)', 'erp-omd'); ?>
+                            </label>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-ksef-api-token"><?php esc_html_e('Token KSeF API', 'erp-omd'); ?></label>
