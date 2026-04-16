@@ -558,17 +558,43 @@ class ERP_OMD_KSeF_API_Sync_Service
         $payload = json_decode((string) wp_remote_retrieve_body($response), true);
         if (! is_array($payload)) {
             $body_preview = trim((string) wp_remote_retrieve_body($response));
-            if ($body_preview !== '') {
-                $this->auth_diagnostic = sprintf(
-                    __('Błąd /auth/challenge. Odpowiedź nie jest JSON: %s', 'erp-omd'),
-                    mb_substr($body_preview, 0, 250)
-                );
+            $header_challenge = trim((string) (wp_remote_retrieve_header($response, 'x-challenge') ?: wp_remote_retrieve_header($response, 'challenge')));
+            $header_timestamp = trim((string) (wp_remote_retrieve_header($response, 'x-timestamp') ?: wp_remote_retrieve_header($response, 'timestamp') ?: wp_remote_retrieve_header($response, 'date')));
+            if ($header_challenge !== '') {
+                return [
+                    'challenge' => $header_challenge,
+                    'timestamp' => $header_timestamp,
+                ];
             }
+            if ($body_preview !== '') {
+                return [
+                    'challenge' => $body_preview,
+                    'timestamp' => $header_timestamp,
+                ];
+            }
+            $this->auth_diagnostic = __('Błąd /auth/challenge. Odpowiedź nie jest JSON i nie zawiera challenge.', 'erp-omd');
             return [];
         }
 
         $normalized = $this->normalize_challenge_response_payload($payload);
         if (! is_array($normalized) || empty($normalized)) {
+            $header_challenge = trim((string) (wp_remote_retrieve_header($response, 'x-challenge') ?: wp_remote_retrieve_header($response, 'challenge')));
+            $header_timestamp = trim((string) (wp_remote_retrieve_header($response, 'x-timestamp') ?: wp_remote_retrieve_header($response, 'timestamp') ?: wp_remote_retrieve_header($response, 'date')));
+            if ($header_challenge !== '') {
+                return [
+                    'challenge' => $header_challenge,
+                    'timestamp' => $header_timestamp,
+                ];
+            }
+
+            $body_preview = trim((string) wp_remote_retrieve_body($response));
+            if ($body_preview !== '') {
+                return [
+                    'challenge' => $body_preview,
+                    'timestamp' => $header_timestamp,
+                ];
+            }
+
             $this->auth_diagnostic = __('Błąd /auth/challenge. Odpowiedź JSON jest pusta.', 'erp-omd');
             return [];
         }
