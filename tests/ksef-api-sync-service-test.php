@@ -22,6 +22,7 @@ $fragments = [
     [$syncService, 'function sync(array $params = [])', 'Sync service should expose manual sync entrypoint.'],
     [$syncService, "Token KSeF wymaga osobnego flow uwierzytelnienia", 'Sync service should validate token format with actionable message.'],
     [$syncService, "Brak accessToken KSeF API. Uzupełnij accessToken JWT, refreshToken lub token KSeF z AP + NIP.", 'Sync service should instruct to provide access/refresh/AP token options.'],
+    [$syncService, 'Szczegóły AP flow', 'Sync service should include AP-flow diagnostics in missing token error.'],
     [$syncService, "'https://api.ksef.mf.gov.pl'", 'Sync service should default to official KSeF API base URL.'],
     [$syncService, "OPTION_API_BASE_URL = 'erp_omd_ksef_api_base_url';", 'Sync service should expose configurable KSeF API base URL option.'],
     [$syncService, "'KSeF-Token' => \$token", 'Sync service should send KSeF token header.'],
