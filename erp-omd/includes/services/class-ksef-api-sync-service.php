@@ -134,7 +134,20 @@ class ERP_OMD_KSeF_API_Sync_Service
         $code = (int) wp_remote_retrieve_response_code($response);
         $payload = json_decode((string) wp_remote_retrieve_body($response), true);
         if ($code >= 400) {
-            return new WP_Error('erp_omd_ksef_sync_http_error', (string) ($payload['message'] ?? __('Błąd pobierania metadanych KSeF.', 'erp-omd')));
+            $message = $this->extract_http_error_message($payload);
+            if ($message === '') {
+                $body_preview = trim((string) wp_remote_retrieve_body($response));
+                if ($body_preview !== '') {
+                    $message = mb_substr($body_preview, 0, 300);
+                }
+            }
+            if ($message === '') {
+                $message = __('Błąd pobierania metadanych KSeF.', 'erp-omd');
+            }
+            return new WP_Error(
+                'erp_omd_ksef_sync_http_error',
+                sprintf(__('Błąd pobierania metadanych KSeF (HTTP %1$d): %2$s', 'erp-omd'), $code, $message)
+            );
         }
 
         $items = $payload['invoices'] ?? $payload['items'] ?? [];
@@ -223,5 +236,27 @@ class ERP_OMD_KSeF_API_Sync_Service
         $plain = openssl_decrypt($decoded, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
 
         return is_string($plain) ? $plain : '';
+    }
+
+    private function extract_http_error_message(array $payload)
+    {
+        $candidates = [
+            (string) ($payload['message'] ?? ''),
+            (string) ($payload['detail'] ?? ''),
+            (string) ($payload['error'] ?? ''),
+            (string) ($payload['error_description'] ?? ''),
+            (string) ($payload['title'] ?? ''),
+            (string) ($payload['description'] ?? ''),
+            (string) ($payload['errors'][0]['message'] ?? ''),
+            (string) ($payload['violations'][0]['message'] ?? ''),
+        ];
+        foreach ($candidates as $candidate) {
+            $candidate = trim($candidate);
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        return '';
     }
 }

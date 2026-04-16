@@ -20,6 +20,8 @@ $fragments = [
     [$syncService, "'https://api.ksef.mf.gov.pl'", 'Sync service should default to official KSeF API base URL.'],
     [$syncService, "OPTION_API_BASE_URL = 'erp_omd_ksef_api_base_url';", 'Sync service should expose configurable KSeF API base URL option.'],
     [$syncService, "'KSeF-Token' => \$token", 'Sync service should send KSeF token header.'],
+    [$syncService, 'extract_http_error_message(array $payload)', 'Sync service should parse API error payload details.'],
+    [$syncService, "Błąd pobierania metadanych KSeF (HTTP %1\$d): %2\$s", 'Sync service should expose HTTP code in sync error message.'],
     [$cron, "const KSEF_API_SYNC_HOOK = 'erp_omd_ksef_api_sync';", 'Cron manager should define KSeF API sync hook.'],
     [$cron, "add_action(self::KSEF_API_SYNC_HOOK, [__CLASS__, 'run_ksef_api_sync']);", 'Cron manager should register KSeF API sync action.'],
     [$cron, "wp_schedule_event(time() + HOUR_IN_SECONDS, 'hourly', self::KSEF_API_SYNC_HOOK);", 'Cron manager should schedule KSeF API sync hourly.'],
