@@ -98,6 +98,20 @@ class ERP_OMD_KSeF_API_Sync_Service
                 $documents = $this->fetch_documents($token, $window['from'], $window['to']);
             }
         }
+        if (is_wp_error($documents) && (int) $documents->get_error_data('http_code') === 401) {
+            $redeemed = $this->redeem_access_token_from_ap_token();
+            if ($redeemed !== '') {
+                $token = $redeemed;
+                $documents = $this->fetch_documents($token, $window['from'], $window['to']);
+            }
+        }
+        if (is_wp_error($documents) && (int) $documents->get_error_data('http_code') === 401 && $ap_token_fallback !== '') {
+            $redeemed = $this->redeem_access_token_from_ap_token_value($ap_token_fallback);
+            if ($redeemed !== '') {
+                $token = $redeemed;
+                $documents = $this->fetch_documents($token, $window['from'], $window['to']);
+            }
+        }
         if (is_wp_error($documents)) {
             return $this->fail($documents->get_error_message());
         }
