@@ -42,13 +42,16 @@ class ERP_OMD_KSeF_API_Sync_Service
     public function sync(array $params = [])
     {
         $token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_TOKEN_ENC, '')));
-        if ($token === '' || substr_count($token, '.') < 2) {
+        if ($token !== '' && substr_count($token, '.') < 2) {
+            $token = '';
+        }
+        if ($token === '') {
             $refreshed = $this->refresh_access_token();
             if ($refreshed !== '') {
                 $token = $refreshed;
             }
         }
-        if ($token === '' || substr_count($token, '.') < 2) {
+        if ($token === '') {
             $redeemed = $this->redeem_access_token_from_ap_token();
             if ($redeemed !== '') {
                 $token = $redeemed;

@@ -3491,6 +3491,8 @@ class ERP_OMD_Admin
         $ksef_api_refresh_token = trim((string) wp_unslash($_POST['ksef_api_refresh_token'] ?? ''));
         $ksef_ap_token = trim((string) wp_unslash($_POST['ksef_ap_token'] ?? ''));
         $ksef_public_key_pem = trim((string) wp_unslash($_POST['ksef_public_key_pem'] ?? ''));
+        $ksef_api_token_clear = ! empty($_POST['ksef_api_token_clear']);
+        $ksef_api_refresh_token_clear = ! empty($_POST['ksef_api_refresh_token_clear']);
         $ksef_auto_create_supplier = ! empty($_POST['ksef_auto_create_supplier']);
 
         update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
@@ -3508,10 +3510,14 @@ class ERP_OMD_Admin
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, $ksef_api_alert_after_hours);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_API_BASE_URL, $ksef_api_base_url);
         update_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, $ksef_auto_create_supplier);
-        if ($ksef_api_token !== '') {
+        if ($ksef_api_token_clear) {
+            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, '');
+        } elseif ($ksef_api_token !== '') {
             update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, $this->encrypt_option_value($ksef_api_token));
         }
-        if ($ksef_api_refresh_token !== '') {
+        if ($ksef_api_refresh_token_clear) {
+            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC, '');
+        } elseif ($ksef_api_refresh_token !== '') {
             update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC, $this->encrypt_option_value($ksef_api_refresh_token));
         }
         if ($ksef_ap_token !== '') {

@@ -277,6 +277,10 @@
                             <p class="description"><?php esc_html_e('Wprowadź accessToken JWT (nie surowy token KSeF). Jeśli go nie masz, podaj refreshToken poniżej.', 'erp-omd'); ?></p>
                             <?php if ($ksef_api_token_masked !== '') : ?>
                                 <p class="description"><?php echo esc_html(sprintf(__('Obecny token: %s (pozostaw puste, aby nie zmieniać).', 'erp-omd'), $ksef_api_token_masked)); ?></p>
+                                <label class="erp-omd-form-label">
+                                    <input type="checkbox" name="ksef_api_token_clear" value="1" />
+                                    <?php esc_html_e('Wyczyść zapisany accessToken JWT', 'erp-omd'); ?>
+                                </label>
                             <?php endif; ?>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
@@ -284,6 +288,10 @@
                             <input id="erp-omd-ksef-api-refresh-token" type="password" name="ksef_api_refresh_token" value="" autocomplete="new-password" />
                             <?php if ($ksef_api_refresh_token_masked !== '') : ?>
                                 <p class="description"><?php echo esc_html(sprintf(__('Obecny refreshToken: %s (pozostaw puste, aby nie zmieniać).', 'erp-omd'), $ksef_api_refresh_token_masked)); ?></p>
+                                <label class="erp-omd-form-label">
+                                    <input type="checkbox" name="ksef_api_refresh_token_clear" value="1" />
+                                    <?php esc_html_e('Wyczyść zapisany refreshToken', 'erp-omd'); ?>
+                                </label>
                             <?php endif; ?>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
