@@ -5,6 +5,8 @@ Owner biznesowy: **Admin**
 Priorytet: **balans** (time-to-value + jakość operacyjna)  
 SLA: **target 4h**, **hard 24h**, retry automatyczny do **90 min** + manual fallback.
 
+Dokument operacyjny do odbioru: `docs/SPRINT_6_DEFINITION_OF_EVIDENCE.md`.
+
 ---
 
 ## 0) Założenia i kontekst (uzgodnione)
