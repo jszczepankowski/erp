@@ -6,6 +6,7 @@ class ERP_OMD_KSeF_API_Sync_Service
     const OPTION_REFRESH_TOKEN_ENC = 'erp_omd_ksef_api_refresh_token_enc';
     const OPTION_AP_TOKEN_ENC = 'erp_omd_ksef_ap_token_enc';
     const OPTION_PUBLIC_KEY_PEM = 'erp_omd_ksef_public_key_pem';
+    const OPTION_PUBLIC_KEY_SOURCE_URL = 'erp_omd_ksef_public_key_source_url';
     const OPTION_ENABLED = 'erp_omd_ksef_api_enabled';
     const OPTION_MODE = 'erp_omd_ksef_sync_mode';
     const OPTION_REGISTRATION_DATE = 'erp_omd_ksef_registration_date';
@@ -134,7 +135,8 @@ class ERP_OMD_KSeF_API_Sync_Service
 
     public function fetch_and_store_token_encryption_public_key()
     {
-        $endpoint = rtrim($this->api_base_url(), '/') . '/security/public-key-certificates';
+        $base_url = rtrim($this->api_base_url(), '/');
+        $endpoint = $base_url . '/security/public-key-certificates';
         $response = wp_remote_get($endpoint, [
             'timeout' => 20,
             'headers' => ['Content-Type' => 'application/json'],
@@ -183,6 +185,7 @@ class ERP_OMD_KSeF_API_Sync_Service
         }
 
         update_option(self::OPTION_PUBLIC_KEY_PEM, $pem);
+        update_option(self::OPTION_PUBLIC_KEY_SOURCE_URL, $base_url);
 
         return [
             'ok' => true,
@@ -475,7 +478,10 @@ class ERP_OMD_KSeF_API_Sync_Service
     {
         $ap_token = trim((string) $ap_token);
         $public_key_pem = trim((string) get_option(self::OPTION_PUBLIC_KEY_PEM, ''));
-        if ($public_key_pem === '') {
+        $current_base_url = rtrim($this->api_base_url(), '/');
+        $public_key_source_url = rtrim((string) get_option(self::OPTION_PUBLIC_KEY_SOURCE_URL, ''), '/');
+        $must_refresh_public_key = $public_key_pem === '' || ($public_key_source_url !== '' && $public_key_source_url !== $current_base_url);
+        if ($must_refresh_public_key) {
             $cert_result = $this->fetch_and_store_token_encryption_public_key();
             if (! (bool) ($cert_result['ok'] ?? false)) {
                 $this->auth_diagnostic = (string) ($cert_result['message'] ?? __('Brak klucza publicznego KSeF.', 'erp-omd'));
@@ -488,53 +494,66 @@ class ERP_OMD_KSeF_API_Sync_Service
             $this->auth_diagnostic = __('Brak wymaganych danych do AP flow (token AP, PEM lub NIP).', 'erp-omd');
             return '';
         }
-        $challenge_row = $this->request_challenge();
-        if (! is_array($challenge_row)) {
-            return '';
-        }
-        $challenge = $this->extract_challenge_value($challenge_row);
-        $timestamp = $this->normalize_challenge_timestamp_millis($this->extract_challenge_timestamp_value($challenge_row));
-        if ($challenge === '' || $timestamp === '') {
-            $keys = array_keys($challenge_row);
-            $keys_text = empty($keys) ? __('(brak kluczy)', 'erp-omd') : implode(', ', $keys);
-            $this->auth_diagnostic = sprintf(
-                __('Challenge KSeF nie zawiera challenge/timestamp. Odpowiedź zawiera klucze: %s', 'erp-omd'),
-                $keys_text
-            );
-            return '';
-        }
-        $encrypted_token = $this->encrypt_ap_token($ap_token, $timestamp, $public_key_pem);
-        if ($encrypted_token === '') {
-            $this->auth_diagnostic = __('Nie udało się zaszyfrować tokenu AP (sprawdź PEM).', 'erp-omd');
-            return '';
-        }
-        $auth_payload = $this->authenticate_with_ksef_token($challenge, $company_nip, $encrypted_token);
-        $authentication_token = trim((string) ($auth_payload['authentication_token'] ?? ''));
-        $reference_number = trim((string) ($auth_payload['reference_number'] ?? ''));
-        if ($authentication_token === '' || $reference_number === '') {
-            if ($this->auth_diagnostic === '') {
-                $this->auth_diagnostic = __('Odpowiedź /auth/ksef-token nie zawiera authenticationToken/referenceNumber.', 'erp-omd');
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $challenge_row = $this->request_challenge();
+            if (! is_array($challenge_row)) {
+                return '';
             }
-            return '';
+            $challenge = $this->extract_challenge_value($challenge_row);
+            $timestamp = $this->normalize_challenge_timestamp_millis($this->extract_challenge_timestamp_value($challenge_row));
+            if ($challenge === '' || $timestamp === '') {
+                $keys = array_keys($challenge_row);
+                $keys_text = empty($keys) ? __('(brak kluczy)', 'erp-omd') : implode(', ', $keys);
+                $this->auth_diagnostic = sprintf(
+                    __('Challenge KSeF nie zawiera challenge/timestamp. Odpowiedź zawiera klucze: %s', 'erp-omd'),
+                    $keys_text
+                );
+                return '';
+            }
+            $encrypted_token = $this->encrypt_ap_token($ap_token, $timestamp, $public_key_pem);
+            if ($encrypted_token === '') {
+                $this->auth_diagnostic = __('Nie udało się zaszyfrować tokenu AP (sprawdź PEM).', 'erp-omd');
+                return '';
+            }
+            $auth_payload = $this->authenticate_with_ksef_token($challenge, $company_nip, $encrypted_token);
+            $authentication_token = trim((string) ($auth_payload['authentication_token'] ?? ''));
+            $reference_number = trim((string) ($auth_payload['reference_number'] ?? ''));
+            if ($authentication_token === '' || $reference_number === '') {
+                if ($this->auth_diagnostic === '') {
+                    $this->auth_diagnostic = __('Odpowiedź /auth/ksef-token nie zawiera authenticationToken/referenceNumber.', 'erp-omd');
+                }
+            } elseif (! $this->wait_for_authentication_ready($reference_number, $authentication_token)) {
+                // wait_for_authentication_ready ustawia diagnostykę w przypadku błędu.
+            } else {
+                $redeemed = $this->redeem_authentication_token($authentication_token);
+                if (! is_array($redeemed)) {
+                    return '';
+                }
+                $new_access_token = trim((string) ($redeemed['accessToken'] ?? $redeemed['accessToken']['token'] ?? ''));
+                $new_refresh_token = trim((string) ($redeemed['refreshToken'] ?? $redeemed['refreshToken']['token'] ?? ''));
+                if ($new_access_token === '') {
+                    $this->auth_diagnostic = __('Odpowiedź /auth/token/redeem nie zawiera accessToken.', 'erp-omd');
+                    return '';
+                }
+                update_option(self::OPTION_TOKEN_ENC, $this->encrypt_value($new_access_token));
+                if ($new_refresh_token !== '') {
+                    update_option(self::OPTION_REFRESH_TOKEN_ENC, $this->encrypt_value($new_refresh_token));
+                }
+                return $new_access_token;
+            }
+
+            if (! $this->should_retry_with_refreshed_public_key($this->auth_diagnostic) || $attempt > 0) {
+                return '';
+            }
+            $cert_result = $this->fetch_and_store_token_encryption_public_key();
+            if (! (bool) ($cert_result['ok'] ?? false)) {
+                $this->auth_diagnostic = (string) ($cert_result['message'] ?? __('Brak klucza publicznego KSeF.', 'erp-omd'));
+                return '';
+            }
+            $public_key_pem = trim((string) get_option(self::OPTION_PUBLIC_KEY_PEM, ''));
         }
-        if (! $this->wait_for_authentication_ready($reference_number, $authentication_token)) {
-            return '';
-        }
-        $redeemed = $this->redeem_authentication_token($authentication_token);
-        if (! is_array($redeemed)) {
-            return '';
-        }
-        $new_access_token = trim((string) ($redeemed['accessToken'] ?? $redeemed['accessToken']['token'] ?? ''));
-        $new_refresh_token = trim((string) ($redeemed['refreshToken'] ?? $redeemed['refreshToken']['token'] ?? ''));
-        if ($new_access_token === '') {
-            $this->auth_diagnostic = __('Odpowiedź /auth/token/redeem nie zawiera accessToken.', 'erp-omd');
-            return '';
-        }
-        update_option(self::OPTION_TOKEN_ENC, $this->encrypt_value($new_access_token));
-        if ($new_refresh_token !== '') {
-            update_option(self::OPTION_REFRESH_TOKEN_ENC, $this->encrypt_value($new_refresh_token));
-        }
-        return $new_access_token;
+
+        return '';
     }
 
     private function request_challenge()
@@ -638,9 +657,12 @@ class ERP_OMD_KSeF_API_Sync_Service
                 continue;
             }
 
+            $authentication_token = $this->extract_scalar_string($row['authenticationToken']['token'] ?? $row['authenticationToken'] ?? '');
+            $reference_number = $this->extract_scalar_string($row['referenceNumber'] ?? $row['reference']['number'] ?? '');
+
             return [
-                'authentication_token' => trim((string) ($row['authenticationToken']['token'] ?? $row['authenticationToken'] ?? '')),
-                'reference_number' => trim((string) ($row['referenceNumber'] ?? '')),
+                'authentication_token' => $authentication_token,
+                'reference_number' => $reference_number,
             ];
         }
 
@@ -693,14 +715,10 @@ class ERP_OMD_KSeF_API_Sync_Service
             }
         }
 
-        $encrypted = '';
-        $ok = openssl_public_encrypt($plain, $encrypted, $public_key, OPENSSL_PKCS1_OAEP_PADDING);
         $this->free_openssl_key($public_key);
-        if (! $ok || $encrypted === '') {
-            $this->auth_diagnostic = __('Nie udało się zaszyfrować tokenu AP. Upewnij się, że środowisko wspiera RSA OAEP SHA-256.', 'erp-omd');
-            return '';
-        }
-        return base64_encode($encrypted);
+        $this->auth_diagnostic = __('Nie udało się zaszyfrować tokenu AP algorytmem RSA OAEP SHA-256 (OpenSSL CLI pkeyutl).', 'erp-omd');
+
+        return '';
     }
 
     private function encrypt_with_openssl_cli_oaep_sha256($plain, $public_key_pem)
@@ -803,7 +821,7 @@ class ERP_OMD_KSeF_API_Sync_Service
             }
             if ($status_code >= 400) {
                 $message = trim((string) ($row['status']['description'] ?? ''));
-                $details = isset($row['status']['details']) && is_array($row['status']['details']) ? implode(', ', array_map('strval', $row['status']['details'])) : '';
+                $details = $this->flatten_details_to_text($row['status']['details'] ?? []);
                 $diagnostic = trim(sprintf(__('Status autoryzacji %1$d: %2$s %3$s', 'erp-omd'), $status_code, $message, $details));
                 if ($status_code === 450 && stripos($diagnostic, 'Invalid timestamp') !== false) {
                     $diagnostic .= ' ' . __('Sprawdź czas serwera (UTC), poprawność challenge/timestamp oraz czy token AP i klucz publiczny PEM są z tego samego środowiska KSeF (prod/test).', 'erp-omd');
@@ -935,7 +953,7 @@ class ERP_OMD_KSeF_API_Sync_Service
             return '';
         }
 
-        if (preg_match('/\/Date\((\d+)\)\//', $timestamp_string, $date_match) === 1) {
+        if (preg_match('/(?:\/)?Date\((-?\d+)(?:[+\-]\d{4})?\)(?:\/)?/', $timestamp_string, $date_match) === 1) {
             return (string) ((int) $date_match[1]);
         }
 
@@ -968,6 +986,64 @@ class ERP_OMD_KSeF_API_Sync_Service
         }
 
         return (string) ($parsed * 1000);
+    }
+
+    private function extract_scalar_string($value)
+    {
+        if (is_scalar($value)) {
+            return trim((string) $value);
+        }
+        if (is_array($value)) {
+            foreach (['token', 'value', 'number', 'id', 'referenceNumber', 'reference'] as $key) {
+                if (array_key_exists($key, $value)) {
+                    $candidate = $this->extract_scalar_string($value[$key]);
+                    if ($candidate !== '') {
+                        return $candidate;
+                    }
+                }
+            }
+            foreach ($value as $candidate) {
+                $normalized = $this->extract_scalar_string($candidate);
+                if ($normalized !== '') {
+                    return $normalized;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private function flatten_details_to_text($details)
+    {
+        if (is_scalar($details)) {
+            return trim((string) $details);
+        }
+        if (! is_array($details)) {
+            return '';
+        }
+
+        $parts = [];
+        array_walk_recursive($details, function ($item) use (&$parts) {
+            if (is_scalar($item)) {
+                $text = trim((string) $item);
+                if ($text !== '') {
+                    $parts[] = $text;
+                }
+            }
+        });
+
+        return implode(', ', $parts);
+    }
+
+    private function should_retry_with_refreshed_public_key($diagnostic)
+    {
+        $diagnostic = trim((string) $diagnostic);
+        if ($diagnostic === '') {
+            return false;
+        }
+
+        return stripos($diagnostic, 'Invalid token encryption') !== false
+            || stripos($diagnostic, 'błędnego tokenu') !== false;
     }
 
     private function normalize_challenge_response_payload(array $payload)
