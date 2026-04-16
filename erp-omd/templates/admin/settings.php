@@ -268,7 +268,7 @@
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-ksef-api-token"><?php esc_html_e('Token KSeF API', 'erp-omd'); ?></label>
                             <input id="erp-omd-ksef-api-token" type="password" name="ksef_api_token" value="" autocomplete="new-password" />
-                            <p class="description"><?php esc_html_e('Wprowadź accessToken JWT (nie surowy token KSeF).', 'erp-omd'); ?></p>
+                            <p class="description"><?php esc_html_e('Wprowadź accessToken JWT (nie surowy token KSeF). Jeśli go nie masz, podaj refreshToken poniżej.', 'erp-omd'); ?></p>
                             <?php if ($ksef_api_token_masked !== '') : ?>
                                 <p class="description"><?php echo esc_html(sprintf(__('Obecny token: %s (pozostaw puste, aby nie zmieniać).', 'erp-omd'), $ksef_api_token_masked)); ?></p>
                             <?php endif; ?>

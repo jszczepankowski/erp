@@ -40,11 +40,17 @@ class ERP_OMD_KSeF_API_Sync_Service
     public function sync(array $params = [])
     {
         $token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_TOKEN_ENC, '')));
+        if ($token === '' || substr_count($token, '.') < 2) {
+            $refreshed = $this->refresh_access_token();
+            if ($refreshed !== '') {
+                $token = $refreshed;
+            }
+        }
         if ($token === '') {
-            return $this->fail(__('Brak tokenu KSeF API.', 'erp-omd'));
+            return $this->fail(__('Brak accessToken KSeF API. Uzupełnij accessToken JWT lub refreshToken.', 'erp-omd'));
         }
         if (substr_count($token, '.') < 2) {
-            return $this->fail(__('Podany token nie jest accessToken JWT. Najpierw wykonaj uwierzytelnienie KSeF 2.0 i podaj accessToken.', 'erp-omd'));
+            return $this->fail(__('Podany token nie jest accessToken JWT. Token KSeF wymaga osobnego flow uwierzytelnienia (challenge + encryptedToken) w API KSeF 2.0.', 'erp-omd'));
         }
 
         $scope = in_array((string) ($params['scope'] ?? 'both'), ['cost', 'sales', 'both'], true)
