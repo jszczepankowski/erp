@@ -547,12 +547,90 @@ class ERP_OMD_KSeF_API_Sync_Service
             $this->auth_diagnostic = __('Nieprawidłowy PEM — nie udało się odczytać klucza publicznego/certyfikatu.', 'erp-omd');
             return '';
         }
+        $key_details = openssl_pkey_get_details($public_key);
+        $public_key_export = is_array($key_details) ? (string) ($key_details['key'] ?? '') : '';
+
+        if ($public_key_export !== '') {
+            $encrypted_cli = $this->encrypt_with_openssl_cli_oaep_sha256($plain, $public_key_export);
+            if ($encrypted_cli !== '') {
+                $this->free_openssl_key($public_key);
+                return $encrypted_cli;
+            }
+        }
+
         $encrypted = '';
         $ok = openssl_public_encrypt($plain, $encrypted, $public_key, OPENSSL_PKCS1_OAEP_PADDING);
         $this->free_openssl_key($public_key);
         if (! $ok || $encrypted === '') {
+            $this->auth_diagnostic = __('Nie udało się zaszyfrować tokenu AP. Upewnij się, że środowisko wspiera RSA OAEP SHA-256.', 'erp-omd');
             return '';
         }
+        return base64_encode($encrypted);
+    }
+
+    private function encrypt_with_openssl_cli_oaep_sha256($plain, $public_key_pem)
+    {
+        if (! function_exists('proc_open')) {
+            return '';
+        }
+
+        $tmp_dir = sys_get_temp_dir();
+        $key_file = tempnam($tmp_dir, 'erp_omd_ksef_key_');
+        $in_file = tempnam($tmp_dir, 'erp_omd_ksef_in_');
+        if ($key_file === false || $in_file === false) {
+            return '';
+        }
+
+        file_put_contents($key_file, (string) $public_key_pem);
+        file_put_contents($in_file, (string) $plain);
+
+        $cmd = [
+            'openssl',
+            'pkeyutl',
+            '-encrypt',
+            '-pubin',
+            '-inkey',
+            $key_file,
+            '-in',
+            $in_file,
+            '-pkeyopt',
+            'rsa_padding_mode:oaep',
+            '-pkeyopt',
+            'rsa_oaep_md:sha256',
+            '-pkeyopt',
+            'rsa_mgf1_md:sha256',
+        ];
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $process = proc_open($cmd, $descriptors, $pipes);
+        if (! is_resource($process)) {
+            @unlink($key_file);
+            @unlink($in_file);
+            return '';
+        }
+
+        fclose($pipes[0]);
+        $encrypted = stream_get_contents($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $exit_code = proc_close($process);
+
+        @unlink($key_file);
+        @unlink($in_file);
+
+        if ($exit_code !== 0 || $encrypted === false || $encrypted === '') {
+            $stderr = trim((string) $stderr);
+            if ($stderr !== '') {
+                $this->auth_diagnostic = sprintf(__('Błąd szyfrowania OpenSSL (OAEP SHA-256): %s', 'erp-omd'), $stderr);
+            }
+            return '';
+        }
+
         return base64_encode($encrypted);
     }
 

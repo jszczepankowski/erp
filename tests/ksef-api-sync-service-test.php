@@ -40,6 +40,8 @@ $fragments = [
     [$syncService, 'function wait_for_authentication_ready(', 'Sync service should wait for async authentication operation completion.'],
     [$syncService, 'function normalize_challenge_timestamp_millis(', 'Sync service should normalize challenge timestamp to epoch milliseconds.'],
     [$syncService, 'function encrypt_ap_token(', 'Sync service should encrypt AP token with challenge timestamp.'],
+    [$syncService, 'rsa_oaep_md:sha256', 'Sync service should prefer OAEP SHA-256 encryption for AP token payload.'],
+    [$syncService, 'function encrypt_with_openssl_cli_oaep_sha256(', 'Sync service should provide OpenSSL CLI OAEP SHA-256 fallback/enhancement.'],
     [$syncService, 'function resolve_public_key(', 'Sync service should resolve public key from PEM/certificate payload.'],
     [$syncService, "Błąd pobierania metadanych KSeF (HTTP %1\$d): %2\$s", 'Sync service should expose HTTP code in sync error message.'],
     [$cron, "const KSEF_API_SYNC_HOOK = 'erp_omd_ksef_api_sync';", 'Cron manager should define KSeF API sync hook.'],
