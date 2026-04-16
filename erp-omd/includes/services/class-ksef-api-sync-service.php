@@ -12,6 +12,7 @@ class ERP_OMD_KSeF_API_Sync_Service
     const OPTION_LAST_RESULT = 'erp_omd_ksef_api_last_result';
     const OPTION_LAST_CURSOR = 'erp_omd_ksef_api_last_cursor';
     const OPTION_ALERT_AFTER_HOURS = 'erp_omd_ksef_api_alert_after_hours';
+    const OPTION_API_BASE_URL = 'erp_omd_ksef_api_base_url';
 
     private $import_service;
     private $company_nip;
@@ -104,6 +105,11 @@ class ERP_OMD_KSeF_API_Sync_Service
 
     private function fetch_documents($token, $from, $to)
     {
+        $api_base_url = trim((string) get_option(self::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl'));
+        if ($api_base_url === '' || ! wp_http_validate_url($api_base_url)) {
+            $api_base_url = 'https://api.ksef.mf.gov.pl';
+        }
+        $endpoint = rtrim($api_base_url, '/') . '/api/v2/invoices/query/metadata';
         $body = [
             'queryCriteria' => [
                 'invoiceDateFrom' => str_replace(' ', 'T', $from),
@@ -112,7 +118,7 @@ class ERP_OMD_KSeF_API_Sync_Service
             'pageOffset' => 0,
             'pageSize' => 100,
         ];
-        $response = wp_remote_post('https://ksefapi.mf.gov.pl/api/v2/invoices/query/metadata', [
+        $response = wp_remote_post($endpoint, [
             'timeout' => 25,
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,

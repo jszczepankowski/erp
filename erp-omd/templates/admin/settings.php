@@ -293,6 +293,10 @@
                             <input id="erp-omd-ksef-alert-hours" type="number" min="1" max="168" step="1" name="ksef_api_alert_after_hours" value="<?php echo esc_attr((string) $ksef_api_alert_after_hours); ?>" />
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-api-base-url"><?php esc_html_e('KSeF API base URL', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-api-base-url" type="url" name="ksef_api_base_url" value="<?php echo esc_attr((string) $ksef_api_base_url); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <p>
                                 <label for="erp-omd-ksef-sync-scope"><?php esc_html_e('Ręczny zakres sync', 'erp-omd'); ?></label><br />
                                 <select id="erp-omd-ksef-sync-scope" name="ksef_sync_scope" form="erp-omd-ksef-api-sync-now-form">
