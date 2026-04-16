@@ -492,10 +492,13 @@ class ERP_OMD_KSeF_API_Sync_Service
         if (! is_array($challenge_row)) {
             return '';
         }
-        $challenge = (string) ($challenge_row['challenge'] ?? '');
-        $timestamp = $this->normalize_challenge_timestamp_millis($challenge_row['timestamp'] ?? '');
+        $challenge = $this->extract_challenge_value($challenge_row);
+        $timestamp = $this->normalize_challenge_timestamp_millis($this->extract_challenge_timestamp_value($challenge_row));
         if ($challenge === '' || $timestamp === '') {
-            $this->auth_diagnostic = __('Challenge KSeF nie zawiera challenge/timestamp.', 'erp-omd');
+            $this->auth_diagnostic = sprintf(
+                __('Challenge KSeF nie zawiera challenge/timestamp. Odpowiedź zawiera klucze: %s', 'erp-omd'),
+                implode(', ', array_keys($challenge_row))
+            );
             return '';
         }
         $encrypted_token = $this->encrypt_ap_token($ap_token, $timestamp, $public_key_pem);
@@ -551,7 +554,11 @@ class ERP_OMD_KSeF_API_Sync_Service
             return [];
         }
         $payload = json_decode((string) wp_remote_retrieve_body($response), true);
-        return is_array($payload) ? $payload : [];
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        return $this->normalize_challenge_response_payload($payload);
     }
 
     private function authenticate_with_ksef_token($challenge, $company_nip, $encrypted_token)
@@ -920,6 +927,61 @@ class ERP_OMD_KSeF_API_Sync_Service
         }
 
         return (string) ($parsed * 1000);
+    }
+
+    private function normalize_challenge_response_payload(array $payload)
+    {
+        if (isset($payload['challenge']) || isset($payload['timestamp'])) {
+            return $payload;
+        }
+        if (isset($payload['challengeTimestamp']) || isset($payload['challengeTime']) || isset($payload['createdDate'])) {
+            return $payload;
+        }
+
+        foreach (['data', 'result', 'value', 'payload'] as $key) {
+            if (isset($payload[$key]) && is_array($payload[$key])) {
+                return (array) $payload[$key];
+            }
+        }
+
+        return $payload;
+    }
+
+    private function extract_challenge_value(array $challenge_row)
+    {
+        $candidates = [
+            $challenge_row['challenge'] ?? '',
+            $challenge_row['challengeValue'] ?? '',
+            $challenge_row['value'] ?? '',
+            $challenge_row['token'] ?? '',
+        ];
+        foreach ($candidates as $candidate) {
+            $value = trim((string) $candidate);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+
+    private function extract_challenge_timestamp_value(array $challenge_row)
+    {
+        $candidates = [
+            $challenge_row['timestamp'] ?? '',
+            $challenge_row['challengeTimestamp'] ?? '',
+            $challenge_row['challengeTime'] ?? '',
+            $challenge_row['createdDate'] ?? '',
+            $challenge_row['createdAt'] ?? '',
+            $challenge_row['date'] ?? '',
+        ];
+        foreach ($candidates as $candidate) {
+            if (is_scalar($candidate) && trim((string) $candidate) !== '') {
+                return $candidate;
+            }
+        }
+
+        return '';
     }
 
     private function api_base_url()
