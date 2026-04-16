@@ -345,6 +345,9 @@ class ERP_OMD_Client_Project_Service
 
         if ($current_status === 'do_faktury' && $target_status === 'zakonczony') {
             $project_id = (int) ($existing_project['id'] ?? 0);
+            if ($project_id > 0 && ! $this->has_final_sales_invoice_for_project($project_id)) {
+                $errors[] = __('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury sprzedażowej.', 'erp-omd');
+            }
             if ($project_id > 0 && $this->project_attachment_service) {
                 $attachment_errors = [];
                 if (! $this->project_attachment_service->has_valid_final_invoice_pdf($project_id, $attachment_errors)) {
@@ -354,6 +357,30 @@ class ERP_OMD_Client_Project_Service
         }
 
         return $errors;
+    }
+
+    /**
+     * @param int $project_id
+     * @return bool
+     */
+    private function has_final_sales_invoice_for_project($project_id)
+    {
+        if (! function_exists('get_option')) {
+            return false;
+        }
+
+        $rows = (array) get_option('erp_omd_ksef_sales_inbox', []);
+        foreach ($rows as $row) {
+            if ((int) ($row['project_id'] ?? 0) !== (int) $project_id) {
+                continue;
+            }
+
+            if ((int) ($row['is_final'] ?? 0) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function validate_effective_dates($valid_from, $valid_to)
