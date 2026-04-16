@@ -253,6 +253,12 @@
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('KSeF API (auto fetch/sync)', 'erp-omd'); ?></h3>
                         <p><?php esc_html_e('Konfiguracja automatycznej synchronizacji KSeF (cron 1h), status oraz ręczny sync/backfill.', 'erp-omd'); ?></p>
+                        <p class="description">
+                            <?php esc_html_e('Checklist „co wkleić gdzie”: (1) NIP naszej firmy → pole „NIP naszej firmy (KSeF)”, (2) Token AP → pole „Token KSeF z AP”, (3) Publiczny PEM → pole „KSeF klucz publiczny PEM”.', 'erp-omd'); ?>
+                        </p>
+                        <p class="description">
+                            <?php esc_html_e('Jak zweryfikować flow: uruchom „Synchronizuj KSeF teraz” i sprawdź, czy „Ostatni błąd” jest pusty, „Ostatni udany sync” ma aktualną datę oraz „Ostatni wynik” pokazuje pobrane/zaimportowane dokumenty.', 'erp-omd'); ?>
+                        </p>
                     </div>
                     <div class="erp-omd-form-grid">
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
