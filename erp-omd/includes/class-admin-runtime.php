@@ -344,6 +344,11 @@ class ERP_OMD_Admin
             case 'save_cost_invoice': $this->handle_cost_invoice_save(); break;
             case 'delete_cost_invoice': $this->handle_cost_invoice_delete(); break;
             case 'attach_cost_invoice_to_project': $this->handle_attach_cost_invoice_to_project(); break;
+            case 'moderate_ksef_queue': $this->handle_ksef_queue_moderation_action(); break;
+            case 'bulk_ksef_queue': $this->handle_ksef_queue_bulk_action(); break;
+            case 'import_ksef_sales_xml': $this->handle_import_ksef_sales_xml_action(); break;
+            case 'import_ksef_cost_xml': $this->handle_import_ksef_cost_xml_action(); break;
+            case 'attach_ksef_sales_invoice': $this->handle_attach_ksef_sales_invoice_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
@@ -472,6 +477,7 @@ class ERP_OMD_Admin
             case 'google_calendar_disconnect': $this->handle_google_calendar_disconnect(); break;
             case 'google_calendar_sync_now': $this->handle_google_calendar_sync_now(); break;
             case 'google_calendar_fetch_calendars': $this->handle_google_calendar_fetch_calendars(); break;
+            case 'ksef_api_sync_now': $this->handle_ksef_api_sync_now(); break;
             case 'delete_client': $this->handle_client_delete(); break;
             case 'delete_project': $this->handle_project_delete(); break;
         }
@@ -942,6 +948,7 @@ class ERP_OMD_Admin
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
         $front_admin_redirect_enabled = (bool) get_option('erp_omd_front_admin_redirect_enabled', true);
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
+        $company_nip = preg_replace('/[^0-9]/', '', (string) get_option('erp_omd_company_nip', ''));
         $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
         $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
         $reports_v1_slo_recommended_p95_max = $reports_v1_slo_generation_p95_max;
@@ -1026,6 +1033,15 @@ class ERP_OMD_Admin
         $google_calendar_connected = $this->decrypt_option_value((string) get_option('erp_omd_google_calendar_refresh_token_enc', '')) !== '';
         $google_calendar_last_sync_at = (string) get_option('erp_omd_google_calendar_last_sync_at', '');
         $google_calendar_last_error = (string) get_option('erp_omd_google_calendar_last_error', '');
+        $ksef_api_enabled = (bool) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENABLED, false);
+        $ksef_api_mode = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, 'from_now');
+        $ksef_api_registration_date = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, '');
+        $ksef_api_backfill_days = max(1, min(90, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90)));
+        $ksef_api_alert_after_hours = max(1, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, 24));
+        $ksef_api_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, '')));
+        $ksef_api_last_sync_at = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_SYNC_AT, '');
+        $ksef_api_last_error = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_ERROR, '');
+        $ksef_api_last_result = (array) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_RESULT, []);
 
         include ERP_OMD_PATH . 'templates/admin/settings.php';
     }
@@ -1432,6 +1448,17 @@ class ERP_OMD_Admin
         unset($project_row);
         $cost_invoices = (array) $cost_invoice_repository->list();
         $project_supplier_pairs = (array) $cost_invoice_repository->project_supplier_pairs();
+        $ksef_service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service($cost_invoice_repository, $cost_invoice_audit_repository, $suppliers_repository, $this->projects),
+            $cost_invoice_repository,
+            $cost_invoice_audit_repository,
+            null,
+            null,
+            $suppliers_repository
+        );
+        $ksef_moderation_filter_status = sanitize_key((string) ($_GET['ksef_status'] ?? ''));
+        $ksef_moderation_queue = $ksef_service->list_moderation_queue(['status' => $ksef_moderation_filter_status]);
+        $ksef_sales_inbox = $ksef_service->list_sales_inbox();
         $supplier_categories = $this->normalize_supplier_categories((array) get_option('erp_omd_supplier_categories', []));
         $selected_supplier_id = max(0, (int) ($_GET['supplier_id'] ?? 0));
         $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));
@@ -1907,6 +1934,195 @@ class ERP_OMD_Admin
      * @param array<string,mixed> $invoice
      * @return void
      */
+
+    private function handle_ksef_queue_moderation_action()
+    {
+        check_admin_referer('erp_omd_moderate_ksef_queue');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $retry_key = sanitize_text_field((string) ($_POST['retry_key'] ?? ''));
+        $action = sanitize_key((string) ($_POST['ksef_action'] ?? ''));
+        if ($retry_key === '' || $action === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(__('Brakuje danych moderacji KSeF.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository()
+        );
+
+        $result = $service->moderate_queue_entry($retry_key, $action, [
+            'supplier_id' => (int) ($_POST['supplier_id'] ?? 0),
+            'project_id' => (int) ($_POST['project_id'] ?? 0),
+        ], (int) get_current_user_id());
+
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'message' => 'ksef_moderation_saved']);
+    }
+
+    private function handle_ksef_queue_bulk_action()
+    {
+        check_admin_referer('erp_omd_bulk_ksef_queue');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $retry_keys = array_values(array_filter(array_map('sanitize_text_field', (array) ($_POST['retry_keys'] ?? []))));
+        $action = sanitize_key((string) ($_POST['ksef_bulk_action'] ?? ''));
+        if ($retry_keys === [] || $action === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(__('Wybierz rekordy i akcję bulk KSeF.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository()
+        );
+
+        $result = $service->bulk_moderate_queue_entries($retry_keys, $action, [
+            'supplier_id' => (int) ($_POST['supplier_id'] ?? 0),
+            'project_id' => (int) ($_POST['project_id'] ?? 0),
+        ], (int) get_current_user_id());
+
+        if (! (bool) ($result['ok'] ?? false) && ! empty($result['errors'])) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'error' => rawurlencode(__('Część rekordów KSeF nie została zmoderowana.', 'erp-omd'))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-moderation', 'message' => 'ksef_bulk_moderation_saved']);
+    }
+
+
+    private function handle_import_ksef_sales_xml_action()
+    {
+        check_admin_referer('erp_omd_import_ksef_sales_xml');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $xml_content = $this->read_ksef_xml_from_request('ksef_sales_xml_content', 'ksef_sales_xml_file');
+        if (trim($xml_content) === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz plik XML.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository(),
+            $this->clients
+        );
+
+        $result = $service->import_sales_xml($xml_content, (int) get_current_user_id());
+        if ((int) ($result['imported'] ?? 0) < 1) {
+            $errors = (array) (($result['errors'][0]['errors'] ?? []) ?: []);
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', $errors))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_xml_imported']);
+    }
+
+    /**
+     * @return string
+     */
+    private function read_ksef_xml_from_request($content_field_name, $file_field_name)
+    {
+        $content_field_name = sanitize_key((string) $content_field_name);
+        $file_field_name = sanitize_key((string) $file_field_name);
+        if ($content_field_name === '' || $file_field_name === '') {
+            return '';
+        }
+
+        $inline_xml = (string) wp_unslash($_POST[$content_field_name] ?? '');
+        if (trim($inline_xml) !== '') {
+            return $inline_xml;
+        }
+
+        if (! isset($_FILES[$file_field_name]) || ! is_array($_FILES[$file_field_name])) {
+            return '';
+        }
+
+        $upload = (array) $_FILES[$file_field_name];
+        $error = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error !== UPLOAD_ERR_OK) {
+            return '';
+        }
+
+        $tmp_name = (string) ($upload['tmp_name'] ?? '');
+        if ($tmp_name === '' || ! is_uploaded_file($tmp_name)) {
+            return '';
+        }
+
+        $content = file_get_contents($tmp_name);
+        return is_string($content) ? $content : '';
+    }
+
+    private function handle_import_ksef_cost_xml_action()
+    {
+        check_admin_referer('erp_omd_import_ksef_cost_xml');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $xml_content = $this->read_ksef_xml_from_request('ksef_cost_xml_content', 'ksef_cost_xml_file');
+        if (trim($xml_content) === '') {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-cost', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz plik XML.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository(),
+            $this->clients
+        );
+
+        $result = $service->import_cost_xml($xml_content, (int) get_current_user_id());
+        if ((int) ($result['imported'] ?? 0) < 1) {
+            $errors = (array) (($result['errors'][0]['errors'] ?? []) ?: []);
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-cost', 'error' => rawurlencode(implode(' ', $errors))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-cost', 'message' => 'ksef_cost_xml_imported']);
+    }
+
+    private function handle_attach_ksef_sales_invoice_action()
+    {
+        check_admin_referer('erp_omd_attach_ksef_sales_invoice');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $sales_id = (int) ($_POST['sales_id'] ?? 0);
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $is_final = ! empty($_POST['is_final']);
+        if ($sales_id <= 0 || $project_id <= 0) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wskaż dokument sprzedażowy i projekt.', 'erp-omd'))]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository(),
+            $this->clients
+        );
+
+        $result = $service->attach_sales_document_to_project($sales_id, $project_id, $is_final, (int) get_current_user_id());
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_attached']);
+    }
+
     private function delete_cost_invoice_with_side_effects(array $invoice)
     {
         $invoice_id = (int) ($invoice['id'] ?? 0);
@@ -3154,7 +3370,16 @@ class ERP_OMD_Admin
         update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
         update_option('erp_omd_front_admin_redirect_enabled', ! empty($_POST['front_admin_redirect_enabled']));
         update_option('erp_omd_reports_v1_rollout', 'all');
+        $company_nip = preg_replace('/[^0-9]/', '', (string) wp_unslash($_POST['company_nip'] ?? ''));
+        if (! is_string($company_nip)) {
+            $company_nip = '';
+        }
+        if ($company_nip !== '' && strlen($company_nip) !== 10) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('NIP firmy musi mieć 10 cyfr.', 'erp-omd'));
+        }
+
         update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
+        update_option('erp_omd_company_nip', $company_nip);
         update_option('erp_omd_reports_v1_metrics_freshness_minutes', max(5, (int) ($_POST['reports_v1_metrics_freshness_minutes'] ?? 1440)));
         $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) ($_POST['reports_v1_slo_generation_p95_max'] ?? 2500)));
         if (! empty($_POST['apply_reports_v1_recommended_p95_max'])) {
@@ -3238,6 +3463,18 @@ class ERP_OMD_Admin
         if ($google_calendar_technical_account_email !== '' && ! is_email($google_calendar_technical_account_email)) {
             $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres e-mail konta technicznego Google Calendar jest niepoprawny.', 'erp-omd'));
         }
+        $ksef_api_enabled = ! empty($_POST['ksef_api_enabled']);
+        $ksef_api_mode = sanitize_key((string) wp_unslash($_POST['ksef_api_mode'] ?? 'from_now'));
+        if (! in_array($ksef_api_mode, ['from_now', 'backfill', 'all'], true)) {
+            $ksef_api_mode = 'from_now';
+        }
+        $ksef_api_registration_date = sanitize_text_field((string) wp_unslash($_POST['ksef_api_registration_date'] ?? ''));
+        if ($ksef_api_registration_date !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $ksef_api_registration_date) !== 1) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Data rejestracji KSeF musi mieć format YYYY-MM-DD.', 'erp-omd'));
+        }
+        $ksef_api_backfill_days = max(1, min(90, (int) wp_unslash($_POST['ksef_api_backfill_days'] ?? 90)));
+        $ksef_api_alert_after_hours = max(1, min(168, (int) wp_unslash($_POST['ksef_api_alert_after_hours'] ?? 24)));
+        $ksef_api_token = trim((string) wp_unslash($_POST['ksef_api_token'] ?? ''));
 
         update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
         update_option('erp_omd_google_calendar_scope', $google_calendar_scope);
@@ -3246,6 +3483,14 @@ class ERP_OMD_Admin
         update_option('erp_omd_google_calendar_technical_account_email', $google_calendar_technical_account_email);
         if ($google_calendar_client_secret !== '') {
             update_option('erp_omd_google_calendar_client_secret_enc', $this->encrypt_option_value($google_calendar_client_secret));
+        }
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENABLED, $ksef_api_enabled);
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, $ksef_api_mode);
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, $ksef_api_registration_date);
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, $ksef_api_backfill_days);
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, $ksef_api_alert_after_hours);
+        if ($ksef_api_token !== '') {
+            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, $this->encrypt_option_value($ksef_api_token));
         }
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
@@ -3338,6 +3583,62 @@ class ERP_OMD_Admin
         }
 
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Lista kalendarzy Google została pobrana.', 'erp-omd'));
+    }
+
+    private function handle_ksef_api_sync_now()
+    {
+        check_admin_referer('erp_omd_ksef_api_sync_now');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $scope = sanitize_key((string) ($_POST['ksef_sync_scope'] ?? 'both'));
+        if (! in_array($scope, ['cost', 'sales', 'both'], true)) {
+            $scope = 'both';
+        }
+        $mode = sanitize_key((string) ($_POST['ksef_sync_mode'] ?? get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, 'from_now')));
+        if (! in_array($mode, ['from_now', 'backfill', 'all'], true)) {
+            $mode = 'from_now';
+        }
+        $backfill_days = max(1, min(90, (int) ($_POST['ksef_sync_backfill_days'] ?? get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90))));
+
+        $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
+        $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
+        $supplier_repository = new ERP_OMD_Supplier_Repository();
+        $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
+            $invoice_repository,
+            $audit_repository,
+            $supplier_repository,
+            new ERP_OMD_Project_Repository()
+        );
+        $import_service = new ERP_OMD_KSeF_Import_Service(
+            $workflow,
+            $invoice_repository,
+            $audit_repository,
+            null,
+            null,
+            $supplier_repository,
+            new ERP_OMD_Client_Repository()
+        );
+        $sync_service = new ERP_OMD_KSeF_API_Sync_Service($import_service, (string) get_option('erp_omd_company_nip', ''));
+        $result = $sync_service->sync([
+            'scope' => $scope,
+            'mode' => $mode,
+            'backfill_days' => $backfill_days,
+            'force_now' => true,
+        ]);
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Synchronizacja KSeF nie powiodła się: %s', 'erp-omd'), (string) ($result['last_error'] ?? '')));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'success',
+            sprintf(
+                __('Synchronizacja KSeF zakończona: pobrano %1$d, zaimportowano %2$d, błędy %3$d.', 'erp-omd'),
+                (int) ($result['fetched'] ?? 0),
+                (int) ($result['imported'] ?? 0),
+                (int) ($result['failed'] ?? 0)
+            )
+        );
     }
 
     private function handle_google_calendar_oauth_callback()
