@@ -3,6 +3,7 @@
 class ERP_OMD_KSeF_API_Sync_Service
 {
     const OPTION_TOKEN_ENC = 'erp_omd_ksef_api_token_enc';
+    const OPTION_REFRESH_TOKEN_ENC = 'erp_omd_ksef_api_refresh_token_enc';
     const OPTION_ENABLED = 'erp_omd_ksef_api_enabled';
     const OPTION_MODE = 'erp_omd_ksef_sync_mode';
     const OPTION_REGISTRATION_DATE = 'erp_omd_ksef_registration_date';
@@ -42,6 +43,9 @@ class ERP_OMD_KSeF_API_Sync_Service
         if ($token === '') {
             return $this->fail(__('Brak tokenu KSeF API.', 'erp-omd'));
         }
+        if (substr_count($token, '.') < 2) {
+            return $this->fail(__('Podany token nie jest accessToken JWT. Najpierw wykonaj uwierzytelnienie KSeF 2.0 i podaj accessToken.', 'erp-omd'));
+        }
 
         $scope = in_array((string) ($params['scope'] ?? 'both'), ['cost', 'sales', 'both'], true)
             ? (string) ($params['scope'] ?? 'both')
@@ -52,6 +56,13 @@ class ERP_OMD_KSeF_API_Sync_Service
 
         $window = $this->build_window($mode, $params);
         $documents = $this->fetch_documents($token, $window['from'], $window['to']);
+        if (is_wp_error($documents) && (int) $documents->get_error_data('http_code') === 401) {
+            $refreshed = $this->refresh_access_token();
+            if ($refreshed !== '') {
+                $token = $refreshed;
+                $documents = $this->fetch_documents($token, $window['from'], $window['to']);
+            }
+        }
         if (is_wp_error($documents)) {
             return $this->fail($documents->get_error_message());
         }
@@ -146,7 +157,8 @@ class ERP_OMD_KSeF_API_Sync_Service
             }
             return new WP_Error(
                 'erp_omd_ksef_sync_http_error',
-                sprintf(__('Błąd pobierania metadanych KSeF (HTTP %1$d): %2$s', 'erp-omd'), $code, $message)
+                sprintf(__('Błąd pobierania metadanych KSeF (HTTP %1$d): %2$s', 'erp-omd'), $code, $message),
+                ['http_code' => $code]
             );
         }
 
@@ -258,5 +270,48 @@ class ERP_OMD_KSeF_API_Sync_Service
         }
 
         return '';
+    }
+
+    private function refresh_access_token()
+    {
+        $refresh_token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_REFRESH_TOKEN_ENC, '')));
+        if ($refresh_token === '') {
+            return '';
+        }
+        $api_base_url = trim((string) get_option(self::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl'));
+        if ($api_base_url === '' || ! wp_http_validate_url($api_base_url)) {
+            $api_base_url = 'https://api.ksef.mf.gov.pl';
+        }
+        $endpoint = rtrim($api_base_url, '/') . '/api/v2/auth/token/refresh';
+        $response = wp_remote_post($endpoint, [
+            'timeout' => 20,
+            'headers' => [
+                'Authorization' => 'Bearer ' . $refresh_token,
+                'Content-Type' => 'application/json',
+            ],
+            'body' => '{}',
+        ]);
+        if (is_wp_error($response)) {
+            return '';
+        }
+        if ((int) wp_remote_retrieve_response_code($response) >= 400) {
+            return '';
+        }
+        $payload = json_decode((string) wp_remote_retrieve_body($response), true);
+        $new_access_token = trim((string) ($payload['accessToken']['token'] ?? $payload['accessToken'] ?? ''));
+        if ($new_access_token === '') {
+            return '';
+        }
+        update_option(self::OPTION_TOKEN_ENC, $this->encrypt_value($new_access_token));
+        return $new_access_token;
+    }
+
+    private function encrypt_value($value)
+    {
+        $key = hash('sha256', (string) wp_salt('auth'), true);
+        $iv = substr(hash('sha256', (string) wp_salt('secure_auth')), 0, 16);
+        $cipher = openssl_encrypt((string) $value, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+
+        return $cipher !== false ? base64_encode($cipher) : '';
     }
 }

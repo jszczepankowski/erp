@@ -1041,6 +1041,7 @@ class ERP_OMD_Admin
         $ksef_api_base_url = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl');
         $ksef_auto_create_supplier = (bool) get_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, false);
         $ksef_api_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, '')));
+        $ksef_api_refresh_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC, '')));
         $ksef_api_last_sync_at = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_SYNC_AT, '');
         $ksef_api_last_error = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_ERROR, '');
         $ksef_api_last_result = (array) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_RESULT, []);
@@ -3485,6 +3486,7 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-settings', 'error', __('Bazowy URL KSeF API jest niepoprawny.', 'erp-omd'));
         }
         $ksef_api_token = trim((string) wp_unslash($_POST['ksef_api_token'] ?? ''));
+        $ksef_api_refresh_token = trim((string) wp_unslash($_POST['ksef_api_refresh_token'] ?? ''));
         $ksef_auto_create_supplier = ! empty($_POST['ksef_auto_create_supplier']);
 
         update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
@@ -3504,6 +3506,9 @@ class ERP_OMD_Admin
         update_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, $ksef_auto_create_supplier);
         if ($ksef_api_token !== '') {
             update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, $this->encrypt_option_value($ksef_api_token));
+        }
+        if ($ksef_api_refresh_token !== '') {
+            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC, $this->encrypt_option_value($ksef_api_refresh_token));
         }
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
