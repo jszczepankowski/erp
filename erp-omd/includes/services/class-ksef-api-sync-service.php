@@ -42,40 +42,9 @@ class ERP_OMD_KSeF_API_Sync_Service
 
     public function sync(array $params = [])
     {
-        $this->auth_diagnostic = '';
-        $stored_token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_TOKEN_ENC, '')));
-        $token = '';
-        $ap_token_fallback = '';
-        if ($stored_token !== '') {
-            if (substr_count($stored_token, '.') >= 2) {
-                $token = $stored_token;
-            } else {
-                $ap_token_fallback = $stored_token;
-            }
-        }
-        if ($token === '') {
-            $refreshed = $this->refresh_access_token();
-            if ($refreshed !== '') {
-                $token = $refreshed;
-            }
-        }
-        if ($token === '') {
-            $redeemed = $this->redeem_access_token_from_ap_token();
-            if ($redeemed !== '') {
-                $token = $redeemed;
-            }
-        }
-        if ($token === '' && $ap_token_fallback !== '') {
-            $redeemed = $this->redeem_access_token_from_ap_token_value($ap_token_fallback);
-            if ($redeemed !== '') {
-                $token = $redeemed;
-            }
-        }
+        $token = $this->obtain_access_token();
         if ($token === '') {
             $message = __('Brak accessToken KSeF API. Uzupełnij accessToken JWT, refreshToken lub token KSeF z AP + NIP.', 'erp-omd');
-            if ($ap_token_fallback !== '') {
-                $message .= ' ' . __('Podany token nie jest accessToken JWT. Token KSeF wymaga osobnego flow uwierzytelnienia (challenge + encryptedToken) w API KSeF 2.0.', 'erp-omd');
-            }
             if ($this->auth_diagnostic !== '') {
                 $message .= ' ' . sprintf(__('Szczegóły AP flow: %s', 'erp-omd'), $this->auth_diagnostic);
             }
@@ -105,13 +74,6 @@ class ERP_OMD_KSeF_API_Sync_Service
                 $documents = $this->fetch_documents($token, $window['from'], $window['to']);
             }
         }
-        if (is_wp_error($documents) && (int) $documents->get_error_data('http_code') === 401 && $ap_token_fallback !== '') {
-            $redeemed = $this->redeem_access_token_from_ap_token_value($ap_token_fallback);
-            if ($redeemed !== '') {
-                $token = $redeemed;
-                $documents = $this->fetch_documents($token, $window['from'], $window['to']);
-            }
-        }
         if (is_wp_error($documents)) {
             return $this->fail($documents->get_error_message());
         }
@@ -136,6 +98,38 @@ class ERP_OMD_KSeF_API_Sync_Service
         update_option(self::OPTION_LAST_CURSOR, $window['to']);
 
         return $payload;
+    }
+
+    public function test_connection()
+    {
+        $this->auth_diagnostic = '';
+        $token = $this->obtain_access_token();
+        if ($token === '') {
+            return [
+                'ok' => false,
+                'message' => __('Nie udało się uzyskać accessToken KSeF.', 'erp-omd'),
+                'diagnostic' => $this->auth_diagnostic,
+            ];
+        }
+
+        $to = current_time('mysql');
+        $from = gmdate('Y-m-d H:i:s', strtotime($to . ' -1 day'));
+        $documents = $this->fetch_documents($token, $from, $to);
+        if (is_wp_error($documents)) {
+            return [
+                'ok' => false,
+                'message' => $documents->get_error_message(),
+                'diagnostic' => $this->auth_diagnostic,
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'message' => __('Połączenie z KSeF działa poprawnie.', 'erp-omd'),
+            'fetched' => count((array) $documents),
+            'from' => $from,
+            'to' => $to,
+        ];
     }
 
     public function fetch_and_store_token_encryption_public_key()
@@ -215,7 +209,8 @@ class ERP_OMD_KSeF_API_Sync_Service
 
         $cursor = sanitize_text_field((string) get_option(self::OPTION_LAST_CURSOR, ''));
         if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $cursor) === 1) {
-            return ['from' => $cursor, 'to' => $to];
+            $from = gmdate('Y-m-d H:i:s', strtotime($cursor . ' -5 minutes'));
+            return ['from' => $from, 'to' => $to];
         }
 
         return ['from' => $to_date . ' 00:00:00', 'to' => $to];
@@ -301,6 +296,32 @@ class ERP_OMD_KSeF_API_Sync_Service
         }
 
         return $all_items;
+    }
+
+    private function obtain_access_token()
+    {
+        $this->auth_diagnostic = '';
+        $stored_token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_TOKEN_ENC, '')));
+        if ($stored_token !== '' && substr_count($stored_token, '.') >= 2) {
+            return $stored_token;
+        }
+
+        $refreshed = $this->refresh_access_token();
+        if ($refreshed !== '') {
+            return $refreshed;
+        }
+
+        $redeemed = $this->redeem_access_token_from_ap_token();
+        if ($redeemed !== '') {
+            return $redeemed;
+        }
+
+        if ($stored_token !== '') {
+            $message = __('Podany token nie jest accessToken JWT. Token KSeF wymaga osobnego flow uwierzytelnienia (challenge + encryptedToken) w API KSeF 2.0.', 'erp-omd');
+            $this->auth_diagnostic = trim($this->auth_diagnostic . ' ' . $message);
+        }
+
+        return '';
     }
 
     private function normalize_documents(array $items, $scope)

@@ -333,6 +333,9 @@
                                 ?>
                             </p>
                             <p>
+                                <button type="submit" class="button button-secondary" form="erp-omd-ksef-api-test-connection-form"><?php esc_html_e('Test połączenia KSeF', 'erp-omd'); ?></button>
+                            </p>
+                            <p>
                                 <button type="submit" class="button" form="erp-omd-ksef-api-sync-now-form"><?php esc_html_e('Synchronizuj KSeF teraz', 'erp-omd'); ?></button>
                             </p>
                         </div>
@@ -527,6 +530,10 @@
         <form id="erp-omd-ksef-api-sync-now-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_ksef_api_sync_now'); ?>
             <input type="hidden" name="erp_omd_action" value="ksef_api_sync_now" />
+        </form>
+        <form id="erp-omd-ksef-api-test-connection-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
+            <?php wp_nonce_field('erp_omd_ksef_api_test_connection'); ?>
+            <input type="hidden" name="erp_omd_action" value="ksef_api_test_connection" />
         </form>
         <form id="erp-omd-ksef-fetch-public-key-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_ksef_fetch_public_key'); ?>
