@@ -254,7 +254,7 @@
                         <h3><?php esc_html_e('KSeF API (auto fetch/sync)', 'erp-omd'); ?></h3>
                         <p><?php esc_html_e('Konfiguracja automatycznej synchronizacji KSeF (cron 1h), status oraz ręczny sync/backfill.', 'erp-omd'); ?></p>
                         <p class="description">
-                            <?php esc_html_e('Checklist „co wkleić gdzie”: (1) NIP naszej firmy → pole „NIP naszej firmy (KSeF)”, (2) Token AP → pole „Token KSeF z AP”, (3) Publiczny PEM → pole „KSeF klucz publiczny PEM”.', 'erp-omd'); ?>
+                            <?php esc_html_e('Checklist „co wkleić gdzie”: (1) NIP naszej firmy → pole „NIP naszej firmy (KSeF)”, (2) Token AP → pole „Token KSeF z AP”. Klucz publiczny KSeF (MF) pobiera się automatycznie podczas autoryzacji.', 'erp-omd'); ?>
                         </p>
                         <p class="description">
                             <?php esc_html_e('Jak zweryfikować flow: uruchom „Synchronizuj KSeF teraz” i sprawdź, czy „Ostatni błąd” jest pusty, „Ostatni udany sync” ma aktualną datę oraz „Ostatni wynik” pokazuje pobrane/zaimportowane dokumenty.', 'erp-omd'); ?>
@@ -272,44 +272,12 @@
                             </label>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                            <label for="erp-omd-ksef-api-token"><?php esc_html_e('Token KSeF API', 'erp-omd'); ?></label>
-                            <input id="erp-omd-ksef-api-token" type="password" name="ksef_api_token" value="" autocomplete="new-password" />
-                            <p class="description"><?php esc_html_e('Wprowadź accessToken JWT (nie surowy token KSeF). Jeśli go nie masz, podaj refreshToken poniżej.', 'erp-omd'); ?></p>
-                            <?php if ($ksef_api_token_masked !== '') : ?>
-                                <p class="description"><?php echo esc_html(sprintf(__('Obecny token: %s (pozostaw puste, aby nie zmieniać).', 'erp-omd'), $ksef_api_token_masked)); ?></p>
-                                <label class="erp-omd-form-label">
-                                    <input type="checkbox" name="ksef_api_token_clear" value="1" />
-                                    <?php esc_html_e('Wyczyść zapisany accessToken JWT', 'erp-omd'); ?>
-                                </label>
-                            <?php endif; ?>
-                        </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                            <label for="erp-omd-ksef-api-refresh-token"><?php esc_html_e('KSeF refreshToken (opcjonalny)', 'erp-omd'); ?></label>
-                            <input id="erp-omd-ksef-api-refresh-token" type="password" name="ksef_api_refresh_token" value="" autocomplete="new-password" />
-                            <?php if ($ksef_api_refresh_token_masked !== '') : ?>
-                                <p class="description"><?php echo esc_html(sprintf(__('Obecny refreshToken: %s (pozostaw puste, aby nie zmieniać).', 'erp-omd'), $ksef_api_refresh_token_masked)); ?></p>
-                                <label class="erp-omd-form-label">
-                                    <input type="checkbox" name="ksef_api_refresh_token_clear" value="1" />
-                                    <?php esc_html_e('Wyczyść zapisany refreshToken', 'erp-omd'); ?>
-                                </label>
-                            <?php endif; ?>
-                        </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-ksef-ap-token"><?php esc_html_e('Token KSeF z AP (opcjonalny)', 'erp-omd'); ?></label>
                             <input id="erp-omd-ksef-ap-token" type="password" name="ksef_ap_token" value="" autocomplete="new-password" />
-                            <p class="description"><?php esc_html_e('Używany w flow challenge → auth/ksef-token → redeem, gdy brak accessToken JWT.', 'erp-omd'); ?></p>
+                            <p class="description"><?php esc_html_e('Wymagany do flow challenge → auth/ksef-token → redeem.', 'erp-omd'); ?></p>
                             <?php if ($ksef_ap_token_masked !== '') : ?>
                                 <p class="description"><?php echo esc_html(sprintf(__('Obecny token AP: %s (pozostaw puste, aby nie zmieniać).', 'erp-omd'), $ksef_ap_token_masked)); ?></p>
                             <?php endif; ?>
-                        </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                            <label for="erp-omd-ksef-public-key-pem"><?php esc_html_e('KSeF klucz publiczny PEM', 'erp-omd'); ?></label>
-                            <textarea id="erp-omd-ksef-public-key-pem" name="ksef_public_key_pem" rows="4" class="large-text"><?php echo esc_textarea((string) $ksef_public_key_pem); ?></textarea>
-                            <p class="description"><?php esc_html_e('Klucz RSA w formacie PEM używany do szyfrowania token|timestamp (encryptedToken).', 'erp-omd'); ?></p>
-                            <p class="description"><?php esc_html_e('Uwaga: to musi być klucz publiczny KSeF (MF) dla danego środowiska API, a nie certyfikat uwierzytelniający podatnika.', 'erp-omd'); ?></p>
-                            <p style="margin-top:8px;">
-                                <button type="submit" class="button button-secondary" form="erp-omd-ksef-fetch-public-key-form"><?php esc_html_e('Pobierz klucz publiczny KSeF (MF)', 'erp-omd'); ?></button>
-                            </p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-ksef-sync-mode"><?php esc_html_e('Domyślny tryb sync', 'erp-omd'); ?></label>
@@ -332,7 +300,7 @@
                             <input id="erp-omd-ksef-alert-hours" type="number" min="1" max="168" step="1" name="ksef_api_alert_after_hours" value="<?php echo esc_attr((string) $ksef_api_alert_after_hours); ?>" />
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                            <label for="erp-omd-ksef-api-base-url"><?php esc_html_e('KSeF API base URL', 'erp-omd'); ?></label>
+                            <label for="erp-omd-ksef-api-base-url"><?php esc_html_e('KSeF API base URL (z /v2)', 'erp-omd'); ?></label>
                             <input id="erp-omd-ksef-api-base-url" type="url" name="ksef_api_base_url" value="<?php echo esc_attr((string) $ksef_api_base_url); ?>" />
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
@@ -363,6 +331,9 @@
                                     echo '—';
                                 }
                                 ?>
+                            </p>
+                            <p>
+                                <button type="submit" class="button button-secondary" form="erp-omd-ksef-api-test-connection-form"><?php esc_html_e('Test połączenia KSeF', 'erp-omd'); ?></button>
                             </p>
                             <p>
                                 <button type="submit" class="button" form="erp-omd-ksef-api-sync-now-form"><?php esc_html_e('Synchronizuj KSeF teraz', 'erp-omd'); ?></button>
@@ -559,6 +530,10 @@
         <form id="erp-omd-ksef-api-sync-now-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_ksef_api_sync_now'); ?>
             <input type="hidden" name="erp_omd_action" value="ksef_api_sync_now" />
+        </form>
+        <form id="erp-omd-ksef-api-test-connection-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
+            <?php wp_nonce_field('erp_omd_ksef_api_test_connection'); ?>
+            <input type="hidden" name="erp_omd_action" value="ksef_api_test_connection" />
         </form>
         <form id="erp-omd-ksef-fetch-public-key-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_ksef_fetch_public_key'); ?>
