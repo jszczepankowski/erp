@@ -528,15 +528,14 @@ class ERP_OMD_KSeF_API_Sync_Service
     private function encrypt_ap_token($ap_token, $timestamp, $public_key_pem)
     {
         $plain = (string) $ap_token . '|' . (string) $timestamp;
-        $public_key = openssl_pkey_get_public((string) $public_key_pem);
+        $public_key = $this->resolve_public_key($public_key_pem);
         if ($public_key === false) {
+            $this->auth_diagnostic = __('Nieprawidłowy PEM — nie udało się odczytać klucza publicznego/certyfikatu.', 'erp-omd');
             return '';
         }
         $encrypted = '';
         $ok = openssl_public_encrypt($plain, $encrypted, $public_key, OPENSSL_PKCS1_OAEP_PADDING);
-        if (is_resource($public_key)) {
-            openssl_free_key($public_key);
-        }
+        $this->free_openssl_key($public_key);
         if (! $ok || $encrypted === '') {
             return '';
         }
@@ -628,6 +627,60 @@ class ERP_OMD_KSeF_API_Sync_Service
         }
 
         return "-----BEGIN CERTIFICATE-----\n" . chunk_split($base64, 64, "\n") . "-----END CERTIFICATE-----";
+    }
+
+    private function resolve_public_key($public_key_pem)
+    {
+        $pem = trim((string) $public_key_pem);
+        if ($pem === '') {
+            return false;
+        }
+        $pem = str_replace(["\r\n", "\r"], "\n", $pem);
+        $pem = str_replace('\\n', "\n", $pem);
+        $pem = trim($pem, "\"' \n\t");
+
+        $public_key = openssl_pkey_get_public($pem);
+        if ($public_key !== false) {
+            return $public_key;
+        }
+
+        $x509 = openssl_x509_read($pem);
+        if ($x509 !== false) {
+            $public_from_cert = openssl_pkey_get_public($x509);
+            if (is_resource($x509)) {
+                openssl_x509_free($x509);
+            }
+            if ($public_from_cert !== false) {
+                return $public_from_cert;
+            }
+        }
+
+        if (strpos($pem, 'BEGIN') === false && preg_match('/^[A-Za-z0-9+\/=\s]+$/', $pem)) {
+            $wrapped = "-----BEGIN CERTIFICATE-----\n" . chunk_split(preg_replace('/\s+/', '', $pem), 64, "\n") . "-----END CERTIFICATE-----";
+            $x509 = openssl_x509_read($wrapped);
+            if ($x509 !== false) {
+                $public_from_cert = openssl_pkey_get_public($x509);
+                if (is_resource($x509)) {
+                    openssl_x509_free($x509);
+                }
+                if ($public_from_cert !== false) {
+                    return $public_from_cert;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function free_openssl_key($key)
+    {
+        if (is_resource($key)) {
+            openssl_free_key($key);
+            return;
+        }
+        if (is_object($key) && get_class($key) === 'OpenSSLAsymmetricKey' && function_exists('openssl_pkey_free')) {
+            openssl_pkey_free($key);
+        }
     }
 
     private function http_response_diagnostic($response_or_payload, $http_code, $fallback)
