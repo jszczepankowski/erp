@@ -90,6 +90,24 @@ class ERP_OMD_Client_Repository
         return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table_name()} WHERE id = %d", $id), ARRAY_A);
     }
 
+    public function find_by_nip($nip)
+    {
+        global $wpdb;
+
+        $nip = preg_replace('/[^0-9]/', '', (string) $nip);
+        if (! is_string($nip) || $nip === '') {
+            return [];
+        }
+
+        return (array) $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$this->table_name()} WHERE REPLACE(REPLACE(REPLACE(nip, '-', ''), ' ', ''), '.', '') = %s ORDER BY id ASC",
+                $nip
+            ),
+            ARRAY_A
+        );
+    }
+
     public function create(array $data)
     {
         global $wpdb;
