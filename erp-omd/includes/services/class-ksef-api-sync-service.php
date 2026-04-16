@@ -997,6 +997,12 @@ class ERP_OMD_KSeF_API_Sync_Service
             $challenge_row['token'] ?? '',
         ];
         foreach ($candidates as $candidate) {
+            if (is_array($candidate)) {
+                $candidate = $candidate['value'] ?? $candidate['challenge'] ?? $candidate['token'] ?? reset($candidate);
+            }
+            if (! is_scalar($candidate)) {
+                continue;
+            }
             $value = trim((string) $candidate);
             if ($value !== '') {
                 return $value;
@@ -1017,6 +1023,14 @@ class ERP_OMD_KSeF_API_Sync_Service
             $challenge_row['date'] ?? '',
         ];
         foreach ($candidates as $candidate) {
+            if (is_array($candidate)) {
+                $candidate = $candidate['value']
+                    ?? $candidate['timestamp']
+                    ?? $candidate['date']
+                    ?? $candidate['createdAt']
+                    ?? $candidate['ticks']
+                    ?? reset($candidate);
+            }
             if (is_scalar($candidate) && trim((string) $candidate) !== '') {
                 return $candidate;
             }
