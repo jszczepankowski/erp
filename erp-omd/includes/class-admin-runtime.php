@@ -477,6 +477,7 @@ class ERP_OMD_Admin
             case 'google_calendar_disconnect': $this->handle_google_calendar_disconnect(); break;
             case 'google_calendar_sync_now': $this->handle_google_calendar_sync_now(); break;
             case 'google_calendar_fetch_calendars': $this->handle_google_calendar_fetch_calendars(); break;
+            case 'ksef_api_sync_now': $this->handle_ksef_api_sync_now(); break;
             case 'delete_client': $this->handle_client_delete(); break;
             case 'delete_project': $this->handle_project_delete(); break;
         }
@@ -1032,6 +1033,15 @@ class ERP_OMD_Admin
         $google_calendar_connected = $this->decrypt_option_value((string) get_option('erp_omd_google_calendar_refresh_token_enc', '')) !== '';
         $google_calendar_last_sync_at = (string) get_option('erp_omd_google_calendar_last_sync_at', '');
         $google_calendar_last_error = (string) get_option('erp_omd_google_calendar_last_error', '');
+        $ksef_api_enabled = (bool) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENABLED, false);
+        $ksef_api_mode = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, 'from_now');
+        $ksef_api_registration_date = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, '');
+        $ksef_api_backfill_days = max(1, min(90, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90)));
+        $ksef_api_alert_after_hours = max(1, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, 24));
+        $ksef_api_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, '')));
+        $ksef_api_last_sync_at = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_SYNC_AT, '');
+        $ksef_api_last_error = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_ERROR, '');
+        $ksef_api_last_result = (array) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_RESULT, []);
 
         include ERP_OMD_PATH . 'templates/admin/settings.php';
     }
@@ -3453,6 +3463,18 @@ class ERP_OMD_Admin
         if ($google_calendar_technical_account_email !== '' && ! is_email($google_calendar_technical_account_email)) {
             $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres e-mail konta technicznego Google Calendar jest niepoprawny.', 'erp-omd'));
         }
+        $ksef_api_enabled = ! empty($_POST['ksef_api_enabled']);
+        $ksef_api_mode = sanitize_key((string) wp_unslash($_POST['ksef_api_mode'] ?? 'from_now'));
+        if (! in_array($ksef_api_mode, ['from_now', 'backfill', 'all'], true)) {
+            $ksef_api_mode = 'from_now';
+        }
+        $ksef_api_registration_date = sanitize_text_field((string) wp_unslash($_POST['ksef_api_registration_date'] ?? ''));
+        if ($ksef_api_registration_date !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $ksef_api_registration_date) !== 1) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Data rejestracji KSeF musi mieć format YYYY-MM-DD.', 'erp-omd'));
+        }
+        $ksef_api_backfill_days = max(1, min(90, (int) wp_unslash($_POST['ksef_api_backfill_days'] ?? 90)));
+        $ksef_api_alert_after_hours = max(1, min(168, (int) wp_unslash($_POST['ksef_api_alert_after_hours'] ?? 24)));
+        $ksef_api_token = trim((string) wp_unslash($_POST['ksef_api_token'] ?? ''));
 
         update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
         update_option('erp_omd_google_calendar_scope', $google_calendar_scope);
@@ -3461,6 +3483,14 @@ class ERP_OMD_Admin
         update_option('erp_omd_google_calendar_technical_account_email', $google_calendar_technical_account_email);
         if ($google_calendar_client_secret !== '') {
             update_option('erp_omd_google_calendar_client_secret_enc', $this->encrypt_option_value($google_calendar_client_secret));
+        }
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENABLED, $ksef_api_enabled);
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, $ksef_api_mode);
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, $ksef_api_registration_date);
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, $ksef_api_backfill_days);
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, $ksef_api_alert_after_hours);
+        if ($ksef_api_token !== '') {
+            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, $this->encrypt_option_value($ksef_api_token));
         }
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
@@ -3553,6 +3583,62 @@ class ERP_OMD_Admin
         }
 
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Lista kalendarzy Google została pobrana.', 'erp-omd'));
+    }
+
+    private function handle_ksef_api_sync_now()
+    {
+        check_admin_referer('erp_omd_ksef_api_sync_now');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $scope = sanitize_key((string) ($_POST['ksef_sync_scope'] ?? 'both'));
+        if (! in_array($scope, ['cost', 'sales', 'both'], true)) {
+            $scope = 'both';
+        }
+        $mode = sanitize_key((string) ($_POST['ksef_sync_mode'] ?? get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, 'from_now')));
+        if (! in_array($mode, ['from_now', 'backfill', 'all'], true)) {
+            $mode = 'from_now';
+        }
+        $backfill_days = max(1, min(90, (int) ($_POST['ksef_sync_backfill_days'] ?? get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90))));
+
+        $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
+        $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
+        $supplier_repository = new ERP_OMD_Supplier_Repository();
+        $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
+            $invoice_repository,
+            $audit_repository,
+            $supplier_repository,
+            new ERP_OMD_Project_Repository()
+        );
+        $import_service = new ERP_OMD_KSeF_Import_Service(
+            $workflow,
+            $invoice_repository,
+            $audit_repository,
+            null,
+            null,
+            $supplier_repository,
+            new ERP_OMD_Client_Repository()
+        );
+        $sync_service = new ERP_OMD_KSeF_API_Sync_Service($import_service, (string) get_option('erp_omd_company_nip', ''));
+        $result = $sync_service->sync([
+            'scope' => $scope,
+            'mode' => $mode,
+            'backfill_days' => $backfill_days,
+            'force_now' => true,
+        ]);
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Synchronizacja KSeF nie powiodła się: %s', 'erp-omd'), (string) ($result['last_error'] ?? '')));
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'success',
+            sprintf(
+                __('Synchronizacja KSeF zakończona: pobrano %1$d, zaimportowano %2$d, błędy %3$d.', 'erp-omd'),
+                (int) ($result['fetched'] ?? 0),
+                (int) ($result['imported'] ?? 0),
+                (int) ($result['failed'] ?? 0)
+            )
+        );
     }
 
     private function handle_google_calendar_oauth_callback()
