@@ -3502,7 +3502,15 @@ class ERP_OMD_Admin
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, $ksef_api_registration_date);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, $ksef_api_backfill_days);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, $ksef_api_alert_after_hours);
+        $previous_ksef_api_base_url = trim((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_API_BASE_URL, ''));
+        $new_ksef_api_base_url = rtrim($ksef_api_base_url, '/');
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_API_BASE_URL, $ksef_api_base_url);
+        if ($previous_ksef_api_base_url !== '' && rtrim($previous_ksef_api_base_url, '/') !== $new_ksef_api_base_url) {
+            delete_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_PUBLIC_KEY_PEM);
+            delete_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_PUBLIC_KEY_SOURCE_URL);
+            delete_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC);
+            delete_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC);
+        }
         update_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, $ksef_auto_create_supplier);
         if ($ksef_ap_token !== '') {
             update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_AP_TOKEN_ENC, $this->encrypt_option_value($ksef_ap_token));
