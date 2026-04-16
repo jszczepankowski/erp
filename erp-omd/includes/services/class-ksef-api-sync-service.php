@@ -470,34 +470,48 @@ class ERP_OMD_KSeF_API_Sync_Service
     private function authenticate_with_ksef_token($challenge, $company_nip, $encrypted_token)
     {
         $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/auth/ksef-token';
-        $payload = [
-            'challenge' => (string) $challenge,
-            'contextIdentifier' => ['type' => 'onip', 'value' => (string) $company_nip],
-            'encryptedToken' => (string) $encrypted_token,
-        ];
-        $response = wp_remote_post($endpoint, [
-            'timeout' => 20,
-            'headers' => ['Content-Type' => 'application/json'],
-            'body' => wp_json_encode($payload),
-        ]);
-        if (is_wp_error($response)) {
-            $this->auth_diagnostic = $this->http_response_diagnostic($response, 0, __('Błąd /auth/ksef-token.', 'erp-omd'));
-            return [];
+        $context_types = ['Nip', 'nip', 'onip'];
+        $last_diagnostic = '';
+
+        foreach ($context_types as $context_type) {
+            $payload = [
+                'challenge' => (string) $challenge,
+                'contextIdentifier' => ['type' => (string) $context_type, 'value' => (string) $company_nip],
+                'encryptedToken' => (string) $encrypted_token,
+            ];
+            $response = wp_remote_post($endpoint, [
+                'timeout' => 20,
+                'headers' => ['Content-Type' => 'application/json'],
+                'body' => wp_json_encode($payload),
+            ]);
+            if (is_wp_error($response)) {
+                $last_diagnostic = $this->http_response_diagnostic($response, 0, __('Błąd /auth/ksef-token.', 'erp-omd'));
+                continue;
+            }
+            $response_code = (int) wp_remote_retrieve_response_code($response);
+            if ($response_code >= 400) {
+                $payload = json_decode((string) wp_remote_retrieve_body($response), true);
+                $last_diagnostic = $this->http_response_diagnostic(
+                    $payload,
+                    $response_code,
+                    sprintf(__('Błąd /auth/ksef-token (contextIdentifier.type=%s).', 'erp-omd'), $context_type)
+                );
+                continue;
+            }
+            $row = json_decode((string) wp_remote_retrieve_body($response), true);
+            if (! is_array($row)) {
+                continue;
+            }
+
+            return [
+                'authentication_token' => trim((string) ($row['authenticationToken']['token'] ?? $row['authenticationToken'] ?? '')),
+                'reference_number' => trim((string) ($row['referenceNumber'] ?? '')),
+            ];
         }
-        $response_code = (int) wp_remote_retrieve_response_code($response);
-        if ($response_code >= 400) {
-            $payload = json_decode((string) wp_remote_retrieve_body($response), true);
-            $this->auth_diagnostic = $this->http_response_diagnostic($payload, $response_code, __('Błąd /auth/ksef-token.', 'erp-omd'));
-            return [];
-        }
-        $row = json_decode((string) wp_remote_retrieve_body($response), true);
-        if (! is_array($row)) {
-            return [];
-        }
-        return [
-            'authentication_token' => trim((string) ($row['authenticationToken']['token'] ?? $row['authenticationToken'] ?? '')),
-            'reference_number' => trim((string) ($row['referenceNumber'] ?? '')),
-        ];
+
+        $this->auth_diagnostic = $last_diagnostic !== '' ? $last_diagnostic : __('Błąd /auth/ksef-token.', 'erp-omd');
+
+        return [];
     }
 
     private function redeem_authentication_token($authentication_token)

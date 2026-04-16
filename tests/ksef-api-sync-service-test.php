@@ -34,6 +34,7 @@ $fragments = [
     [$syncService, 'function redeem_access_token_from_ap_token()', 'Sync service should support AP token auth flow.'],
     [$syncService, '/api/v2/auth/challenge', 'Sync service should call challenge endpoint.'],
     [$syncService, '/api/v2/auth/ksef-token', 'Sync service should call ksef-token auth endpoint.'],
+    [$syncService, "'Nip', 'nip', 'onip'", 'Sync service should try contextIdentifier.type variants (starting with Nip) for compatibility.'],
     [$syncService, '/api/v2/auth/', 'Sync service should poll auth operation status endpoint before redeeming token.'],
     [$syncService, '/api/v2/auth/token/redeem', 'Sync service should redeem authentication token to API tokens.'],
     [$syncService, 'function wait_for_authentication_ready(', 'Sync service should wait for async authentication operation completion.'],
