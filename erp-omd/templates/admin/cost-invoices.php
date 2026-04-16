@@ -2,9 +2,11 @@
 $supplier_form = is_array($selected_supplier ?? null) ? $selected_supplier : [];
 $invoice_form = is_array($selected_invoice ?? null) ? $selected_invoice : [];
 $supplier_name_by_id = [];
+$supplier_nip_by_id = [];
 $project_name_by_id = [];
 foreach ((array) $suppliers as $supplier_row) {
     $supplier_name_by_id[(int) ($supplier_row['id'] ?? 0)] = (string) ($supplier_row['name'] ?? '');
+    $supplier_nip_by_id[(int) ($supplier_row['id'] ?? 0)] = (string) ($supplier_row['nip'] ?? '');
 }
 foreach ((array) $projects as $project_row) {
     $project_name_by_id[(int) ($project_row['id'] ?? 0)] = (string) ($project_row['name'] ?? '');
@@ -459,7 +461,38 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             </p>
             <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML kosztowy', 'erp-omd'); ?></button></p>
         </form>
-        <p class="description"><?php esc_html_e('Zaimportowane dokumenty kosztowe znajdziesz w zakładce "Faktury kosztowe".', 'erp-omd'); ?></p>
+        <table class="widefat striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th><?php esc_html_e('Numer', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('NIP sprzedawcy', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Project ID', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Brutto', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Ref KSeF', 'erp-omd'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if (empty($ksef_cost_invoices)) : ?>
+                <tr><td colspan="8"><?php esc_html_e('Brak zaimportowanych kosztowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+            <?php else : ?>
+                <?php foreach ((array) $ksef_cost_invoices as $ksef_cost_row) : ?>
+                    <tr>
+                        <td><?php echo esc_html((string) ((int) ($ksef_cost_row['id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) ($ksef_cost_row['invoice_number'] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ($supplier_nip_by_id[(int) ($ksef_cost_row['supplier_id'] ?? 0)] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ($supplier_name_by_id[(int) ($ksef_cost_row['supplier_id'] ?? 0)] ?? ('#' . (int) ($ksef_cost_row['supplier_id'] ?? 0)))); ?></td>
+                        <td><?php echo esc_html((string) ((int) ($ksef_cost_row['project_id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html(number_format((float) ($ksef_cost_row['gross_amount'] ?? 0), 2, '.', ' ')); ?></td>
+                        <td><?php echo esc_html((string) ($ksef_cost_row['status'] ?? '')); ?></td>
+                        <td><code><?php echo esc_html((string) ($ksef_cost_row['ksef_reference_number'] ?? '')); ?></code></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
     </section>
     <?php endif; ?>
 

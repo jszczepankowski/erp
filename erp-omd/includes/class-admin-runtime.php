@@ -1460,6 +1460,10 @@ class ERP_OMD_Admin
         $ksef_moderation_filter_status = sanitize_key((string) ($_GET['ksef_status'] ?? ''));
         $ksef_moderation_queue = $ksef_service->list_moderation_queue(['status' => $ksef_moderation_filter_status]);
         $ksef_sales_inbox = $ksef_service->list_sales_inbox();
+        $ksef_cost_invoices = array_values(array_filter((array) $cost_invoices, static function ($invoice_row) {
+            $source = (string) ($invoice_row['source'] ?? '');
+            return strpos($source, 'ksef') !== false;
+        }));
         $supplier_categories = $this->normalize_supplier_categories((array) get_option('erp_omd_supplier_categories', []));
         $selected_supplier_id = max(0, (int) ($_GET['supplier_id'] ?? 0));
         $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));
