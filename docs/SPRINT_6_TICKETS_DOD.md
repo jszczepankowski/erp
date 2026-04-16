@@ -5,6 +5,8 @@ Owner biznesowy: **Admin**
 Priorytet: **balans** (time-to-value + jakość operacyjna)  
 SLA: **target 4h**, **hard 24h**, retry automatyczny do **90 min** + manual fallback.
 
+Dokument operacyjny do odbioru: `docs/SPRINT_6_DEFINITION_OF_EVIDENCE.md`.
+
 ---
 
 ## 0) Założenia i kontekst (uzgodnione)
@@ -115,10 +117,10 @@ SLA: **target 4h**, **hard 24h**, retry automatyczny do **90 min** + manual fall
 - Brak auto-przypięcia projektu.
 
 **DoD**
-- [ ] Sprzedażowe trafiają do dedykowanego widoku/listy.
-- [ ] Klient jest mapowany automatycznie po NIP (jeśli jednoznaczny).
-- [ ] Projekt pozostaje pusty do manualnego przypięcia.
-- [ ] Testy E2E importu sprzedażowych przechodzą.
+- [x] Sprzedażowe trafiają do dedykowanego widoku/listy.
+- [x] Klient jest mapowany automatycznie po NIP (jeśli jednoznaczny).
+- [x] Projekt pozostaje pusty do manualnego przypięcia.
+- [x] Testy E2E importu sprzedażowych przechodzą.
 
 ---
 
