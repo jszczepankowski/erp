@@ -43,9 +43,15 @@ class ERP_OMD_KSeF_API_Sync_Service
     public function sync(array $params = [])
     {
         $this->auth_diagnostic = '';
-        $token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_TOKEN_ENC, '')));
-        if ($token !== '' && substr_count($token, '.') < 2) {
-            $token = '';
+        $stored_token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_TOKEN_ENC, '')));
+        $token = '';
+        $ap_token_fallback = '';
+        if ($stored_token !== '') {
+            if (substr_count($stored_token, '.') >= 2) {
+                $token = $stored_token;
+            } else {
+                $ap_token_fallback = $stored_token;
+            }
         }
         if ($token === '') {
             $refreshed = $this->refresh_access_token();
@@ -59,15 +65,21 @@ class ERP_OMD_KSeF_API_Sync_Service
                 $token = $redeemed;
             }
         }
+        if ($token === '' && $ap_token_fallback !== '') {
+            $redeemed = $this->redeem_access_token_from_ap_token_value($ap_token_fallback);
+            if ($redeemed !== '') {
+                $token = $redeemed;
+            }
+        }
         if ($token === '') {
             $message = __('Brak accessToken KSeF API. Uzupełnij accessToken JWT, refreshToken lub token KSeF z AP + NIP.', 'erp-omd');
+            if ($ap_token_fallback !== '') {
+                $message .= ' ' . __('Podany token nie jest accessToken JWT. Token KSeF wymaga osobnego flow uwierzytelnienia (challenge + encryptedToken) w API KSeF 2.0.', 'erp-omd');
+            }
             if ($this->auth_diagnostic !== '') {
                 $message .= ' ' . sprintf(__('Szczegóły AP flow: %s', 'erp-omd'), $this->auth_diagnostic);
             }
             return $this->fail($message);
-        }
-        if (substr_count($token, '.') < 2) {
-            return $this->fail(__('Podany token nie jest accessToken JWT. Token KSeF wymaga osobnego flow uwierzytelnienia (challenge + encryptedToken) w API KSeF 2.0.', 'erp-omd'));
         }
 
         $scope = in_array((string) ($params['scope'] ?? 'both'), ['cost', 'sales', 'both'], true)
@@ -395,6 +407,12 @@ class ERP_OMD_KSeF_API_Sync_Service
     private function redeem_access_token_from_ap_token()
     {
         $ap_token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_AP_TOKEN_ENC, '')));
+        return $this->redeem_access_token_from_ap_token_value($ap_token);
+    }
+
+    private function redeem_access_token_from_ap_token_value($ap_token)
+    {
+        $ap_token = trim((string) $ap_token);
         $public_key_pem = trim((string) get_option(self::OPTION_PUBLIC_KEY_PEM, ''));
         $company_nip = preg_replace('/[^0-9]/', '', (string) $this->company_nip);
         if ($ap_token === '' || $public_key_pem === '' || $company_nip === '') {
@@ -669,7 +687,11 @@ class ERP_OMD_KSeF_API_Sync_Service
             if ($status_code >= 400) {
                 $message = trim((string) ($row['status']['description'] ?? ''));
                 $details = isset($row['status']['details']) && is_array($row['status']['details']) ? implode(', ', array_map('strval', $row['status']['details'])) : '';
-                $this->auth_diagnostic = sprintf(__('Status autoryzacji %1$d: %2$s %3$s', 'erp-omd'), $status_code, $message, $details);
+                $diagnostic = trim(sprintf(__('Status autoryzacji %1$d: %2$s %3$s', 'erp-omd'), $status_code, $message, $details));
+                if ($status_code === 450 && stripos($diagnostic, 'Invalid timestamp') !== false) {
+                    $diagnostic .= ' ' . __('Sprawdź czas serwera (UTC), poprawność challenge/timestamp oraz czy token AP i klucz publiczny PEM są z tego samego środowiska KSeF (prod/test).', 'erp-omd');
+                }
+                $this->auth_diagnostic = $diagnostic;
                 return false;
             }
             sleep(1);
@@ -791,14 +813,39 @@ class ERP_OMD_KSeF_API_Sync_Service
 
     private function normalize_challenge_timestamp_millis($timestamp)
     {
-        if (is_int($timestamp) || is_float($timestamp) || (is_string($timestamp) && is_numeric($timestamp))) {
-            $value = (int) $timestamp;
-            if ($value > 0 && $value < 2000000000) {
-                $value *= 1000;
-            }
-            return $value > 0 ? (string) $value : '';
+        $timestamp_string = trim((string) $timestamp);
+        if ($timestamp_string === '') {
+            return '';
         }
-        $parsed = strtotime((string) $timestamp);
+
+        if (preg_match('/\/Date\((\d+)\)\//', $timestamp_string, $date_match) === 1) {
+            return (string) ((int) $date_match[1]);
+        }
+
+        if (is_int($timestamp) || is_float($timestamp) || (is_string($timestamp) && is_numeric($timestamp))) {
+            $digits = preg_replace('/[^0-9]/', '', $timestamp_string);
+            if ($digits === '') {
+                return '';
+            }
+            if (strlen($digits) >= 13) {
+                return (string) ((int) substr($digits, 0, 13));
+            }
+
+            return (string) (((int) $digits) * 1000);
+        }
+
+        if (preg_match('/\.(\d+)(?:Z|[+\-]\d{2}:\d{2})?$/', $timestamp_string, $millis_match) === 1) {
+            $fractional = substr(str_pad((string) $millis_match[1], 3, '0'), 0, 3);
+            $timestamp_without_fraction = preg_replace('/\.(\d+)(Z|[+\-]\d{2}:\d{2})?$/', '$2', $timestamp_string);
+            $parsed = strtotime((string) $timestamp_without_fraction);
+            if ($parsed === false || $parsed <= 0) {
+                return '';
+            }
+
+            return (string) ((($parsed * 1000) + (int) $fractional));
+        }
+
+        $parsed = strtotime($timestamp_string);
         if ($parsed === false || $parsed <= 0) {
             return '';
         }
