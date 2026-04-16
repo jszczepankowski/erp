@@ -43,9 +43,15 @@ class ERP_OMD_KSeF_API_Sync_Service
     public function sync(array $params = [])
     {
         $this->auth_diagnostic = '';
-        $token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_TOKEN_ENC, '')));
-        if ($token !== '' && substr_count($token, '.') < 2) {
-            $token = '';
+        $stored_token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_TOKEN_ENC, '')));
+        $token = '';
+        $ap_token_fallback = '';
+        if ($stored_token !== '') {
+            if (substr_count($stored_token, '.') >= 2) {
+                $token = $stored_token;
+            } else {
+                $ap_token_fallback = $stored_token;
+            }
         }
         if ($token === '') {
             $refreshed = $this->refresh_access_token();
@@ -59,15 +65,21 @@ class ERP_OMD_KSeF_API_Sync_Service
                 $token = $redeemed;
             }
         }
+        if ($token === '' && $ap_token_fallback !== '') {
+            $redeemed = $this->redeem_access_token_from_ap_token_value($ap_token_fallback);
+            if ($redeemed !== '') {
+                $token = $redeemed;
+            }
+        }
         if ($token === '') {
             $message = __('Brak accessToken KSeF API. Uzupełnij accessToken JWT, refreshToken lub token KSeF z AP + NIP.', 'erp-omd');
+            if ($ap_token_fallback !== '') {
+                $message .= ' ' . __('Podany token nie jest accessToken JWT. Token KSeF wymaga osobnego flow uwierzytelnienia (challenge + encryptedToken) w API KSeF 2.0.', 'erp-omd');
+            }
             if ($this->auth_diagnostic !== '') {
                 $message .= ' ' . sprintf(__('Szczegóły AP flow: %s', 'erp-omd'), $this->auth_diagnostic);
             }
             return $this->fail($message);
-        }
-        if (substr_count($token, '.') < 2) {
-            return $this->fail(__('Podany token nie jest accessToken JWT. Token KSeF wymaga osobnego flow uwierzytelnienia (challenge + encryptedToken) w API KSeF 2.0.', 'erp-omd'));
         }
 
         $scope = in_array((string) ($params['scope'] ?? 'both'), ['cost', 'sales', 'both'], true)
@@ -395,6 +407,12 @@ class ERP_OMD_KSeF_API_Sync_Service
     private function redeem_access_token_from_ap_token()
     {
         $ap_token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_AP_TOKEN_ENC, '')));
+        return $this->redeem_access_token_from_ap_token_value($ap_token);
+    }
+
+    private function redeem_access_token_from_ap_token_value($ap_token)
+    {
+        $ap_token = trim((string) $ap_token);
         $public_key_pem = trim((string) get_option(self::OPTION_PUBLIC_KEY_PEM, ''));
         $company_nip = preg_replace('/[^0-9]/', '', (string) $this->company_nip);
         if ($ap_token === '' || $public_key_pem === '' || $company_nip === '') {
