@@ -478,6 +478,7 @@ class ERP_OMD_Admin
             case 'google_calendar_sync_now': $this->handle_google_calendar_sync_now(); break;
             case 'google_calendar_fetch_calendars': $this->handle_google_calendar_fetch_calendars(); break;
             case 'ksef_api_sync_now': $this->handle_ksef_api_sync_now(); break;
+            case 'ksef_api_test_connection': $this->handle_ksef_api_test_connection(); break;
             case 'ksef_fetch_public_key': $this->handle_ksef_fetch_public_key(); break;
             case 'delete_client': $this->handle_client_delete(); break;
             case 'delete_project': $this->handle_project_delete(); break;
@@ -1039,12 +1040,9 @@ class ERP_OMD_Admin
         $ksef_api_registration_date = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, '');
         $ksef_api_backfill_days = max(1, min(90, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90)));
         $ksef_api_alert_after_hours = max(1, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, 24));
-        $ksef_api_base_url = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl');
+        $ksef_api_base_url = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl/v2');
         $ksef_auto_create_supplier = (bool) get_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, false);
-        $ksef_api_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, '')));
-        $ksef_api_refresh_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC, '')));
         $ksef_ap_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_AP_TOKEN_ENC, '')));
-        $ksef_public_key_pem = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_PUBLIC_KEY_PEM, '');
         $ksef_api_last_sync_at = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_SYNC_AT, '');
         $ksef_api_last_error = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_ERROR, '');
         $ksef_api_last_result = (array) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_RESULT, []);
@@ -3484,16 +3482,11 @@ class ERP_OMD_Admin
         }
         $ksef_api_backfill_days = max(1, min(90, (int) wp_unslash($_POST['ksef_api_backfill_days'] ?? 90)));
         $ksef_api_alert_after_hours = max(1, min(168, (int) wp_unslash($_POST['ksef_api_alert_after_hours'] ?? 24)));
-        $ksef_api_base_url = trim((string) wp_unslash($_POST['ksef_api_base_url'] ?? 'https://api.ksef.mf.gov.pl'));
+        $ksef_api_base_url = trim((string) wp_unslash($_POST['ksef_api_base_url'] ?? 'https://api.ksef.mf.gov.pl/v2'));
         if ($ksef_api_base_url === '' || ! wp_http_validate_url($ksef_api_base_url)) {
             $this->redirect_with_notice('erp-omd-settings', 'error', __('Bazowy URL KSeF API jest niepoprawny.', 'erp-omd'));
         }
-        $ksef_api_token = trim((string) wp_unslash($_POST['ksef_api_token'] ?? ''));
-        $ksef_api_refresh_token = trim((string) wp_unslash($_POST['ksef_api_refresh_token'] ?? ''));
         $ksef_ap_token = trim((string) wp_unslash($_POST['ksef_ap_token'] ?? ''));
-        $ksef_public_key_pem = trim((string) wp_unslash($_POST['ksef_public_key_pem'] ?? ''));
-        $ksef_api_token_clear = ! empty($_POST['ksef_api_token_clear']);
-        $ksef_api_refresh_token_clear = ! empty($_POST['ksef_api_refresh_token_clear']);
         $ksef_auto_create_supplier = ! empty($_POST['ksef_auto_create_supplier']);
 
         update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
@@ -3511,21 +3504,8 @@ class ERP_OMD_Admin
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, $ksef_api_alert_after_hours);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_API_BASE_URL, $ksef_api_base_url);
         update_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, $ksef_auto_create_supplier);
-        if ($ksef_api_token_clear) {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, '');
-        } elseif ($ksef_api_token !== '') {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, $this->encrypt_option_value($ksef_api_token));
-        }
-        if ($ksef_api_refresh_token_clear) {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC, '');
-        } elseif ($ksef_api_refresh_token !== '') {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC, $this->encrypt_option_value($ksef_api_refresh_token));
-        }
         if ($ksef_ap_token !== '') {
             update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_AP_TOKEN_ENC, $this->encrypt_option_value($ksef_ap_token));
-        }
-        if ($ksef_public_key_pem !== '') {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_PUBLIC_KEY_PEM, $ksef_public_key_pem);
         }
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
@@ -3673,6 +3653,34 @@ class ERP_OMD_Admin
             );
         }
         $this->redirect_with_notice('erp-omd-settings', 'success', (string) ($result['message'] ?? __('Pobrano klucz publiczny KSeF (MF).', 'erp-omd')));
+    }
+
+    private function handle_ksef_api_test_connection()
+    {
+        check_admin_referer('erp_omd_ksef_api_test_connection');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $sync_service = $this->build_ksef_api_sync_service();
+        $result = $sync_service->test_connection();
+        if (! (bool) ($result['ok'] ?? false)) {
+            $message = (string) ($result['message'] ?? __('Test połączenia z KSeF nie powiódł się.', 'erp-omd'));
+            $diagnostic = trim((string) ($result['diagnostic'] ?? ''));
+            if ($diagnostic !== '') {
+                $message .= ' ' . sprintf(__('Diagnoza: %s', 'erp-omd'), $diagnostic);
+            }
+            $this->redirect_with_notice('erp-omd-settings', 'error', $message);
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'success',
+            sprintf(
+                __('Test połączenia KSeF OK. Pobrano %1$d rekordów metadanych (okno %2$s → %3$s).', 'erp-omd'),
+                (int) ($result['fetched'] ?? 0),
+                (string) ($result['from'] ?? ''),
+                (string) ($result['to'] ?? '')
+            )
+        );
     }
 
     private function build_ksef_api_sync_service()
