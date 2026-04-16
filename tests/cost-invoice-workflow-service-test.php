@@ -277,6 +277,47 @@ if (count($ksefErrors) < 1 || strpos(implode(' ', $ksefErrors), 'KSeF') === fals
     throw new RuntimeException('Expected KSeF reference uniqueness validation error.');
 }
 
+
+$ksefProjectOptionalErrors = $service->validate_invoice_data(
+    [
+        'supplier_id' => 2,
+        'project_id' => 0,
+        'invoice_number' => 'FV/KSEF/NO-PROJECT',
+        'issue_date' => '2026-04-14',
+        'status' => 'zaimportowana',
+        'source' => 'ksef',
+        'ksef_reference_number' => 'KSEF-REF-NEW-OPTIONAL',
+        'net_amount' => 100.00,
+        'vat_amount' => 23.00,
+        'gross_amount' => 123.00,
+    ]
+);
+
+$assertions++;
+if (count($ksefProjectOptionalErrors) !== 0) {
+    throw new RuntimeException('Expected KSeF invoice validation to allow empty project_id during import.');
+}
+
+$ksefReferenceOptionalErrors = $service->validate_invoice_data(
+    [
+        'supplier_id' => 2,
+        'project_id' => 0,
+        'invoice_number' => 'FV/KSEF/NO-REF',
+        'issue_date' => '2026-04-14',
+        'status' => 'zaimportowana',
+        'source' => 'ksef',
+        'ksef_reference_number' => '',
+        'net_amount' => 100.00,
+        'vat_amount' => 23.00,
+        'gross_amount' => 123.00,
+    ]
+);
+
+$assertions++;
+if (count($ksefReferenceOptionalErrors) !== 0) {
+    throw new RuntimeException('Expected KSeF invoice validation to allow empty KSeF reference for manual imports.');
+}
+
 $relationLockErrors = $service->validate_invoice_data(
     [
         'id' => 1200,
