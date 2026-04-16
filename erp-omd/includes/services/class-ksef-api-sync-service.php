@@ -140,7 +140,7 @@ class ERP_OMD_KSeF_API_Sync_Service
 
     public function fetch_and_store_token_encryption_public_key()
     {
-        $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/security/public-key-certificates';
+        $endpoint = rtrim($this->api_base_url(), '/') . '/security/public-key-certificates';
         $response = wp_remote_get($endpoint, [
             'timeout' => 20,
             'headers' => ['Content-Type' => 'application/json'],
@@ -223,54 +223,84 @@ class ERP_OMD_KSeF_API_Sync_Service
 
     private function fetch_documents($token, $from, $to)
     {
-        $api_base_url = trim((string) get_option(self::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl'));
-        if ($api_base_url === '' || ! wp_http_validate_url($api_base_url)) {
-            $api_base_url = 'https://api.ksef.mf.gov.pl';
-        }
-        $endpoint = rtrim($api_base_url, '/') . '/api/v2/invoices/query/metadata';
-        $body = [
-            'queryCriteria' => [
-                'invoiceDateFrom' => str_replace(' ', 'T', $from),
-                'invoiceDateTo' => str_replace(' ', 'T', $to),
-            ],
-            'pageOffset' => 0,
-            'pageSize' => 100,
-        ];
-        $response = wp_remote_post($endpoint, [
-            'timeout' => 25,
-            'headers' => [
+        $endpoint = rtrim($this->api_base_url(), '/') . '/invoices/query/metadata';
+        $page_size = 100;
+        $page_offset = 0;
+        $continuation_token = '';
+        $all_items = [];
+        $max_pages = 200;
+
+        for ($page = 0; $page < $max_pages; $page++) {
+            $body = [
+                'queryCriteria' => [
+                    'invoiceDateFrom' => str_replace(' ', 'T', $from),
+                    'invoiceDateTo' => str_replace(' ', 'T', $to),
+                ],
+                'pageOffset' => $page_offset,
+                'pageSize' => $page_size,
+            ];
+
+            $headers = [
                 'Authorization' => 'Bearer ' . $token,
-                'KSeF-Token' => $token,
                 'Content-Type' => 'application/json',
-            ],
-            'body' => wp_json_encode($body),
-        ]);
+            ];
+            if ($continuation_token !== '') {
+                $headers['x-continuation-token'] = $continuation_token;
+            }
 
-        if (is_wp_error($response)) {
-            return $response;
-        }
-        $code = (int) wp_remote_retrieve_response_code($response);
-        $payload = json_decode((string) wp_remote_retrieve_body($response), true);
-        if ($code >= 400) {
-            $message = $this->extract_http_error_message($payload);
-            if ($message === '') {
-                $body_preview = trim((string) wp_remote_retrieve_body($response));
-                if ($body_preview !== '') {
-                    $message = mb_substr($body_preview, 0, 300);
+            $response = wp_remote_post($endpoint, [
+                'timeout' => 25,
+                'headers' => $headers,
+                'body' => wp_json_encode($body),
+            ]);
+
+            if (is_wp_error($response)) {
+                return $response;
+            }
+            $code = (int) wp_remote_retrieve_response_code($response);
+            $payload = json_decode((string) wp_remote_retrieve_body($response), true);
+            if ($code >= 400) {
+                $message = $this->extract_http_error_message($payload);
+                if ($message === '') {
+                    $body_preview = trim((string) wp_remote_retrieve_body($response));
+                    if ($body_preview !== '') {
+                        $message = mb_substr($body_preview, 0, 300);
+                    }
                 }
+                if ($message === '') {
+                    $message = __('Błąd pobierania metadanych KSeF.', 'erp-omd');
+                }
+                return new WP_Error(
+                    'erp_omd_ksef_sync_http_error',
+                    sprintf(__('Błąd pobierania metadanych KSeF (HTTP %1$d): %2$s', 'erp-omd'), $code, $message),
+                    ['http_code' => $code]
+                );
             }
-            if ($message === '') {
-                $message = __('Błąd pobierania metadanych KSeF.', 'erp-omd');
+
+            $items = $payload['invoices'] ?? $payload['items'] ?? [];
+            if (! is_array($items)) {
+                $items = [];
             }
-            return new WP_Error(
-                'erp_omd_ksef_sync_http_error',
-                sprintf(__('Błąd pobierania metadanych KSeF (HTTP %1$d): %2$s', 'erp-omd'), $code, $message),
-                ['http_code' => $code]
-            );
+            foreach ($items as $item) {
+                $all_items[] = $item;
+            }
+
+            $next_token = trim((string) wp_remote_retrieve_header($response, 'x-continuation-token'));
+            if ($next_token === '') {
+                if (count($items) < $page_size) {
+                    break;
+                }
+                $page_offset += $page_size;
+                continue;
+            }
+
+            if ($next_token === $continuation_token) {
+                break;
+            }
+            $continuation_token = $next_token;
         }
 
-        $items = $payload['invoices'] ?? $payload['items'] ?? [];
-        return is_array($items) ? $items : [];
+        return $all_items;
     }
 
     private function normalize_documents(array $items, $scope)
@@ -385,11 +415,7 @@ class ERP_OMD_KSeF_API_Sync_Service
         if ($refresh_token === '') {
             return '';
         }
-        $api_base_url = trim((string) get_option(self::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl'));
-        if ($api_base_url === '' || ! wp_http_validate_url($api_base_url)) {
-            $api_base_url = 'https://api.ksef.mf.gov.pl';
-        }
-        $endpoint = rtrim($api_base_url, '/') . '/api/v2/auth/token/refresh';
+        $endpoint = rtrim($this->api_base_url(), '/') . '/auth/token/refresh';
         $response = wp_remote_post($endpoint, [
             'timeout' => 20,
             'headers' => [
@@ -428,6 +454,14 @@ class ERP_OMD_KSeF_API_Sync_Service
     {
         $ap_token = trim((string) $ap_token);
         $public_key_pem = trim((string) get_option(self::OPTION_PUBLIC_KEY_PEM, ''));
+        if ($public_key_pem === '') {
+            $cert_result = $this->fetch_and_store_token_encryption_public_key();
+            if (! (bool) ($cert_result['ok'] ?? false)) {
+                $this->auth_diagnostic = (string) ($cert_result['message'] ?? __('Brak klucza publicznego KSeF.', 'erp-omd'));
+                return '';
+            }
+            $public_key_pem = trim((string) get_option(self::OPTION_PUBLIC_KEY_PEM, ''));
+        }
         $company_nip = preg_replace('/[^0-9]/', '', (string) $this->company_nip);
         if ($ap_token === '' || $public_key_pem === '' || $company_nip === '') {
             $this->auth_diagnostic = __('Brak wymaganych danych do AP flow (token AP, PEM lub NIP).', 'erp-omd');
@@ -479,7 +513,7 @@ class ERP_OMD_KSeF_API_Sync_Service
 
     private function request_challenge()
     {
-        $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/auth/challenge';
+        $endpoint = rtrim($this->api_base_url(), '/') . '/auth/challenge';
         $response = wp_remote_post($endpoint, [
             'timeout' => 20,
             'headers' => ['Content-Type' => 'application/json'],
@@ -501,7 +535,7 @@ class ERP_OMD_KSeF_API_Sync_Service
 
     private function authenticate_with_ksef_token($challenge, $company_nip, $encrypted_token)
     {
-        $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/auth/ksef-token';
+        $endpoint = rtrim($this->api_base_url(), '/') . '/auth/ksef-token';
         $context_types = ['Nip', 'nip', 'onip'];
         $last_diagnostic = '';
 
@@ -548,7 +582,7 @@ class ERP_OMD_KSeF_API_Sync_Service
 
     private function redeem_authentication_token($authentication_token)
     {
-        $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/auth/token/redeem';
+        $endpoint = rtrim($this->api_base_url(), '/') . '/auth/token/redeem';
         $response = wp_remote_post($endpoint, [
             'timeout' => 20,
             'headers' => [
@@ -673,7 +707,7 @@ class ERP_OMD_KSeF_API_Sync_Service
         if ($reference_number === '' || $authentication_token === '') {
             return false;
         }
-        $endpoint = rtrim($this->api_base_url(), '/') . '/api/v2/auth/' . rawurlencode($reference_number);
+        $endpoint = rtrim($this->api_base_url(), '/') . '/auth/' . rawurlencode($reference_number);
         $max_checks = 20;
         for ($attempt = 0; $attempt < $max_checks; $attempt++) {
             $response = wp_remote_get($endpoint, [
@@ -869,11 +903,19 @@ class ERP_OMD_KSeF_API_Sync_Service
 
     private function api_base_url()
     {
-        $api_base_url = trim((string) get_option(self::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl'));
+        $api_base_url = trim((string) get_option(self::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl/v2'));
         if ($api_base_url === '' || ! wp_http_validate_url($api_base_url)) {
-            $api_base_url = 'https://api.ksef.mf.gov.pl';
+            $api_base_url = 'https://api.ksef.mf.gov.pl/v2';
         }
-        return $api_base_url;
+        $api_base_url = rtrim($api_base_url, '/');
+        if (substr($api_base_url, -7) === '/api/v2') {
+            return $api_base_url;
+        }
+        if (substr($api_base_url, -3) === '/v2') {
+            return $api_base_url;
+        }
+
+        return $api_base_url . '/v2';
     }
 
     private function encrypt_value($value)
