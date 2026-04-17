@@ -37,6 +37,7 @@ $requiredFragments = [
     'function moderate_ksef_queue_entry(',
     'function bulk_moderate_ksef_queue_entries(',
     'sanitize_cost_invoice_payload(WP_REST_Request $request, array $existing = null)',
+    "'description' => sanitize_textarea_field",
     'supplier_description',
     'erp_omd_supplier_contact_invalid',
     'function is_supplier_category_allowed(',

@@ -141,12 +141,13 @@ class ERP_OMD_Cost_Invoice_Repository
                 'gross_amount' => (float) ($data['gross_amount'] ?? 0),
                 'source' => (string) ($data['source'] ?? 'manual'),
                 'ksef_reference_number' => (string) ($data['ksef_reference_number'] ?? ''),
+                'description' => (string) ($data['description'] ?? ''),
                 'created_by_user_id' => (int) ($data['created_by_user_id'] ?? 0),
                 'updated_by_user_id' => (int) ($data['updated_by_user_id'] ?? 0),
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%d', '%d', '%s', '%s', '%s', '%f', '%f', '%f', '%s', '%s', '%d', '%d', '%s', '%s']
+            ['%d', '%d', '%s', '%s', '%s', '%f', '%f', '%f', '%s', '%s', '%s', '%d', '%d', '%s', '%s']
         );
 
         return (int) $wpdb->insert_id;
@@ -169,11 +170,12 @@ class ERP_OMD_Cost_Invoice_Repository
                 'gross_amount' => (float) ($data['gross_amount'] ?? 0),
                 'source' => (string) ($data['source'] ?? 'manual'),
                 'ksef_reference_number' => (string) ($data['ksef_reference_number'] ?? ''),
+                'description' => (string) ($data['description'] ?? ''),
                 'updated_by_user_id' => (int) ($data['updated_by_user_id'] ?? 0),
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => (int) $id],
-            ['%d', '%d', '%s', '%s', '%s', '%f', '%f', '%f', '%s', '%s', '%d', '%s'],
+            ['%d', '%d', '%s', '%s', '%s', '%f', '%f', '%f', '%s', '%s', '%s', '%d', '%s'],
             ['%d']
         );
     }

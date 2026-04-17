@@ -469,6 +469,7 @@ class ERP_OMD_Installer
                 gross_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
                 source VARCHAR(20) NOT NULL DEFAULT 'manual',
                 ksef_reference_number VARCHAR(191) NOT NULL DEFAULT '',
+                description TEXT NULL,
                 created_by_user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
                 updated_by_user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
                 created_at DATETIME NOT NULL,
@@ -480,6 +481,7 @@ class ERP_OMD_Installer
                 KEY source (source)
             ) ENGINE=InnoDB {$charset_collate};"
         );
+        self::add_column_if_missing($cost_invoices_table, 'description', "ALTER TABLE {$cost_invoices_table} ADD COLUMN description TEXT NULL AFTER ksef_reference_number");
 
         dbDelta(
             "CREATE TABLE {$cost_invoice_audit_table} (

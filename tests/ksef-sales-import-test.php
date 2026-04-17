@@ -34,7 +34,7 @@ $fragments = [
     [$template, 'name="is_final"', 'Admin template should allow marking sales invoice as final.'],
     [$template, 'name="ksef_sales_xml_file"', 'Admin template should provide XML file upload.'],
     [$template, 'name="ksef_cost_xml_content"', 'Admin template should provide cost XML textarea.'],
-    [$template, 'name="ksef_cost_xml_file"', 'Admin template should provide cost XML file upload.'],
+    [$template, 'name="ksef_cost_xml_files[]"', 'Admin template should provide bulk cost XML file upload.'],
     [$template, '$ksef_cost_invoices', 'Admin template should render cost KSeF imported list.'],
     [$template, "esc_html_e('Brak zaimportowanych kosztowych dokumentów KSeF.', 'erp-omd')", 'Admin template should show empty state for cost KSeF list.'],
     [$admin, "case 'import_ksef_sales_xml'", 'Admin runtime should process XML import action.'],
@@ -42,6 +42,7 @@ $fragments = [
     [$admin, "case 'import_ksef_cost_xml'", 'Admin runtime should process cost XML import action.'],
     [$admin, '$ksef_cost_invoices = array_values(array_filter((array) $cost_invoices', 'Admin runtime should prepare cost KSeF list.'],
     [$admin, 'function read_ksef_xml_from_request(', 'Admin runtime should read XML from textarea or file upload.'],
+    [$admin, 'function read_ksef_xml_batch_from_request(', 'Admin runtime should support batch cost XML import.'],
     [$clientRepo, 'function find_by_nip(', 'Client repository should support NIP mapping.'],
 ];
 

@@ -255,6 +255,14 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
+                                <div class="erp-omd-form-field">
+                                    <label for="cost_invoice_ksef_reference_number"><?php esc_html_e('Numer ref. KSeF (opcjonalny)', 'erp-omd'); ?></label>
+                                    <input class="regular-text" type="text" id="cost_invoice_ksef_reference_number" name="cost_invoice_ksef_reference_number" value="<?php echo esc_attr((string) ($invoice_form['ksef_reference_number'] ?? '')); ?>" />
+                                </div>
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-span-full">
+                                <label for="cost_invoice_description"><?php esc_html_e('Opis faktury kosztowej', 'erp-omd'); ?></label>
+                                <textarea id="cost_invoice_description" name="cost_invoice_description" rows="3" class="large-text"><?php echo esc_textarea((string) ($invoice_form['description'] ?? '')); ?></textarea>
                             </div>
                         </div>
                     </section>
@@ -302,12 +310,12 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             <table class="widefat striped">
                 <thead>
                     <tr>
-                        <th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
+                        <th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Ref KSeF', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if ($cost_invoices === []) : ?>
-                        <tr><td colspan="7"><?php esc_html_e('Brak faktur kosztowych.', 'erp-omd'); ?></td></tr>
+                        <tr><td colspan="9"><?php esc_html_e('Brak faktur kosztowych.', 'erp-omd'); ?></td></tr>
                     <?php endif; ?>
                     <?php foreach ($cost_invoices as $invoice) : ?>
                         <?php $invoice_id = (int) ($invoice['id'] ?? 0); ?>
@@ -316,6 +324,8 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                             <td><?php echo esc_html((string) ($invoice['invoice_number'] ?? '')); ?></td>
                             <td><?php echo esc_html((string) ($supplier_name_by_id[(int) ($invoice['supplier_id'] ?? 0)] ?? ('#' . (int) ($invoice['supplier_id'] ?? 0)))); ?></td>
                             <td><?php echo esc_html((string) ($project_name_by_id[(int) ($invoice['project_id'] ?? 0)] ?? ('#' . (int) ($invoice['project_id'] ?? 0)))); ?></td>
+                            <td><code><?php echo esc_html((string) ($invoice['ksef_reference_number'] ?? '')); ?></code></td>
+                            <td><?php echo esc_html((string) ($invoice['description'] ?? '')); ?></td>
                             <td><?php echo esc_html((string) ($invoice['status'] ?? '')); ?></td>
                             <td><?php echo esc_html(number_format((float) ($invoice['gross_amount'] ?? 0), 2, '.', ' ')); ?></td>
                             <td>
@@ -456,8 +466,8 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             <p><label for="ksef-cost-xml"><?php esc_html_e('Manual import XML kosztowy z KSeF', 'erp-omd'); ?></label></p>
             <textarea id="ksef-cost-xml" name="ksef_cost_xml_content" rows="8" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
             <p>
-                <label for="ksef-cost-xml-file"><?php esc_html_e('lub wybierz plik XML', 'erp-omd'); ?></label><br />
-                <input id="ksef-cost-xml-file" type="file" name="ksef_cost_xml_file" accept=".xml,text/xml,application/xml" />
+                <label for="ksef-cost-xml-files"><?php esc_html_e('lub wybierz plik/pliki XML (import zbiorowy)', 'erp-omd'); ?></label><br />
+                <input id="ksef-cost-xml-files" type="file" name="ksef_cost_xml_files[]" accept=".xml,text/xml,application/xml" multiple />
             </p>
             <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML kosztowy', 'erp-omd'); ?></button></p>
         </form>
