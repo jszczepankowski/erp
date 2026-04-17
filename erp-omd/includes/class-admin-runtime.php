@@ -2016,10 +2016,11 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_import_ksef_sales_xml');
         $this->require_capability('erp_omd_manage_projects');
 
-        $xml_content = $this->read_ksef_xml_from_request('ksef_sales_xml_content', 'ksef_sales_xml_file');
-        if (trim($xml_content) === '') {
-            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz plik XML.', 'erp-omd'))]);
+        $xml_documents = $this->read_ksef_xml_batch_from_request('ksef_sales_xml_content', 'ksef_sales_xml_files');
+        if ($xml_documents === []) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz co najmniej jeden plik XML.', 'erp-omd'))]);
         }
+        $description = sanitize_textarea_field((string) ($_POST['ksef_sales_description'] ?? ''));
 
         $service = new ERP_OMD_KSeF_Import_Service(
             new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
@@ -2031,10 +2032,28 @@ class ERP_OMD_Admin
             $this->clients
         );
 
-        $result = $service->import_sales_xml($xml_content, (int) get_current_user_id());
-        if ((int) ($result['imported'] ?? 0) < 1) {
-            $errors = (array) (($result['errors'][0]['errors'] ?? []) ?: []);
-            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', $errors))]);
+        $total_imported = 0;
+        $all_errors = [];
+        foreach ($xml_documents as $xml_content) {
+            $result = $service->import_sales_xml($xml_content, (int) get_current_user_id(), $description);
+            $total_imported += (int) ($result['imported'] ?? 0);
+            if ((int) ($result['imported'] ?? 0) < 1) {
+                $errors = (array) (($result['errors'][0]['errors'] ?? []) ?: []);
+                if ($errors !== []) {
+                    $all_errors[] = implode(' ', $errors);
+                }
+            }
+        }
+
+        if ($total_imported < 1) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' | ', $all_errors))]);
+        }
+
+        if ($all_errors !== []) {
+            $this->redirect_cost_invoice_page([
+                'tab' => 'ksef-sales',
+                'error' => rawurlencode(sprintf(__('Zaimportowano %1$d dokument(y), część odrzucona: %2$s', 'erp-omd'), $total_imported, implode(' | ', $all_errors))),
+            ]);
         }
 
         $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_xml_imported']);

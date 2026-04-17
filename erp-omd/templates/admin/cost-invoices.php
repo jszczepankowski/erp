@@ -415,23 +415,28 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             <p><label for="ksef-sales-xml"><?php esc_html_e('Manual import XML z KSeF', 'erp-omd'); ?></label></p>
             <textarea id="ksef-sales-xml" name="ksef_sales_xml_content" rows="8" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
             <p>
-                <label for="ksef-sales-xml-file"><?php esc_html_e('lub wybierz plik XML', 'erp-omd'); ?></label><br />
-                <input id="ksef-sales-xml-file" type="file" name="ksef_sales_xml_file" accept=".xml,text/xml,application/xml" />
+                <label for="ksef-sales-xml-files"><?php esc_html_e('lub wybierz plik/pliki XML (import zbiorowy)', 'erp-omd'); ?></label><br />
+                <input id="ksef-sales-xml-files" type="file" name="ksef_sales_xml_files[]" accept=".xml,text/xml,application/xml" multiple />
+            </p>
+            <p>
+                <label for="ksef-sales-description"><?php esc_html_e('Opis faktury sprzedażowej (opcjonalny, dla importu manualnego)', 'erp-omd'); ?></label><br />
+                <textarea id="ksef-sales-description" name="ksef_sales_description" rows="2" class="large-text"></textarea>
             </p>
             <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML sprzedażowy', 'erp-omd'); ?></button></p>
         </form>
 
         <table class="widefat striped">
-            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Project ID', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Project ID', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
             <tbody>
             <?php if (empty($ksef_sales_inbox)) : ?>
-                <tr><td colspan="8"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="9"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
             <?php else : ?>
                 <?php foreach ((array) $ksef_sales_inbox as $sales_row) : ?>
                     <tr>
                         <td><?php echo esc_html((string) ((int) ($sales_row['id'] ?? 0))); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['invoice_number'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['buyer_nip'] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ($sales_row['description'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ((int) ($sales_row['client_id'] ?? 0))); ?></td>
                         <td><?php echo esc_html((string) ((int) ($sales_row['project_id'] ?? 0))); ?></td>
                         <td><?php echo ((int) ($sales_row['is_final'] ?? 0) === 1) ? esc_html__('Tak', 'erp-omd') : esc_html__('Nie', 'erp-omd'); ?></td>

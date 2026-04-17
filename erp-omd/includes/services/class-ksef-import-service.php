@@ -431,6 +431,7 @@ class ERP_OMD_KSeF_Import_Service
             'id' => $this->next_sales_inbox_id($rows),
             'invoice_number' => $invoice_number,
             'issue_date' => (string) ($document['issue_date'] ?? ''),
+            'description' => trim((string) ($document['description'] ?? '')),
             'ksef_reference_number' => $ksef_reference,
             'buyer_nip' => $this->extract_nip_value($document, ['buyer_nip', 'nabywca_nip', 'buyer', 'podmiot2', 'podmiot2_nip']),
             'seller_nip' => $this->extract_nip_value($document, ['seller_nip', 'sprzedawca_nip', 'seller', 'podmiot1', 'podmiot1_nip']),
@@ -560,11 +561,15 @@ class ERP_OMD_KSeF_Import_Service
      * @param int $user_id
      * @return array<string,mixed>
      */
-    public function import_sales_xml($xml_content, $user_id)
+    public function import_sales_xml($xml_content, $user_id, $description = '')
     {
         $document = $this->parse_ksef_xml_to_document((string) $xml_content);
         if (! is_array($document) || $document === []) {
             return ['total' => 1, 'imported' => 0, 'failed' => 1, 'errors' => [['index' => 0, 'invoice_number' => '', 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Nie udało się sparsować XML KSeF.', 'erp-omd')]]]];
+        }
+        $description = trim((string) $description);
+        if ($description !== '') {
+            $document['description'] = $description;
         }
 
         return $this->import_documents([$document], (int) $user_id);
@@ -617,6 +622,11 @@ class ERP_OMD_KSeF_Import_Service
             '//*[local-name()="Podmiot1"]//*[local-name()="NazwaSkrocona"]',
         ]);
         $ksef_reference = $this->xpath_first_text($xml, ['//*[local-name()="NumerKSeF"]']);
+        $description = $this->xpath_first_text($xml, [
+            '//*[local-name()="P_6"]',
+            '//*[local-name()="Opis"]',
+            '//*[local-name()="Uwagi"]',
+        ]);
 
         $net_amount = $this->xpath_first_decimal($xml, [
             '//*[local-name()="FaCtrl"]//*[local-name()="B"]',
@@ -668,6 +678,7 @@ class ERP_OMD_KSeF_Import_Service
             'seller_nip' => $seller_nip,
             'seller_name' => $seller_name,
             'ksef_reference_number' => $ksef_reference,
+            'description' => $description,
             'net_amount' => $net_amount,
             'vat_amount' => $vat_amount,
             'gross_amount' => $gross_amount,
