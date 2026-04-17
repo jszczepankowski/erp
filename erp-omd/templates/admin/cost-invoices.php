@@ -2,9 +2,11 @@
 $supplier_form = is_array($selected_supplier ?? null) ? $selected_supplier : [];
 $invoice_form = is_array($selected_invoice ?? null) ? $selected_invoice : [];
 $supplier_name_by_id = [];
+$supplier_nip_by_id = [];
 $project_name_by_id = [];
 foreach ((array) $suppliers as $supplier_row) {
     $supplier_name_by_id[(int) ($supplier_row['id'] ?? 0)] = (string) ($supplier_row['name'] ?? '');
+    $supplier_nip_by_id[(int) ($supplier_row['id'] ?? 0)] = (string) ($supplier_row['nip'] ?? '');
 }
 foreach ((array) $projects as $project_row) {
     $project_name_by_id[(int) ($project_row['id'] ?? 0)] = (string) ($project_row['name'] ?? '');
@@ -25,7 +27,7 @@ if ((float) ($invoice_form['vat_amount'] ?? 0) === 0.0 && ! empty($invoice_form)
     $invoice_form_vat_rate = 'zw';
 }
 $active_tab = sanitize_key((string) ($_GET['tab'] ?? 'suppliers'));
-if (! in_array($active_tab, ['suppliers', 'invoices', 'relations'], true)) {
+if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderation', 'ksef-sales', 'ksef-cost'], true)) {
     $active_tab = 'suppliers';
 }
 ?>
@@ -42,6 +44,9 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations'], true)) {
     <nav class="nav-tab-wrapper erp-omd-nav-tabs">
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'suppliers'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'suppliers' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Dostawcy', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'invoices'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'invoices' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Faktury kosztowe', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-moderation'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-moderation' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kolejka moderacji KSeF', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-sales' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Sprzedażowe KSeF', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-cost'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-cost' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kosztowe KSeF', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'relations'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'relations' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></a>
     </nav>
 
@@ -250,6 +255,14 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations'], true)) {
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
+                                <div class="erp-omd-form-field">
+                                    <label for="cost_invoice_ksef_reference_number"><?php esc_html_e('Numer ref. KSeF (opcjonalny)', 'erp-omd'); ?></label>
+                                    <input class="regular-text" type="text" id="cost_invoice_ksef_reference_number" name="cost_invoice_ksef_reference_number" value="<?php echo esc_attr((string) ($invoice_form['ksef_reference_number'] ?? '')); ?>" />
+                                </div>
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-span-full">
+                                <label for="cost_invoice_description"><?php esc_html_e('Opis faktury kosztowej', 'erp-omd'); ?></label>
+                                <textarea id="cost_invoice_description" name="cost_invoice_description" rows="3" class="large-text"><?php echo esc_textarea((string) ($invoice_form['description'] ?? '')); ?></textarea>
                             </div>
                         </div>
                     </section>
@@ -297,12 +310,12 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations'], true)) {
             <table class="widefat striped">
                 <thead>
                     <tr>
-                        <th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
+                        <th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Ref KSeF', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if ($cost_invoices === []) : ?>
-                        <tr><td colspan="7"><?php esc_html_e('Brak faktur kosztowych.', 'erp-omd'); ?></td></tr>
+                        <tr><td colspan="9"><?php esc_html_e('Brak faktur kosztowych.', 'erp-omd'); ?></td></tr>
                     <?php endif; ?>
                     <?php foreach ($cost_invoices as $invoice) : ?>
                         <?php $invoice_id = (int) ($invoice['id'] ?? 0); ?>
@@ -311,6 +324,8 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations'], true)) {
                             <td><?php echo esc_html((string) ($invoice['invoice_number'] ?? '')); ?></td>
                             <td><?php echo esc_html((string) ($supplier_name_by_id[(int) ($invoice['supplier_id'] ?? 0)] ?? ('#' . (int) ($invoice['supplier_id'] ?? 0)))); ?></td>
                             <td><?php echo esc_html((string) ($project_name_by_id[(int) ($invoice['project_id'] ?? 0)] ?? ('#' . (int) ($invoice['project_id'] ?? 0)))); ?></td>
+                            <td><code><?php echo esc_html((string) ($invoice['ksef_reference_number'] ?? '')); ?></code></td>
+                            <td><?php echo esc_html((string) ($invoice['description'] ?? '')); ?></td>
                             <td><?php echo esc_html((string) ($invoice['status'] ?? '')); ?></td>
                             <td><?php echo esc_html(number_format((float) ($invoice['gross_amount'] ?? 0), 2, '.', ' ')); ?></td>
                             <td>
@@ -330,6 +345,164 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations'], true)) {
                 </tbody>
             </table>
         </section>
+    </section>
+    <?php endif; ?>
+
+
+    <?php if ($active_tab === 'ksef-moderation') : ?>
+    <section class="erp-omd-card">
+        <h2><?php esc_html_e('KSeF — kolejka moderacji', 'erp-omd'); ?></h2>
+        <form method="get" style="margin-bottom:12px;">
+            <input type="hidden" name="page" value="erp-omd-cost-invoices" />
+            <input type="hidden" name="tab" value="ksef-moderation" />
+            <label for="ksef-status-filter"><?php esc_html_e('Status', 'erp-omd'); ?></label>
+            <select id="ksef-status-filter" name="ksef_status">
+                <option value=""><?php esc_html_e('Wszystkie', 'erp-omd'); ?></option>
+                <?php foreach (['new', 'conflict', 'manual_required', 'ready', 'rejected'] as $ksef_status_option) : ?>
+                    <option value="<?php echo esc_attr($ksef_status_option); ?>" <?php selected((string) ($ksef_moderation_filter_status ?? ''), $ksef_status_option); ?>><?php echo esc_html($ksef_status_option); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <button type="submit" class="button button-secondary"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
+        </form>
+
+        <form method="post">
+            <?php wp_nonce_field('erp_omd_bulk_ksef_queue'); ?>
+            <input type="hidden" name="erp_omd_action" value="bulk_ksef_queue" />
+            <p>
+                <select name="ksef_bulk_action">
+                    <option value=""><?php esc_html_e('Akcja bulk', 'erp-omd'); ?></option>
+                    <option value="approve"><?php esc_html_e('Zatwierdź', 'erp-omd'); ?></option>
+                    <option value="reject"><?php esc_html_e('Odrzuć', 'erp-omd'); ?></option>
+                    <option value="delete"><?php esc_html_e('Usuń z kolejki', 'erp-omd'); ?></option>
+                    <option value="assign_supplier"><?php esc_html_e('Przypisz dostawcę', 'erp-omd'); ?></option>
+                    <option value="assign_project"><?php esc_html_e('Przypisz projekt', 'erp-omd'); ?></option>
+                </select>
+                <input type="number" min="0" name="supplier_id" placeholder="<?php esc_attr_e('supplier_id', 'erp-omd'); ?>" style="width:110px;" />
+                <input type="number" min="0" name="project_id" placeholder="<?php esc_attr_e('project_id', 'erp-omd'); ?>" style="width:110px;" />
+                <button type="submit" class="button button-secondary"><?php esc_html_e('Wykonaj bulk', 'erp-omd'); ?></button>
+            </p>
+            <table class="widefat striped">
+                <thead><tr><th></th><th><?php esc_html_e('Retry key', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Dokument', 'erp-omd'); ?></th><th><?php esc_html_e('Próby', 'erp-omd'); ?></th><th><?php esc_html_e('Ostatni błąd', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje manualne', 'erp-omd'); ?></th></tr></thead>
+                <tbody>
+                <?php if (empty($ksef_moderation_queue)) : ?>
+                    <tr><td colspan="7"><?php esc_html_e('Brak rekordów do moderacji.', 'erp-omd'); ?></td></tr>
+                <?php else : ?>
+                    <?php foreach ((array) $ksef_moderation_queue as $ksef_row) : ?>
+                        <tr>
+                            <td><input type="checkbox" name="retry_keys[]" value="<?php echo esc_attr((string) ($ksef_row['retry_key'] ?? '')); ?>" /></td>
+                            <td><code><?php echo esc_html((string) ($ksef_row['retry_key'] ?? '')); ?></code></td>
+                            <td><?php echo esc_html((string) ($ksef_row['status'] ?? '')); ?></td>
+                            <td><?php echo esc_html((string) (($ksef_row['document']['invoice_number'] ?? '') ?: '—')); ?></td>
+                            <td><?php echo esc_html((string) ((int) ($ksef_row['retry_attempts'] ?? 0))); ?></td>
+                            <td><?php echo esc_html((string) ($ksef_row['last_error'] ?? '')); ?></td>
+                            <td><?php esc_html_e('Użyj akcji bulk (zatwierdź/odrzuć).', 'erp-omd'); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </form>
+    </section>
+    <?php endif; ?>
+
+
+    <?php if ($active_tab === 'ksef-sales') : ?>
+    <section class="erp-omd-card">
+        <h2><?php esc_html_e('KSeF — faktury sprzedażowe', 'erp-omd'); ?></h2>
+        <form method="post" enctype="multipart/form-data" style="margin-bottom:14px;">
+            <?php wp_nonce_field('erp_omd_import_ksef_sales_xml'); ?>
+            <input type="hidden" name="erp_omd_action" value="import_ksef_sales_xml" />
+            <p><label for="ksef-sales-xml"><?php esc_html_e('Manual import XML z KSeF', 'erp-omd'); ?></label></p>
+            <textarea id="ksef-sales-xml" name="ksef_sales_xml_content" rows="8" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
+            <p>
+                <label for="ksef-sales-xml-file"><?php esc_html_e('lub wybierz plik XML', 'erp-omd'); ?></label><br />
+                <input id="ksef-sales-xml-file" type="file" name="ksef_sales_xml_file" accept=".xml,text/xml,application/xml" />
+            </p>
+            <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML sprzedażowy', 'erp-omd'); ?></button></p>
+        </form>
+
+        <table class="widefat striped">
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Project ID', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
+            <tbody>
+            <?php if (empty($ksef_sales_inbox)) : ?>
+                <tr><td colspan="8"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+            <?php else : ?>
+                <?php foreach ((array) $ksef_sales_inbox as $sales_row) : ?>
+                    <tr>
+                        <td><?php echo esc_html((string) ((int) ($sales_row['id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) ($sales_row['invoice_number'] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ($sales_row['buyer_nip'] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ((int) ($sales_row['client_id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) ((int) ($sales_row['project_id'] ?? 0))); ?></td>
+                        <td><?php echo ((int) ($sales_row['is_final'] ?? 0) === 1) ? esc_html__('Tak', 'erp-omd') : esc_html__('Nie', 'erp-omd'); ?></td>
+                        <td><?php echo esc_html((string) ($sales_row['status'] ?? '')); ?></td>
+                        <td>
+                            <form method="post" style="display:flex;gap:6px;align-items:center;">
+                                <?php wp_nonce_field('erp_omd_attach_ksef_sales_invoice'); ?>
+                                <input type="hidden" name="erp_omd_action" value="attach_ksef_sales_invoice" />
+                                <input type="hidden" name="sales_id" value="<?php echo esc_attr((string) ((int) ($sales_row['id'] ?? 0))); ?>" />
+                                <input type="number" min="1" name="project_id" value="<?php echo esc_attr((string) ((int) ($sales_row['project_id'] ?? 0))); ?>" placeholder="<?php esc_attr_e('project_id', 'erp-omd'); ?>" style="width:90px;" required />
+                                <label style="display:flex;gap:3px;align-items:center;">
+                                    <input type="checkbox" name="is_final" value="1" <?php checked((int) ($sales_row['is_final'] ?? 0), 1); ?> />
+                                    <span><?php esc_html_e('końcowa', 'erp-omd'); ?></span>
+                                </label>
+                                <button type="submit" class="button button-small"><?php esc_html_e('Zapisz', 'erp-omd'); ?></button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($active_tab === 'ksef-cost') : ?>
+    <section class="erp-omd-card">
+        <h2><?php esc_html_e('KSeF — faktury kosztowe', 'erp-omd'); ?></h2>
+        <form method="post" enctype="multipart/form-data" style="margin-bottom:18px;">
+            <?php wp_nonce_field('erp_omd_import_ksef_cost_xml'); ?>
+            <input type="hidden" name="erp_omd_action" value="import_ksef_cost_xml" />
+            <p><label for="ksef-cost-xml"><?php esc_html_e('Manual import XML kosztowy z KSeF', 'erp-omd'); ?></label></p>
+            <textarea id="ksef-cost-xml" name="ksef_cost_xml_content" rows="8" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
+            <p>
+                <label for="ksef-cost-xml-files"><?php esc_html_e('lub wybierz plik/pliki XML (import zbiorowy)', 'erp-omd'); ?></label><br />
+                <input id="ksef-cost-xml-files" type="file" name="ksef_cost_xml_files[]" accept=".xml,text/xml,application/xml" multiple />
+            </p>
+            <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML kosztowy', 'erp-omd'); ?></button></p>
+        </form>
+        <table class="widefat striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th><?php esc_html_e('Numer', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('NIP sprzedawcy', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Project ID', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Brutto', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Ref KSeF', 'erp-omd'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if (empty($ksef_cost_invoices)) : ?>
+                <tr><td colspan="8"><?php esc_html_e('Brak zaimportowanych kosztowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+            <?php else : ?>
+                <?php foreach ((array) $ksef_cost_invoices as $ksef_cost_row) : ?>
+                    <tr>
+                        <td><?php echo esc_html((string) ((int) ($ksef_cost_row['id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) ($ksef_cost_row['invoice_number'] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ($supplier_nip_by_id[(int) ($ksef_cost_row['supplier_id'] ?? 0)] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ($supplier_name_by_id[(int) ($ksef_cost_row['supplier_id'] ?? 0)] ?? ('#' . (int) ($ksef_cost_row['supplier_id'] ?? 0)))); ?></td>
+                        <td><?php echo esc_html((string) ((int) ($ksef_cost_row['project_id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html(number_format((float) ($ksef_cost_row['gross_amount'] ?? 0), 2, '.', ' ')); ?></td>
+                        <td><?php echo esc_html((string) ($ksef_cost_row['status'] ?? '')); ?></td>
+                        <td><code><?php echo esc_html((string) ($ksef_cost_row['ksef_reference_number'] ?? '')); ?></code></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
     </section>
     <?php endif; ?>
 
