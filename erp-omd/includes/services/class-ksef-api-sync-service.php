@@ -189,8 +189,8 @@ class ERP_OMD_KSeF_API_Sync_Service
             ];
         }
 
-        $items = $payload['certificates'] ?? $payload['items'] ?? $payload;
-        if (! is_array($items)) {
+        $items = $this->extract_certificate_items($payload);
+        if (! is_array($items) || $items === []) {
             return ['ok' => false, 'message' => __('KSeF nie zwrócił listy certyfikatów klucza publicznego.', 'erp-omd')];
         }
         $selected = $this->find_token_encryption_certificate($items);
@@ -918,6 +918,78 @@ class ERP_OMD_KSeF_API_Sync_Service
         }
 
         return '';
+    }
+
+    private function extract_certificate_items($payload)
+    {
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        $direct_lists = [
+            $payload['certificates'] ?? null,
+            $payload['items'] ?? null,
+            $payload['data'] ?? null,
+            $payload['result'] ?? null,
+            $payload['value'] ?? null,
+            $payload['content'] ?? null,
+        ];
+        foreach ($direct_lists as $candidate) {
+            if (is_array($candidate)) {
+                $normalized = $this->normalize_certificate_list($candidate);
+                if ($normalized !== []) {
+                    return $normalized;
+                }
+            }
+        }
+
+        $normalized_payload = $this->normalize_certificate_list($payload);
+        if ($normalized_payload !== []) {
+            return $normalized_payload;
+        }
+
+        foreach ($payload as $value) {
+            if (! is_array($value)) {
+                continue;
+            }
+            $normalized = $this->normalize_certificate_list($value);
+            if ($normalized !== []) {
+                return $normalized;
+            }
+        }
+
+        return [];
+    }
+
+    private function normalize_certificate_list(array $candidate)
+    {
+        $is_assoc = array_keys($candidate) !== range(0, count($candidate) - 1);
+        if ($is_assoc && $this->looks_like_certificate_record($candidate)) {
+            return [$candidate];
+        }
+        if ($is_assoc) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($candidate as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            if ($this->looks_like_certificate_record($row)) {
+                $items[] = $row;
+            }
+        }
+
+        return $items;
+    }
+
+    private function looks_like_certificate_record(array $row)
+    {
+        $usage = $row['usage'] ?? $row['usages'] ?? null;
+        $certificate_value = $row['certificate'] ?? $row['cert'] ?? $row['publicKey'] ?? $row['publicKeyCertificate'] ?? null;
+
+        return $usage !== null || $certificate_value !== null;
     }
 
     private function find_token_encryption_certificate(array $items)

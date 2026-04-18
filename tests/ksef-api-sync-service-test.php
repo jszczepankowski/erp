@@ -35,6 +35,7 @@ $fragments = [
     [$syncService, '/v2/auth/challenge', 'Sync service should support /v2 challenge endpoint variant.'],
     [$syncService, '/invoices/ksef/', 'Sync service should support downloading full invoice XML by KSeF number.'],
     [$syncService, 'function enrich_documents_with_xml(', 'Sync service should enrich metadata with XML details when available.'],
+    [$syncService, 'function extract_certificate_items(', 'Sync service should normalize certificate payload shapes from KSeF security endpoint.'],
     [$syncService, 'extract_http_error_message(array $payload)', 'Sync service should parse API error payload details.'],
     [$syncService, 'function refresh_access_token()', 'Sync service should support refresh token flow on 401.'],
     [$syncService, 'function redeem_access_token_from_ap_token()', 'Sync service should support AP token auth flow.'],
