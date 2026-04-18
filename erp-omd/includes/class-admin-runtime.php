@@ -479,6 +479,7 @@ class ERP_OMD_Admin
             case 'google_calendar_fetch_calendars': $this->handle_google_calendar_fetch_calendars(); break;
             case 'ksef_api_sync_now': $this->handle_ksef_api_sync_now(); break;
             case 'ksef_fetch_public_key': $this->handle_ksef_fetch_public_key(); break;
+            case 'ksef_connector_check_now': $this->handle_ksef_connector_check_now(); break;
             case 'delete_client': $this->handle_client_delete(); break;
             case 'delete_project': $this->handle_project_delete(); break;
         }
@@ -3761,6 +3762,37 @@ class ERP_OMD_Admin
             );
         }
         $this->redirect_with_notice('erp-omd-settings', 'success', (string) ($result['message'] ?? __('Pobrano klucz publiczny KSeF (MF).', 'erp-omd')));
+    }
+
+    private function handle_ksef_connector_check_now()
+    {
+        check_admin_referer('erp_omd_ksef_connector_check_now');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $lookback_minutes = max(5, min(1440, (int) ($_POST['ksef_check_lookback_minutes'] ?? 120)));
+        $sync_service = $this->build_ksef_api_sync_service();
+        $result = $sync_service->run_connector_check([
+            'lookback_minutes' => $lookback_minutes,
+        ]);
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_with_notice(
+                'erp-omd-settings',
+                'error',
+                sprintf(__('Test połączenia KSeF nie powiódł się: %s', 'erp-omd'), (string) ($result['last_error'] ?? ''))
+            );
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'success',
+            sprintf(
+                __('Test połączenia KSeF OK (%1$s, %2$s → %3$s). Pobrane rekordy: %4$d.', 'erp-omd'),
+                (string) ($result['environment'] ?? 'prod'),
+                (string) ($result['from'] ?? ''),
+                (string) ($result['to'] ?? ''),
+                (int) ($result['fetched'] ?? 0)
+            )
+        );
     }
 
     private function build_ksef_api_sync_service()

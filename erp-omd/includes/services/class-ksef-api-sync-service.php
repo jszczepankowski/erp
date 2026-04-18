@@ -41,6 +41,53 @@ class ERP_OMD_KSeF_API_Sync_Service
         ]);
     }
 
+    public function run_connector_check(array $params = [])
+    {
+        $this->auth_diagnostic = '';
+        $token = trim((string) $this->decrypt_value((string) get_option(self::OPTION_TOKEN_ENC, '')));
+        if ($token !== '' && substr_count($token, '.') < 2) {
+            $token = '';
+        }
+        if ($token === '') {
+            $token = $this->refresh_access_token();
+        }
+        if ($token === '') {
+            $token = $this->redeem_access_token_from_ap_token();
+        }
+        if ($token === '') {
+            return [
+                'ok' => false,
+                'last_error' => $this->auth_diagnostic !== '' ? $this->auth_diagnostic : __('Brak tokenu dostępowego do testu połączenia KSeF.', 'erp-omd'),
+            ];
+        }
+        if (substr_count($token, '.') < 2) {
+            return [
+                'ok' => false,
+                'last_error' => __('Token po uwierzytelnieniu nie ma formatu JWT accessToken.', 'erp-omd'),
+            ];
+        }
+
+        $to = current_time('mysql');
+        $back_minutes = max(5, min(1440, (int) ($params['lookback_minutes'] ?? 120)));
+        $from = gmdate('Y-m-d H:i:s', strtotime($to . ' -' . $back_minutes . ' minutes'));
+        $documents = $this->fetch_documents($token, $from, $to);
+        if (is_wp_error($documents)) {
+            return [
+                'ok' => false,
+                'last_error' => $documents->get_error_message(),
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'from' => $from,
+            'to' => $to,
+            'fetched' => count((array) $documents),
+            'environment' => sanitize_key((string) get_option(self::OPTION_ENVIRONMENT, 'prod')),
+            'base_url' => $this->api_base_url(),
+        ];
+    }
+
     public function sync(array $params = [])
     {
         $this->auth_diagnostic = '';

@@ -376,6 +376,8 @@
                             </p>
                             <p>
                                 <button type="submit" class="button" form="erp-omd-ksef-api-sync-now-form"><?php esc_html_e('Synchronizuj KSeF teraz', 'erp-omd'); ?></button>
+                                <button type="submit" class="button button-secondary" form="erp-omd-ksef-connector-check-form"><?php esc_html_e('Test połączenia KSeF', 'erp-omd'); ?></button>
+                                <input type="number" min="5" max="1440" step="5" name="ksef_check_lookback_minutes" value="120" form="erp-omd-ksef-connector-check-form" />
                             </p>
                         </div>
                     </div>
@@ -573,6 +575,10 @@
         <form id="erp-omd-ksef-fetch-public-key-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
             <?php wp_nonce_field('erp_omd_ksef_fetch_public_key'); ?>
             <input type="hidden" name="erp_omd_action" value="ksef_fetch_public_key" />
+        </form>
+        <form id="erp-omd-ksef-connector-check-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
+            <?php wp_nonce_field('erp_omd_ksef_connector_check_now'); ?>
+            <input type="hidden" name="erp_omd_action" value="ksef_connector_check_now" />
         </form>
     </div>
 </div>
