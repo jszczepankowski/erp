@@ -331,9 +331,19 @@
                             <label for="erp-omd-ksef-alert-hours"><?php esc_html_e('Alert po ilu godzinach bez syncu', 'erp-omd'); ?></label>
                             <input id="erp-omd-ksef-alert-hours" type="number" min="1" max="168" step="1" name="ksef_api_alert_after_hours" value="<?php echo esc_attr((string) $ksef_api_alert_after_hours); ?>" />
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-ksef-api-environment"><?php esc_html_e('Środowisko KSeF', 'erp-omd'); ?></label>
+                            <select id="erp-omd-ksef-api-environment" name="ksef_api_environment">
+                                <option value="prod" <?php selected((string) $ksef_api_environment, 'prod'); ?>><?php esc_html_e('PROD', 'erp-omd'); ?></option>
+                                <option value="test" <?php selected((string) $ksef_api_environment, 'test'); ?>><?php esc_html_e('TEST', 'erp-omd'); ?></option>
+                                <option value="demo" <?php selected((string) $ksef_api_environment, 'demo'); ?>><?php esc_html_e('DEMO', 'erp-omd'); ?></option>
+                            </select>
+                            <p class="description"><?php esc_html_e('Token AP, klucz publiczny MF i URL API muszą dotyczyć tego samego środowiska.', 'erp-omd'); ?></p>
+                        </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-ksef-api-base-url"><?php esc_html_e('KSeF API base URL', 'erp-omd'); ?></label>
                             <input id="erp-omd-ksef-api-base-url" type="url" name="ksef_api_base_url" value="<?php echo esc_attr((string) $ksef_api_base_url); ?>" />
+                            <p class="description"><?php esc_html_e('Jeśli nie podasz URL, system użyje domyślnego hosta dla wybranego środowiska.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <p>
