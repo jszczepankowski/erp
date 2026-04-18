@@ -584,6 +584,230 @@ class ERP_OMD_KSeF_API_Sync_Service
         return isset($row['usage']) || isset($row['usages']) || isset($row['certificate']) || isset($row['publicKey']) || isset($row['publicKeyCertificate']);
     }
 
+    private function request_with_endpoint_fallback($method, array $paths, array $request_args)
+    {
+        $base_url = rtrim($this->api_base_url(), '/');
+        $last_error = null;
+
+        foreach ($paths as $path) {
+            $normalized_path = '/' . ltrim((string) $path, '/');
+            $endpoint = $base_url . $normalized_path;
+            $response = strtoupper((string) $method) === 'GET'
+                ? wp_remote_get($endpoint, $request_args)
+                : wp_remote_post($endpoint, $request_args);
+            if (is_wp_error($response)) {
+                $last_error = $response;
+                continue;
+            }
+            $status_code = (int) wp_remote_retrieve_response_code($response);
+            if ($status_code === 404 || $status_code === 405) {
+                $last_error = new WP_Error('erp_omd_ksef_endpoint_mismatch', sprintf('HTTP %1$d (%2$s)', $status_code, $endpoint));
+                continue;
+            }
+
+            return $response;
+        }
+
+        return $last_error instanceof WP_Error
+            ? $last_error
+            : new WP_Error('erp_omd_ksef_endpoint_mismatch', __('Nie udało się dopasować endpointu KSeF dla wybranego środowiska.', 'erp-omd'));
+    }
+
+    private function enrich_documents_with_xml($token, array $items)
+    {
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'KSeF-Token' => $token,
+            'Content-Type' => 'application/json',
+        ];
+        foreach ($items as $index => $item) {
+            $row = is_array($item) ? $item : [];
+            $ksef_reference = trim((string) ($row['ksefReferenceNumber'] ?? $row['ksefNumber'] ?? $row['referenceNumber'] ?? ''));
+            if ($ksef_reference === '') {
+                continue;
+            }
+            $xml_payload = $this->download_invoice_xml($ksef_reference, $headers);
+            if ($xml_payload === '') {
+                continue;
+            }
+            $row['xmlContent'] = $xml_payload;
+            $parsed = $this->parse_ksef_xml_summary($xml_payload);
+            if (! empty($parsed['issue_date'])) {
+                $row['xmlIssueDate'] = $parsed['issue_date'];
+            }
+            if (! empty($parsed['seller_name'])) {
+                $row['xmlSellerName'] = $parsed['seller_name'];
+            }
+            if (! empty($parsed['invoice_number'])) {
+                $row['invoiceNumber'] = (string) $parsed['invoice_number'];
+            }
+            if (! empty($parsed['buyer_nip'])) {
+                $row['buyerNip'] = (string) $parsed['buyer_nip'];
+            }
+            if (! empty($parsed['seller_nip'])) {
+                $row['sellerNip'] = (string) $parsed['seller_nip'];
+            }
+            $items[$index] = $row;
+        }
+
+        return $items;
+    }
+
+    private function download_invoice_xml($ksef_reference_number, array $headers)
+    {
+        $paths = [
+            '/api/v2/invoices/ksef/' . rawurlencode((string) $ksef_reference_number),
+            '/v2/invoices/ksef/' . rawurlencode((string) $ksef_reference_number),
+            '/invoices/ksef/' . rawurlencode((string) $ksef_reference_number),
+            '/api/v2/invoices/' . rawurlencode((string) $ksef_reference_number),
+            '/v2/invoices/' . rawurlencode((string) $ksef_reference_number),
+            '/invoices/' . rawurlencode((string) $ksef_reference_number),
+        ];
+        $response = $this->request_with_endpoint_fallback('GET', $paths, [
+            'timeout' => 25,
+            'headers' => $headers,
+        ]);
+        if (is_wp_error($response)) {
+            return '';
+        }
+        $status_code = (int) wp_remote_retrieve_response_code($response);
+        if ($status_code >= 400) {
+            return '';
+        }
+        $raw_body = (string) wp_remote_retrieve_body($response);
+        $raw_trimmed = trim($raw_body);
+        if ($raw_trimmed === '') {
+            return '';
+        }
+        if (strpos($raw_trimmed, '<') === 0) {
+            return $raw_trimmed;
+        }
+        $payload = json_decode($raw_body, true);
+        if (! is_array($payload)) {
+            return '';
+        }
+        $xml_content = trim((string) ($payload['invoiceXml'] ?? $payload['xmlContent'] ?? $payload['xml'] ?? ''));
+        if ($xml_content === '') {
+            return '';
+        }
+        $decoded = base64_decode($xml_content, true);
+        if (is_string($decoded) && trim($decoded) !== '') {
+            return trim($decoded);
+        }
+
+        return $xml_content;
+    }
+
+    private function parse_ksef_xml_summary($xml_content)
+    {
+        if (! function_exists('simplexml_load_string')) {
+            return [];
+        }
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string((string) $xml_content);
+        if (! ($xml instanceof SimpleXMLElement)) {
+            return [];
+        }
+
+        return [
+            'invoice_number' => $this->xpath_first_text($xml, ['//*[local-name()="P_2"]']),
+            'issue_date' => $this->xpath_first_text($xml, ['//*[local-name()="P_1"]', '//*[local-name()="DataWystawienia"]']),
+            'buyer_nip' => $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="NIP"]']),
+            'seller_nip' => $this->xpath_first_text($xml, ['//*[local-name()="Podmiot1"]//*[local-name()="NIP"]']),
+            'seller_name' => $this->xpath_first_text($xml, ['//*[local-name()="Podmiot1"]//*[local-name()="Nazwa"]', '//*[local-name()="Podmiot1"]//*[local-name()="PelnaNazwa"]']),
+        ];
+    }
+
+    private function xpath_first_text(SimpleXMLElement $xml, array $paths)
+    {
+        foreach ($paths as $path) {
+            $nodes = $xml->xpath((string) $path);
+            if (! is_array($nodes) || $nodes === []) {
+                continue;
+            }
+            foreach ($nodes as $node) {
+                $value = trim((string) $node);
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private function extract_certificate_items($payload)
+    {
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        $direct_lists = [
+            $payload['certificates'] ?? null,
+            $payload['items'] ?? null,
+            $payload['data'] ?? null,
+            $payload['result'] ?? null,
+            $payload['value'] ?? null,
+            $payload['content'] ?? null,
+        ];
+        foreach ($direct_lists as $candidate) {
+            if (is_array($candidate)) {
+                $normalized = $this->normalize_certificate_list($candidate);
+                if ($normalized !== []) {
+                    return $normalized;
+                }
+            }
+        }
+
+        $normalized_payload = $this->normalize_certificate_list($payload);
+        if ($normalized_payload !== []) {
+            return $normalized_payload;
+        }
+
+        foreach ($payload as $value) {
+            if (! is_array($value)) {
+                continue;
+            }
+            $normalized = $this->normalize_certificate_list($value);
+            if ($normalized !== []) {
+                return $normalized;
+            }
+        }
+
+        return [];
+    }
+
+    private function normalize_certificate_list(array $candidate)
+    {
+        $is_assoc = array_keys($candidate) !== range(0, count($candidate) - 1);
+        if ($is_assoc && $this->looks_like_certificate_record($candidate)) {
+            return [$candidate];
+        }
+        if ($is_assoc) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($candidate as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            if ($this->looks_like_certificate_record($row)) {
+                $items[] = $row;
+            }
+        }
+
+        return $items;
+    }
+
+    private function looks_like_certificate_record(array $row)
+    {
+        $usage = $row['usage'] ?? $row['usages'] ?? null;
+        $certificate_value = $row['certificate'] ?? $row['cert'] ?? $row['publicKey'] ?? $row['publicKeyCertificate'] ?? null;
+
+        return $usage !== null || $certificate_value !== null;
+    }
+
     private function find_token_encryption_certificate(array $items)
     {
         foreach ($items as $item) {
