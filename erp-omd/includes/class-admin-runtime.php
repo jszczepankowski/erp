@@ -479,6 +479,7 @@ class ERP_OMD_Admin
             case 'google_calendar_fetch_calendars': $this->handle_google_calendar_fetch_calendars(); break;
             case 'ksef_api_sync_now': $this->handle_ksef_api_sync_now(); break;
             case 'ksef_fetch_public_key': $this->handle_ksef_fetch_public_key(); break;
+            case 'ksef_connector_check_now': $this->handle_ksef_connector_check_now(); break;
             case 'delete_client': $this->handle_client_delete(); break;
             case 'delete_project': $this->handle_project_delete(); break;
         }
@@ -1036,6 +1037,10 @@ class ERP_OMD_Admin
         $google_calendar_last_error = (string) get_option('erp_omd_google_calendar_last_error', '');
         $ksef_api_enabled = (bool) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENABLED, false);
         $ksef_api_mode = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, 'from_now');
+        $ksef_api_environment = sanitize_key((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENVIRONMENT, 'prod'));
+        if (! in_array($ksef_api_environment, ['prod', 'test', 'demo'], true)) {
+            $ksef_api_environment = 'prod';
+        }
         $ksef_api_registration_date = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, '');
         $ksef_api_backfill_days = max(1, min(90, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90)));
         $ksef_api_alert_after_hours = max(1, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, 24));
@@ -3554,6 +3559,10 @@ class ERP_OMD_Admin
         }
         $ksef_api_enabled = ! empty($_POST['ksef_api_enabled']);
         $ksef_api_mode = sanitize_key((string) wp_unslash($_POST['ksef_api_mode'] ?? 'from_now'));
+        $ksef_api_environment = sanitize_key((string) wp_unslash($_POST['ksef_api_environment'] ?? 'prod'));
+        if (! in_array($ksef_api_environment, ['prod', 'test', 'demo'], true)) {
+            $ksef_api_environment = 'prod';
+        }
         if (! in_array($ksef_api_mode, ['from_now', 'backfill', 'all'], true)) {
             $ksef_api_mode = 'from_now';
         }
@@ -3585,6 +3594,7 @@ class ERP_OMD_Admin
         }
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENABLED, $ksef_api_enabled);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, $ksef_api_mode);
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENVIRONMENT, $ksef_api_environment);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, $ksef_api_registration_date);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, $ksef_api_backfill_days);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, $ksef_api_alert_after_hours);
@@ -3752,6 +3762,37 @@ class ERP_OMD_Admin
             );
         }
         $this->redirect_with_notice('erp-omd-settings', 'success', (string) ($result['message'] ?? __('Pobrano klucz publiczny KSeF (MF).', 'erp-omd')));
+    }
+
+    private function handle_ksef_connector_check_now()
+    {
+        check_admin_referer('erp_omd_ksef_connector_check_now');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $lookback_minutes = max(5, min(1440, (int) ($_POST['ksef_check_lookback_minutes'] ?? 120)));
+        $sync_service = $this->build_ksef_api_sync_service();
+        $result = $sync_service->run_connector_check([
+            'lookback_minutes' => $lookback_minutes,
+        ]);
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_with_notice(
+                'erp-omd-settings',
+                'error',
+                sprintf(__('Test połączenia KSeF nie powiódł się: %s', 'erp-omd'), (string) ($result['last_error'] ?? ''))
+            );
+        }
+
+        $this->redirect_with_notice(
+            'erp-omd-settings',
+            'success',
+            sprintf(
+                __('Test połączenia KSeF OK (%1$s, %2$s → %3$s). Pobrane rekordy: %4$d.', 'erp-omd'),
+                (string) ($result['environment'] ?? 'prod'),
+                (string) ($result['from'] ?? ''),
+                (string) ($result['to'] ?? ''),
+                (int) ($result['fetched'] ?? 0)
+            )
+        );
     }
 
     private function build_ksef_api_sync_service()
