@@ -1036,6 +1036,10 @@ class ERP_OMD_Admin
         $google_calendar_last_error = (string) get_option('erp_omd_google_calendar_last_error', '');
         $ksef_api_enabled = (bool) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENABLED, false);
         $ksef_api_mode = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, 'from_now');
+        $ksef_api_environment = sanitize_key((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENVIRONMENT, 'prod'));
+        if (! in_array($ksef_api_environment, ['prod', 'test', 'demo'], true)) {
+            $ksef_api_environment = 'prod';
+        }
         $ksef_api_registration_date = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, '');
         $ksef_api_backfill_days = max(1, min(90, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90)));
         $ksef_api_alert_after_hours = max(1, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, 24));
@@ -3554,6 +3558,10 @@ class ERP_OMD_Admin
         }
         $ksef_api_enabled = ! empty($_POST['ksef_api_enabled']);
         $ksef_api_mode = sanitize_key((string) wp_unslash($_POST['ksef_api_mode'] ?? 'from_now'));
+        $ksef_api_environment = sanitize_key((string) wp_unslash($_POST['ksef_api_environment'] ?? 'prod'));
+        if (! in_array($ksef_api_environment, ['prod', 'test', 'demo'], true)) {
+            $ksef_api_environment = 'prod';
+        }
         if (! in_array($ksef_api_mode, ['from_now', 'backfill', 'all'], true)) {
             $ksef_api_mode = 'from_now';
         }
@@ -3585,6 +3593,7 @@ class ERP_OMD_Admin
         }
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENABLED, $ksef_api_enabled);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, $ksef_api_mode);
+        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENVIRONMENT, $ksef_api_environment);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, $ksef_api_registration_date);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, $ksef_api_backfill_days);
         update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, $ksef_api_alert_after_hours);
