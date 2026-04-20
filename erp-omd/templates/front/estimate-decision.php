@@ -93,6 +93,10 @@
                     <label for="erp-omd-estimate-reject-comment"><?php esc_html_e('Komentarz (wymagany przy odrzuceniu)', 'erp-omd'); ?></label>
                     <textarea id="erp-omd-estimate-reject-comment" name="comment" rows="4"><?php echo esc_textarea($comment_value); ?></textarea>
                 </div>
+                <div class="erp-omd-front-form-field">
+                    <label for="erp-omd-estimate-accept-note"><?php esc_html_e('Uwagi do akceptacji kosztorysu (opcjonalnie)', 'erp-omd'); ?></label>
+                    <textarea id="erp-omd-estimate-accept-note" name="note" rows="4"><?php echo esc_textarea($note_value ?? ''); ?></textarea>
+                </div>
 
                 <button class="erp-omd-front-button erp-omd-front-button-secondary" type="submit"><?php esc_html_e('Wyślij decyzję', 'erp-omd'); ?></button>
             </form>
