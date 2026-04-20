@@ -294,8 +294,8 @@ final class ClientProjectServiceTestRunner
             'brief' => '',
             'alert_margin_threshold' => '',
         ]);
-        $this->assertTrue(in_array('Projekt fixed_price wymaga dodatniego budżetu.', $fixedPriceErrors, true), 'Fixed price projects should require a positive budget.');
-        $this->assertTrue(in_array('Projekt fixed_price nie może mieć opłaty retainer.', $fixedPriceErrors, true), 'Fixed price projects should reject retainer fees.');
+        $this->assertSame(false, in_array('Projekt fixed_price wymaga dodatniego budżetu.', $fixedPriceErrors, true), 'Fixed price projects should allow empty budget after billing type change.');
+        $this->assertSame(false, in_array('Projekt fixed_price nie może mieć opłaty retainer.', $fixedPriceErrors, true), 'Fixed price projects should normalize retainer fee to 0.00.');
 
         $preparedProject = $service->prepare_project([
             'client_id' => 1,
@@ -308,6 +308,51 @@ final class ClientProjectServiceTestRunner
             'manager_ids' => [6],
         ]);
         $this->assertSame([5, 6], $preparedProject['manager_ids'], 'Primary manager should be merged into manager_ids list.');
+
+        $preparedProjectWithChangedBillingType = $service->prepare_project(
+            [
+                'billing_type' => 'fixed_price',
+                'budget' => 2500,
+            ],
+            [
+                'client_id' => 1,
+                'name' => 'Projekt ze zmianą typu',
+                'billing_type' => 'time_material',
+                'budget' => 1800,
+                'retainer_monthly_fee' => 0,
+                'status' => 'w_realizacji',
+                'manager_id' => 5,
+                'manager_ids' => [5],
+            ]
+        );
+        $this->assertSame(0.0, (float) $preparedProjectWithChangedBillingType['budget'], 'Changing billing type should clear previous project budget.');
+        $this->assertSame(0.0, (float) $preparedProjectWithChangedBillingType['retainer_monthly_fee'], 'Changing billing type to fixed should clear retainer fee.');
+
+        $preparedHourlyProject = $service->prepare_project([
+            'client_id' => 1,
+            'name' => 'Projekt godzinowy',
+            'billing_type' => 'time_material',
+            'budget' => 999,
+            'retainer_monthly_fee' => 0,
+            'status' => 'do_rozpoczecia',
+            'manager_id' => 5,
+        ]);
+        $this->assertSame(0.0, (float) $preparedHourlyProject['budget'], 'Hourly projects should always keep budget at 0.00.');
+
+        $mixedErrors = $service->validate_project([
+            'client_id' => 1,
+            'name' => 'Projekt hybrydowy bez budżetu',
+            'billing_type' => 'mixed',
+            'budget' => 0,
+            'retainer_monthly_fee' => 120,
+            'status' => 'do_rozpoczecia',
+            'manager_id' => 5,
+            'estimate_id' => 0,
+            'brief' => '',
+            'alert_margin_threshold' => '',
+        ]);
+        $this->assertSame(false, in_array('Projekt mixed (hybrydowy) wymaga budżetu części ryczałtowej lub powiązanej estymacji pozycyjnej.', $mixedErrors, true), 'Mixed projects should allow empty budget during billing type changes.');
+        $this->assertSame(false, in_array('Projekt mixed (hybrydowy) nie używa opłaty retainer — ustaw 0.', $mixedErrors, true), 'Mixed projects should normalize retainer fee to 0.00.');
 
         $multiManagerErrors = $service->validate_project([
             'client_id' => 1,
@@ -339,7 +384,7 @@ final class ClientProjectServiceTestRunner
             'alert_margin_threshold' => '',
         ]);
         $this->assertTrue(in_array('Projekt retainer wymaga dodatniej opłaty miesięcznej.', $retainerErrors, true), 'Retainer projects should require a monthly fee.');
-        $this->assertTrue(in_array('Projekt retainer nie powinien mieć budżetu fixed price — ustaw 0.', $retainerErrors, true), 'Retainer projects should reject fixed-price budget values.');
+        $this->assertSame(false, in_array('Projekt retainer nie powinien mieć budżetu fixed price — ustaw 0.', $retainerErrors, true), 'Retainer project budget should be normalized to 0.00 automatically.');
 
         $lifecycleErrors = $service->validate_project(
             [
@@ -397,7 +442,7 @@ final class ClientProjectServiceTestRunner
             ]
         );
         $this->assertTrue(in_array('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury PDF.', $missingPdfErrors, true), 'Project should not close without a final PDF invoice.');
-        $this->assertTrue(in_array('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury sprzedażowej.', $missingPdfErrors, true), 'Project should not close without a final sales invoice attached to the project.');
+        $this->assertTrue(in_array('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury sprzedażowej lub poprawnej końcowej faktury PDF.', $missingPdfErrors, true), 'Project should not close without a final sales invoice or a valid final PDF attached to the project.');
 
         $invalidMimeErrors = $service->validate_project(
             ['client_id' => 1, 'name' => 'Projekt z błędnym MIME', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'zakonczony', 'manager_id' => 5],
