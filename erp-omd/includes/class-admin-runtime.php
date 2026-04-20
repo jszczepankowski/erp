@@ -477,9 +477,6 @@ class ERP_OMD_Admin
             case 'google_calendar_disconnect': $this->handle_google_calendar_disconnect(); break;
             case 'google_calendar_sync_now': $this->handle_google_calendar_sync_now(); break;
             case 'google_calendar_fetch_calendars': $this->handle_google_calendar_fetch_calendars(); break;
-            case 'ksef_api_sync_now': $this->handle_ksef_api_sync_now(); break;
-            case 'ksef_fetch_public_key': $this->handle_ksef_fetch_public_key(); break;
-            case 'ksef_connector_check_now': $this->handle_ksef_connector_check_now(); break;
             case 'delete_client': $this->handle_client_delete(); break;
             case 'delete_project': $this->handle_project_delete(); break;
         }
@@ -1035,24 +1032,7 @@ class ERP_OMD_Admin
         $google_calendar_connected = $this->decrypt_option_value((string) get_option('erp_omd_google_calendar_refresh_token_enc', '')) !== '';
         $google_calendar_last_sync_at = (string) get_option('erp_omd_google_calendar_last_sync_at', '');
         $google_calendar_last_error = (string) get_option('erp_omd_google_calendar_last_error', '');
-        $ksef_api_enabled = (bool) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENABLED, false);
-        $ksef_api_mode = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, 'from_now');
-        $ksef_api_environment = sanitize_key((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENVIRONMENT, 'prod'));
-        if (! in_array($ksef_api_environment, ['prod', 'test', 'demo'], true)) {
-            $ksef_api_environment = 'prod';
-        }
-        $ksef_api_registration_date = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, '');
-        $ksef_api_backfill_days = max(1, min(90, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90)));
-        $ksef_api_alert_after_hours = max(1, (int) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, 24));
-        $ksef_api_base_url = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_API_BASE_URL, 'https://api.ksef.mf.gov.pl');
         $ksef_auto_create_supplier = (bool) get_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, false);
-        $ksef_api_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, '')));
-        $ksef_api_refresh_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC, '')));
-        $ksef_ap_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_AP_TOKEN_ENC, '')));
-        $ksef_public_key_pem = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_PUBLIC_KEY_PEM, '');
-        $ksef_api_last_sync_at = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_SYNC_AT, '');
-        $ksef_api_last_error = (string) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_ERROR, '');
-        $ksef_api_last_result = (array) get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_LAST_RESULT, []);
 
         include ERP_OMD_PATH . 'templates/admin/settings.php';
     }
@@ -3557,31 +3537,6 @@ class ERP_OMD_Admin
         if ($google_calendar_technical_account_email !== '' && ! is_email($google_calendar_technical_account_email)) {
             $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres e-mail konta technicznego Google Calendar jest niepoprawny.', 'erp-omd'));
         }
-        $ksef_api_enabled = ! empty($_POST['ksef_api_enabled']);
-        $ksef_api_mode = sanitize_key((string) wp_unslash($_POST['ksef_api_mode'] ?? 'from_now'));
-        $ksef_api_environment = sanitize_key((string) wp_unslash($_POST['ksef_api_environment'] ?? 'prod'));
-        if (! in_array($ksef_api_environment, ['prod', 'test', 'demo'], true)) {
-            $ksef_api_environment = 'prod';
-        }
-        if (! in_array($ksef_api_mode, ['from_now', 'backfill', 'all'], true)) {
-            $ksef_api_mode = 'from_now';
-        }
-        $ksef_api_registration_date = sanitize_text_field((string) wp_unslash($_POST['ksef_api_registration_date'] ?? ''));
-        if ($ksef_api_registration_date !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $ksef_api_registration_date) !== 1) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('Data rejestracji KSeF musi mieć format YYYY-MM-DD.', 'erp-omd'));
-        }
-        $ksef_api_backfill_days = max(1, min(90, (int) wp_unslash($_POST['ksef_api_backfill_days'] ?? 90)));
-        $ksef_api_alert_after_hours = max(1, min(168, (int) wp_unslash($_POST['ksef_api_alert_after_hours'] ?? 24)));
-        $ksef_api_base_url = trim((string) wp_unslash($_POST['ksef_api_base_url'] ?? 'https://api.ksef.mf.gov.pl'));
-        if ($ksef_api_base_url === '' || ! wp_http_validate_url($ksef_api_base_url)) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('Bazowy URL KSeF API jest niepoprawny.', 'erp-omd'));
-        }
-        $ksef_api_token = trim((string) wp_unslash($_POST['ksef_api_token'] ?? ''));
-        $ksef_api_refresh_token = trim((string) wp_unslash($_POST['ksef_api_refresh_token'] ?? ''));
-        $ksef_ap_token = trim((string) wp_unslash($_POST['ksef_ap_token'] ?? ''));
-        $ksef_public_key_pem = trim((string) wp_unslash($_POST['ksef_public_key_pem'] ?? ''));
-        $ksef_api_token_clear = ! empty($_POST['ksef_api_token_clear']);
-        $ksef_api_refresh_token_clear = ! empty($_POST['ksef_api_refresh_token_clear']);
         $ksef_auto_create_supplier = ! empty($_POST['ksef_auto_create_supplier']);
 
         update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
@@ -3592,30 +3547,7 @@ class ERP_OMD_Admin
         if ($google_calendar_client_secret !== '') {
             update_option('erp_omd_google_calendar_client_secret_enc', $this->encrypt_option_value($google_calendar_client_secret));
         }
-        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENABLED, $ksef_api_enabled);
-        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, $ksef_api_mode);
-        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ENVIRONMENT, $ksef_api_environment);
-        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REGISTRATION_DATE, $ksef_api_registration_date);
-        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, $ksef_api_backfill_days);
-        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_ALERT_AFTER_HOURS, $ksef_api_alert_after_hours);
-        update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_API_BASE_URL, $ksef_api_base_url);
         update_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, $ksef_auto_create_supplier);
-        if ($ksef_api_token_clear) {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, '');
-        } elseif ($ksef_api_token !== '') {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_TOKEN_ENC, $this->encrypt_option_value($ksef_api_token));
-        }
-        if ($ksef_api_refresh_token_clear) {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC, '');
-        } elseif ($ksef_api_refresh_token !== '') {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_REFRESH_TOKEN_ENC, $this->encrypt_option_value($ksef_api_refresh_token));
-        }
-        if ($ksef_ap_token !== '') {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_AP_TOKEN_ENC, $this->encrypt_option_value($ksef_ap_token));
-        }
-        if ($ksef_public_key_pem !== '') {
-            update_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_PUBLIC_KEY_PEM, $ksef_public_key_pem);
-        }
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
     }
 
@@ -3707,116 +3639,6 @@ class ERP_OMD_Admin
         }
 
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Lista kalendarzy Google została pobrana.', 'erp-omd'));
-    }
-
-    private function handle_ksef_api_sync_now()
-    {
-        check_admin_referer('erp_omd_ksef_api_sync_now');
-        $this->require_capability('erp_omd_manage_settings');
-
-        $scope = sanitize_key((string) ($_POST['ksef_sync_scope'] ?? 'both'));
-        if (! in_array($scope, ['cost', 'sales', 'both'], true)) {
-            $scope = 'both';
-        }
-        $mode = sanitize_key((string) ($_POST['ksef_sync_mode'] ?? get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_MODE, 'from_now')));
-        if (! in_array($mode, ['from_now', 'backfill', 'all'], true)) {
-            $mode = 'from_now';
-        }
-        $backfill_days = max(1, min(90, (int) ($_POST['ksef_sync_backfill_days'] ?? get_option(ERP_OMD_KSeF_API_Sync_Service::OPTION_BACKFILL_DAYS, 90))));
-
-        $sync_service = $this->build_ksef_api_sync_service();
-        $result = $sync_service->sync([
-            'scope' => $scope,
-            'mode' => $mode,
-            'backfill_days' => $backfill_days,
-            'force_now' => true,
-        ]);
-        if (! (bool) ($result['ok'] ?? false)) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Synchronizacja KSeF nie powiodła się: %s', 'erp-omd'), (string) ($result['last_error'] ?? '')));
-        }
-
-        $this->redirect_with_notice(
-            'erp-omd-settings',
-            'success',
-            sprintf(
-                __('Synchronizacja KSeF zakończona: pobrano %1$d, zaimportowano %2$d, błędy %3$d.', 'erp-omd'),
-                (int) ($result['fetched'] ?? 0),
-                (int) ($result['imported'] ?? 0),
-                (int) ($result['failed'] ?? 0)
-            )
-        );
-    }
-
-    private function handle_ksef_fetch_public_key()
-    {
-        check_admin_referer('erp_omd_ksef_fetch_public_key');
-        $this->require_capability('erp_omd_manage_settings');
-
-        $sync_service = $this->build_ksef_api_sync_service();
-        $result = $sync_service->fetch_and_store_token_encryption_public_key();
-        if (! (bool) ($result['ok'] ?? false)) {
-            $this->redirect_with_notice(
-                'erp-omd-settings',
-                'error',
-                sprintf(__('Pobranie klucza publicznego KSeF nie powiodło się: %s', 'erp-omd'), (string) ($result['message'] ?? ''))
-            );
-        }
-        $this->redirect_with_notice('erp-omd-settings', 'success', (string) ($result['message'] ?? __('Pobrano klucz publiczny KSeF (MF).', 'erp-omd')));
-    }
-
-    private function handle_ksef_connector_check_now()
-    {
-        check_admin_referer('erp_omd_ksef_connector_check_now');
-        $this->require_capability('erp_omd_manage_settings');
-
-        $lookback_minutes = max(5, min(1440, (int) ($_POST['ksef_check_lookback_minutes'] ?? 120)));
-        $sync_service = $this->build_ksef_api_sync_service();
-        $result = $sync_service->run_connector_check([
-            'lookback_minutes' => $lookback_minutes,
-        ]);
-        if (! (bool) ($result['ok'] ?? false)) {
-            $this->redirect_with_notice(
-                'erp-omd-settings',
-                'error',
-                sprintf(__('Test połączenia KSeF nie powiódł się: %s', 'erp-omd'), (string) ($result['last_error'] ?? ''))
-            );
-        }
-
-        $this->redirect_with_notice(
-            'erp-omd-settings',
-            'success',
-            sprintf(
-                __('Test połączenia KSeF OK (%1$s, %2$s → %3$s). Pobrane rekordy: %4$d.', 'erp-omd'),
-                (string) ($result['environment'] ?? 'prod'),
-                (string) ($result['from'] ?? ''),
-                (string) ($result['to'] ?? ''),
-                (int) ($result['fetched'] ?? 0)
-            )
-        );
-    }
-
-    private function build_ksef_api_sync_service()
-    {
-        $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
-        $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
-        $supplier_repository = new ERP_OMD_Supplier_Repository();
-        $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
-            $invoice_repository,
-            $audit_repository,
-            $supplier_repository,
-            new ERP_OMD_Project_Repository()
-        );
-        $import_service = new ERP_OMD_KSeF_Import_Service(
-            $workflow,
-            $invoice_repository,
-            $audit_repository,
-            null,
-            null,
-            $supplier_repository,
-            new ERP_OMD_Client_Repository()
-        );
-
-        return new ERP_OMD_KSeF_API_Sync_Service($import_service, (string) get_option('erp_omd_company_nip', ''));
     }
 
     private function handle_google_calendar_oauth_callback()
