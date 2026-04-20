@@ -350,6 +350,7 @@ class ERP_OMD_Admin
             case 'import_ksef_cost_xml': $this->handle_import_ksef_cost_xml_action(); break;
             case 'attach_ksef_sales_invoice': $this->handle_attach_ksef_sales_invoice_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
+            case 'mark_project_deadline_completed': $this->handle_mark_project_deadline_completed_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
             case 'bulk_clients': $this->handle_clients_bulk_action(); break;
@@ -2654,6 +2655,33 @@ class ERP_OMD_Admin
         $this->projects->update($id, $payload);
         $this->project_financial_service->rebuild_for_project($id);
         $this->redirect_with_notice('erp-omd-projects', 'success', __('Projekt został zaktualizowany inline.', 'erp-omd'));
+    }
+
+    private function handle_mark_project_deadline_completed_action()
+    {
+        check_admin_referer('erp_omd_mark_project_deadline_completed');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $existing = $id ? $this->projects->find($id) : null;
+        if (! $existing) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono projektu do oznaczenia deadline.', 'erp-omd'));
+        }
+
+        $payload = $this->client_project_service->prepare_project(
+            [
+                'deadline_completed_at' => current_time('mysql'),
+                'deadline_completed_by' => (int) get_current_user_id(),
+            ],
+            $existing
+        );
+        $errors = $this->client_project_service->validate_project($payload, $existing);
+        if ($errors) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors));
+        }
+
+        $this->projects->update($id, $payload);
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Deadline projektu oznaczono jako zrealizowany.', 'erp-omd'));
     }
 
     public function handle_inline_project_update_ajax()

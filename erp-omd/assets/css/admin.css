@@ -1136,6 +1136,11 @@
     color: #8f1d1d;
 }
 
+.erp-omd-admin .erp-omd-project-deadline-alert {
+    color: #b91c1c;
+    font-weight: 600;
+}
+
 .erp-omd-admin .erp-omd-calendar-chip-dot {
     background: currentColor;
     border-radius: 50%;

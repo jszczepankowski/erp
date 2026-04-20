@@ -166,7 +166,17 @@ final class ProjectFinancialServiceTestRunner
                     ['amount' => 400.0],
                 ],
             ]),
-            new ERP_OMD_Project_Revenue_Repository([]),
+            new ERP_OMD_Project_Revenue_Repository([
+                11 => [
+                    ['amount' => 700.0],
+                ],
+                12 => [
+                    ['amount' => 250.0],
+                ],
+                13 => [
+                    ['amount' => 400.0],
+                ],
+            ]),
             $financialsRepository,
             $timeEntriesRepository
         );
@@ -178,16 +188,16 @@ final class ProjectFinancialServiceTestRunner
         $this->assertSame(23.0, $tmFinancials['budget_usage'], 'Budget usage should be cost divided by budget.');
 
         $fixedFinancials = $service->rebuild_for_project(11);
-        $this->assertSame(5000.0, $fixedFinancials['revenue'], 'Fixed price revenue should always recognize the project budget.');
+        $this->assertSame(5700.0, $fixedFinancials['revenue'], 'Fixed price revenue should include project budget and added revenue items.');
         $this->assertSame(900.0, $fixedFinancials['cost'], 'Fixed price cost should include time and direct costs.');
 
         $fixedInProgressFinancials = $service->rebuild_for_project(13);
-        $this->assertSame(3200.0, $fixedInProgressFinancials['revenue'], 'Fixed price revenue should also use the project budget after changing billing type on an in-progress project.');
+        $this->assertSame(3600.0, $fixedInProgressFinancials['revenue'], 'Fixed price revenue should include project budget and added revenue items after changing billing type on an in-progress project.');
         $this->assertSame(160.0, $fixedInProgressFinancials['time_cost'], 'Fixed price project should expose time-based labor cost from reported hours.');
         $this->assertSame(160.0, $fixedInProgressFinancials['cost'], 'Fixed price project total cost should include labor time cost even without direct costs.');
 
         $retainerFinancials = $service->rebuild_for_project(12);
-        $this->assertSame(4500.0, $retainerFinancials['revenue'], 'Retainer revenue should count inclusive active months.');
+        $this->assertSame(4750.0, $retainerFinancials['revenue'], 'Retainer revenue should count inclusive active months and added revenue items.');
 
         $cachedRepository = new ERP_OMD_Project_Financial_Repository([
             10 => [

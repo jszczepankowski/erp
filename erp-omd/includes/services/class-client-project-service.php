@@ -208,11 +208,22 @@ class ERP_OMD_Client_Project_Service
             $manager_id = (int) $manager_ids[0];
         }
 
+        $billing_type = trim((string) ($data['billing_type'] ?? ($existing_project['billing_type'] ?? 'time_material'))) ?: 'time_material';
+        $billing_type_changed = $existing_project !== null
+            && (string) ($existing_project['billing_type'] ?? 'time_material') !== $billing_type;
+
+        $budget = round((float) ($data['budget'] ?? ($existing_project['budget'] ?? 0)), 2);
+        if ($billing_type === 'time_material' || $billing_type === 'retainer') {
+            $budget = 0.0;
+        } elseif ($billing_type_changed) {
+            $budget = 0.0;
+        }
+
         return [
             'client_id' => (int) ($data['client_id'] ?? ($existing_project['client_id'] ?? 0)),
             'name' => trim((string) ($data['name'] ?? ($existing_project['name'] ?? ''))),
-            'billing_type' => trim((string) ($data['billing_type'] ?? ($existing_project['billing_type'] ?? 'time_material'))) ?: 'time_material',
-            'budget' => round((float) ($data['budget'] ?? ($existing_project['budget'] ?? 0)), 2),
+            'billing_type' => $billing_type,
+            'budget' => $budget,
             'retainer_monthly_fee' => round((float) ($data['retainer_monthly_fee'] ?? ($existing_project['retainer_monthly_fee'] ?? 0)), 2),
             'status' => trim((string) ($data['status'] ?? ($existing_project['status'] ?? 'do_rozpoczecia'))) ?: 'do_rozpoczecia',
             'start_date' => trim((string) ($data['start_date'] ?? ($existing_project['start_date'] ?? ''))),
@@ -345,14 +356,17 @@ class ERP_OMD_Client_Project_Service
 
         if ($current_status === 'do_faktury' && $target_status === 'zakonczony') {
             $project_id = (int) ($existing_project['id'] ?? 0);
-            if ($project_id > 0 && ! $this->has_final_sales_invoice_for_project($project_id)) {
-                $errors[] = __('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury sprzedażowej.', 'erp-omd');
-            }
+            $has_valid_final_invoice_pdf = false;
             if ($project_id > 0 && $this->project_attachment_service) {
                 $attachment_errors = [];
-                if (! $this->project_attachment_service->has_valid_final_invoice_pdf($project_id, $attachment_errors)) {
+                $has_valid_final_invoice_pdf = $this->project_attachment_service->has_valid_final_invoice_pdf($project_id, $attachment_errors);
+                if (! $has_valid_final_invoice_pdf) {
                     $errors = array_merge($errors, $attachment_errors);
                 }
+            }
+            $has_final_sales_invoice = $project_id > 0 && $this->has_final_sales_invoice_for_project($project_id);
+            if (! $has_final_sales_invoice && ! $has_valid_final_invoice_pdf) {
+                $errors[] = __('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury sprzedażowej lub poprawnej końcowej faktury PDF.', 'erp-omd');
             }
         }
 
