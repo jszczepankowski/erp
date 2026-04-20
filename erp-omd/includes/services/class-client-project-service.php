@@ -219,12 +219,17 @@ class ERP_OMD_Client_Project_Service
             $budget = 0.0;
         }
 
+        $retainer_monthly_fee = round((float) ($data['retainer_monthly_fee'] ?? ($existing_project['retainer_monthly_fee'] ?? 0)), 2);
+        if ($billing_type !== 'retainer') {
+            $retainer_monthly_fee = 0.0;
+        }
+
         return [
             'client_id' => (int) ($data['client_id'] ?? ($existing_project['client_id'] ?? 0)),
             'name' => trim((string) ($data['name'] ?? ($existing_project['name'] ?? ''))),
             'billing_type' => $billing_type,
             'budget' => $budget,
-            'retainer_monthly_fee' => round((float) ($data['retainer_monthly_fee'] ?? ($existing_project['retainer_monthly_fee'] ?? 0)), 2),
+            'retainer_monthly_fee' => $retainer_monthly_fee,
             'status' => trim((string) ($data['status'] ?? ($existing_project['status'] ?? 'do_rozpoczecia'))) ?: 'do_rozpoczecia',
             'start_date' => trim((string) ($data['start_date'] ?? ($existing_project['start_date'] ?? ''))),
             'end_date' => trim((string) ($data['end_date'] ?? ($existing_project['end_date'] ?? ''))),
@@ -272,9 +277,6 @@ class ERP_OMD_Client_Project_Service
 
         switch ($data['billing_type']) {
             case 'fixed_price':
-                if ((float) $data['budget'] <= 0) {
-                    $errors[] = __('Projekt fixed_price wymaga dodatniego budżetu.', 'erp-omd');
-                }
                 if ((float) $data['retainer_monthly_fee'] !== 0.0) {
                     $errors[] = __('Projekt fixed_price nie może mieć opłaty retainer.', 'erp-omd');
                 }
@@ -293,9 +295,6 @@ class ERP_OMD_Client_Project_Service
                 }
                 break;
             case 'mixed':
-                if ((float) $data['budget'] <= 0 && (int) ($data['estimate_id'] ?? 0) <= 0) {
-                    $errors[] = __('Projekt mixed (hybrydowy) wymaga budżetu części ryczałtowej lub powiązanej estymacji pozycyjnej.', 'erp-omd');
-                }
                 if ((float) $data['retainer_monthly_fee'] !== 0.0) {
                     $errors[] = __('Projekt mixed (hybrydowy) nie używa opłaty retainer — ustaw 0.', 'erp-omd');
                 }
