@@ -172,10 +172,10 @@ class ERP_OMD_Project_Financial_Service
     {
         switch ($project['billing_type']) {
             case 'fixed_price':
-                return (float) ($project['budget'] ?? 0);
+                return round((float) ($project['budget'] ?? 0) + (float) $extra_revenue, 2);
 
             case 'retainer':
-                return $this->retainer_revenue($project);
+                return round($this->retainer_revenue($project) + (float) $extra_revenue, 2);
 
             case 'mixed':
                 return round((float) ($project['budget'] ?? 0) + (float) $time_revenue + (float) $extra_revenue, 2);

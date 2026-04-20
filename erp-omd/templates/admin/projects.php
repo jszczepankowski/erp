@@ -635,6 +635,10 @@
                     <?php foreach ($projects as $project_row) : ?>
                         <?php $list_financial = $project_financials_by_project[(int) $project_row['id']] ?? []; ?>
                         <?php $inline_project_form_id = 'erp-omd-inline-project-' . (int) $project_row['id']; ?>
+                        <?php
+                        $deadline_status = (string) ($project_row['deadline_status'] ?? '');
+                        $deadline_is_attention = in_array($deadline_status, ['risk', 'overdue'], true);
+                        ?>
                         <tr>
                             <td><input class="erp-omd-project-checkbox" type="checkbox" name="project_ids[]" value="<?php echo esc_attr($project_row['id']); ?>" form="erp-omd-bulk-projects-form" /></td>
                             <td><?php echo esc_html($project_row['id']); ?></td>
@@ -649,7 +653,9 @@
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['revenue'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['profit'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['margin'] ?? 0), 2)); ?></td>
-                            <td><?php echo esc_html((string) ($project_row['deadline_date'] ?? '') !== '' ? (string) $project_row['deadline_date'] : '—'); ?></td>
+                            <td class="<?php echo esc_attr($deadline_is_attention ? 'erp-omd-project-deadline-alert' : ''); ?>">
+                                <?php echo esc_html((string) ($project_row['deadline_date'] ?? '') !== '' ? (string) $project_row['deadline_date'] : '—'); ?>
+                            </td>
                             <td>
                                 <select name="status" form="<?php echo esc_attr($inline_project_form_id); ?>">
                                     <?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'] as $project_status_option) : ?>
@@ -671,6 +677,14 @@
                                         </form>
                                         <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                         <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => $project_row['id']], admin_url('admin.php')) . '#erp-omd-project-details'); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
+                                        <?php if ((string) ($project_row['deadline_date'] ?? '') !== '' && (string) ($project_row['deadline_completed_at'] ?? '') === '') : ?>
+                                            <form method="post" class="erp-omd-inline-form">
+                                                <?php wp_nonce_field('erp_omd_mark_project_deadline_completed'); ?>
+                                                <input type="hidden" name="erp_omd_action" value="mark_project_deadline_completed" />
+                                                <input type="hidden" name="id" value="<?php echo esc_attr($project_row['id']); ?>" />
+                                                <button class="button button-small" type="submit"><?php esc_html_e('Deadline zrealizowany', 'erp-omd'); ?></button>
+                                            </form>
+                                        <?php endif; ?>
                                         <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Zduplikować projekt?', 'erp-omd')); ?>');">
                                             <?php wp_nonce_field('erp_omd_duplicate_project'); ?>
                                             <input type="hidden" name="erp_omd_action" value="duplicate_project" />
@@ -704,18 +718,25 @@
 document.addEventListener('DOMContentLoaded', function () {
     var billingTypeField = document.getElementById('project-billing-type');
     var budgetRow = document.getElementById('erp-omd-project-budget-row');
+    var budgetField = document.getElementById('project-budget');
     var retainerRow = document.getElementById('erp-omd-project-retainer-row');
 
     if (!billingTypeField || !budgetRow || !retainerRow) {
         return;
     }
 
+    var initialBillingType = billingTypeField.value;
     var toggleProjectBillingRows = function () {
         budgetRow.style.display = (billingTypeField.value === 'fixed_price' || billingTypeField.value === 'mixed') ? '' : 'none';
         retainerRow.style.display = billingTypeField.value === 'retainer' ? '' : 'none';
     };
 
-    billingTypeField.addEventListener('change', toggleProjectBillingRows);
+    billingTypeField.addEventListener('change', function () {
+        if (budgetField && billingTypeField.value !== initialBillingType) {
+            budgetField.value = '0.00';
+        }
+        toggleProjectBillingRows();
+    });
     toggleProjectBillingRows();
 });
 </script>
