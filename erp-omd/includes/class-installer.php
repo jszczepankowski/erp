@@ -27,6 +27,7 @@ class ERP_OMD_Installer
         }
 
         self::maybe_cleanup_legacy_time_entry_indexes();
+        self::maybe_cleanup_legacy_ksef_api_options();
     }
 
     public static function migrate()
@@ -2767,6 +2768,7 @@ class ERP_OMD_Installer
         add_option('erp_omd_fixed_monthly_cost', 0);
         add_option('erp_omd_fixed_monthly_cost_items', []);
         self::maybe_cleanup_legacy_time_entry_indexes();
+        self::maybe_cleanup_legacy_ksef_api_options();
     }
 
     private static function maybe_cleanup_legacy_time_entry_indexes()
@@ -2779,6 +2781,36 @@ class ERP_OMD_Installer
         $time_entries_table = $wpdb->prefix . 'erp_omd_time_entries';
         self::drop_legacy_time_entry_unique_indexes($time_entries_table);
         update_option('erp_omd_time_entries_index_cleanup_done', '1');
+    }
+
+    private static function maybe_cleanup_legacy_ksef_api_options()
+    {
+        if (get_option('erp_omd_ksef_api_cleanup_done') === '1') {
+            return;
+        }
+
+        $legacy_ksef_api_options = [
+            'erp_omd_ksef_api_token_enc',
+            'erp_omd_ksef_api_refresh_token_enc',
+            'erp_omd_ksef_ap_token_enc',
+            'erp_omd_ksef_public_key_pem',
+            'erp_omd_ksef_api_enabled',
+            'erp_omd_ksef_sync_mode',
+            'erp_omd_ksef_registration_date',
+            'erp_omd_ksef_backfill_days',
+            'erp_omd_ksef_api_last_sync_at',
+            'erp_omd_ksef_api_last_error',
+            'erp_omd_ksef_api_last_result',
+            'erp_omd_ksef_api_last_cursor',
+            'erp_omd_ksef_api_alert_after_hours',
+            'erp_omd_ksef_api_base_url',
+        ];
+
+        foreach ($legacy_ksef_api_options as $option_name) {
+            delete_option($option_name);
+        }
+
+        update_option('erp_omd_ksef_api_cleanup_done', '1');
     }
 
     private static function drop_legacy_time_entry_unique_indexes($time_entries_table)

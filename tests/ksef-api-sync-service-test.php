@@ -6,10 +6,11 @@ $cron = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-cron-ma
 $admin = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-admin-runtime.php');
 $settingsTemplate = (string) file_get_contents(__DIR__ . '/../erp-omd/templates/admin/settings.php');
 $autoloader = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-autoloader.php');
+$installer = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-installer.php');
 $syncServiceExists = file_exists(__DIR__ . '/../erp-omd/includes/services/class-ksef-api-sync-service.php');
 $connectorExists = file_exists(__DIR__ . '/../erp-omd/includes/services/class-ksef-connector.php');
 
-if ($cron === '' || $admin === '' || $settingsTemplate === '' || $autoloader === '') {
+if ($cron === '' || $admin === '' || $settingsTemplate === '' || $autoloader === '' || $installer === '') {
     throw new RuntimeException('Unable to load files for KSeF API sync removal test.');
 }
 
@@ -48,6 +49,8 @@ foreach ($absentFragments as [$source, $fragment, $message]) {
 $presentFragments = [
     [$settingsTemplate, 'name="ksef_auto_create_supplier"', 'Settings should keep manual KSeF document handling option.'],
     [$cron, 'KSEF_RETRY_PIPELINE_HOOK', 'Cron should keep retry pipeline for document workflow.'],
+    [$installer, 'erp_omd_ksef_api_cleanup_done', 'Installer should include one-time KSeF API option cleanup marker.'],
+    [$installer, 'delete_option($option_name);', 'Installer should remove legacy KSeF API options during migration cleanup.'],
 ];
 
 foreach ($presentFragments as [$source, $fragment, $message]) {
