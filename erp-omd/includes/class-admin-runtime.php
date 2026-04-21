@@ -343,6 +343,7 @@ class ERP_OMD_Admin
             case 'delete_supplier': $this->handle_supplier_delete(); break;
             case 'save_cost_invoice': $this->handle_cost_invoice_save(); break;
             case 'delete_cost_invoice': $this->handle_cost_invoice_delete(); break;
+            case 'bulk_cost_invoices': $this->handle_cost_invoice_bulk_action(); break;
             case 'attach_cost_invoice_to_project': $this->handle_attach_cost_invoice_to_project(); break;
             case 'moderate_ksef_queue': $this->handle_ksef_queue_moderation_action(); break;
             case 'bulk_ksef_queue': $this->handle_ksef_queue_bulk_action(); break;
@@ -1474,6 +1475,7 @@ class ERP_OMD_Admin
         $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));
         $selected_supplier = $selected_supplier_id > 0 ? (array) $suppliers_repository->find($selected_supplier_id) : [];
         $selected_invoice = $selected_invoice_id > 0 ? (array) $cost_invoice_repository->find($selected_invoice_id) : [];
+        $selected_invoice_items = $selected_invoice_id > 0 ? (array) $cost_invoice_item_repository->for_invoice($selected_invoice_id) : [];
         $selected_invoice_audit = $selected_invoice_id > 0 ? (array) $cost_invoice_audit_repository->for_invoice($selected_invoice_id) : [];
         $audit_user_labels = [];
         foreach ($selected_invoice_audit as $audit_row) {
@@ -1867,18 +1869,38 @@ class ERP_OMD_Admin
         $this->require_capability('erp_omd_manage_projects');
 
         $invoice_id = max(0, (int) ($_POST['cost_invoice_id'] ?? 0));
-        $net_amount = (float) ($_POST['cost_invoice_net_amount'] ?? 0);
-        $vat_rate_raw = sanitize_text_field((string) ($_POST['cost_invoice_vat_rate'] ?? '23'));
-        $vat_rate_map = [
-            '23' => 23.0,
-            '8' => 8.0,
-            '5' => 5.0,
-            '0' => 0.0,
-            'zw' => 0.0,
-        ];
-        $vat_rate = (float) ($vat_rate_map[$vat_rate_raw] ?? 23.0);
-        $vat_amount = round($net_amount * ($vat_rate / 100), 2);
-        $gross_amount = round($net_amount + $vat_amount, 2);
+        $items = $this->collect_cost_invoice_items_from_post();
+        $net_amount = 0.0;
+        $vat_amount = 0.0;
+        $gross_amount = 0.0;
+        foreach ($items as $item_row) {
+            $item_net = round((float) ($item_row['net_amount'] ?? 0), 2);
+            $item_vat_rate = round((float) ($item_row['vat_rate'] ?? 0), 2);
+            $item_vat = round($item_net * ($item_vat_rate / 100), 2);
+            $item_gross = round($item_net + $item_vat, 2);
+            $net_amount += $item_net;
+            $vat_amount += $item_vat;
+            $gross_amount += $item_gross;
+        }
+        $net_amount = round($net_amount, 2);
+        $vat_amount = round($vat_amount, 2);
+        $gross_amount = round($gross_amount, 2);
+
+        if ($items === []) {
+            $net_amount = (float) ($_POST['cost_invoice_net_amount'] ?? 0);
+            $vat_rate_raw = sanitize_text_field((string) ($_POST['cost_invoice_vat_rate'] ?? '23'));
+            $vat_rate_map = [
+                '23' => 23.0,
+                '8' => 8.0,
+                '5' => 5.0,
+                '0' => 0.0,
+                'zw' => 0.0,
+            ];
+            $vat_rate = (float) ($vat_rate_map[$vat_rate_raw] ?? 23.0);
+            $vat_amount = round($net_amount * ($vat_rate / 100), 2);
+            $gross_amount = round($net_amount + $vat_amount, 2);
+        }
+
         $payload = [
             'supplier_id' => max(0, (int) ($_POST['cost_invoice_supplier_id'] ?? 0)),
             'project_id' => max(0, (int) ($_POST['cost_invoice_project_id'] ?? 0)),
@@ -1891,6 +1913,7 @@ class ERP_OMD_Admin
             'gross_amount' => $gross_amount,
             'source' => sanitize_text_field((string) ($_POST['cost_invoice_source'] ?? 'manual')),
             'ksef_reference_number' => sanitize_text_field((string) ($_POST['cost_invoice_ksef_reference_number'] ?? '')),
+            'items' => $items,
             'updated_by_user_id' => get_current_user_id(),
             'created_by_user_id' => get_current_user_id(),
         ];
@@ -1907,17 +1930,17 @@ class ERP_OMD_Admin
             : $workflow->create_invoice($payload);
 
         if (! (bool) ($result['ok'] ?? false)) {
-            $this->redirect_cost_invoice_page(['error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
+            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
         }
 
         if ((string) ($payload['status'] ?? '') === 'przypisana') {
             $attach_errors = $this->sync_attached_cost_invoice_to_project_cost((int) ($result['invoice_id'] ?? $invoice_id));
             if ($attach_errors !== []) {
-                $this->redirect_cost_invoice_page(['error' => rawurlencode(implode(' ', $attach_errors))]);
+                $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => rawurlencode(implode(' ', $attach_errors))]);
             }
         }
 
-        $this->redirect_cost_invoice_page(['message' => 'cost_invoice_saved', 'invoice_id' => (int) ($result['invoice_id'] ?? $invoice_id)]);
+        $this->redirect_cost_invoice_page(['tab' => 'invoices', 'message' => 'cost_invoice_saved', 'invoice_id' => (int) ($result['invoice_id'] ?? $invoice_id)]);
     }
 
     private function handle_cost_invoice_delete()
@@ -1927,18 +1950,72 @@ class ERP_OMD_Admin
 
         $invoice_id = max(0, (int) ($_POST['cost_invoice_id'] ?? 0));
         if ($invoice_id <= 0) {
-            $this->redirect_cost_invoice_page(['error' => 'cost_invoice_not_found']);
+            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => 'cost_invoice_not_found']);
         }
 
         $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
         $invoice = $invoice_repository->find($invoice_id);
         if (! is_array($invoice) || $invoice === []) {
-            $this->redirect_cost_invoice_page(['error' => 'cost_invoice_not_found']);
+            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => 'cost_invoice_not_found']);
         }
 
         $this->delete_cost_invoice_with_side_effects($invoice);
 
-        $this->redirect_cost_invoice_page(['message' => 'cost_invoice_deleted']);
+        $this->redirect_cost_invoice_page(['tab' => 'invoices', 'message' => 'cost_invoice_deleted']);
+    }
+
+    private function handle_cost_invoice_bulk_action()
+    {
+        check_admin_referer('erp_omd_bulk_cost_invoices');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $action = sanitize_key((string) ($_POST['bulk_action'] ?? ''));
+        $invoice_ids = array_values(array_filter(array_map('intval', (array) ($_POST['cost_invoice_ids'] ?? []))));
+        if ($action === '' || $invoice_ids === []) {
+            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => rawurlencode(__('Wybierz akcję i co najmniej jedną fakturę.', 'erp-omd'))]);
+        }
+
+        if ($action === 'delete') {
+            $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
+            foreach ($invoice_ids as $invoice_id) {
+                $invoice = (array) $invoice_repository->find($invoice_id);
+                if ($invoice !== []) {
+                    $this->delete_cost_invoice_with_side_effects($invoice);
+                }
+            }
+            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'message' => 'cost_invoice_bulk_deleted']);
+        }
+
+        $status_map = [
+            'status_zaimportowana' => 'zaimportowana',
+            'status_weryfikacja' => 'weryfikacja',
+            'status_zatwierdzona' => 'zatwierdzona',
+            'status_przypisana' => 'przypisana',
+        ];
+        if (! isset($status_map[$action])) {
+            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => rawurlencode(__('Nieobsługiwana akcja zbiorowa.', 'erp-omd'))]);
+        }
+
+        $target_status = (string) $status_map[$action];
+        $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            new ERP_OMD_Supplier_Repository(),
+            $this->projects
+        );
+        $errors = [];
+        foreach ($invoice_ids as $invoice_id) {
+            $result = $workflow->update_invoice($invoice_id, ['status' => $target_status], get_current_user_id());
+            if (! (bool) ($result['ok'] ?? false)) {
+                $errors[] = sprintf('#%d: %s', $invoice_id, implode(' ', (array) ($result['errors'] ?? [])));
+            }
+        }
+
+        if ($errors !== []) {
+            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => rawurlencode(implode(' | ', $errors))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'invoices', 'message' => 'cost_invoice_bulk_status_updated']);
     }
 
     /**
@@ -2016,9 +2093,9 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_import_ksef_sales_xml');
         $this->require_capability('erp_omd_manage_projects');
 
-        $xml_documents = $this->read_ksef_xml_batch_from_request('ksef_sales_xml_content', 'ksef_sales_xml_files');
+        $xml_documents = $this->read_ksef_xml_batch_from_request('', 'ksef_sales_xml_files');
         if ($xml_documents === []) {
-            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz co najmniej jeden plik XML.', 'erp-omd'))]);
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wybierz co najmniej jeden plik XML.', 'erp-omd'))]);
         }
         $description = sanitize_textarea_field((string) ($_POST['ksef_sales_description'] ?? ''));
 
@@ -2099,9 +2176,9 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_import_ksef_cost_xml');
         $this->require_capability('erp_omd_manage_projects');
 
-        $xml_documents = $this->read_ksef_xml_batch_from_request('ksef_cost_xml_content', 'ksef_cost_xml_files');
+        $xml_documents = $this->read_ksef_xml_batch_from_request('', 'ksef_cost_xml_files');
         if ($xml_documents === []) {
-            $this->redirect_cost_invoice_page(['tab' => 'ksef-cost', 'error' => rawurlencode(__('Wklej treść XML z KSeF lub wybierz co najmniej jeden plik XML.', 'erp-omd'))]);
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-cost', 'error' => rawurlencode(__('Wybierz co najmniej jeden plik XML.', 'erp-omd'))]);
         }
 
         $service = new ERP_OMD_KSeF_Import_Service(
@@ -2210,6 +2287,47 @@ class ERP_OMD_Admin
         }
 
         $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_attached']);
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    private function collect_cost_invoice_items_from_post()
+    {
+        $items_raw = (array) ($_POST['cost_invoice_items'] ?? []);
+        $items = [];
+
+        foreach ($items_raw as $index => $item_raw) {
+            if (! is_array($item_raw)) {
+                continue;
+            }
+
+            $name = sanitize_text_field((string) ($item_raw['name'] ?? ''));
+            $net_amount = round((float) ($item_raw['net_amount'] ?? 0), 2);
+            $vat_rate = round((float) ($item_raw['vat_rate'] ?? 0), 2);
+            if ($name === '' && $net_amount <= 0 && $vat_rate <= 0) {
+                continue;
+            }
+
+            $vat_amount = round($net_amount * ($vat_rate / 100), 2);
+            $gross_amount = round($net_amount + $vat_amount, 2);
+            $items[] = [
+                'line_no' => max(1, (int) ($item_raw['line_no'] ?? ($index + 1))),
+                'name' => $name,
+                'qty' => max(0.0, (float) ($item_raw['qty'] ?? 1)),
+                'unit' => sanitize_text_field((string) ($item_raw['unit'] ?? 'szt')),
+                'unit_net_amount' => round((float) ($item_raw['unit_net_amount'] ?? $net_amount), 2),
+                'net_amount' => $net_amount,
+                'vat_rate' => $vat_rate,
+                'vat_amount' => $vat_amount,
+                'gross_amount' => $gross_amount,
+                'source_payload' => [
+                    'origin' => 'manual_admin_form',
+                ],
+            ];
+        }
+
+        return $items;
     }
 
     private function delete_cost_invoice_with_side_effects(array $invoice)
