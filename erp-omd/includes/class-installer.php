@@ -61,6 +61,7 @@ class ERP_OMD_Installer
         $attachments_table = $wpdb->prefix . 'erp_omd_attachments';
         $suppliers_table = $wpdb->prefix . 'erp_omd_suppliers';
         $cost_invoices_table = $wpdb->prefix . 'erp_omd_cost_invoices';
+        $cost_invoice_items_table = $wpdb->prefix . 'erp_omd_cost_invoice_items';
         $cost_invoice_audit_table = $wpdb->prefix . 'erp_omd_cost_invoice_audit';
         $project_calendar_sync_table = $wpdb->prefix . 'erp_omd_project_calendar_sync';
         $estimate_audit_table = $wpdb->prefix . 'erp_omd_estimate_audit';
@@ -485,6 +486,26 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
         self::add_column_if_missing($cost_invoices_table, 'description', "ALTER TABLE {$cost_invoices_table} ADD COLUMN description TEXT NULL AFTER ksef_reference_number");
+
+        dbDelta(
+            "CREATE TABLE {$cost_invoice_items_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                invoice_id BIGINT UNSIGNED NOT NULL,
+                line_no INT UNSIGNED NOT NULL DEFAULT 1,
+                item_name VARCHAR(255) NOT NULL DEFAULT '',
+                qty DECIMAL(12,3) NOT NULL DEFAULT 0.000,
+                unit VARCHAR(32) NOT NULL DEFAULT '',
+                unit_net_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                net_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                vat_rate DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+                vat_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                gross_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                source_payload_json LONGTEXT NULL,
+                PRIMARY KEY  (id),
+                KEY invoice_id (invoice_id),
+                KEY line_no (line_no)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
 
         dbDelta(
             "CREATE TABLE {$cost_invoice_audit_table} (

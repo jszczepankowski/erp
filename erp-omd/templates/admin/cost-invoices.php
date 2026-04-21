@@ -1,6 +1,7 @@
 <?php
 $supplier_form = is_array($selected_supplier ?? null) ? $selected_supplier : [];
 $invoice_form = is_array($selected_invoice ?? null) ? $selected_invoice : [];
+$invoice_form_items = is_array($selected_invoice_items ?? null) ? $selected_invoice_items : [];
 $supplier_name_by_id = [];
 $supplier_nip_by_id = [];
 $project_name_by_id = [];
@@ -44,10 +45,10 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
     <nav class="nav-tab-wrapper erp-omd-nav-tabs">
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'suppliers'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'suppliers' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Dostawcy', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'invoices'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'invoices' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Faktury kosztowe', 'erp-omd'); ?></a>
-        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-moderation'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-moderation' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kolejka moderacji KSeF', 'erp-omd'); ?></a>
-        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-sales' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Sprzedażowe KSeF', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-cost'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-cost' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kosztowe KSeF', 'erp-omd'); ?></a>
-        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'relations'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'relations' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-sales' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Sprzedażowe KSeF', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-moderation'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'ksef-moderation' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kolejka moderacji KSeF', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'relations'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'relations' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Relacje projekt ↔ dostawca', 'erp-omd'); ?></a>
     </nav>
 
     <?php if ($active_tab === 'suppliers') : ?>
@@ -269,28 +270,66 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
 
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
-                            <h3><?php esc_html_e('Kwoty', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Netto + stawka VAT, a kwoty VAT/Brutto wyliczane automatycznie.', 'erp-omd'); ?></p>
+                            <h3><?php esc_html_e('Pozycje faktury i podsumowanie', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Edytuj pozycje wraz ze stawkami VAT. Suma netto/VAT/brutto wylicza się automatycznie.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-full">
+                            <table class="widefat striped" id="cost-invoice-items-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e('Lp', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Ilość', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('JM', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Netto', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('VAT %', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('VAT', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Brutto', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Akcja', 'erp-omd'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if ($invoice_form_items === []) : ?>
+                                        <?php $invoice_form_items = [['line_no' => 1, 'item_name' => '', 'qty' => 1, 'unit' => 'szt', 'net_amount' => 0, 'vat_rate' => 23, 'vat_amount' => 0, 'gross_amount' => 0]]; ?>
+                                    <?php endif; ?>
+                                    <?php foreach ((array) $invoice_form_items as $item_index => $item_row) : ?>
+                                        <?php
+                                        $item_line_no = (int) ($item_row['line_no'] ?? ($item_index + 1));
+                                        $item_name = (string) ($item_row['item_name'] ?? $item_row['name'] ?? '');
+                                        $item_qty = (float) ($item_row['qty'] ?? 1);
+                                        $item_unit = (string) ($item_row['unit'] ?? 'szt');
+                                        $item_net = (float) ($item_row['net_amount'] ?? 0);
+                                        $item_vat_rate = (float) ($item_row['vat_rate'] ?? 23);
+                                        $item_vat = (float) ($item_row['vat_amount'] ?? 0);
+                                        $item_gross = (float) ($item_row['gross_amount'] ?? 0);
+                                        ?>
+                                        <tr class="cost-invoice-item-row">
+                                            <td><input type="number" min="1" name="cost_invoice_items[<?php echo esc_attr((string) $item_index); ?>][line_no]" value="<?php echo esc_attr((string) $item_line_no); ?>" class="small-text cost-item-line-no" /></td>
+                                            <td><input type="text" name="cost_invoice_items[<?php echo esc_attr((string) $item_index); ?>][name]" value="<?php echo esc_attr($item_name); ?>" class="regular-text cost-item-name" /></td>
+                                            <td><input type="number" step="0.001" min="0" name="cost_invoice_items[<?php echo esc_attr((string) $item_index); ?>][qty]" value="<?php echo esc_attr((string) $item_qty); ?>" class="small-text cost-item-qty" /></td>
+                                            <td><input type="text" name="cost_invoice_items[<?php echo esc_attr((string) $item_index); ?>][unit]" value="<?php echo esc_attr($item_unit); ?>" class="small-text cost-item-unit" /></td>
+                                            <td><input type="number" step="0.01" min="0" name="cost_invoice_items[<?php echo esc_attr((string) $item_index); ?>][net_amount]" value="<?php echo esc_attr((string) $item_net); ?>" class="small-text cost-item-net" /></td>
+                                            <td><input type="number" step="0.01" min="0" name="cost_invoice_items[<?php echo esc_attr((string) $item_index); ?>][vat_rate]" value="<?php echo esc_attr((string) $item_vat_rate); ?>" class="small-text cost-item-vat-rate" /></td>
+                                            <td><input type="number" step="0.01" min="0" value="<?php echo esc_attr((string) $item_vat); ?>" class="small-text cost-item-vat" readonly /></td>
+                                            <td><input type="number" step="0.01" min="0" value="<?php echo esc_attr((string) $item_gross); ?>" class="small-text cost-item-gross" readonly /></td>
+                                            <td><button type="button" class="button-link-delete cost-item-remove"><?php esc_html_e('Usuń', 'erp-omd'); ?></button></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            <p><button type="button" class="button button-secondary" id="cost-invoice-add-item"><?php esc_html_e('Dodaj pozycję', 'erp-omd'); ?></button></p>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-cost-invoice-amounts-row">
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="cost_invoice_net_amount"><?php esc_html_e('Netto', 'erp-omd'); ?></label>
-                                <input type="number" step="0.01" min="0" id="cost_invoice_net_amount" name="cost_invoice_net_amount" value="<?php echo esc_attr((string) $invoice_form_net_amount); ?>" required />
+                                <label for="cost_invoice_net_amount"><?php esc_html_e('Suma netto', 'erp-omd'); ?></label>
+                                <input type="number" step="0.01" min="0" id="cost_invoice_net_amount" name="cost_invoice_net_amount" value="<?php echo esc_attr((string) $invoice_form_net_amount); ?>" readonly />
                             </div>
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="cost_invoice_vat_rate"><?php esc_html_e('Stawka VAT', 'erp-omd'); ?></label>
-                                <select id="cost_invoice_vat_rate" name="cost_invoice_vat_rate">
-                                    <?php foreach (['23', '8', '5', '0', 'zw'] as $vat_rate_option) : ?>
-                                        <option value="<?php echo esc_attr($vat_rate_option); ?>" <?php selected($invoice_form_vat_rate, $vat_rate_option); ?>><?php echo esc_html($vat_rate_option . (is_numeric($vat_rate_option) ? '%' : '')); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="cost_invoice_vat_amount"><?php esc_html_e('Kwota VAT (auto)', 'erp-omd'); ?></label>
+                                <label for="cost_invoice_vat_amount"><?php esc_html_e('Suma VAT', 'erp-omd'); ?></label>
                                 <input type="number" step="0.01" min="0" id="cost_invoice_vat_amount" value="<?php echo esc_attr((string) $invoice_form_vat_amount); ?>" readonly />
                             </div>
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="cost_invoice_gross_amount"><?php esc_html_e('Brutto (auto)', 'erp-omd'); ?></label>
+                                <label for="cost_invoice_gross_amount"><?php esc_html_e('Suma brutto', 'erp-omd'); ?></label>
                                 <input type="number" step="0.01" min="0" id="cost_invoice_gross_amount" value="<?php echo esc_attr((string) ((float) ($invoice_form['gross_amount'] ?? 0))); ?>" readonly />
                             </div>
                         </div>
@@ -307,19 +346,34 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     <h3><?php esc_html_e('Lista faktur kosztowych', 'erp-omd'); ?></h3>
                 </div>
             </div>
+            <form method="post">
+                <?php wp_nonce_field('erp_omd_bulk_cost_invoices'); ?>
+                <input type="hidden" name="erp_omd_action" value="bulk_cost_invoices" />
+                <p>
+                    <select name="bulk_action">
+                        <option value=""><?php esc_html_e('Akcje zbiorowe', 'erp-omd'); ?></option>
+                        <option value="delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></option>
+                        <option value="status_zaimportowana"><?php esc_html_e('Status: zaimportowana', 'erp-omd'); ?></option>
+                        <option value="status_weryfikacja"><?php esc_html_e('Status: weryfikacja', 'erp-omd'); ?></option>
+                        <option value="status_zatwierdzona"><?php esc_html_e('Status: zatwierdzona', 'erp-omd'); ?></option>
+                        <option value="status_przypisana"><?php esc_html_e('Status: przypisana', 'erp-omd'); ?></option>
+                    </select>
+                    <button type="submit" class="button button-secondary"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
+                </p>
             <table class="widefat striped">
                 <thead>
                     <tr>
-                        <th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Ref KSeF', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
+                        <th><input type="checkbox" id="cost-invoice-select-all" /></th><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Ref KSeF', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if ($cost_invoices === []) : ?>
-                        <tr><td colspan="9"><?php esc_html_e('Brak faktur kosztowych.', 'erp-omd'); ?></td></tr>
+                        <tr><td colspan="10"><?php esc_html_e('Brak faktur kosztowych.', 'erp-omd'); ?></td></tr>
                     <?php endif; ?>
                     <?php foreach ($cost_invoices as $invoice) : ?>
                         <?php $invoice_id = (int) ($invoice['id'] ?? 0); ?>
                         <tr>
+                            <td><input type="checkbox" class="cost-invoice-checkbox" name="cost_invoice_ids[]" value="<?php echo esc_attr((string) $invoice_id); ?>" /></td>
                             <td><?php echo esc_html((string) $invoice_id); ?></td>
                             <td><?php echo esc_html((string) ($invoice['invoice_number'] ?? '')); ?></td>
                             <td><?php echo esc_html((string) ($supplier_name_by_id[(int) ($invoice['supplier_id'] ?? 0)] ?? ('#' . (int) ($invoice['supplier_id'] ?? 0)))); ?></td>
@@ -344,6 +398,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </form>
         </section>
     </section>
     <?php endif; ?>
@@ -412,10 +467,8 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         <form method="post" enctype="multipart/form-data" style="margin-bottom:14px;">
             <?php wp_nonce_field('erp_omd_import_ksef_sales_xml'); ?>
             <input type="hidden" name="erp_omd_action" value="import_ksef_sales_xml" />
-            <p><label for="ksef-sales-xml"><?php esc_html_e('Manual import XML z KSeF', 'erp-omd'); ?></label></p>
-            <textarea id="ksef-sales-xml" name="ksef_sales_xml_content" rows="8" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
             <p>
-                <label for="ksef-sales-xml-files"><?php esc_html_e('lub wybierz plik/pliki XML (import zbiorowy)', 'erp-omd'); ?></label><br />
+                <label for="ksef-sales-xml-files"><?php esc_html_e('Wybierz plik/pliki XML (import zbiorowy)', 'erp-omd'); ?></label><br />
                 <input id="ksef-sales-xml-files" type="file" name="ksef_sales_xml_files[]" accept=".xml,text/xml,application/xml" multiple />
             </p>
             <p>
@@ -426,19 +479,18 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         </form>
 
         <table class="widefat striped">
-            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Project ID', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
             <tbody>
             <?php if (empty($ksef_sales_inbox)) : ?>
-                <tr><td colspan="9"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="8"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
             <?php else : ?>
                 <?php foreach ((array) $ksef_sales_inbox as $sales_row) : ?>
                     <tr>
                         <td><?php echo esc_html((string) ((int) ($sales_row['id'] ?? 0))); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['invoice_number'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['buyer_nip'] ?? '')); ?></td>
-                        <td><?php echo esc_html((string) ($sales_row['description'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ((int) ($sales_row['client_id'] ?? 0))); ?></td>
-                        <td><?php echo esc_html((string) ((int) ($sales_row['project_id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) ($project_name_by_id[(int) ($sales_row['project_id'] ?? 0)] ?? ('#' . (int) ($sales_row['project_id'] ?? 0)))); ?></td>
                         <td><?php echo ((int) ($sales_row['is_final'] ?? 0) === 1) ? esc_html__('Tak', 'erp-omd') : esc_html__('Nie', 'erp-omd'); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['status'] ?? '')); ?></td>
                         <td>
@@ -446,7 +498,16 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                 <?php wp_nonce_field('erp_omd_attach_ksef_sales_invoice'); ?>
                                 <input type="hidden" name="erp_omd_action" value="attach_ksef_sales_invoice" />
                                 <input type="hidden" name="sales_id" value="<?php echo esc_attr((string) ((int) ($sales_row['id'] ?? 0))); ?>" />
-                                <input type="number" min="1" name="project_id" value="<?php echo esc_attr((string) ((int) ($sales_row['project_id'] ?? 0))); ?>" placeholder="<?php esc_attr_e('project_id', 'erp-omd'); ?>" style="width:90px;" required />
+                                <select name="project_id" required style="min-width:180px;">
+                                    <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
+                                    <?php foreach ($projects as $project) : ?>
+                                        <?php $project_id = (int) ($project['id'] ?? 0); ?>
+                                        <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
+                                        <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($sales_row['project_id'] ?? 0), $project_id); ?>>
+                                            <?php echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '')); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                                 <label style="display:flex;gap:3px;align-items:center;">
                                     <input type="checkbox" name="is_final" value="1" <?php checked((int) ($sales_row['is_final'] ?? 0), 1); ?> />
                                     <span><?php esc_html_e('końcowa', 'erp-omd'); ?></span>
@@ -468,10 +529,8 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         <form method="post" enctype="multipart/form-data" style="margin-bottom:18px;">
             <?php wp_nonce_field('erp_omd_import_ksef_cost_xml'); ?>
             <input type="hidden" name="erp_omd_action" value="import_ksef_cost_xml" />
-            <p><label for="ksef-cost-xml"><?php esc_html_e('Manual import XML kosztowy z KSeF', 'erp-omd'); ?></label></p>
-            <textarea id="ksef-cost-xml" name="ksef_cost_xml_content" rows="8" class="large-text" placeholder="<?php esc_attr_e('<Fa>...</Fa>', 'erp-omd'); ?>"></textarea>
             <p>
-                <label for="ksef-cost-xml-files"><?php esc_html_e('lub wybierz plik/pliki XML (import zbiorowy)', 'erp-omd'); ?></label><br />
+                <label for="ksef-cost-xml-files"><?php esc_html_e('Wybierz plik/pliki XML (import zbiorowy)', 'erp-omd'); ?></label><br />
                 <input id="ksef-cost-xml-files" type="file" name="ksef_cost_xml_files[]" accept=".xml,text/xml,application/xml" multiple />
             </p>
             <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML kosztowy', 'erp-omd'); ?></button></p>
@@ -487,15 +546,18 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     <th><?php esc_html_e('Brutto', 'erp-omd'); ?></th>
                     <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
                     <th><?php esc_html_e('Ref KSeF', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Pozycje / stawki VAT', 'erp-omd'); ?></th>
                 </tr>
             </thead>
             <tbody>
             <?php if (empty($ksef_cost_invoices)) : ?>
-                <tr><td colspan="8"><?php esc_html_e('Brak zaimportowanych kosztowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="9"><?php esc_html_e('Brak zaimportowanych kosztowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
             <?php else : ?>
                 <?php foreach ((array) $ksef_cost_invoices as $ksef_cost_row) : ?>
+                    <?php $ksef_invoice_id = (int) ($ksef_cost_row['id'] ?? 0); ?>
+                    <?php $ksef_items = (array) ($ksef_cost_items_by_invoice_id[$ksef_invoice_id] ?? []); ?>
                     <tr>
-                        <td><?php echo esc_html((string) ((int) ($ksef_cost_row['id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) $ksef_invoice_id); ?></td>
                         <td><?php echo esc_html((string) ($ksef_cost_row['invoice_number'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($supplier_nip_by_id[(int) ($ksef_cost_row['supplier_id'] ?? 0)] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($supplier_name_by_id[(int) ($ksef_cost_row['supplier_id'] ?? 0)] ?? ('#' . (int) ($ksef_cost_row['supplier_id'] ?? 0)))); ?></td>
@@ -503,6 +565,44 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                         <td><?php echo esc_html(number_format((float) ($ksef_cost_row['gross_amount'] ?? 0), 2, '.', ' ')); ?></td>
                         <td><?php echo esc_html((string) ($ksef_cost_row['status'] ?? '')); ?></td>
                         <td><code><?php echo esc_html((string) ($ksef_cost_row['ksef_reference_number'] ?? '')); ?></code></td>
+                        <td>
+                            <?php if ($ksef_items === []) : ?>
+                                <span>—</span>
+                            <?php else : ?>
+                                <ul style="margin:0;padding-left:18px;">
+                                    <?php foreach ($ksef_items as $ksef_item_row) : ?>
+                                        <li>
+                                            <?php
+                                            $item_line_no = (int) ($ksef_item_row['line_no'] ?? 0);
+                                            $item_name = (string) ($ksef_item_row['item_name'] ?? '');
+                                            $item_net = (float) ($ksef_item_row['net_amount'] ?? 0);
+                                            $item_vat_rate = (float) ($ksef_item_row['vat_rate'] ?? 0);
+                                            $item_vat = (float) ($ksef_item_row['vat_amount'] ?? 0);
+                                            $item_gross = (float) ($ksef_item_row['gross_amount'] ?? 0);
+                                            ?>
+                                            <strong><?php echo esc_html('#' . $item_line_no); ?></strong>
+                                            <?php if ($item_name !== '') : ?>
+                                                — <?php echo esc_html($item_name); ?>
+                                            <?php endif; ?>
+                                            <br />
+                                            <small>
+                                                <?php
+                                                echo esc_html(
+                                                    sprintf(
+                                                        'netto: %s | VAT %s%%: %s | brutto: %s',
+                                                        number_format($item_net, 2, '.', ' '),
+                                                        number_format($item_vat_rate, 2, '.', ' '),
+                                                        number_format($item_vat, 2, '.', ' '),
+                                                        number_format($item_gross, 2, '.', ' ')
+                                                    )
+                                                );
+                                                ?>
+                                            </small>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -513,7 +613,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
 
     <?php if ($active_tab === 'relations') : ?>
     <section class="erp-omd-card">
-        <h2><?php esc_html_e('Relacje projekt ↔ dostawca (E3)', 'erp-omd'); ?></h2>
+        <h2><?php esc_html_e('Relacje projekt ↔ dostawca', 'erp-omd'); ?></h2>
         <table class="widefat striped">
             <thead>
                 <tr>
@@ -543,26 +643,89 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
     <?php endif; ?>
     <script>
     (function () {
+        var itemsTable = document.getElementById('cost-invoice-items-table');
         var netField = document.getElementById('cost_invoice_net_amount');
-        var vatRateField = document.getElementById('cost_invoice_vat_rate');
         var vatAmountField = document.getElementById('cost_invoice_vat_amount');
         var grossAmountField = document.getElementById('cost_invoice_gross_amount');
-        if (!netField || !vatRateField || !vatAmountField || !grossAmountField) { return; }
+        var addItemButton = document.getElementById('cost-invoice-add-item');
+        var selectAll = document.getElementById('cost-invoice-select-all');
+        if (!netField || !vatAmountField || !grossAmountField) { return; }
 
         var recalculate = function () {
-            var net = parseFloat(netField.value || '0');
-            if (isNaN(net) || net < 0) { net = 0; }
-            var vatRateRaw = String(vatRateField.value || '0');
-            var vatRate = vatRateRaw === 'zw' ? 0 : parseFloat(vatRateRaw || '0');
-            if (isNaN(vatRate) || vatRate < 0) { vatRate = 0; }
-            var vatAmount = Math.round((net * (vatRate / 100)) * 100) / 100;
-            var gross = Math.round((net + vatAmount) * 100) / 100;
-            vatAmountField.value = vatAmount.toFixed(2);
-            grossAmountField.value = gross.toFixed(2);
+            if (!itemsTable) { return; }
+            var totalNet = 0;
+            var totalVat = 0;
+            var totalGross = 0;
+            itemsTable.querySelectorAll('tr.cost-invoice-item-row').forEach(function (row) {
+                var netInput = row.querySelector('.cost-item-net');
+                var rateInput = row.querySelector('.cost-item-vat-rate');
+                var vatField = row.querySelector('.cost-item-vat');
+                var grossField = row.querySelector('.cost-item-gross');
+                var net = parseFloat((netInput && netInput.value) || '0');
+                var rate = parseFloat((rateInput && rateInput.value) || '0');
+                if (isNaN(net) || net < 0) { net = 0; }
+                if (isNaN(rate) || rate < 0) { rate = 0; }
+                var vat = Math.round((net * (rate / 100)) * 100) / 100;
+                var gross = Math.round((net + vat) * 100) / 100;
+                if (vatField) { vatField.value = vat.toFixed(2); }
+                if (grossField) { grossField.value = gross.toFixed(2); }
+                totalNet += net;
+                totalVat += vat;
+                totalGross += gross;
+            });
+            netField.value = totalNet.toFixed(2);
+            vatAmountField.value = totalVat.toFixed(2);
+            grossAmountField.value = totalGross.toFixed(2);
         };
 
-        netField.addEventListener('input', recalculate);
-        vatRateField.addEventListener('change', recalculate);
+        var bindRowEvents = function (row) {
+            if (!row) { return; }
+            row.querySelectorAll('input').forEach(function (input) {
+                input.addEventListener('input', recalculate);
+                input.addEventListener('change', recalculate);
+            });
+            var removeButton = row.querySelector('.cost-item-remove');
+            if (removeButton) {
+                removeButton.addEventListener('click', function () {
+                    row.remove();
+                    recalculate();
+                });
+            }
+        };
+
+        if (itemsTable) {
+            itemsTable.querySelectorAll('tr.cost-invoice-item-row').forEach(bindRowEvents);
+        }
+
+        if (addItemButton && itemsTable) {
+            addItemButton.addEventListener('click', function () {
+                var body = itemsTable.querySelector('tbody');
+                var index = body.querySelectorAll('tr.cost-invoice-item-row').length;
+                var row = document.createElement('tr');
+                row.className = 'cost-invoice-item-row';
+                row.innerHTML = '<td><input type="number" min="1" name="cost_invoice_items[' + index + '][line_no]" value="' + (index + 1) + '" class="small-text cost-item-line-no" /></td>' +
+                    '<td><input type="text" name="cost_invoice_items[' + index + '][name]" value="" class="regular-text cost-item-name" /></td>' +
+                    '<td><input type="number" step="0.001" min="0" name="cost_invoice_items[' + index + '][qty]" value="1" class="small-text cost-item-qty" /></td>' +
+                    '<td><input type="text" name="cost_invoice_items[' + index + '][unit]" value="szt" class="small-text cost-item-unit" /></td>' +
+                    '<td><input type="number" step="0.01" min="0" name="cost_invoice_items[' + index + '][net_amount]" value="0" class="small-text cost-item-net" /></td>' +
+                    '<td><input type="number" step="0.01" min="0" name="cost_invoice_items[' + index + '][vat_rate]" value="23" class="small-text cost-item-vat-rate" /></td>' +
+                    '<td><input type="number" step="0.01" min="0" value="0" class="small-text cost-item-vat" readonly /></td>' +
+                    '<td><input type="number" step="0.01" min="0" value="0" class="small-text cost-item-gross" readonly /></td>' +
+                    '<td><button type="button" class="button-link-delete cost-item-remove">Usuń</button></td>';
+                body.appendChild(row);
+                bindRowEvents(row);
+                recalculate();
+            });
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                document.querySelectorAll('.cost-invoice-checkbox').forEach(function (checkbox) {
+                    checkbox.checked = !!selectAll.checked;
+                });
+            });
+        }
+
         recalculate();
     }());
     </script>
