@@ -193,6 +193,21 @@ Legenda:
 - 🚀 Sprint 6 rozpoczęty.
 - 🔄 Trwa realizacja etapów F1/F2 zgodnie z kolejnością z sekcji „Kolejność sprintów”.
 
+## 2d) Status Sprintu 7 (ERP_4.0) — start 2026-04-21
+
+### Zakres
+- G0: konto klienta i dostęp do frontu.
+- G1.1: lista projektów klienta ze statusem i deadline.
+- G1: widok budżetu i kosztów klienta.
+- G2: historia zmian budżetu.
+- G3: wątek projektowy.
+- G4: załączniki i wersjonowanie.
+- G5: historia zleceń miesięcznie.
+
+### Status bieżący
+- 🚀 Sprint 7 rozpoczęty.
+- 🧭 Punktem odniesienia dla realizacji jest ten backlog oraz dokument wykonawczy: `docs/SPRINT_7_CLIENT_PANEL_TICKETS_DOD.md`.
+
 ---
 
 ## 3) Priorytety MoSCoW (globalnie)
