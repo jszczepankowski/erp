@@ -213,6 +213,8 @@
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Klient', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['client_name'] ?? '—'); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($selected_estimate['status'], 'estimate')); ?>"><?php echo esc_html($selected_estimate['status']); ?></span></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Akceptacja', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['accepted_at'] ?? '—'); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Wysłano do klienta', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['sent_to_client_at'] ?? '—'); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Uwaga klienta', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['client_decision_note'] ?? '—'); ?></span></div>
                                 </div>
                             </div>
                             <div class="erp-omd-detail-card">
@@ -454,11 +456,12 @@
                         <th><?php esc_html_e('Netto', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Brutto', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Wysłano do klienta', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($estimates)) : ?><tr><td colspan="9"><?php esc_html_e('Brak kosztorysów dla wybranych filtrów. Zmień kryteria albo dodaj nowy kosztorys.', 'erp-omd'); ?></td></tr><?php endif; ?>
+                    <?php if (empty($estimates)) : ?><tr><td colspan="10"><?php esc_html_e('Brak kosztorysów dla wybranych filtrów. Zmień kryteria albo dodaj nowy kosztorys.', 'erp-omd'); ?></td></tr><?php endif; ?>
                     <?php foreach ($estimates as $estimate_row) : ?>
                         <?php $estimate_label = trim((string) ($estimate_row['name'] ?? '')) !== '' ? (string) $estimate_row['name'] : sprintf(__('Kosztorys #%d', 'erp-omd'), (int) $estimate_row['id']); ?>
                         <tr>
@@ -477,6 +480,13 @@
                                     <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => (int) $estimate_row['project_id']], admin_url('admin.php'))); ?>"><?php echo esc_html($estimate_row['project_name'] ?: ('#' . $estimate_row['project_id'])); ?></a>
                                 <?php else : ?>
                                     &mdash;
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (! empty($estimate_row['sent_to_client_at'])) : ?>
+                                    <span class="erp-omd-badge erp-omd-badge-success"><?php echo esc_html($estimate_row['sent_to_client_at']); ?></span>
+                                <?php else : ?>
+                                    <span class="erp-omd-badge erp-omd-badge-muted"><?php esc_html_e('Nie', 'erp-omd'); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td>
