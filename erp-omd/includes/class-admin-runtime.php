@@ -1429,6 +1429,7 @@ class ERP_OMD_Admin
 
         $suppliers_repository = new ERP_OMD_Supplier_Repository();
         $cost_invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
+        $cost_invoice_item_repository = new ERP_OMD_Cost_Invoice_Item_Repository();
         $cost_invoice_audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
 
         $suppliers = (array) $suppliers_repository->all_active();
@@ -1459,6 +1460,15 @@ class ERP_OMD_Admin
             $source = (string) ($invoice_row['source'] ?? '');
             return strpos($source, 'ksef') !== false;
         }));
+        $ksef_cost_items_by_invoice_id = [];
+        foreach ($ksef_cost_invoices as $ksef_cost_invoice_row) {
+            $invoice_id = (int) ($ksef_cost_invoice_row['id'] ?? 0);
+            if ($invoice_id <= 0) {
+                continue;
+            }
+
+            $ksef_cost_items_by_invoice_id[$invoice_id] = (array) $cost_invoice_item_repository->for_invoice($invoice_id);
+        }
         $supplier_categories = $this->normalize_supplier_categories((array) get_option('erp_omd_supplier_categories', []));
         $selected_supplier_id = max(0, (int) ($_GET['supplier_id'] ?? 0));
         $selected_invoice_id = max(0, (int) ($_GET['invoice_id'] ?? 0));

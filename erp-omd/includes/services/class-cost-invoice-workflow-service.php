@@ -14,12 +14,20 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
     /** @var mixed */
     private $project_repository;
 
-    public function __construct($invoice_repository = null, $audit_repository = null, $supplier_repository = null, $project_repository = null)
+    /** @var mixed */
+    private $item_repository;
+
+    public function __construct($invoice_repository = null, $audit_repository = null, $supplier_repository = null, $project_repository = null, $item_repository = null)
     {
         $this->invoice_repository = $invoice_repository;
         $this->audit_repository = $audit_repository;
         $this->supplier_repository = $supplier_repository;
         $this->project_repository = $project_repository;
+        $this->item_repository = $item_repository;
+
+        if ($this->item_repository === null && class_exists('ERP_OMD_Cost_Invoice_Item_Repository')) {
+            $this->item_repository = new ERP_OMD_Cost_Invoice_Item_Repository();
+        }
     }
 
     /**
@@ -220,6 +228,8 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
             return ['ok' => false, 'errors' => [__('Nie udało się zapisać faktury kosztowej.', 'erp-omd')]];
         }
 
+        $this->replace_invoice_items_if_supported($invoice_id, (array) ($invoice_data['items'] ?? []));
+
         return ['ok' => true, 'invoice_id' => $invoice_id, 'errors' => []];
     }
 
@@ -252,6 +262,10 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
         $updated = $this->invoice_repository->update((int) $invoice_id, $after);
         if ($updated === false) {
             return ['ok' => false, 'errors' => [__('Nie udało się zaktualizować faktury kosztowej.', 'erp-omd')]];
+        }
+
+        if (array_key_exists('items', $invoice_data)) {
+            $this->replace_invoice_items_if_supported((int) $invoice_id, (array) ($invoice_data['items'] ?? []));
         }
 
         $audit_rows = $this->build_critical_audit_entries($before, $after, (int) $changed_by_user_id);
@@ -385,5 +399,19 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
         }
 
         return is_array($this->project_repository->find((int) $project_id));
+    }
+
+    /**
+     * @param int $invoice_id
+     * @param array<int,array<string,mixed>> $items
+     * @return void
+     */
+    private function replace_invoice_items_if_supported($invoice_id, array $items)
+    {
+        if (! $this->item_repository || ! method_exists($this->item_repository, 'replace_for_invoice')) {
+            return;
+        }
+
+        $this->item_repository->replace_for_invoice((int) $invoice_id, $items);
     }
 }
