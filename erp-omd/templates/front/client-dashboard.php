@@ -59,6 +59,7 @@
                                 <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
                                 <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
                                 <th><?php esc_html_e('Deadline', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Szczegóły', 'erp-omd'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -73,17 +74,153 @@
                                             ?>
                                         </td>
                                         <td><?php echo esc_html($project_item['deadline'] ?? '—'); ?></td>
+                                        <td>
+                                            <a
+                                                class="erp-omd-front-button erp-omd-front-button-small"
+                                                href="<?php echo esc_url(add_query_arg(['project_id' => (int) ($project_item['id'] ?? 0)], $front_client_url)); ?>"
+                                            >
+                                                <?php esc_html_e('Otwórz', 'erp-omd'); ?>
+                                            </a>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else : ?>
                                 <tr>
-                                    <td colspan="3"><?php esc_html_e('Brak projektów do wyświetlenia.', 'erp-omd'); ?></td>
+                                    <td colspan="4"><?php esc_html_e('Brak projektów do wyświetlenia.', 'erp-omd'); ?></td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
             </article>
+
+            <?php if ($selected_project_finance) : ?>
+                <article class="erp-omd-front-panel">
+                    <div class="erp-omd-front-section-heading">
+                        <h2>
+                            <?php
+                            echo esc_html(
+                                sprintf(
+                                    /* translators: %s: project name */
+                                    __('Finanse projektu: %s', 'erp-omd'),
+                                    (string) ($selected_project_finance['project_name'] ?? '—')
+                                )
+                            );
+                            ?>
+                        </h2>
+                    </div>
+
+                    <div class="erp-omd-front-metrics">
+                        <div class="erp-omd-front-metric">
+                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Budżet planowany', 'erp-omd'); ?></span>
+                            <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_finance['planned_budget'] ?? 0), 2)); ?></strong>
+                        </div>
+                        <div class="erp-omd-front-metric">
+                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Zwiększenia budżetu', 'erp-omd'); ?></span>
+                            <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_finance['budget_increases_total'] ?? 0), 2)); ?></strong>
+                        </div>
+                        <div class="erp-omd-front-metric">
+                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Budżet aktualny', 'erp-omd'); ?></span>
+                            <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_finance['budget_current'] ?? 0), 2)); ?></strong>
+                        </div>
+                        <div class="erp-omd-front-metric">
+                            <span class="erp-omd-front-metric-label"><?php esc_html_e('Koszty projektu', 'erp-omd'); ?></span>
+                            <strong><?php echo esc_html(number_format_i18n((float) ($selected_project_finance['cost_total'] ?? 0), 2)); ?></strong>
+                        </div>
+                    </div>
+                </article>
+
+                <div class="erp-omd-front-grid erp-omd-front-grid-manager">
+                    <article class="erp-omd-front-panel">
+                        <h2><?php esc_html_e('Pozycje przychodowe (zwiększenia)', 'erp-omd'); ?></h2>
+                        <div class="erp-omd-front-table-wrap">
+                            <table class="erp-omd-front-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Kwota', 'erp-omd'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php $budget_increases = (array) ($selected_project_finance['budget_increases'] ?? []); ?>
+                                    <?php if ($budget_increases) : ?>
+                                        <?php foreach ($budget_increases as $increase_item) : ?>
+                                            <tr>
+                                                <td><?php echo esc_html((string) ($increase_item['date'] ?? '—')); ?></td>
+                                                <td><?php echo esc_html((string) ($increase_item['label'] ?? '—')); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n((float) ($increase_item['amount'] ?? 0), 2)); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else : ?>
+                                        <tr><td colspan="3"><?php esc_html_e('Brak pozycji przychodowych.', 'erp-omd'); ?></td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+
+                    <article class="erp-omd-front-panel">
+                        <h2><?php esc_html_e('Koszty projektu per pozycja', 'erp-omd'); ?></h2>
+                        <div class="erp-omd-front-table-wrap">
+                            <table class="erp-omd-front-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Kwota', 'erp-omd'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php $cost_items = (array) ($selected_project_finance['cost_items'] ?? []); ?>
+                                    <?php if ($cost_items) : ?>
+                                        <?php foreach ($cost_items as $cost_item) : ?>
+                                            <tr>
+                                                <td><?php echo esc_html((string) ($cost_item['date'] ?? '—')); ?></td>
+                                                <td><?php echo esc_html((string) ($cost_item['label'] ?? '—')); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n((float) ($cost_item['amount'] ?? 0), 2)); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else : ?>
+                                        <tr><td colspan="3"><?php esc_html_e('Brak pozycji kosztowych.', 'erp-omd'); ?></td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                </div>
+
+                <article class="erp-omd-front-panel">
+                    <h2><?php esc_html_e('Historia zmian budżetu', 'erp-omd'); ?></h2>
+                    <div class="erp-omd-front-table-wrap">
+                        <table class="erp-omd-front-table">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Kwota', 'erp-omd'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $budget_history = (array) ($selected_project_finance['budget_history'] ?? []); ?>
+                                <?php if ($budget_history) : ?>
+                                    <?php foreach ($budget_history as $history_item) : ?>
+                                        <tr>
+                                            <td><?php echo esc_html((string) ($history_item['date'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($history_item['type'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($history_item['label'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html(number_format_i18n((float) ($history_item['amount'] ?? 0), 2)); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else : ?>
+                                    <tr><td colspan="4"><?php esc_html_e('Brak historii zmian budżetu.', 'erp-omd'); ?></td></tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            <?php endif; ?>
         </section>
     </main>
     <?php wp_footer(); ?>
