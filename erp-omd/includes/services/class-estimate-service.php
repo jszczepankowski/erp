@@ -213,11 +213,15 @@ class ERP_OMD_Estimate_Service
         $manager_id = $request_primary_manager_id > 0 ? $request_primary_manager_id : $default_manager_id;
         $manager_ids = array_values(array_unique(array_filter([$manager_id, $requester_employee_id])));
 
+        $project_budget = ($this->project_revenues && method_exists($this->project_revenues, 'create'))
+            ? 0.0
+            : (float) $totals['net'];
+
         $project_id = $this->projects->create([
             'client_id' => (int) $estimate['client_id'],
             'name' => $project_name,
             'billing_type' => 'fixed_price',
-            'budget' => (float) $totals['net'],
+            'budget' => $project_budget,
             'retainer_monthly_fee' => 0,
             'status' => 'w_realizacji',
             'start_date' => '',
