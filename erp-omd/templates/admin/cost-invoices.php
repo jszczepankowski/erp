@@ -487,15 +487,18 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     <th><?php esc_html_e('Brutto', 'erp-omd'); ?></th>
                     <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
                     <th><?php esc_html_e('Ref KSeF', 'erp-omd'); ?></th>
+                    <th><?php esc_html_e('Pozycje / stawki VAT', 'erp-omd'); ?></th>
                 </tr>
             </thead>
             <tbody>
             <?php if (empty($ksef_cost_invoices)) : ?>
-                <tr><td colspan="8"><?php esc_html_e('Brak zaimportowanych kosztowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="9"><?php esc_html_e('Brak zaimportowanych kosztowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
             <?php else : ?>
                 <?php foreach ((array) $ksef_cost_invoices as $ksef_cost_row) : ?>
+                    <?php $ksef_invoice_id = (int) ($ksef_cost_row['id'] ?? 0); ?>
+                    <?php $ksef_items = (array) ($ksef_cost_items_by_invoice_id[$ksef_invoice_id] ?? []); ?>
                     <tr>
-                        <td><?php echo esc_html((string) ((int) ($ksef_cost_row['id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) $ksef_invoice_id); ?></td>
                         <td><?php echo esc_html((string) ($ksef_cost_row['invoice_number'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($supplier_nip_by_id[(int) ($ksef_cost_row['supplier_id'] ?? 0)] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($supplier_name_by_id[(int) ($ksef_cost_row['supplier_id'] ?? 0)] ?? ('#' . (int) ($ksef_cost_row['supplier_id'] ?? 0)))); ?></td>
@@ -503,6 +506,44 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                         <td><?php echo esc_html(number_format((float) ($ksef_cost_row['gross_amount'] ?? 0), 2, '.', ' ')); ?></td>
                         <td><?php echo esc_html((string) ($ksef_cost_row['status'] ?? '')); ?></td>
                         <td><code><?php echo esc_html((string) ($ksef_cost_row['ksef_reference_number'] ?? '')); ?></code></td>
+                        <td>
+                            <?php if ($ksef_items === []) : ?>
+                                <span>—</span>
+                            <?php else : ?>
+                                <ul style="margin:0;padding-left:18px;">
+                                    <?php foreach ($ksef_items as $ksef_item_row) : ?>
+                                        <li>
+                                            <?php
+                                            $item_line_no = (int) ($ksef_item_row['line_no'] ?? 0);
+                                            $item_name = (string) ($ksef_item_row['item_name'] ?? '');
+                                            $item_net = (float) ($ksef_item_row['net_amount'] ?? 0);
+                                            $item_vat_rate = (float) ($ksef_item_row['vat_rate'] ?? 0);
+                                            $item_vat = (float) ($ksef_item_row['vat_amount'] ?? 0);
+                                            $item_gross = (float) ($ksef_item_row['gross_amount'] ?? 0);
+                                            ?>
+                                            <strong><?php echo esc_html('#' . $item_line_no); ?></strong>
+                                            <?php if ($item_name !== '') : ?>
+                                                — <?php echo esc_html($item_name); ?>
+                                            <?php endif; ?>
+                                            <br />
+                                            <small>
+                                                <?php
+                                                echo esc_html(
+                                                    sprintf(
+                                                        'netto: %s | VAT %s%%: %s | brutto: %s',
+                                                        number_format($item_net, 2, '.', ' '),
+                                                        number_format($item_vat_rate, 2, '.', ' '),
+                                                        number_format($item_vat, 2, '.', ' '),
+                                                        number_format($item_gross, 2, '.', ' ')
+                                                    )
+                                                );
+                                                ?>
+                                            </small>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
