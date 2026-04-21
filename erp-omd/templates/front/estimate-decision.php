@@ -89,17 +89,39 @@
                     </label>
                 </div>
 
-                <div class="erp-omd-front-form-field">
+                <div class="erp-omd-front-form-field" data-estimate-decision-field="reject" <?php echo $selected_decision === 'reject' ? '' : 'hidden'; ?>>
                     <label for="erp-omd-estimate-reject-comment"><?php esc_html_e('Komentarz (wymagany przy odrzuceniu)', 'erp-omd'); ?></label>
                     <textarea id="erp-omd-estimate-reject-comment" name="comment" rows="4"><?php echo esc_textarea($comment_value); ?></textarea>
                 </div>
-                <div class="erp-omd-front-form-field">
+                <div class="erp-omd-front-form-field" data-estimate-decision-field="accept" <?php echo $selected_decision === 'accept' ? '' : 'hidden'; ?>>
                     <label for="erp-omd-estimate-accept-note"><?php esc_html_e('Uwagi do akceptacji kosztorysu (opcjonalnie)', 'erp-omd'); ?></label>
                     <textarea id="erp-omd-estimate-accept-note" name="note" rows="4"><?php echo esc_textarea($note_value ?? ''); ?></textarea>
                 </div>
 
                 <button class="erp-omd-front-button erp-omd-front-button-secondary" type="submit"><?php esc_html_e('Wyślij decyzję', 'erp-omd'); ?></button>
             </form>
+            <script>
+                (function () {
+                    var form = document.querySelector('.erp-omd-front-estimate-decision-form');
+                    if (!form) {
+                        return;
+                    }
+
+                    var syncDecisionFields = function () {
+                        var selected = form.querySelector('input[name="decision"]:checked');
+                        var decision = selected ? selected.value : 'accept';
+                        form.querySelectorAll('[data-estimate-decision-field]').forEach(function (field) {
+                            field.hidden = field.getAttribute('data-estimate-decision-field') !== decision;
+                        });
+                    };
+
+                    form.querySelectorAll('input[name="decision"]').forEach(function (radio) {
+                        radio.addEventListener('change', syncDecisionFields);
+                    });
+
+                    syncDecisionFields();
+                }());
+            </script>
         <?php endif; ?>
     </section>
 </main>

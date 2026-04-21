@@ -43,6 +43,7 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                             $notice_message = $result->get_error_message();
                         } else {
                             $estimates->save_client_decision_note($estimate_id, $note);
+                            self::append_accept_note_to_project_history($estimate_id, $note, $result);
                             self::send_thank_you_mail($estimate_id, $estimates, $estimate_items, $estimate_service);
                             $notice_type = 'success';
                             $notice_message = __('Dziękujemy. Kosztorys został zaakceptowany.', 'erp-omd');
@@ -132,6 +133,64 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
             $body .= self::build_summary_table_html($items, $totals);
             wp_mail($client_email, $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);
+        }
+
+        private static function append_accept_note_to_project_history($estimate_id, $note, array $accept_result = [])
+        {
+            $clean_note = trim((string) $note);
+            if ($clean_note === '' || ! class_exists('ERP_OMD_Project_Note_Repository')) {
+                return;
+            }
+
+            $project_id = (int) ($accept_result['project']['id'] ?? 0);
+            if ($project_id <= 0 && class_exists('ERP_OMD_Project_Repository')) {
+                $project_repository = new ERP_OMD_Project_Repository();
+                if (method_exists($project_repository, 'find_by_estimate_id')) {
+                    $project = $project_repository->find_by_estimate_id((int) $estimate_id);
+                    $project_id = (int) ($project['id'] ?? 0);
+                }
+            }
+            if ($project_id <= 0) {
+                return;
+            }
+
+            $author_user_id = self::resolve_note_author_user_id();
+            if ($author_user_id <= 0) {
+                return;
+            }
+
+            $project_notes = new ERP_OMD_Project_Note_Repository();
+            $project_notes->create(
+                $project_id,
+                sprintf(__('Akceptacja klienta (uwaga): %s', 'erp-omd'), $clean_note),
+                $author_user_id
+            );
+        }
+
+        private static function resolve_note_author_user_id()
+        {
+            $current_user_id = function_exists('get_current_user_id') ? (int) get_current_user_id() : 0;
+            if ($current_user_id > 0) {
+                return $current_user_id;
+            }
+
+            if (! function_exists('get_users')) {
+                return 0;
+            }
+
+            $admins = get_users([
+                'role' => 'administrator',
+                'number' => 1,
+                'fields' => ['ID'],
+                'orderby' => 'ID',
+                'order' => 'ASC',
+            ]);
+
+            if (empty($admins) || ! isset($admins[0]->ID)) {
+                return 0;
+            }
+
+            return (int) $admins[0]->ID;
         }
 
         private static function build_summary_table_html(array $items, array $totals)
