@@ -326,6 +326,24 @@ if ((string) ($lastPayload['issue_date'] ?? '') !== '2026-04-16') {
     throw new RuntimeException('Expected issue_date to be derived from XML issueDate/Data wystawienia field.');
 }
 
+$costXmlMixedVatImport = $service->import_cost_xml('<?xml version="1.0"?><Fa><Naglowek><P_1>2026-04-17</P_1><P_2>XML/COST/4</P_2></Naglowek><Podmiot1><DaneIdentyfikacyjne><NIP>2222222222</NIP></DaneIdentyfikacyjne></Podmiot1><Podmiot2><DaneIdentyfikacyjne><NIP>1111111111</NIP></DaneIdentyfikacyjne></Podmiot2><P_15>2310,00</P_15><FaWiersz><P_7>Pozycja 23%</P_7><P_8A>1</P_8A><P_8B>szt</P_8B><P_9A>1000,00</P_9A><P_11>1000,00</P_11><P_12>23</P_12></FaWiersz><FaWiersz><P_7>Pozycja 8%</P_7><P_8A>1</P_8A><P_8B>szt</P_8B><P_9A>1000,00</P_9A><P_11>1000,00</P_11><P_12>8</P_12></FaWiersz></Fa>', 91);
+$assertions++;
+if ((int) ($costXmlMixedVatImport['imported'] ?? 0) !== 1) {
+    throw new RuntimeException('Expected cost XML import with mixed VAT rates to be imported successfully.');
+}
+
+$lastPayload = $workflow->created_payloads[count($workflow->created_payloads) - 1] ?? [];
+$assertions++;
+if (abs((float) ($lastPayload['net_amount'] ?? 0) - 2000.00) > 0.001 || abs((float) ($lastPayload['vat_amount'] ?? 0) - 310.00) > 0.001 || abs((float) ($lastPayload['gross_amount'] ?? 0) - 2310.00) > 0.001) {
+    throw new RuntimeException('Expected mixed VAT XML import to aggregate net/VAT/gross totals from invoice lines.');
+}
+
+$lineItems = (array) ($lastPayload['items'] ?? []);
+$assertions++;
+if (count($lineItems) !== 2 || abs((float) ($lineItems[0]['vat_rate'] ?? 0) - 23.0) > 0.001 || abs((float) ($lineItems[1]['vat_rate'] ?? 0) - 8.0) > 0.001) {
+    throw new RuntimeException('Expected mixed VAT XML import to expose line items with proper VAT rates.');
+}
+
 $classification = $service->classify_document([
     'buyer_nip' => '555-55-55-555',
     'seller_nip' => '1111111111',

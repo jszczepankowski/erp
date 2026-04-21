@@ -628,14 +628,20 @@ class ERP_OMD_KSeF_Import_Service
             '//*[local-name()="Uwagi"]',
         ]);
 
+        $items = $this->parse_ksef_line_items($xml);
+
         $net_amount = $this->xpath_first_decimal($xml, [
             '//*[local-name()="FaCtrl"]//*[local-name()="B"]',
-            '//*[local-name()="P_13_1"]',
-            '//*[local-name()="P_13_2"]',
-            '//*[local-name()="P_13_3"]',
-            '//*[local-name()="P_13_4"]',
-            '//*[local-name()="P_13_5"]',
         ]);
+        if ($net_amount <= 0) {
+            $net_amount = $this->xpath_sum_decimals($xml, [
+                '//*[local-name()="P_13_1"]',
+                '//*[local-name()="P_13_2"]',
+                '//*[local-name()="P_13_3"]',
+                '//*[local-name()="P_13_4"]',
+                '//*[local-name()="P_13_5"]',
+            ]);
+        }
         if ($net_amount <= 0) {
             $net_amount = $this->xpath_sum_decimals($xml, [
                 '//*[local-name()="FaWiersz"]//*[local-name()="P_11"]',
@@ -645,25 +651,58 @@ class ERP_OMD_KSeF_Import_Service
 
         $vat_amount = $this->xpath_first_decimal($xml, [
             '//*[local-name()="FaCtrl"]//*[local-name()="V"]',
-            '//*[local-name()="P_14_1"]',
-            '//*[local-name()="P_14_2"]',
-            '//*[local-name()="P_14_3"]',
-            '//*[local-name()="P_14_4"]',
-            '//*[local-name()="P_14_5"]',
         ]);
+        if ($vat_amount <= 0) {
+            $vat_amount = $this->xpath_sum_decimals($xml, [
+                '//*[local-name()="P_14_1"]',
+                '//*[local-name()="P_14_2"]',
+                '//*[local-name()="P_14_3"]',
+                '//*[local-name()="P_14_4"]',
+                '//*[local-name()="P_14_5"]',
+            ]);
+        }
 
         $gross_amount = $this->xpath_first_decimal($xml, [
             '//*[local-name()="FaCtrl"]//*[local-name()="WartoscFaktury"]',
             '//*[local-name()="P_15"]',
         ]);
+        if ($items !== []) {
+            $item_totals = $this->sum_item_totals($items);
+            if ($net_amount <= 0 && (float) ($item_totals['net_amount'] ?? 0) > 0) {
+                $net_amount = (float) $item_totals['net_amount'];
+            }
+
+            if ($vat_amount <= 0 && (float) ($item_totals['vat_amount'] ?? 0) > 0) {
+                $vat_amount = (float) $item_totals['vat_amount'];
+            }
+
+            if ($gross_amount <= 0 && (float) ($item_totals['gross_amount'] ?? 0) > 0) {
+                $gross_amount = (float) $item_totals['gross_amount'];
+            }
+        }
+
         if ($gross_amount <= 0) {
             $gross_amount = $net_amount + $vat_amount;
         }
 
-        $vat_rate = $this->xpath_first_decimal($xml, [
-            '//*[local-name()="FaWiersz"]//*[local-name()="P_12"]',
-        ]);
-        if ($vat_rate <= 0 && $net_amount > 0 && $vat_amount > 0) {
+        $vat_rates = [];
+        foreach ($items as $item) {
+            $rate = round((float) ($item['vat_rate'] ?? 0), 2);
+            if ($rate > 0) {
+                $vat_rates[(string) $rate] = $rate;
+            }
+        }
+
+        $vat_rate = 0.0;
+        if (count($vat_rates) === 1) {
+            $vat_rate = (float) array_shift($vat_rates);
+        } elseif ($items === []) {
+            $vat_rate = $this->xpath_first_decimal($xml, [
+                '//*[local-name()="FaWiersz"]//*[local-name()="P_12"]',
+            ]);
+        }
+
+        if ($vat_rate <= 0 && $net_amount > 0 && $vat_amount > 0 && $items === []) {
             $vat_rate = round(($vat_amount / $net_amount) * 100, 2);
         }
 
@@ -683,7 +722,102 @@ class ERP_OMD_KSeF_Import_Service
             'vat_amount' => $vat_amount,
             'gross_amount' => $gross_amount,
             'vat_rate' => $vat_rate,
+            'items' => $items,
         ];
+    }
+
+    /**
+     * @param SimpleXMLElement $xml
+     * @return array<int,array<string,mixed>>
+     */
+    private function parse_ksef_line_items(SimpleXMLElement $xml)
+    {
+        $nodes = $xml->xpath('//*[local-name()="FaWiersz"]');
+        if (! is_array($nodes) || $nodes === []) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($nodes as $index => $node) {
+            if (! ($node instanceof SimpleXMLElement)) {
+                continue;
+            }
+
+            $line_no = $index + 1;
+            $name = $this->xpath_first_text($node, [
+                './/*[local-name()="P_7"]',
+                './/*[local-name()="NazwaTowaruUslugi"]',
+            ]);
+            $qty = $this->xpath_first_decimal($node, [
+                './/*[local-name()="P_8A"]',
+                './/*[local-name()="Ilosc"]',
+            ]);
+            $unit = $this->xpath_first_text($node, [
+                './/*[local-name()="P_8B"]',
+                './/*[local-name()="JednostkaMiary"]',
+            ]);
+            $unit_net_amount = $this->xpath_first_decimal($node, [
+                './/*[local-name()="P_9A"]',
+            ]);
+            $net_amount = $this->xpath_first_decimal($node, [
+                './/*[local-name()="P_11"]',
+                './/*[local-name()="P_11A"]',
+            ]);
+            $vat_rate = $this->xpath_first_decimal($node, [
+                './/*[local-name()="P_12"]',
+            ]);
+            $vat_amount = round($net_amount * ($vat_rate / 100), 2);
+            $gross_amount = round($net_amount + $vat_amount, 2);
+
+            $items[] = [
+                'line_no' => $line_no,
+                'name' => $name,
+                'qty' => $qty,
+                'unit' => $unit,
+                'unit_net_amount' => $unit_net_amount,
+                'net_amount' => $net_amount,
+                'vat_rate' => $vat_rate,
+                'vat_amount' => $vat_amount,
+                'gross_amount' => $gross_amount,
+                'source_payload' => [
+                    'name' => $name,
+                    'qty' => $qty,
+                    'unit' => $unit,
+                    'unit_net_amount' => $unit_net_amount,
+                    'net_amount' => $net_amount,
+                    'vat_rate' => $vat_rate,
+                    'vat_amount' => $vat_amount,
+                    'gross_amount' => $gross_amount,
+                ],
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $items
+     * @return array<string,float>
+     */
+    private function sum_item_totals(array $items)
+    {
+        $totals = [
+            'net_amount' => 0.0,
+            'vat_amount' => 0.0,
+            'gross_amount' => 0.0,
+        ];
+
+        foreach ($items as $item) {
+            $totals['net_amount'] += (float) ($item['net_amount'] ?? 0);
+            $totals['vat_amount'] += (float) ($item['vat_amount'] ?? 0);
+            $totals['gross_amount'] += (float) ($item['gross_amount'] ?? 0);
+        }
+
+        $totals['net_amount'] = round($totals['net_amount'], 2);
+        $totals['vat_amount'] = round($totals['vat_amount'], 2);
+        $totals['gross_amount'] = round($totals['gross_amount'], 2);
+
+        return $totals;
     }
 
     /**
@@ -998,6 +1132,7 @@ class ERP_OMD_KSeF_Import_Service
             'net_amount' => (float) ($document['net_amount'] ?? 0),
             'vat_amount' => (float) ($document['vat_amount'] ?? 0),
             'gross_amount' => (float) ($document['gross_amount'] ?? 0),
+            'items' => (array) ($document['items'] ?? []),
             'source' => 'ksef',
             'ksef_reference_number' => (string) ($document['ksef_reference_number'] ?? ''),
             'document_kind' => $kind,
