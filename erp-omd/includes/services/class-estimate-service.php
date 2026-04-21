@@ -7,6 +7,7 @@ class ERP_OMD_Estimate_Service
     private $clients;
     private $projects;
     private $project_costs;
+    private $project_revenues;
     private $estimate_audit;
     private $project_requests;
 
@@ -17,7 +18,8 @@ class ERP_OMD_Estimate_Service
         ERP_OMD_Project_Repository $projects,
         $project_costs = null,
         $estimate_audit = null,
-        $project_requests = null
+        $project_requests = null,
+        $project_revenues = null
     ) {
         $this->estimates = $estimates;
         $this->estimate_items = $estimate_items;
@@ -26,6 +28,7 @@ class ERP_OMD_Estimate_Service
         $this->project_costs = $project_costs;
         $this->estimate_audit = $estimate_audit;
         $this->project_requests = $project_requests;
+        $this->project_revenues = $project_revenues;
     }
 
     public function validate_estimate(array $data, array $existing = null)
@@ -156,8 +159,9 @@ class ERP_OMD_Estimate_Service
 
         $totals = $this->calculate_totals($items);
         $existing_project = $this->projects->find_by_estimate_id((int) $estimate_id);
+        $actor_user_id = $this->resolve_actor_user_id();
         if ($existing_project) {
-            $this->estimates->mark_accepted((int) $estimate_id, get_current_user_id());
+            $this->estimates->mark_accepted((int) $estimate_id, $actor_user_id);
             $this->log_audit((int) $estimate_id, 'accepted_existing_project', ['project_id' => (int) ($existing_project['id'] ?? 0)]);
             return ['estimate' => $this->estimates->find((int) $estimate_id), 'project' => $existing_project];
         }
@@ -209,11 +213,15 @@ class ERP_OMD_Estimate_Service
         $manager_id = $request_primary_manager_id > 0 ? $request_primary_manager_id : $default_manager_id;
         $manager_ids = array_values(array_unique(array_filter([$manager_id, $requester_employee_id])));
 
+        $project_budget = ($this->project_revenues && method_exists($this->project_revenues, 'create'))
+            ? 0.0
+            : (float) $totals['net'];
+
         $project_id = $this->projects->create([
             'client_id' => (int) $estimate['client_id'],
             'name' => $project_name,
             'billing_type' => 'fixed_price',
-            'budget' => (float) $totals['net'],
+            'budget' => $project_budget,
             'retainer_monthly_fee' => 0,
             'status' => 'w_realizacji',
             'start_date' => '',
@@ -230,8 +238,15 @@ class ERP_OMD_Estimate_Service
             return new WP_Error('erp_omd_project_create_failed', __('Nie udało się utworzyć projektu z kosztorysu.', 'erp-omd'), ['status' => 500]);
         }
 
-        $this->copy_internal_costs_to_project((int) $project_id, $items);
-        $this->estimates->mark_accepted((int) $estimate_id, get_current_user_id());
+        if (! $this->copy_revenues_to_project((int) $project_id, $items, $actor_user_id)) {
+            $wpdb->query('ROLLBACK');
+            return new WP_Error('erp_omd_project_revenue_create_failed', __('Nie udało się przenieść pozycji przychodowych do projektu.', 'erp-omd'), ['status' => 500]);
+        }
+        if (! $this->copy_internal_costs_to_project((int) $project_id, $items, $actor_user_id)) {
+            $wpdb->query('ROLLBACK');
+            return new WP_Error('erp_omd_project_cost_create_failed', __('Nie udało się przenieść kosztów wewnętrznych do projektu.', 'erp-omd'), ['status' => 500]);
+        }
+        $this->estimates->mark_accepted((int) $estimate_id, $actor_user_id);
         $this->log_audit((int) $estimate_id, 'accepted', [
             'project_id' => $project_id,
             'project_budget' => (float) $totals['net'],
@@ -246,13 +261,48 @@ class ERP_OMD_Estimate_Service
         ];
     }
 
-    private function copy_internal_costs_to_project($project_id, array $items)
+    private function copy_revenues_to_project($project_id, array $items, $actor_user_id)
     {
-        if (! $project_id || ! $this->project_costs || ! method_exists($this->project_costs, 'create')) {
-            return;
+        if (! $project_id || ! $this->project_revenues || ! method_exists($this->project_revenues, 'create')) {
+            return true;
         }
 
-        $user_id = function_exists('get_current_user_id') ? (int) get_current_user_id() : 0;
+        $revenue_date = function_exists('current_time') ? (string) current_time('Y-m-d') : gmdate('Y-m-d');
+
+        foreach ($items as $item) {
+            $qty = (float) ($item['qty'] ?? 0);
+            $price = (float) ($item['price'] ?? 0);
+            $amount = round($qty * $price, 2);
+            if ($amount < 0) {
+                continue;
+            }
+
+            $item_name = trim((string) ($item['name'] ?? ''));
+            $description = $item_name !== ''
+                ? sprintf(__('Pozycja przychodowa z kosztorysu: %s', 'erp-omd'), $item_name)
+                : __('Pozycja przychodowa z kosztorysu', 'erp-omd');
+
+            $created_id = (int) $this->project_revenues->create([
+                'project_id' => (int) $project_id,
+                'amount' => $amount,
+                'description' => $description,
+                'revenue_date' => $revenue_date,
+                'created_by_user_id' => (int) $actor_user_id,
+            ]);
+            if ($created_id <= 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function copy_internal_costs_to_project($project_id, array $items, $actor_user_id)
+    {
+        if (! $project_id || ! $this->project_costs || ! method_exists($this->project_costs, 'create')) {
+            return true;
+        }
+
         $cost_date = function_exists('current_time') ? (string) current_time('Y-m-d') : gmdate('Y-m-d');
 
         foreach ($items as $item) {
@@ -266,14 +316,45 @@ class ERP_OMD_Estimate_Service
                 ? sprintf(__('Koszt wewnętrzny z kosztorysu: %s', 'erp-omd'), $item_name)
                 : __('Koszt wewnętrzny z kosztorysu', 'erp-omd');
 
-            $this->project_costs->create([
+            $created_id = (int) $this->project_costs->create([
                 'project_id' => (int) $project_id,
                 'amount' => $amount,
                 'description' => $description,
                 'cost_date' => $cost_date,
-                'created_by_user_id' => $user_id,
+                'created_by_user_id' => (int) $actor_user_id,
             ]);
+            if ($created_id <= 0) {
+                return false;
+            }
         }
+
+        return true;
+    }
+
+    private function resolve_actor_user_id()
+    {
+        $current_user_id = function_exists('get_current_user_id') ? (int) get_current_user_id() : 0;
+        if ($current_user_id > 0) {
+            return $current_user_id;
+        }
+
+        if (! function_exists('get_users')) {
+            return 1;
+        }
+
+        $admins = get_users([
+            'role' => 'administrator',
+            'number' => 1,
+            'fields' => ['ID'],
+            'orderby' => 'ID',
+            'order' => 'ASC',
+        ]);
+
+        if (! empty($admins) && isset($admins[0]->ID)) {
+            return (int) $admins[0]->ID;
+        }
+
+        return 1;
     }
 
     private function log_audit($estimate_id, $action, array $details)

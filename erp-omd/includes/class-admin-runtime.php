@@ -1009,6 +1009,10 @@ class ERP_OMD_Admin
             ];
         }
         $notification_sender_email = sanitize_email((string) get_option('erp_omd_notification_sender_email', ''));
+        $estimate_mail_settings = $this->estimate_client_mail_defaults();
+        $estimate_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_client_mail_settings', []), $estimate_mail_settings);
+        $estimate_thank_you_mail_settings = $this->estimate_client_thank_you_mail_defaults();
+        $estimate_thank_you_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_client_thank_you_mail_settings', []), $estimate_thank_you_mail_settings);
 
         $notification_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
         $employees = $this->employees->all();
@@ -2461,16 +2465,21 @@ class ERP_OMD_Admin
         update_option('erp_omd_estimate_client_link_tokens', $state, false);
 
         $decision_url = add_query_arg(['token' => rawurlencode($token)], home_url('/erp-front/estimate-decision/'));
-        $subject = sprintf(__('[ERP OMD] Decyzja klienta dla kosztorysu %s', 'erp-omd'), (string) ($estimate['name'] ?? ('#' . $estimate_id)));
-        $body = sprintf(
-            __('Dzień dobry,<br><br>prosimy o decyzję dla kosztorysu <strong>%1$s</strong>.<br>Link jest ważny 5 dni:<br><a href="%2$s">%2$s</a>', 'erp-omd'),
-            esc_html((string) ($estimate['name'] ?? ('#' . $estimate_id))),
-            esc_url($decision_url)
-        );
+        $estimate_mail_defaults = $this->estimate_client_mail_defaults();
+        $estimate_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_client_mail_settings', []), $estimate_mail_defaults);
+        $mail_tokens = [
+            '{estimate_name}' => (string) ($estimate['name'] ?? ('#' . $estimate_id)),
+            '{client_name}' => (string) ($client['name'] ?? ($estimate['client_name'] ?? '')),
+            '{decision_url}' => (string) $decision_url,
+            '{expires_at}' => wp_date('d.m.Y H:i', time() + (5 * DAY_IN_SECONDS)),
+        ];
+        $subject = $this->replace_mail_tokens((string) ($estimate_mail_settings['subject'] ?? $estimate_mail_defaults['subject']), $mail_tokens);
+        $body = $this->replace_mail_tokens((string) ($estimate_mail_settings['body'] ?? $estimate_mail_defaults['body']), $mail_tokens);
         $sent = wp_mail($client_email, $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);
         if (! $sent) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie udało się wysłać e-maila do klienta.', 'erp-omd'), ['id' => $estimate_id]);
         }
+        $this->estimates->mark_sent_to_client($estimate_id);
 
         $this->redirect_with_notice('erp-omd-estimates', 'success', __('Link akceptacji/odrzucenia został wysłany do klienta.', 'erp-omd'), ['id' => $estimate_id]);
     }
@@ -3448,6 +3457,16 @@ class ERP_OMD_Admin
             'subject' => sanitize_text_field(wp_unslash($_POST['missing_hours_mail_subject'] ?? $defaults['subject'])),
             'body' => wp_kses_post(wp_unslash($_POST['missing_hours_mail_body'] ?? $defaults['body'])),
         ];
+        $estimate_mail_defaults = $this->estimate_client_mail_defaults();
+        $estimate_mail_settings = [
+            'subject' => sanitize_text_field(wp_unslash($_POST['estimate_client_mail_subject'] ?? $estimate_mail_defaults['subject'])),
+            'body' => wp_kses_post(wp_unslash($_POST['estimate_client_mail_body'] ?? $estimate_mail_defaults['body'])),
+        ];
+        $estimate_thank_you_mail_defaults = $this->estimate_client_thank_you_mail_defaults();
+        $estimate_thank_you_mail_settings = [
+            'subject' => sanitize_text_field(wp_unslash($_POST['estimate_client_thank_you_mail_subject'] ?? $estimate_thank_you_mail_defaults['subject'])),
+            'body' => wp_kses_post(wp_unslash($_POST['estimate_client_thank_you_mail_body'] ?? $estimate_thank_you_mail_defaults['body'])),
+        ];
         $notification_sender_email = sanitize_email(wp_unslash($_POST['notification_sender_email'] ?? ''));
         if ($notification_sender_email !== '' && ! is_email($notification_sender_email)) {
             $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres nadawcy e-mail jest niepoprawny.', 'erp-omd'));
@@ -3539,6 +3558,8 @@ class ERP_OMD_Admin
         update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
         update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
         update_option('erp_omd_missing_hours_notification_settings', $notification_settings);
+        update_option('erp_omd_estimate_client_mail_settings', $estimate_mail_settings);
+        update_option('erp_omd_estimate_client_thank_you_mail_settings', $estimate_thank_you_mail_settings);
         update_option('erp_omd_missing_hours_notification_recipients', $recipient_state);
         update_option('erp_omd_notification_sender_email', $notification_sender_email);
         $fixed_items = $this->normalize_fixed_monthly_cost_items(wp_unslash($_POST['fixed_cost_items'] ?? []));
@@ -4210,6 +4231,32 @@ class ERP_OMD_Admin
             'subject' => __('Przypomnienie o raporcie godzin pracy', 'erp-omd'),
             'body' => __('Cześć {login},<br><br>ostatni raport godzin wysłałeś: <strong>{last_reported_date}</strong>.<br>Prosimy o uzupełnienie brakujących godzin.', 'erp-omd'),
         ];
+    }
+
+    private function estimate_client_mail_defaults()
+    {
+        return [
+            'subject' => __('[ERP OMD] Decyzja klienta dla kosztorysu {estimate_name}', 'erp-omd'),
+            'body' => __('Dzień dobry,<br><br>prosimy o decyzję dla kosztorysu <strong>{estimate_name}</strong>.<br>Link jest ważny do {expires_at}:<br><a href="{decision_url}">{decision_url}</a>', 'erp-omd'),
+        ];
+    }
+
+    private function estimate_client_thank_you_mail_defaults()
+    {
+        return [
+            'subject' => __('[ERP OMD] Dziękujemy za akceptację kosztorysu {estimate_name}', 'erp-omd'),
+            'body' => __('Dziękujemy za akceptację kosztorysu <strong>{estimate_name}</strong>.<br><br>Poniżej przesyłamy podsumowanie pozycji i finalnej kwoty.', 'erp-omd'),
+        ];
+    }
+
+    private function replace_mail_tokens($content, array $tokens)
+    {
+        $prepared = (string) $content;
+        foreach ($tokens as $token => $value) {
+            $prepared = str_replace((string) $token, (string) $value, $prepared);
+        }
+
+        return $prepared;
     }
 
     private function estimate_client_link_state()
