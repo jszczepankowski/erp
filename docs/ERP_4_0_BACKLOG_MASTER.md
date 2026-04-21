@@ -45,11 +45,14 @@ Ten dokument agreguje wszystkie ustalenia dla inicjatywy **ERP_4.0**:
    - audit log: MVP tylko dla akcji krytycznych (zaakceptowane).
 
 4. Panel klienta front (MVP):
+   - klient ma osobne konto (login/hasło) do panelu frontowego,
+   - klient widzi listę swoich projektów wraz ze statusem i deadline,
    - klient widzi planowany budżet projektu + zwiększenia przez pozycje przychodowe,
    - klient widzi koszty projektu per pozycja (bez kosztów wewnętrznych),
    - historia zmian budżetu widoczna,
    - komunikacja: wątek projektowy,
-   - załączniki: pdf/jpg/png/zip, limit 30MB, wersjonowanie.
+   - załączniki: pdf/jpg/png/zip, limit 30MB, wersjonowanie,
+   - historia zleceń klienta dostępna z podziałem na miesiące.
 
 5. Walidacja PDF końcowego przy `do_faktury -> zakończony`:
    - minimum 1 faktura PDF końcowa,
@@ -107,8 +110,11 @@ Legenda:
 - F1 -> F2 (moderacja importu)
 
 ### EPIC G — Panel klienta front
-- B4 (powstanie projektu po akceptacji) (soft) -> G1 (widok finansowy klienta)
+- B4 (powstanie projektu po akceptacji) (soft) -> G1.1 (lista projektów klienta)
+- G0 (konto klienta front) -> G1.1 (lista projektów klienta)
+- G1.1 -> G1 (widok finansowy klienta)
 - G1 -> G2 (historia zmian budżetu)
+- G1.1 -> G5 (historia zleceń miesięcznie)
 - G1 -> G3 (wątek projektowy)
 - G3 -> G4 (załączniki + wersjonowanie)
 
@@ -140,7 +146,7 @@ Legenda:
 - F1, F2
 
 ### Sprint 7 — Panel klienta front (MVP)
-- G1, G2, G3, G4
+- G0, G1.1, G1, G2, G3, G4, G5
 
 ---
 
@@ -187,6 +193,21 @@ Legenda:
 - 🚀 Sprint 6 rozpoczęty.
 - 🔄 Trwa realizacja etapów F1/F2 zgodnie z kolejnością z sekcji „Kolejność sprintów”.
 
+## 2d) Status Sprintu 7 (ERP_4.0) — start 2026-04-21
+
+### Zakres
+- G0: konto klienta i dostęp do frontu.
+- G1.1: lista projektów klienta ze statusem i deadline.
+- G1: widok budżetu i kosztów klienta.
+- G2: historia zmian budżetu.
+- G3: wątek projektowy.
+- G4: załączniki i wersjonowanie.
+- G5: historia zleceń miesięcznie.
+
+### Status bieżący
+- 🚀 Sprint 7 rozpoczęty.
+- 🧭 Punktem odniesienia dla realizacji jest ten backlog oraz dokument wykonawczy: `docs/SPRINT_7_CLIENT_PANEL_TICKETS_DOD.md`.
+
 ---
 
 ## 3) Priorytety MoSCoW (globalnie)
@@ -198,13 +219,14 @@ Legenda:
 - D1, D2, D3, D4
 - E1, E2, E3, E4
 - F1, F2
-- G1, G3, G4
+- G0, G1.1, G1, G3, G4
 
 ## SHOULD
 - B6 (edytowalne szablony maili)
 - D5 (alert admin przy błędzie sync)
 - E5 (MVP audit log krytyczny)
 - G2 (historia zmian budżetu)
+- G5 (historia zleceń miesięcznie)
 
 ## COULD
 - Dodatkowe raporty KPI dla dostawców i jakości sync,
@@ -366,6 +388,16 @@ Legenda:
 
 ## EPIC G — Panel klienta front (MVP)
 
+### G0 (MUST): Konto klienta i dostęp do frontu
+**Given** klient otrzymał aktywne konto frontowe  
+**When** loguje się przez dedykowany ekran klienta  
+**Then** system uwierzytelnia go loginem/hasłem i ogranicza dostęp wyłącznie do danych jego organizacji/projektów.
+
+### G1.1 (MUST): Lista projektów klienta ze statusem i deadline
+**Given** klient ma przypisane projekty  
+**When** otwiera panel klienta  
+**Then** widzi listę projektów z aktualnym statusem i terminem deadline dla każdego projektu.
+
 ### G1 (MUST): Widok budżetu i kosztów klienta
 **Given** klient loguje się do frontu  
 **When** otworzy szczegóły projektu  
@@ -385,6 +417,11 @@ Legenda:
 **Given** użytkownik dodaje plik do wątku  
 **When** plik jest typu pdf/jpg/png/zip i nie przekracza 30MB  
 **Then** system zapisuje załącznik oraz jego wersję.
+
+### G5 (SHOULD): Historia zleceń z podziałem na miesiące
+**Given** klient ma historię zleceń/projektów w czasie  
+**When** otwiera historię zleceń w panelu klienta  
+**Then** system grupuje i prezentuje historię w podziale miesięcznym (YYYY-MM) z możliwością wejścia w szczegóły.
 
 ---
 
