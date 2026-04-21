@@ -69,6 +69,7 @@ class ERP_OMD_Frontend
         add_rewrite_rule('^erp-front/logout/?$', 'index.php?erp_omd_front=logout', 'top');
         add_rewrite_rule('^erp-front/worker/?$', 'index.php?erp_omd_front=worker', 'top');
         add_rewrite_rule('^erp-front/manager/?$', 'index.php?erp_omd_front=manager', 'top');
+        add_rewrite_rule('^erp-front/client/?$', 'index.php?erp_omd_front=client', 'top');
         add_rewrite_rule('^erp-front/estimate-decision/?$', 'index.php?erp_omd_front=estimate-decision', 'top');
     }
 
@@ -209,6 +210,11 @@ class ERP_OMD_Frontend
             return;
         }
 
+        if ($screen === 'client') {
+            $this->handle_client_screen($current_user);
+            return;
+        }
+
         $this->handle_manager_screen($current_user);
     }
 
@@ -288,6 +294,11 @@ class ERP_OMD_Frontend
             wp_safe_redirect($this->front_url('login', ['denied' => 1]));
             exit;
         }
+
+        if ($screen === 'client' && ! user_can($user, 'erp_omd_front_client')) {
+            wp_safe_redirect($this->front_url('login', ['denied' => 1]));
+            exit;
+        }
     }
 
     private function should_hide_admin_for_user($user)
@@ -304,7 +315,7 @@ class ERP_OMD_Frontend
             return false;
         }
 
-        return user_can($user, 'erp_omd_front_manager') || user_can($user, 'erp_omd_front_worker');
+        return user_can($user, 'erp_omd_front_manager') || user_can($user, 'erp_omd_front_worker') || user_can($user, 'erp_omd_front_client');
     }
 
     private function resolve_dashboard_url_for_user($user)
@@ -321,7 +332,16 @@ class ERP_OMD_Frontend
             return $this->front_url('worker');
         }
 
+        if (user_can($user, 'erp_omd_front_client')) {
+            return $this->front_url('client');
+        }
+
         return admin_url();
+    }
+
+    private function handle_client_screen(WP_User $user)
+    {
+        $this->render_client_front_dashboard($user);
     }
 
     private function is_front_employee_inactive($user_id)
@@ -1256,6 +1276,57 @@ class ERP_OMD_Frontend
         $manager_form_action = $this->front_url('manager');
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/dashboard.php';
+        exit;
+    }
+
+    private function render_client_front_dashboard(WP_User $user)
+    {
+        $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+        $projects = $client_id > 0
+            ? $this->projects->all(['client_id' => $client_id])
+            : [];
+        $selected_project_id = (int) ($_GET['project_id'] ?? 0);
+        if ($selected_project_id <= 0 && ! empty($projects)) {
+            $selected_project_id = (int) ($projects[0]['id'] ?? 0);
+        }
+
+        usort(
+            $projects,
+            static function ($left, $right) {
+                return strcmp((string) ($left['deadline'] ?? ''), (string) ($right['deadline'] ?? ''));
+            }
+        );
+
+        $visible_project_ids = array_map(
+            'intval',
+            wp_list_pluck($projects, 'id')
+        );
+        if ($selected_project_id > 0 && ! in_array($selected_project_id, $visible_project_ids, true)) {
+            $selected_project_id = 0;
+        }
+
+        $client_portal_service = class_exists('ERP_OMD_Client_Portal_Service')
+            ? new ERP_OMD_Client_Portal_Service($this->projects, $this->project_revenues, $this->project_costs)
+            : null;
+        $selected_project_finance = null;
+        if ($selected_project_id > 0 && $client_portal_service instanceof ERP_OMD_Client_Portal_Service) {
+            $selected_project_finance = $client_portal_service->build_project_finance_view($selected_project_id);
+        }
+
+        $project_status_labels = [
+            'new' => __('Nowy', 'erp-omd'),
+            'active' => __('W realizacji', 'erp-omd'),
+            'on_hold' => __('Wstrzymany', 'erp-omd'),
+            'completed' => __('Zakończony', 'erp-omd'),
+            'cancelled' => __('Anulowany', 'erp-omd'),
+        ];
+
+        $dashboard_title = __('Panel klienta', 'erp-omd');
+        $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
+        $front_logout_url = $this->front_url('logout');
+        $front_client_url = $this->front_url('client');
+        $this->send_front_headers();
+        include ERP_OMD_PATH . 'templates/front/client-dashboard.php';
         exit;
     }
 
