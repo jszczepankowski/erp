@@ -967,6 +967,14 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.erp-omd-admin .erp-omd-form-grid-estimate-item-row {
+    grid-template-columns: minmax(260px, 2fr) minmax(120px, 1fr) minmax(140px, 1fr) minmax(160px, 1fr);
+}
+
+.erp-omd-admin .erp-omd-form-grid-project-lifecycle-row {
+    grid-template-columns: minmax(170px, 1.1fr) minmax(150px, 1fr) minmax(150px, 1fr) minmax(180px, 1.1fr) minmax(260px, 1.7fr);
+}
+
 .erp-omd-admin .erp-omd-form-field label,
 .erp-omd-admin .erp-omd-form-field .erp-omd-form-label {
     display: block;
@@ -1291,9 +1299,11 @@
     .erp-omd-admin .erp-omd-form-grid-cost-invoice-document-row,
     .erp-omd-admin .erp-omd-form-grid-cost-invoice-amounts-row,
     .erp-omd-admin .erp-omd-form-grid-project-lifecycle,
+    .erp-omd-admin .erp-omd-form-grid-project-lifecycle-row,
     .erp-omd-admin .erp-omd-form-grid-time-context,
     .erp-omd-admin .erp-omd-form-grid-time-status,
     .erp-omd-admin .erp-omd-form-grid-estimate-item-pricing,
+    .erp-omd-admin .erp-omd-form-grid-estimate-item-row,
     .erp-omd-admin .erp-omd-settings-media-grid {
         grid-template-columns: 1fr;
     }
