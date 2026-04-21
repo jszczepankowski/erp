@@ -16,7 +16,7 @@
                             <p><?php esc_html_e('Nazwa i klient, dla którego przygotowujemy wycenę.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid">
-                            <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <div class="erp-omd-form-field">
                                 <label for="estimate-name"><?php esc_html_e('Nazwa kosztorysu', 'erp-omd'); ?></label>
                                 <input id="estimate-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($estimate['name'] ?? ''); ?>" required>
                                 <p class="description"><?php esc_html_e('Np. Kampania launchowa produktu.', 'erp-omd'); ?></p>
@@ -66,21 +66,23 @@
                             </div>
                             <div class="erp-omd-estimate-create-items" data-admin-initial-items>
                                 <div class="erp-omd-form-grid erp-omd-estimate-create-item-row" data-admin-initial-item-row>
-                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                                        <label><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
-                                        <input name="initial_item_name[]" type="text" class="regular-text" required>
-                                    </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                                        <label><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
-                                        <input name="initial_item_qty[]" type="number" step="0.01" min="0.01" value="1" required>
-                                    </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                                        <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
-                                        <input name="initial_item_price[]" type="number" step="0.01" min="0" value="0" required>
-                                    </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                                        <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
-                                        <input name="initial_item_cost_internal[]" type="number" step="0.01" min="0" value="0" required>
+                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-row erp-omd-form-field erp-omd-form-field-span-2">
+                                        <div class="erp-omd-form-field">
+                                            <label><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
+                                            <input name="initial_item_name[]" type="text" class="regular-text" required>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
+                                            <input name="initial_item_qty[]" type="number" step="0.01" min="0.01" value="1" required>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
+                                            <input name="initial_item_price[]" type="number" step="0.01" min="0" value="0" required>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
+                                            <input name="initial_item_cost_internal[]" type="number" step="0.01" min="0" value="0" required>
+                                        </div>
                                     </div>
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
@@ -248,11 +250,11 @@
                                 <input type="hidden" name="estimate_id" value="<?php echo esc_attr($selected_estimate['id']); ?>">
                                 <input type="hidden" name="item_id" value="<?php echo esc_attr($editing_estimate_item['id'] ?? 0); ?>">
                                 <div class="erp-omd-form-grid">
-                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                                        <label for="estimate-item-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
-                                        <input id="estimate-item-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($editing_estimate_item['name'] ?? ''); ?>" required>
-                                    </div>
-                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-pricing erp-omd-form-field erp-omd-form-field-span-2">
+                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-row erp-omd-form-field erp-omd-form-field-span-2">
+                                        <div class="erp-omd-form-field">
+                                            <label for="estimate-item-name"><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
+                                            <input id="estimate-item-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($editing_estimate_item['name'] ?? ''); ?>" required>
+                                        </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label for="estimate-item-qty"><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
                                             <input id="estimate-item-qty" name="qty" type="number" step="0.01" min="0.01" value="<?php echo esc_attr($editing_estimate_item['qty'] ?? '1'); ?>" required>
@@ -284,24 +286,26 @@
                                 <input type="hidden" name="erp_omd_action" value="save_estimate_item">
                                 <input type="hidden" name="estimate_id" value="<?php echo esc_attr($selected_estimate['id']); ?>">
                                 <input type="hidden" name="item_id" value="0">
-                                <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-pricing">
-                                    <div class="erp-omd-form-field">
-                                        <label><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
-                                        <input name="name" type="text" class="regular-text" required>
+                                <div class="erp-omd-form-grid">
+                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-row erp-omd-form-field erp-omd-form-field-span-2">
+                                        <div class="erp-omd-form-field">
+                                            <label><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
+                                            <input name="name" type="text" class="regular-text" required>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
+                                            <input name="qty" type="number" step="0.01" min="0.01" value="1" required>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
+                                            <input name="price" type="number" step="0.01" min="0" value="0" required>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
+                                            <input name="cost_internal" type="number" step="0.01" min="0" value="0" required>
+                                        </div>
                                     </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                        <label><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
-                                        <input name="qty" type="number" step="0.01" min="0.01" value="1" required>
-                                    </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                        <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
-                                        <input name="price" type="number" step="0.01" min="0" value="0" required>
-                                    </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                        <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
-                                        <input name="cost_internal" type="number" step="0.01" min="0" value="0" required>
-                                    </div>
-                                    <div class="erp-omd-form-field">
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
                                         <input name="comment" type="text" class="regular-text">
                                     </div>
