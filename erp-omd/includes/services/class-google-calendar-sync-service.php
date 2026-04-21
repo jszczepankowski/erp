@@ -310,6 +310,28 @@ class ERP_OMD_Google_Calendar_Sync_Service
         }
 
         $payload = json_decode((string) wp_remote_retrieve_body($response), true);
+        $oauth_error = sanitize_key((string) ($payload['error'] ?? ''));
+        $oauth_error_description = sanitize_text_field((string) ($payload['error_description'] ?? ''));
+        if ($oauth_error !== '') {
+            if ($oauth_error === 'invalid_grant') {
+                update_option(self::OPTION_ACCESS_TOKEN_ENC, '');
+                update_option(self::OPTION_REFRESH_TOKEN_ENC, '');
+                update_option(self::OPTION_EXPIRES_AT, 0);
+                throw new RuntimeException(__('Google OAuth refresh token wygasł lub został unieważniony. Połącz konto Google ponownie.', 'erp-omd'));
+            }
+
+            $oauth_error_message = $oauth_error;
+            if ($oauth_error_description !== '') {
+                $oauth_error_message .= ': ' . $oauth_error_description;
+            }
+            throw new RuntimeException(
+                sprintf(
+                    __('Google OAuth refresh token zwrócił błąd: %s', 'erp-omd'),
+                    $oauth_error_message
+                )
+            );
+        }
+
         $new_token = (string) ($payload['access_token'] ?? '');
         $expires_in = max(60, (int) ($payload['expires_in'] ?? 3600));
         if ($new_token === '') {
