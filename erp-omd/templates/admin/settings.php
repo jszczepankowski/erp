@@ -184,6 +184,40 @@
                             ]); ?>
                             <p class="description"><?php esc_html_e('Dostępne tokeny: {login}, {employee_id}, {last_reported_date}, {days_since_last_report}.', 'erp-omd'); ?></p>
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <h4><?php esc_html_e('E-mail z kosztorysem do klienta (link akceptacji)', 'erp-omd'); ?></h4>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-estimate-client-mail-subject"><?php esc_html_e('Temat maila do klienta', 'erp-omd'); ?></label>
+                            <input id="erp-omd-estimate-client-mail-subject" type="text" name="estimate_client_mail_subject" value="<?php echo esc_attr((string) ($estimate_mail_settings['subject'] ?? '')); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-estimate-client-mail-body"><?php esc_html_e('Treść maila do klienta', 'erp-omd'); ?></label>
+                            <?php wp_editor((string) ($estimate_mail_settings['body'] ?? ''), 'erp-omd-estimate-client-mail-body-editor', [
+                                'textarea_name' => 'estimate_client_mail_body',
+                                'textarea_rows' => 8,
+                                'media_buttons' => false,
+                                'teeny' => true,
+                            ]); ?>
+                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {client_name}, {decision_url}, {expires_at}.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <h4><?php esc_html_e('E-mail podziękowania po akceptacji kosztorysu', 'erp-omd'); ?></h4>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-estimate-thank-you-mail-subject"><?php esc_html_e('Temat podziękowania', 'erp-omd'); ?></label>
+                            <input id="erp-omd-estimate-thank-you-mail-subject" type="text" name="estimate_client_thank_you_mail_subject" value="<?php echo esc_attr((string) ($estimate_thank_you_mail_settings['subject'] ?? '')); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-estimate-thank-you-mail-body"><?php esc_html_e('Treść podziękowania', 'erp-omd'); ?></label>
+                            <?php wp_editor((string) ($estimate_thank_you_mail_settings['body'] ?? ''), 'erp-omd-estimate-thank-you-mail-body-editor', [
+                                'textarea_name' => 'estimate_client_thank_you_mail_body',
+                                'textarea_rows' => 8,
+                                'media_buttons' => false,
+                                'teeny' => true,
+                            ]); ?>
+                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {client_name}, {final_gross}, {final_net}, {client_note}. Tabela pozycji jest dodawana automatycznie pod treścią.', 'erp-omd'); ?></p>
+                        </div>
                     </div>
 
                     <table class="widefat striped">
