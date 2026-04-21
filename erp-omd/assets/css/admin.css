@@ -896,6 +896,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.erp-omd-admin .erp-omd-form-grid-reports-slo {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .erp-omd-admin .erp-omd-form-grid-project-basics .erp-omd-form-field,
 .erp-omd-admin .erp-omd-form-grid-project-basics .erp-omd-form-field.erp-omd-form-field-compact {
     max-width: none;
