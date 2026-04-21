@@ -365,37 +365,38 @@ class ERP_OMD_Admin
                 $last_backup_status = (string) get_option('erp_omd_last_backup_status', '');
 
                 if ($last_backup_status === 'success') {
-                    $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy + ustawień wtyczki został wykonany ręcznie.', 'erp-omd'));
+                    $this->redirect_with_notice('erp-omd-settings', 'success', __('Backup bazy + ustawień wtyczki został wykonany ręcznie.', 'erp-omd'), ['tab' => 'backup_restore']);
                 }
 
                 $this->redirect_with_notice(
                     'erp-omd-settings',
                     'error',
-                    sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown')
+                    sprintf(__('Ręczny backup nie powiódł się (status: %s).', 'erp-omd'), $last_backup_status !== '' ? $last_backup_status : 'unknown'),
+                    ['tab' => 'backup_restore']
                 );
                 break;
             case 'restore_backup_bundle':
                 check_admin_referer('erp_omd_restore_backup_bundle');
                 $this->require_capability('erp_omd_manage_settings');
                 if (! isset($_FILES['restore_backup_zip']) || ! is_array($_FILES['restore_backup_zip'])) {
-                    $this->redirect_with_notice('erp-omd-settings', 'error', __('Nie wybrano pliku ZIP backupu do odtworzenia.', 'erp-omd'));
+                    $this->redirect_with_notice('erp-omd-settings', 'error', __('Nie wybrano pliku ZIP backupu do odtworzenia.', 'erp-omd'), ['tab' => 'backup_restore']);
                 }
                 $backup_file = $_FILES['restore_backup_zip'];
                 $tmp_name = isset($backup_file['tmp_name']) ? (string) $backup_file['tmp_name'] : '';
                 $file_name = isset($backup_file['name']) ? (string) $backup_file['name'] : '';
                 $upload_error = isset($backup_file['error']) ? (int) $backup_file['error'] : UPLOAD_ERR_NO_FILE;
                 if ($upload_error !== UPLOAD_ERR_OK || $tmp_name === '' || ! is_uploaded_file($tmp_name)) {
-                    $this->redirect_with_notice('erp-omd-settings', 'error', __('Przesłany plik backupu jest nieprawidłowy.', 'erp-omd'));
+                    $this->redirect_with_notice('erp-omd-settings', 'error', __('Przesłany plik backupu jest nieprawidłowy.', 'erp-omd'), ['tab' => 'backup_restore']);
                 }
                 if (strtolower(pathinfo($file_name, PATHINFO_EXTENSION)) !== 'zip') {
-                    $this->redirect_with_notice('erp-omd-settings', 'error', __('Plik backupu musi mieć rozszerzenie .zip.', 'erp-omd'));
+                    $this->redirect_with_notice('erp-omd-settings', 'error', __('Plik backupu musi mieć rozszerzenie .zip.', 'erp-omd'), ['tab' => 'backup_restore']);
                 }
                 try {
                     ERP_OMD_Backup_Manager::restore_backup_bundle_from_zip($tmp_name);
                 } catch (RuntimeException $exception) {
-                    $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Odtworzenie backupu nie powiodło się: %s', 'erp-omd'), $exception->getMessage()));
+                    $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Odtworzenie backupu nie powiodło się: %s', 'erp-omd'), $exception->getMessage()), ['tab' => 'backup_restore']);
                 }
-                $this->redirect_with_notice('erp-omd-settings', 'success', __('Odtworzenie backupu (SQL + ustawienia) zakończone sukcesem.', 'erp-omd'));
+                $this->redirect_with_notice('erp-omd-settings', 'success', __('Odtworzenie backupu (SQL + ustawienia) zakończone sukcesem.', 'erp-omd'), ['tab' => 'backup_restore']);
                 break;
             case 'add_project_note': $this->handle_project_note_add(); break;
             case 'save_project_rate': $this->handle_project_rate_save(); break;
@@ -946,6 +947,22 @@ class ERP_OMD_Admin
 
     public function render_settings()
     {
+        $allowed_settings_tabs = [
+            'fixed_costs',
+            'backup_restore',
+            'missing_hours',
+            'estimate_mail_templates',
+            'front_login',
+            'lifecycle_alerts',
+            'google_calendar',
+            'ksef',
+            'reports_v1_monitoring',
+        ];
+        $settings_tab = sanitize_key((string) ($_GET['tab'] ?? 'fixed_costs'));
+        if (! in_array($settings_tab, $allowed_settings_tabs, true)) {
+            $settings_tab = 'fixed_costs';
+        }
+
         $delete_data = (bool) get_option('erp_omd_delete_data_on_uninstall', false);
         $front_admin_redirect_enabled = (bool) get_option('erp_omd_front_admin_redirect_enabled', true);
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
@@ -3564,168 +3581,175 @@ class ERP_OMD_Admin
     {
         check_admin_referer('erp_omd_save_settings');
         $this->require_capability('erp_omd_manage_settings');
-        $front_login_logo_id = max(0, (int) ($_POST['front_login_logo_id'] ?? 0));
-        $front_login_cover_id = max(0, (int) ($_POST['front_login_cover_id'] ?? 0));
-
-        if ($front_login_logo_id > 0 && ! wp_attachment_is_image($front_login_logo_id)) {
-            $front_login_logo_id = 0;
+        $settings_tab = sanitize_key((string) ($_POST['settings_tab'] ?? 'fixed_costs'));
+        $allowed_settings_tabs = ['fixed_costs', 'missing_hours', 'estimate_mail_templates', 'front_login', 'lifecycle_alerts', 'google_calendar', 'ksef', 'reports_v1_monitoring'];
+        if (! in_array($settings_tab, $allowed_settings_tabs, true)) {
+            $settings_tab = 'fixed_costs';
         }
 
-        if ($front_login_cover_id > 0 && ! wp_attachment_is_image($front_login_cover_id)) {
-            $front_login_cover_id = 0;
-        }
-
-        $defaults = $this->missing_hours_notification_defaults();
-        $raw_mode = sanitize_key((string) ($_POST['missing_hours_mode'] ?? $defaults['mode']));
-        $mode = in_array($raw_mode, ['after_x_days', 'day_of_month'], true) ? $raw_mode : $defaults['mode'];
-        $notification_settings = [
-            'mode' => $mode,
-            'after_days' => max(1, (int) ($_POST['missing_hours_after_days'] ?? $defaults['after_days'])),
-            'day_of_month' => min(31, max(1, (int) ($_POST['missing_hours_day_of_month'] ?? $defaults['day_of_month']))),
-            'subject' => sanitize_text_field(wp_unslash($_POST['missing_hours_mail_subject'] ?? $defaults['subject'])),
-            'body' => wp_kses_post(wp_unslash($_POST['missing_hours_mail_body'] ?? $defaults['body'])),
-        ];
-        $estimate_mail_defaults = $this->estimate_client_mail_defaults();
-        $estimate_mail_settings = [
-            'subject' => sanitize_text_field(wp_unslash($_POST['estimate_client_mail_subject'] ?? $estimate_mail_defaults['subject'])),
-            'body' => wp_kses_post(wp_unslash($_POST['estimate_client_mail_body'] ?? $estimate_mail_defaults['body'])),
-        ];
-        $estimate_thank_you_mail_defaults = $this->estimate_client_thank_you_mail_defaults();
-        $estimate_thank_you_mail_settings = [
-            'subject' => sanitize_text_field(wp_unslash($_POST['estimate_client_thank_you_mail_subject'] ?? $estimate_thank_you_mail_defaults['subject'])),
-            'body' => wp_kses_post(wp_unslash($_POST['estimate_client_thank_you_mail_body'] ?? $estimate_thank_you_mail_defaults['body'])),
-        ];
-        $notification_sender_email = sanitize_email(wp_unslash($_POST['notification_sender_email'] ?? ''));
-        if ($notification_sender_email !== '' && ! is_email($notification_sender_email)) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres nadawcy e-mail jest niepoprawny.', 'erp-omd'));
-        }
-
-        $active_recipients = array_values(array_filter(array_map('intval', wp_unslash($_POST['missing_hours_recipients_active'] ?? []))));
-        $existing_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
-        $recipient_state = [];
-        foreach ($this->employees->all() as $employee_row) {
-            $employee_id = (int) ($employee_row['id'] ?? 0);
-            if ($employee_id <= 0) {
-                continue;
-            }
-
-            $previous = (array) ($existing_recipients[$employee_id] ?? []);
-            $recipient_state[$employee_id] = [
-                'active' => in_array($employee_id, $active_recipients, true) ? 1 : 0,
-                'last_sent_at' => (string) ($previous['last_sent_at'] ?? ''),
+        if ($settings_tab === 'fixed_costs') {
+            $fixed_items = $this->normalize_fixed_monthly_cost_items(wp_unslash($_POST['fixed_cost_items'] ?? []));
+            update_option('erp_omd_fixed_monthly_cost_items', $fixed_items);
+            update_option('erp_omd_fixed_monthly_cost', array_sum(wp_list_pluck($fixed_items, 'amount')));
+        } elseif ($settings_tab === 'missing_hours') {
+            $defaults = $this->missing_hours_notification_defaults();
+            $raw_mode = sanitize_key((string) ($_POST['missing_hours_mode'] ?? $defaults['mode']));
+            $mode = in_array($raw_mode, ['after_x_days', 'day_of_month'], true) ? $raw_mode : $defaults['mode'];
+            $notification_settings = [
+                'mode' => $mode,
+                'after_days' => max(1, (int) ($_POST['missing_hours_after_days'] ?? $defaults['after_days'])),
+                'day_of_month' => min(31, max(1, (int) ($_POST['missing_hours_day_of_month'] ?? $defaults['day_of_month']))),
+                'subject' => sanitize_text_field(wp_unslash($_POST['missing_hours_mail_subject'] ?? $defaults['subject'])),
+                'body' => wp_kses_post(wp_unslash($_POST['missing_hours_mail_body'] ?? $defaults['body'])),
             ];
-        }
-
-        update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
-        update_option('erp_omd_front_admin_redirect_enabled', ! empty($_POST['front_admin_redirect_enabled']));
-        update_option('erp_omd_reports_v1_rollout', 'all');
-        $company_nip = preg_replace('/[^0-9]/', '', (string) wp_unslash($_POST['company_nip'] ?? ''));
-        if (! is_string($company_nip)) {
-            $company_nip = '';
-        }
-        if ($company_nip !== '' && strlen($company_nip) !== 10) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('NIP firmy musi mieć 10 cyfr.', 'erp-omd'));
-        }
-
-        update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
-        update_option('erp_omd_company_nip', $company_nip);
-        update_option('erp_omd_reports_v1_metrics_freshness_minutes', max(5, (int) ($_POST['reports_v1_metrics_freshness_minutes'] ?? 1440)));
-        $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) ($_POST['reports_v1_slo_generation_p95_max'] ?? 2500)));
-        if (! empty($_POST['apply_reports_v1_recommended_p95_max'])) {
-            $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
-            $reports_v1_samples = array_values(array_map(static function ($row) {
-                return (int) ($row['generation_ms'] ?? 0);
-            }, $reports_v1_metrics_log));
-            sort($reports_v1_samples);
-            $reports_v1_sample_count = count($reports_v1_samples);
-            if ($reports_v1_sample_count > 0) {
-                $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_sample_count) - 1;
-                $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
-                $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
-                $reports_v1_slo_generation_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
-                $reports_v1_slo_generation_p95_max = max(100, min(30000, $reports_v1_slo_generation_p95_max));
+            $notification_sender_email = sanitize_email(wp_unslash($_POST['notification_sender_email'] ?? ''));
+            if ($notification_sender_email !== '' && ! is_email($notification_sender_email)) {
+                $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres nadawcy e-mail jest niepoprawny.', 'erp-omd'), ['tab' => $settings_tab]);
             }
-        }
-        update_option('erp_omd_reports_v1_slo_generation_p95_max', $reports_v1_slo_generation_p95_max);
-        if (! empty($_POST['confirm_reports_v1_slo_calibration_decision'])) {
-            $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
-            $reports_v1_sample_count = count($reports_v1_metrics_log);
-            $recommended_threshold = $reports_v1_slo_generation_p95_max;
-            if ($reports_v1_sample_count > 0) {
+            $active_recipients = array_values(array_filter(array_map('intval', wp_unslash($_POST['missing_hours_recipients_active'] ?? []))));
+            $existing_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
+            $recipient_state = [];
+            foreach ($this->employees->all() as $employee_row) {
+                $employee_id = (int) ($employee_row['id'] ?? 0);
+                if ($employee_id <= 0) {
+                    continue;
+                }
+                $previous = (array) ($existing_recipients[$employee_id] ?? []);
+                $recipient_state[$employee_id] = [
+                    'active' => in_array($employee_id, $active_recipients, true) ? 1 : 0,
+                    'last_sent_at' => (string) ($previous['last_sent_at'] ?? ''),
+                ];
+            }
+            update_option('erp_omd_missing_hours_notification_settings', $notification_settings);
+            update_option('erp_omd_missing_hours_notification_recipients', $recipient_state);
+            update_option('erp_omd_notification_sender_email', $notification_sender_email);
+        } elseif ($settings_tab === 'estimate_mail_templates') {
+            $estimate_mail_defaults = $this->estimate_client_mail_defaults();
+            $estimate_mail_settings = [
+                'subject' => sanitize_text_field(wp_unslash($_POST['estimate_client_mail_subject'] ?? $estimate_mail_defaults['subject'])),
+                'body' => wp_kses_post(wp_unslash($_POST['estimate_client_mail_body'] ?? $estimate_mail_defaults['body'])),
+            ];
+            $estimate_thank_you_mail_defaults = $this->estimate_client_thank_you_mail_defaults();
+            $estimate_thank_you_mail_settings = [
+                'subject' => sanitize_text_field(wp_unslash($_POST['estimate_client_thank_you_mail_subject'] ?? $estimate_thank_you_mail_defaults['subject'])),
+                'body' => wp_kses_post(wp_unslash($_POST['estimate_client_thank_you_mail_body'] ?? $estimate_thank_you_mail_defaults['body'])),
+            ];
+            update_option('erp_omd_estimate_client_mail_settings', $estimate_mail_settings);
+            update_option('erp_omd_estimate_client_thank_you_mail_settings', $estimate_thank_you_mail_settings);
+        } elseif ($settings_tab === 'front_login') {
+            $front_login_logo_id = max(0, (int) ($_POST['front_login_logo_id'] ?? 0));
+            $front_login_cover_id = max(0, (int) ($_POST['front_login_cover_id'] ?? 0));
+            if ($front_login_logo_id > 0 && ! wp_attachment_is_image($front_login_logo_id)) {
+                $front_login_logo_id = 0;
+            }
+            if ($front_login_cover_id > 0 && ! wp_attachment_is_image($front_login_cover_id)) {
+                $front_login_cover_id = 0;
+            }
+            update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
+            update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
+        } elseif ($settings_tab === 'lifecycle_alerts') {
+            update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
+            update_option('erp_omd_front_admin_redirect_enabled', ! empty($_POST['front_admin_redirect_enabled']));
+            update_option('erp_omd_reports_v1_rollout', 'all');
+            $company_nip = preg_replace('/[^0-9]/', '', (string) wp_unslash($_POST['company_nip'] ?? ''));
+            if (! is_string($company_nip)) {
+                $company_nip = '';
+            }
+            if ($company_nip !== '' && strlen($company_nip) !== 10) {
+                $this->redirect_with_notice('erp-omd-settings', 'error', __('NIP firmy musi mieć 10 cyfr.', 'erp-omd'), ['tab' => $settings_tab]);
+            }
+            update_option('erp_omd_alert_margin_threshold', max(0, (float) ($_POST['alert_margin_threshold'] ?? 10)));
+            update_option('erp_omd_company_nip', $company_nip);
+        } elseif ($settings_tab === 'google_calendar') {
+            $google_calendar_client_id = sanitize_text_field(wp_unslash($_POST['google_calendar_client_id'] ?? ''));
+            $google_calendar_client_secret = trim((string) wp_unslash($_POST['google_calendar_client_secret'] ?? ''));
+            $google_calendar_scope = sanitize_text_field(wp_unslash($_POST['google_calendar_scope'] ?? 'https://www.googleapis.com/auth/calendar'));
+            if (! in_array($google_calendar_scope, ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar'], true)) {
+                $google_calendar_scope = 'https://www.googleapis.com/auth/calendar';
+            }
+            $google_calendar_redirect_uri = $this->normalize_google_calendar_redirect_uri_v2((string) wp_unslash($_POST['google_calendar_redirect_uri'] ?? ''));
+            if ($google_calendar_redirect_uri === '') {
+                $google_calendar_redirect_uri = admin_url('admin.php?page=erp-omd-settings');
+            }
+            if (! wp_http_validate_url($google_calendar_redirect_uri)) {
+                $this->redirect_with_notice('erp-omd-settings', 'error', __('Redirect URI Google Calendar jest niepoprawny.', 'erp-omd'), ['tab' => $settings_tab]);
+            }
+            $google_calendar_calendar_id = sanitize_text_field(wp_unslash($_POST['google_calendar_calendar_id'] ?? 'primary'));
+            if ($google_calendar_calendar_id === '') {
+                $google_calendar_calendar_id = 'primary';
+            }
+            $google_calendar_technical_account_email = sanitize_email(wp_unslash($_POST['google_calendar_technical_account_email'] ?? ''));
+            if ($google_calendar_technical_account_email !== '' && ! is_email($google_calendar_technical_account_email)) {
+                $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres e-mail konta technicznego Google Calendar jest niepoprawny.', 'erp-omd'), ['tab' => $settings_tab]);
+            }
+            update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
+            update_option('erp_omd_google_calendar_scope', $google_calendar_scope);
+            update_option('erp_omd_google_calendar_redirect_uri', $google_calendar_redirect_uri);
+            update_option('erp_omd_google_calendar_calendar_id', $google_calendar_calendar_id);
+            update_option('erp_omd_google_calendar_technical_account_email', $google_calendar_technical_account_email);
+            if ($google_calendar_client_secret !== '') {
+                update_option('erp_omd_google_calendar_client_secret_enc', $this->encrypt_option_value($google_calendar_client_secret));
+            }
+        } elseif ($settings_tab === 'ksef') {
+            update_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, ! empty($_POST['ksef_auto_create_supplier']));
+        } elseif ($settings_tab === 'reports_v1_monitoring') {
+            update_option('erp_omd_reports_v1_metrics_freshness_minutes', max(5, (int) ($_POST['reports_v1_metrics_freshness_minutes'] ?? 1440)));
+            $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) ($_POST['reports_v1_slo_generation_p95_max'] ?? 2500)));
+            if (! empty($_POST['apply_reports_v1_recommended_p95_max'])) {
+                $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
                 $reports_v1_samples = array_values(array_map(static function ($row) {
                     return (int) ($row['generation_ms'] ?? 0);
                 }, $reports_v1_metrics_log));
                 sort($reports_v1_samples);
-                $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_sample_count) - 1;
-                $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
-                $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
-                $recommended_threshold = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
-                $recommended_threshold = max(100, min(30000, $recommended_threshold));
+                $reports_v1_sample_count = count($reports_v1_samples);
+                if ($reports_v1_sample_count > 0) {
+                    $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_sample_count) - 1;
+                    $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
+                    $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
+                    $reports_v1_slo_generation_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
+                    $reports_v1_slo_generation_p95_max = max(100, min(30000, $reports_v1_slo_generation_p95_max));
+                }
             }
-            update_option('erp_omd_reports_v1_slo_calibration_decision', [
-                'decided_at' => gmdate('c'),
-                'decided_by_user_id' => (int) get_current_user_id(),
-                'threshold_ms' => (int) $reports_v1_slo_generation_p95_max,
-                'recommended_threshold_ms' => (int) $recommended_threshold,
-                'sample_count' => (int) $reports_v1_sample_count,
-            ]);
-        }
-        if (! empty($_POST['confirm_reports_v1_slo_calibration_closure'])) {
-            $reports_v1_slo_decision = (array) get_option('erp_omd_reports_v1_slo_calibration_decision', []);
-            $decided_at = (string) ($reports_v1_slo_decision['decided_at'] ?? '');
-            $threshold_ms = (int) ($reports_v1_slo_decision['threshold_ms'] ?? 0);
-            if ($decided_at !== '' && $threshold_ms > 0) {
-                update_option('erp_omd_reports_v1_slo_calibration_closure', [
-                    'closed_at' => gmdate('c'),
-                    'closed_by_user_id' => (int) get_current_user_id(),
-                    'decision_decided_at' => $decided_at,
-                    'decision_threshold_ms' => $threshold_ms,
+            update_option('erp_omd_reports_v1_slo_generation_p95_max', $reports_v1_slo_generation_p95_max);
+            if (! empty($_POST['confirm_reports_v1_slo_calibration_decision'])) {
+                $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
+                $reports_v1_sample_count = count($reports_v1_metrics_log);
+                $recommended_threshold = $reports_v1_slo_generation_p95_max;
+                if ($reports_v1_sample_count > 0) {
+                    $reports_v1_samples = array_values(array_map(static function ($row) {
+                        return (int) ($row['generation_ms'] ?? 0);
+                    }, $reports_v1_metrics_log));
+                    sort($reports_v1_samples);
+                    $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_sample_count) - 1;
+                    $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
+                    $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
+                    $recommended_threshold = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
+                    $recommended_threshold = max(100, min(30000, $recommended_threshold));
+                }
+                update_option('erp_omd_reports_v1_slo_calibration_decision', [
+                    'decided_at' => gmdate('c'),
+                    'decided_by_user_id' => (int) get_current_user_id(),
+                    'threshold_ms' => (int) $reports_v1_slo_generation_p95_max,
+                    'recommended_threshold_ms' => (int) $recommended_threshold,
+                    'sample_count' => (int) $reports_v1_sample_count,
                 ]);
             }
+            if (! empty($_POST['confirm_reports_v1_slo_calibration_closure'])) {
+                $reports_v1_slo_decision = (array) get_option('erp_omd_reports_v1_slo_calibration_decision', []);
+                $decided_at = (string) ($reports_v1_slo_decision['decided_at'] ?? '');
+                $threshold_ms = (int) ($reports_v1_slo_decision['threshold_ms'] ?? 0);
+                if ($decided_at !== '' && $threshold_ms > 0) {
+                    update_option('erp_omd_reports_v1_slo_calibration_closure', [
+                        'closed_at' => gmdate('c'),
+                        'closed_by_user_id' => (int) get_current_user_id(),
+                        'decision_decided_at' => $decided_at,
+                        'decision_threshold_ms' => $threshold_ms,
+                    ]);
+                }
+            }
         }
-        update_option('erp_omd_front_login_logo_id', $front_login_logo_id);
-        update_option('erp_omd_front_login_cover_id', $front_login_cover_id);
-        update_option('erp_omd_missing_hours_notification_settings', $notification_settings);
-        update_option('erp_omd_estimate_client_mail_settings', $estimate_mail_settings);
-        update_option('erp_omd_estimate_client_thank_you_mail_settings', $estimate_thank_you_mail_settings);
-        update_option('erp_omd_missing_hours_notification_recipients', $recipient_state);
-        update_option('erp_omd_notification_sender_email', $notification_sender_email);
-        $fixed_items = $this->normalize_fixed_monthly_cost_items(wp_unslash($_POST['fixed_cost_items'] ?? []));
-        update_option('erp_omd_fixed_monthly_cost_items', $fixed_items);
-        update_option('erp_omd_fixed_monthly_cost', array_sum(wp_list_pluck($fixed_items, 'amount')));
-        $google_calendar_client_id = sanitize_text_field(wp_unslash($_POST['google_calendar_client_id'] ?? ''));
-        $google_calendar_client_secret = trim((string) wp_unslash($_POST['google_calendar_client_secret'] ?? ''));
-        $google_calendar_scope = sanitize_text_field(wp_unslash($_POST['google_calendar_scope'] ?? 'https://www.googleapis.com/auth/calendar'));
-        if (! in_array($google_calendar_scope, ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar'], true)) {
-            $google_calendar_scope = 'https://www.googleapis.com/auth/calendar';
-        }
-        $google_calendar_redirect_uri = $this->normalize_google_calendar_redirect_uri_v2((string) wp_unslash($_POST['google_calendar_redirect_uri'] ?? ''));
-        if ($google_calendar_redirect_uri === '') {
-            $google_calendar_redirect_uri = admin_url('admin.php?page=erp-omd-settings');
-        }
-        if (! wp_http_validate_url($google_calendar_redirect_uri)) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('Redirect URI Google Calendar jest niepoprawny.', 'erp-omd'));
-        }
-        $google_calendar_calendar_id = sanitize_text_field(wp_unslash($_POST['google_calendar_calendar_id'] ?? 'primary'));
-        if ($google_calendar_calendar_id === '') {
-            $google_calendar_calendar_id = 'primary';
-        }
-        $google_calendar_technical_account_email = sanitize_email(wp_unslash($_POST['google_calendar_technical_account_email'] ?? ''));
-        if ($google_calendar_technical_account_email !== '' && ! is_email($google_calendar_technical_account_email)) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres e-mail konta technicznego Google Calendar jest niepoprawny.', 'erp-omd'));
-        }
-        $ksef_auto_create_supplier = ! empty($_POST['ksef_auto_create_supplier']);
 
-        update_option('erp_omd_google_calendar_client_id', $google_calendar_client_id);
-        update_option('erp_omd_google_calendar_scope', $google_calendar_scope);
-        update_option('erp_omd_google_calendar_redirect_uri', $google_calendar_redirect_uri);
-        update_option('erp_omd_google_calendar_calendar_id', $google_calendar_calendar_id);
-        update_option('erp_omd_google_calendar_technical_account_email', $google_calendar_technical_account_email);
-        if ($google_calendar_client_secret !== '') {
-            update_option('erp_omd_google_calendar_client_secret_enc', $this->encrypt_option_value($google_calendar_client_secret));
-        }
-        update_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, $ksef_auto_create_supplier);
-        $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'));
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'), ['tab' => $settings_tab]);
     }
 
     private function handle_google_calendar_connect()
@@ -3737,7 +3761,7 @@ class ERP_OMD_Admin
         $client_secret = trim((string) $this->decrypt_option_value((string) get_option('erp_omd_google_calendar_client_secret_enc', '')));
         $scope = trim((string) get_option('erp_omd_google_calendar_scope', 'https://www.googleapis.com/auth/calendar'));
         if ($client_id === '' || $client_secret === '') {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('Aby połączyć Google Calendar, najpierw uzupełnij client_id i client_secret w ustawieniach.', 'erp-omd'));
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Aby połączyć Google Calendar, najpierw uzupełnij client_id i client_secret w ustawieniach.', 'erp-omd'), ['tab' => 'google_calendar']);
         }
 
         $state_payload = [
@@ -3775,7 +3799,7 @@ class ERP_OMD_Admin
         update_option('erp_omd_google_calendar_access_token_expires_at', 0);
         update_option('erp_omd_google_calendar_last_error', '');
         update_option('erp_omd_google_calendar_last_sync_at', '');
-        $this->redirect_with_notice('erp-omd-settings', 'success', __('Połączenie Google Calendar zostało rozłączone.', 'erp-omd'));
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Połączenie Google Calendar zostało rozłączone.', 'erp-omd'), ['tab' => 'google_calendar']);
     }
 
     private function handle_google_calendar_sync_now()
@@ -3790,10 +3814,10 @@ class ERP_OMD_Admin
             );
             $sync_service->sync_all_projects();
         } catch (Throwable $exception) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Ręczna synchronizacja Google Calendar nie powiodła się: %s', 'erp-omd'), $exception->getMessage()));
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Ręczna synchronizacja Google Calendar nie powiodła się: %s', 'erp-omd'), $exception->getMessage()), ['tab' => 'google_calendar']);
         }
 
-        $this->redirect_with_notice('erp-omd-settings', 'success', __('Ręczna synchronizacja Google Calendar została uruchomiona.', 'erp-omd'));
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Ręczna synchronizacja Google Calendar została uruchomiona.', 'erp-omd'), ['tab' => 'google_calendar']);
     }
 
     private function handle_google_calendar_fetch_calendars()
@@ -3810,12 +3834,12 @@ class ERP_OMD_Admin
             update_option('erp_omd_google_calendar_available_calendars', $calendars);
         } catch (Throwable $exception) {
             if (stripos($exception->getMessage(), 'insufficient authentication scopes') !== false) {
-                $this->redirect_with_notice('erp-omd-settings', 'error', __('Brak uprawnień scope do pobrania listy kalendarzy. Ustaw scope na „calendar”, zapisz ustawienia i połącz Google ponownie.', 'erp-omd'));
+                $this->redirect_with_notice('erp-omd-settings', 'error', __('Brak uprawnień scope do pobrania listy kalendarzy. Ustaw scope na „calendar”, zapisz ustawienia i połącz Google ponownie.', 'erp-omd'), ['tab' => 'google_calendar']);
             }
-            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Nie udało się pobrać listy kalendarzy Google: %s', 'erp-omd'), $exception->getMessage()));
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Nie udało się pobrać listy kalendarzy Google: %s', 'erp-omd'), $exception->getMessage()), ['tab' => 'google_calendar']);
         }
 
-        $this->redirect_with_notice('erp-omd-settings', 'success', __('Lista kalendarzy Google została pobrana.', 'erp-omd'));
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Lista kalendarzy Google została pobrana.', 'erp-omd'), ['tab' => 'google_calendar']);
     }
 
     private function handle_google_calendar_oauth_callback()
@@ -3823,7 +3847,7 @@ class ERP_OMD_Admin
         $this->require_capability('erp_omd_manage_settings');
         $error = sanitize_text_field((string) ($_GET['error'] ?? ''));
         if ($error !== '') {
-            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Google OAuth zwrócił błąd: %s', 'erp-omd'), $error));
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Google OAuth zwrócił błąd: %s', 'erp-omd'), $error), ['tab' => 'google_calendar']);
         }
 
         $code = sanitize_text_field((string) ($_GET['code'] ?? ''));
@@ -3831,13 +3855,13 @@ class ERP_OMD_Admin
         $state_payload = json_decode((string) get_option('erp_omd_google_calendar_oauth_state', ''), true);
         $expected_state = is_array($state_payload) ? (string) ($state_payload['nonce'] ?? '') : '';
         if ($code === '' || $state === '' || $expected_state === '' || ! hash_equals($expected_state, $state)) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('Niepoprawna odpowiedź OAuth Google Calendar (state/code).', 'erp-omd'));
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Niepoprawna odpowiedź OAuth Google Calendar (state/code).', 'erp-omd'), ['tab' => 'google_calendar']);
         }
 
         $client_id = trim((string) get_option('erp_omd_google_calendar_client_id', ''));
         $client_secret = trim((string) $this->decrypt_option_value((string) get_option('erp_omd_google_calendar_client_secret_enc', '')));
         if ($client_id === '' || $client_secret === '') {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('Brak client_id/client_secret dla Google OAuth.', 'erp-omd'));
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Brak client_id/client_secret dla Google OAuth.', 'erp-omd'), ['tab' => 'google_calendar']);
         }
 
         $response = wp_remote_post('https://oauth2.googleapis.com/token', [
@@ -3852,7 +3876,7 @@ class ERP_OMD_Admin
         ]);
 
         if (is_wp_error($response)) {
-            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Nie udało się połączyć z Google OAuth: %s', 'erp-omd'), $response->get_error_message()));
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Nie udało się połączyć z Google OAuth: %s', 'erp-omd'), $response->get_error_message()), ['tab' => 'google_calendar']);
         }
 
         $payload = json_decode((string) wp_remote_retrieve_body($response), true);
@@ -3860,7 +3884,7 @@ class ERP_OMD_Admin
         $refresh_token = (string) ($payload['refresh_token'] ?? '');
         $expires_in = max(60, (int) ($payload['expires_in'] ?? 3600));
         if ($access_token === '' || $refresh_token === '') {
-            $this->redirect_with_notice('erp-omd-settings', 'error', __('Google OAuth nie zwrócił access_token lub refresh_token.', 'erp-omd'));
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Google OAuth nie zwrócił access_token lub refresh_token.', 'erp-omd'), ['tab' => 'google_calendar']);
         }
 
         update_option('erp_omd_google_calendar_access_token_enc', $this->encrypt_option_value($access_token));
@@ -3868,7 +3892,7 @@ class ERP_OMD_Admin
         update_option('erp_omd_google_calendar_access_token_expires_at', time() + $expires_in);
         update_option('erp_omd_google_calendar_last_error', '');
         update_option('erp_omd_google_calendar_oauth_state', '');
-        $this->redirect_with_notice('erp-omd-settings', 'success', __('Google Calendar został pomyślnie połączony.', 'erp-omd'));
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Google Calendar został pomyślnie połączony.', 'erp-omd'), ['tab' => 'google_calendar']);
     }
 
     private function google_calendar_redirect_uri()
