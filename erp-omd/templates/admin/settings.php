@@ -272,7 +272,7 @@
                                 'textarea_name' => 'estimate_client_mail_body',
                                 'textarea_rows' => 8,
                                 'media_buttons' => false,
-                                'teeny' => true,
+                                'teeny' => false,
                             ]); ?>
                             <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {client_name}, {decision_url}, {expires_at}.', 'erp-omd'); ?></p>
                         </div>
@@ -289,7 +289,7 @@
                                 'textarea_name' => 'estimate_client_thank_you_mail_body',
                                 'textarea_rows' => 8,
                                 'media_buttons' => false,
-                                'teeny' => true,
+                                'teeny' => false,
                             ]); ?>
                             <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {client_name}, {final_gross}, {final_net}, {client_note}. Tabela pozycji jest dodawana automatycznie pod treścią.', 'erp-omd'); ?></p>
                         </div>
