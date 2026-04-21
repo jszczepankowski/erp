@@ -130,12 +130,14 @@ class ERP_OMD_Estimate_Repository
                 'client_id' => $data['client_id'],
                 'name' => $data['name'],
                 'status' => $data['status'],
+                'sent_to_client_at' => $data['sent_to_client_at'] ?? null,
                 'accepted_by_user_id' => $data['accepted_by_user_id'] ?: null,
                 'accepted_at' => $data['accepted_at'] ?: null,
+                'client_decision_note' => $data['client_decision_note'] ?? null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%d', '%s', '%s', '%d', '%s', '%s', '%s']
+            ['%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s']
         );
 
         return (int) $wpdb->insert_id;
@@ -151,12 +153,14 @@ class ERP_OMD_Estimate_Repository
                 'client_id' => $data['client_id'],
                 'name' => $data['name'],
                 'status' => $data['status'],
+                'sent_to_client_at' => $data['sent_to_client_at'] ?? null,
                 'accepted_by_user_id' => $data['accepted_by_user_id'] ?: null,
                 'accepted_at' => $data['accepted_at'] ?: null,
+                'client_decision_note' => $data['client_decision_note'] ?? null,
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => $id],
-            ['%d', '%s', '%s', '%d', '%s', '%s'],
+            ['%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s'],
             ['%d']
         );
     }
@@ -175,6 +179,38 @@ class ERP_OMD_Estimate_Repository
             ],
             ['id' => $id],
             ['%s', '%d', '%s', '%s'],
+            ['%d']
+        );
+    }
+
+    public function mark_sent_to_client($id)
+    {
+        global $wpdb;
+
+        return $wpdb->update(
+            $this->table_name(),
+            [
+                'sent_to_client_at' => current_time('mysql'),
+                'updated_at' => current_time('mysql'),
+            ],
+            ['id' => $id],
+            ['%s', '%s'],
+            ['%d']
+        );
+    }
+
+    public function save_client_decision_note($id, $note)
+    {
+        global $wpdb;
+
+        return $wpdb->update(
+            $this->table_name(),
+            [
+                'client_decision_note' => $note !== '' ? $note : null,
+                'updated_at' => current_time('mysql'),
+            ],
+            ['id' => $id],
+            ['%s', '%s'],
             ['%d']
         );
     }
