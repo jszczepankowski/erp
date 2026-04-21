@@ -1,11 +1,24 @@
 <div class="wrap erp-omd-admin">
     <h1><?php esc_html_e('ERP OMD — Ustawienia', 'erp-omd'); ?></h1>
+    <nav class="nav-tab-wrapper erp-omd-nav-tabs">
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'fixed_costs'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'fixed_costs' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Koszty miesięczne', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'backup_restore'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'backup_restore' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Backup/odtwarzanie', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'missing_hours'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'missing_hours' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Mail o braku godzin', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'estimate_mail_templates'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'estimate_mail_templates' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Maile kosztorysowe', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'front_login'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'front_login' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Ekran logowania', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'lifecycle_alerts'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'lifecycle_alerts' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Lifecycle i alerty', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'google_calendar'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'google_calendar' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Google Calendar', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'ksef'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'ksef' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('KSeF', 'erp-omd'); ?></a>
+        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'reports_v1_monitoring'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'reports_v1_monitoring' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Reports SLO i monitoring', 'erp-omd'); ?></a>
+    </nav>
     <div class="erp-omd-card">
-        <h2><?php esc_html_e('Konfiguracja lifecycle, alertów, backupów i powiadomień', 'erp-omd'); ?></h2>
+        <h2><?php esc_html_e('Konfiguracja ustawień ERP OMD', 'erp-omd'); ?></h2>
         <form method="post">
             <?php wp_nonce_field('erp_omd_save_settings'); ?>
             <input type="hidden" name="erp_omd_action" value="save_settings" />
+            <input type="hidden" name="settings_tab" value="<?php echo esc_attr($settings_tab); ?>" />
             <div class="erp-omd-form-sections">
+                <?php if ($settings_tab === 'lifecycle_alerts') : ?>
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Lifecycle i alerty', 'erp-omd'); ?></h3>
@@ -35,7 +48,7 @@
                         </div>
                     </div>
                 </section>
-
+                <?php elseif ($settings_tab === 'fixed_costs') : ?>
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Stałe koszty miesięczne', 'erp-omd'); ?></h3>
@@ -94,7 +107,7 @@
                         </p>
                     </div>
                 </section>
-
+                <?php elseif ($settings_tab === 'backup_restore') : ?>
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Backup/odtwarzanie', 'erp-omd'); ?></h3>
@@ -143,7 +156,7 @@
                         </div>
                     </div>
                 </section>
-
+                <?php elseif ($settings_tab === 'missing_hours') : ?>
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Powiadomienia o brakujących godzinach', 'erp-omd'); ?></h3>
@@ -186,7 +199,6 @@
                         </div>
                       </div>
                 </section>
-
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Odbiorcy powiadomień o brakujących godzinach', 'erp-omd'); ?></h3>
@@ -223,7 +235,7 @@
                         </tbody>
                     </table>
                 </section>
-
+                <?php elseif ($settings_tab === 'estimate_mail_templates') : ?>
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Szablony maili kosztorysów', 'erp-omd'); ?></h3>
@@ -260,7 +272,7 @@
                         </div>
                     </div>
                 </section>
-
+                <?php elseif ($settings_tab === 'front_login') : ?>
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Ekran logowania FRONT', 'erp-omd'); ?></h3>
@@ -290,7 +302,7 @@
                         </div>
                     </div>
                 </section>
-
+                <?php elseif ($settings_tab === 'ksef') : ?>
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('KSeF', 'erp-omd'); ?></h3>
@@ -305,7 +317,7 @@
                         </div>
                     </div>
                 </section>
-
+                <?php elseif ($settings_tab === 'google_calendar') : ?>
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
                         <h3><?php esc_html_e('Google Calendar', 'erp-omd'); ?></h3>
@@ -384,13 +396,13 @@
                         </div>
                     </div>
                 </section>
-
+                <?php elseif ($settings_tab === 'reports_v1_monitoring') : ?>
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
-                        <h3 id="reports-v1-slo-monitoring"><?php esc_html_e('Reports v1 — SLO i monitoring', 'erp-omd'); ?></h3>
+                        <h3 id="reports-v1-slo-monitoring"><?php esc_html_e('Reports SLO i monitoring', 'erp-omd'); ?></h3>
                         <p><?php esc_html_e('Ustawienia i status kalibracji SLO wydzielone do osobnego boxu na końcu ekranu.', 'erp-omd'); ?></p>
                     </div>
-                    <div class="erp-omd-form-grid">
+                    <div class="erp-omd-form-grid erp-omd-form-grid-reports-slo">
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-reports-v1-freshness-minutes"><?php esc_html_e('Maks. wiek metryk Reports v1 (min)', 'erp-omd'); ?></label>
                             <input id="erp-omd-reports-v1-freshness-minutes" type="number" min="5" step="1" name="reports_v1_metrics_freshness_minutes" value="<?php echo esc_attr((string) $reports_v1_metrics_freshness_minutes); ?>" />
@@ -464,30 +476,35 @@
                         </div>
                     </div>
                 </section>
+                <?php endif; ?>
             </div>
-            <?php submit_button(__('Zapisz ustawienia', 'erp-omd')); ?>
+            <?php if ($settings_tab !== 'backup_restore') : ?>
+                <?php submit_button(__('Zapisz ustawienia', 'erp-omd')); ?>
+            <?php endif; ?>
         </form>
         <form id="erp-omd-manual-backup-form" method="post">
             <?php wp_nonce_field('erp_omd_run_manual_backup'); ?>
             <input type="hidden" name="erp_omd_action" value="run_manual_backup" />
+            <input type="hidden" name="settings_tab" value="backup_restore" />
         </form>
         <form id="erp-omd-restore-backup-form" method="post" enctype="multipart/form-data">
             <?php wp_nonce_field('erp_omd_restore_backup_bundle'); ?>
             <input type="hidden" name="erp_omd_action" value="restore_backup_bundle" />
+            <input type="hidden" name="settings_tab" value="backup_restore" />
         </form>
-        <form id="erp-omd-google-calendar-connect-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
+        <form id="erp-omd-google-calendar-connect-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'google_calendar'], admin_url('admin.php'))); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_connect'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_connect" />
         </form>
-        <form id="erp-omd-google-calendar-disconnect-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
+        <form id="erp-omd-google-calendar-disconnect-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'google_calendar'], admin_url('admin.php'))); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_disconnect'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_disconnect" />
         </form>
-        <form id="erp-omd-google-calendar-sync-now-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
+        <form id="erp-omd-google-calendar-sync-now-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'google_calendar'], admin_url('admin.php'))); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_sync_now'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_sync_now" />
         </form>
-        <form id="erp-omd-google-calendar-fetch-calendars-form" method="post" action="<?php echo esc_url(admin_url('admin.php?page=erp-omd-settings')); ?>">
+        <form id="erp-omd-google-calendar-fetch-calendars-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'google_calendar'], admin_url('admin.php'))); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_fetch_calendars'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_fetch_calendars" />
         </form>
