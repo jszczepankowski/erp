@@ -350,14 +350,26 @@
                         <table class="erp-omd-front-table">
                             <thead>
                                 <tr>
+                                    <th><?php esc_html_e('Źródło', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Etykieta', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Plik', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Data dodania', 'erp-omd'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php if (! empty($selected_project_attachments)) : ?>
-                                    <?php foreach ($selected_project_attachments as $project_attachment_item) : ?>
+                                <?php
+                                $client_attachment_rows = [];
+                                foreach ((array) $selected_project_attachments as $project_attachment_item) {
+                                    $project_attachment_item['source'] = __('Projekt', 'erp-omd');
+                                    $client_attachment_rows[] = $project_attachment_item;
+                                }
+                                foreach ((array) $selected_estimate_attachments as $estimate_attachment_item) {
+                                    $estimate_attachment_item['source'] = __('Kosztorys', 'erp-omd');
+                                    $client_attachment_rows[] = $estimate_attachment_item;
+                                }
+                                ?>
+                                <?php if (! empty($client_attachment_rows)) : ?>
+                                    <?php foreach ($client_attachment_rows as $project_attachment_item) : ?>
                                         <?php
                                         $attachment_id = (int) ($project_attachment_item['attachment_id'] ?? 0);
                                         $attachment_post = $attachment_id > 0 ? get_post($attachment_id) : null;
@@ -372,6 +384,7 @@
                                         }
                                         ?>
                                         <tr>
+                                            <td><?php echo esc_html((string) ($project_attachment_item['source'] ?? '—')); ?></td>
                                             <td><?php echo esc_html((string) ($project_attachment_item['label'] ?? '—')); ?></td>
                                             <td>
                                                 <?php if ($attachment_url) : ?>
@@ -384,7 +397,7 @@
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else : ?>
-                                    <tr><td colspan="3"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="4"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>

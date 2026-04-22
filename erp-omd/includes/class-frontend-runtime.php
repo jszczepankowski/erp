@@ -449,9 +449,15 @@ class ERP_OMD_Frontend
             $selected_project_notes = (array) $project_notes_repo->for_project($selected_project_id);
         }
         $selected_project_attachments = [];
+        $selected_estimate_attachments = [];
         if ($selected_project_id > 0 && class_exists('ERP_OMD_Attachment_Repository')) {
             $attachments_repo = new ERP_OMD_Attachment_Repository();
             $selected_project_attachments = (array) $attachments_repo->for_entity('project', $selected_project_id);
+            $selected_project = $this->projects->find($selected_project_id);
+            $estimate_id = (int) ($selected_project['estimate_id'] ?? 0);
+            if ($estimate_id > 0) {
+                $selected_estimate_attachments = (array) $attachments_repo->for_entity('estimate', $estimate_id);
+            }
         }
         $monthly_order_history = [];
         foreach ($all_client_projects as $history_project_row) {
