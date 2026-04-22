@@ -342,6 +342,12 @@ class ERP_OMD_Frontend
     private function handle_client_screen(WP_User $user)
     {
         $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+        $client_profile = $client_id > 0 ? $this->clients->find($client_id) : null;
+        $client_rates = [];
+        if ($client_id > 0 && class_exists('ERP_OMD_Client_Rate_Repository')) {
+            $client_rates_repo = new ERP_OMD_Client_Rate_Repository();
+            $client_rates = (array) $client_rates_repo->for_client($client_id);
+        }
         $projects = $client_id > 0
             ? $this->projects->all(['client_id' => $client_id])
             : [];
@@ -372,6 +378,20 @@ class ERP_OMD_Frontend
         if ($selected_project_id > 0 && $client_portal_service instanceof ERP_OMD_Client_Portal_Service) {
             $selected_project_finance = $client_portal_service->build_project_finance_view($selected_project_id);
         }
+        $selected_project_reported_hours = 0.0;
+        $selected_project_reported_entries = 0;
+        if ($selected_project_id > 0) {
+            $reported_entries = (array) $this->time_entries->all(['project_id' => $selected_project_id]);
+            $selected_project_reported_entries = count($reported_entries);
+            foreach ($reported_entries as $reported_entry) {
+                $selected_project_reported_hours += (float) ($reported_entry['hours'] ?? 0);
+            }
+        }
+        $selected_project_notes = [];
+        if ($selected_project_id > 0 && class_exists('ERP_OMD_Project_Note_Repository')) {
+            $project_notes_repo = new ERP_OMD_Project_Note_Repository();
+            $selected_project_notes = (array) $project_notes_repo->for_project($selected_project_id);
+        }
 
         $project_status_labels = [
             'new' => __('Nowy', 'erp-omd'),
@@ -379,6 +399,12 @@ class ERP_OMD_Frontend
             'on_hold' => __('Wstrzymany', 'erp-omd'),
             'completed' => __('Zakończony', 'erp-omd'),
             'cancelled' => __('Anulowany', 'erp-omd'),
+        ];
+        $project_billing_type_labels = [
+            'time_material' => __('Time & Material', 'erp-omd'),
+            'fixed_price' => __('Fixed Price', 'erp-omd'),
+            'retainer' => __('Retainer', 'erp-omd'),
+            'mixed' => __('Mixed', 'erp-omd'),
         ];
 
         $dashboard_title = __('Panel klienta', 'erp-omd');
