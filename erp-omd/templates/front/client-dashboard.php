@@ -74,6 +74,26 @@
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Projekty klienta (status + deadline)', 'erp-omd'); ?></h2>
                 </div>
+                <div class="erp-omd-front-inline-actions">
+                    <?php
+                    $scope_base_args = [
+                        'sort_by' => $project_sort_by,
+                        'sort_order' => $project_sort_order,
+                    ];
+                    ?>
+                    <a
+                        class="erp-omd-front-button <?php echo $project_scope === 'current' ? 'erp-omd-front-button-primary' : 'erp-omd-front-button-ghost'; ?>"
+                        href="<?php echo esc_url(add_query_arg(array_merge($scope_base_args, ['project_scope' => 'current']), $front_client_url)); ?>"
+                    >
+                        <?php esc_html_e('Bieżące', 'erp-omd'); ?>
+                    </a>
+                    <a
+                        class="erp-omd-front-button <?php echo $project_scope === 'archive' ? 'erp-omd-front-button-primary' : 'erp-omd-front-button-ghost'; ?>"
+                        href="<?php echo esc_url(add_query_arg(array_merge($scope_base_args, ['project_scope' => 'archive']), $front_client_url)); ?>"
+                    >
+                        <?php esc_html_e('Archiwum', 'erp-omd'); ?>
+                    </a>
+                </div>
 
                 <?php if ($client_id <= 0) : ?>
                     <div class="erp-omd-front-notice erp-omd-front-notice-warning">
@@ -84,6 +104,7 @@
                 <div class="erp-omd-front-table-wrap">
                     <?php
                     $sort_base_args = [];
+                    $sort_base_args['project_scope'] = $project_scope;
                     if (! empty($_GET['project_id'])) {
                         $sort_base_args['project_id'] = (int) $_GET['project_id'];
                     }

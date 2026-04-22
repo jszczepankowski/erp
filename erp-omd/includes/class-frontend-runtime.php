@@ -351,6 +351,26 @@ class ERP_OMD_Frontend
         $projects = $client_id > 0
             ? $this->projects->all(['client_id' => $client_id])
             : [];
+        $project_scope = sanitize_key((string) ($_GET['project_scope'] ?? 'current'));
+        if (! in_array($project_scope, ['current', 'archive'], true)) {
+            $project_scope = 'current';
+        }
+        $archived_statuses = ['archiwum', 'zakonczony', 'zamkniete', 'closed'];
+        $projects = array_values(
+            array_filter(
+                $projects,
+                static function ($project_item) use ($project_scope, $archived_statuses) {
+                    $status = strtolower((string) ($project_item['status'] ?? ''));
+                    $is_archived = in_array($status, $archived_statuses, true);
+
+                    if ($project_scope === 'archive') {
+                        return $is_archived;
+                    }
+
+                    return ! $is_archived;
+                }
+            )
+        );
         $project_sort_by = sanitize_key((string) ($_GET['sort_by'] ?? 'deadline'));
         if (! in_array($project_sort_by, ['name', 'status', 'budget', 'start_date', 'end_date', 'billing_type', 'deadline'], true)) {
             $project_sort_by = 'deadline';
