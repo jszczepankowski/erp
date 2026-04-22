@@ -82,16 +82,34 @@
                 <?php endif; ?>
 
                 <div class="erp-omd-front-table-wrap">
+                    <?php
+                    $sort_base_args = [];
+                    if (! empty($_GET['project_id'])) {
+                        $sort_base_args['project_id'] = (int) $_GET['project_id'];
+                    }
+                    $render_sort_label = static function ($column_key, $label) use ($project_sort_by, $project_sort_order) {
+                        if ($project_sort_by !== $column_key) {
+                            return $label;
+                        }
+
+                        return $label . ' ' . ($project_sort_order === 'asc' ? '↑' : '↓');
+                    };
+                    $render_sort_url = static function ($column_key) use ($project_sort_by, $project_sort_order, $sort_base_args, $front_client_url) {
+                        $next_order = ($project_sort_by === $column_key && $project_sort_order === 'asc') ? 'desc' : 'asc';
+
+                        return add_query_arg(array_merge($sort_base_args, ['sort_by' => $column_key, 'sort_order' => $next_order]), $front_client_url);
+                    };
+                    ?>
                     <table class="erp-omd-front-table">
                         <thead>
                             <tr>
-                                <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
-                                <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
-                                <th><?php esc_html_e('Budżet projektu', 'erp-omd'); ?></th>
-                                <th><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></th>
-                                <th><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></th>
-                                <th><?php esc_html_e('Typ projektu', 'erp-omd'); ?></th>
-                                <th><?php esc_html_e('Deadline', 'erp-omd'); ?></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('name')); ?>"><?php echo esc_html($render_sort_label('name', __('Projekt', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('status')); ?>"><?php echo esc_html($render_sort_label('status', __('Status', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('budget')); ?>"><?php echo esc_html($render_sort_label('budget', __('Budżet projektu', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('start_date')); ?>"><?php echo esc_html($render_sort_label('start_date', __('Data rozpoczęcia', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('end_date')); ?>"><?php echo esc_html($render_sort_label('end_date', __('Data zakończenia', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('billing_type')); ?>"><?php echo esc_html($render_sort_label('billing_type', __('Typ projektu', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('deadline')); ?>"><?php echo esc_html($render_sort_label('deadline', __('Deadline', 'erp-omd'))); ?></a></th>
                                 <th><?php esc_html_e('Szczegóły', 'erp-omd'); ?></th>
                             </tr>
                         </thead>
@@ -209,6 +227,32 @@
                                 <span class="erp-omd-front-metric-label"><?php esc_html_e('Liczba wpisów', 'erp-omd'); ?></span>
                                 <strong><?php echo esc_html((string) ((int) ($selected_project_reported_entries ?? 0))); ?></strong>
                             </div>
+                        </div>
+                        <div class="erp-omd-front-table-wrap">
+                            <table class="erp-omd-front-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Godziny', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (! empty($selected_project_reported_items)) : ?>
+                                        <?php foreach ($selected_project_reported_items as $reported_item) : ?>
+                                            <tr>
+                                                <td><?php echo esc_html((string) ($reported_item['entry_date'] ?? '—')); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n((float) ($reported_item['hours'] ?? 0), 2)); ?></td>
+                                                <td><?php echo esc_html((string) ($reported_item['status'] ?? '—')); ?></td>
+                                                <td><?php echo esc_html((string) ($reported_item['description'] ?? '')); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else : ?>
+                                        <tr><td colspan="4"><?php esc_html_e('Brak zaraportowanych wpisów czasu pracy.', 'erp-omd'); ?></td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
                         </div>
                     </article>
                 </div>

@@ -351,6 +351,14 @@ class ERP_OMD_Frontend
         $projects = $client_id > 0
             ? $this->projects->all(['client_id' => $client_id])
             : [];
+        $project_sort_by = sanitize_key((string) ($_GET['sort_by'] ?? 'deadline'));
+        if (! in_array($project_sort_by, ['name', 'status', 'budget', 'start_date', 'end_date', 'billing_type', 'deadline'], true)) {
+            $project_sort_by = 'deadline';
+        }
+        $project_sort_order = strtolower(sanitize_key((string) ($_GET['sort_order'] ?? 'asc')));
+        if (! in_array($project_sort_order, ['asc', 'desc'], true)) {
+            $project_sort_order = 'asc';
+        }
         $selected_project_id = (int) ($_GET['project_id'] ?? 0);
         if ($selected_project_id <= 0 && ! empty($projects)) {
             $selected_project_id = (int) ($projects[0]['id'] ?? 0);
@@ -358,8 +366,23 @@ class ERP_OMD_Frontend
 
         usort(
             $projects,
-            static function ($left, $right) {
-                return strcmp((string) ($left['deadline'] ?? ''), (string) ($right['deadline'] ?? ''));
+            static function ($left, $right) use ($project_sort_by, $project_sort_order) {
+                $left_value = $left[$project_sort_by] ?? '';
+                $right_value = $right[$project_sort_by] ?? '';
+
+                if ($project_sort_by === 'budget') {
+                    $left_comp = (float) $left_value;
+                    $right_comp = (float) $right_value;
+                    $result = $left_comp <=> $right_comp;
+                } else {
+                    $result = strcasecmp((string) $left_value, (string) $right_value);
+                }
+
+                if ($result === 0) {
+                    $result = strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+                }
+
+                return $project_sort_order === 'desc' ? -$result : $result;
             }
         );
 
@@ -380,11 +403,18 @@ class ERP_OMD_Frontend
         }
         $selected_project_reported_hours = 0.0;
         $selected_project_reported_entries = 0;
+        $selected_project_reported_items = [];
         if ($selected_project_id > 0) {
             $reported_entries = (array) $this->time_entries->all(['project_id' => $selected_project_id]);
             $selected_project_reported_entries = count($reported_entries);
             foreach ($reported_entries as $reported_entry) {
                 $selected_project_reported_hours += (float) ($reported_entry['hours'] ?? 0);
+                $selected_project_reported_items[] = [
+                    'entry_date' => (string) ($reported_entry['entry_date'] ?? ''),
+                    'hours' => (float) ($reported_entry['hours'] ?? 0),
+                    'status' => (string) ($reported_entry['status'] ?? ''),
+                    'description' => (string) ($reported_entry['description'] ?? ''),
+                ];
             }
         }
         $selected_project_notes = [];
