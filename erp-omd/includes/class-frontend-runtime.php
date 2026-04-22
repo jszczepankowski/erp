@@ -348,9 +348,10 @@ class ERP_OMD_Frontend
             $client_rates_repo = new ERP_OMD_Client_Rate_Repository();
             $client_rates = (array) $client_rates_repo->for_client($client_id);
         }
-        $projects = $client_id > 0
+        $all_client_projects = $client_id > 0
             ? $this->projects->all(['client_id' => $client_id])
             : [];
+        $projects = $all_client_projects;
         $project_scope = sanitize_key((string) ($_GET['project_scope'] ?? 'current'));
         if (! in_array($project_scope, ['current', 'archive'], true)) {
             $project_scope = 'current';
@@ -442,6 +443,34 @@ class ERP_OMD_Frontend
             $project_notes_repo = new ERP_OMD_Project_Note_Repository();
             $selected_project_notes = (array) $project_notes_repo->for_project($selected_project_id);
         }
+        $monthly_order_history = [];
+        foreach ($all_client_projects as $history_project_row) {
+            $history_date = (string) ($history_project_row['start_date'] ?? '');
+            if ($history_date === '') {
+                $history_date = (string) ($history_project_row['created_at'] ?? '');
+            }
+            $history_month = substr($history_date, 0, 7);
+            if (! preg_match('/^\d{4}-\d{2}$/', $history_month)) {
+                $history_month = __('Brak daty', 'erp-omd');
+            }
+
+            if (! isset($monthly_order_history[$history_month])) {
+                $monthly_order_history[$history_month] = [
+                    'month' => $history_month,
+                    'projects_count' => 0,
+                    'budget_total' => 0.0,
+                ];
+            }
+
+            $monthly_order_history[$history_month]['projects_count']++;
+            $monthly_order_history[$history_month]['budget_total'] += (float) ($history_project_row['budget'] ?? 0);
+        }
+        usort(
+            $monthly_order_history,
+            static function ($left, $right) {
+                return strcasecmp((string) ($right['month'] ?? ''), (string) ($left['month'] ?? ''));
+            }
+        );
 
         $project_status_labels = [
             'new' => __('Nowy', 'erp-omd'),

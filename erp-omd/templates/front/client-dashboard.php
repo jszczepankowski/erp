@@ -175,6 +175,36 @@
                 </div>
             </article>
 
+            <article class="erp-omd-front-panel">
+                <div class="erp-omd-front-section-heading">
+                    <h2><?php esc_html_e('Historia zleceń (miesięcznie)', 'erp-omd'); ?></h2>
+                </div>
+                <div class="erp-omd-front-table-wrap">
+                    <table class="erp-omd-front-table">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Liczba projektów', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Suma budżetów', 'erp-omd'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (! empty($monthly_order_history)) : ?>
+                                <?php foreach ($monthly_order_history as $history_row) : ?>
+                                    <tr>
+                                        <td><?php echo esc_html((string) ($history_row['month'] ?? '—')); ?></td>
+                                        <td><?php echo esc_html((string) ((int) ($history_row['projects_count'] ?? 0))); ?></td>
+                                        <td><?php echo esc_html(number_format_i18n((float) ($history_row['budget_total'] ?? 0), 2)); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else : ?>
+                                <tr><td colspan="3"><?php esc_html_e('Brak historii zleceń dla klienta.', 'erp-omd'); ?></td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
             <?php if ($selected_project_finance) : ?>
                 <article class="erp-omd-front-panel">
                     <div class="erp-omd-front-section-heading">
