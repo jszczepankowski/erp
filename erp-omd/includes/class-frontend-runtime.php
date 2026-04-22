@@ -448,6 +448,11 @@ class ERP_OMD_Frontend
             $project_notes_repo = new ERP_OMD_Project_Note_Repository();
             $selected_project_notes = (array) $project_notes_repo->for_project($selected_project_id);
         }
+        $selected_project_attachments = [];
+        if ($selected_project_id > 0 && class_exists('ERP_OMD_Attachment_Repository')) {
+            $attachments_repo = new ERP_OMD_Attachment_Repository();
+            $selected_project_attachments = (array) $attachments_repo->for_entity('project', $selected_project_id);
+        }
         $monthly_order_history = [];
         foreach ($all_client_projects as $history_project_row) {
             $history_date = (string) ($history_project_row['start_date'] ?? '');
@@ -2453,31 +2458,60 @@ class ERP_OMD_Frontend
 
     private function create_client_project_note(WP_User $user)
     {
+        $dashboard_args = $this->collect_client_dashboard_args();
+
         if (! class_exists('ERP_OMD_Project_Note_Repository')) {
-            $this->redirect_client_with_notice('error', __('Repozytorium uwag projektu jest niedostępne.', 'erp-omd'));
+            $this->redirect_client_with_notice('error', __('Repozytorium uwag projektu jest niedostępne.', 'erp-omd'), $dashboard_args);
         }
 
         $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
         if ($client_id <= 0) {
-            $this->redirect_client_with_notice('error', __('Brak przypisanego klienta do bieżącego konta.', 'erp-omd'));
+            $this->redirect_client_with_notice('error', __('Brak przypisanego klienta do bieżącego konta.', 'erp-omd'), $dashboard_args);
         }
 
         $project_id = (int) ($_POST['project_id'] ?? 0);
         $note = sanitize_textarea_field(wp_unslash($_POST['note'] ?? ''));
         if ($project_id <= 0 || $note === '') {
-            $extra_args = $project_id > 0 ? ['project_id' => $project_id] : [];
+            $extra_args = $dashboard_args;
+            if ($project_id > 0) {
+                $extra_args['project_id'] = $project_id;
+            }
             $this->redirect_client_with_notice('error', __('Projekt i treść uwagi są wymagane.', 'erp-omd'), $extra_args);
         }
 
         $project = $this->projects->find($project_id);
         if (! $project || (int) ($project['client_id'] ?? 0) !== $client_id) {
-            $this->redirect_client_with_notice('error', __('Nie możesz dodawać uwag do tego projektu.', 'erp-omd'));
+            $extra_args = array_merge($dashboard_args, ['project_id' => $project_id]);
+            $this->redirect_client_with_notice('error', __('Nie możesz dodawać uwag do tego projektu.', 'erp-omd'), $extra_args);
         }
 
         $project_notes_repo = new ERP_OMD_Project_Note_Repository();
         $project_notes_repo->create($project_id, $note, (int) $user->ID);
 
-        $this->redirect_client_with_notice('success', __('Uwaga została dodana.', 'erp-omd'), ['project_id' => $project_id]);
+        $extra_args = array_merge($dashboard_args, ['project_id' => $project_id]);
+        $this->redirect_client_with_notice('success', __('Uwaga została dodana.', 'erp-omd'), $extra_args);
+    }
+
+    private function collect_client_dashboard_args()
+    {
+        $args = [];
+
+        $project_scope = sanitize_key((string) wp_unslash($_REQUEST['project_scope'] ?? ''));
+        if (in_array($project_scope, ['current', 'archive'], true)) {
+            $args['project_scope'] = $project_scope;
+        }
+
+        $sort_by = sanitize_key((string) wp_unslash($_REQUEST['sort_by'] ?? ''));
+        if (in_array($sort_by, ['name', 'status', 'budget', 'start_date', 'end_date', 'billing_type', 'deadline'], true)) {
+            $args['sort_by'] = $sort_by;
+        }
+
+        $sort_order = sanitize_key((string) wp_unslash($_REQUEST['sort_order'] ?? ''));
+        if (in_array($sort_order, ['asc', 'desc'], true)) {
+            $args['sort_order'] = $sort_order;
+        }
+
+        return $args;
     }
 
     private function find_request_in_collection(array $requests, $request_id)

@@ -345,12 +345,62 @@
                 </article>
 
                 <article class="erp-omd-front-panel">
+                    <h2><?php esc_html_e('Załączniki projektu', 'erp-omd'); ?></h2>
+                    <div class="erp-omd-front-table-wrap">
+                        <table class="erp-omd-front-table">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Etykieta', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Plik', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Data dodania', 'erp-omd'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (! empty($selected_project_attachments)) : ?>
+                                    <?php foreach ($selected_project_attachments as $project_attachment_item) : ?>
+                                        <?php
+                                        $attachment_id = (int) ($project_attachment_item['attachment_id'] ?? 0);
+                                        $attachment_post = $attachment_id > 0 ? get_post($attachment_id) : null;
+                                        $attachment_url = $attachment_id > 0 ? wp_get_attachment_url($attachment_id) : '';
+                                        $attachment_title = $attachment_id > 0 ? get_the_title($attachment_id) : '';
+                                        $attachment_name = $attachment_title;
+                                        if ($attachment_name === '' && is_object($attachment_post) && ! empty($attachment_post->post_name)) {
+                                            $attachment_name = (string) $attachment_post->post_name;
+                                        }
+                                        if ($attachment_name === '') {
+                                            $attachment_name = $attachment_id > 0 ? ('#' . $attachment_id) : '—';
+                                        }
+                                        ?>
+                                        <tr>
+                                            <td><?php echo esc_html((string) ($project_attachment_item['label'] ?? '—')); ?></td>
+                                            <td>
+                                                <?php if ($attachment_url) : ?>
+                                                    <a href="<?php echo esc_url($attachment_url); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($attachment_name); ?></a>
+                                                <?php else : ?>
+                                                    <?php echo esc_html($attachment_name); ?>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo esc_html((string) ($project_attachment_item['created_at'] ?? '—')); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else : ?>
+                                    <tr><td colspan="3"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="erp-omd-front-panel">
                     <h2><?php esc_html_e('Historia uwag klienta', 'erp-omd'); ?></h2>
                     <?php if ($selected_project_id > 0) : ?>
                         <form method="post" class="erp-omd-front-form erp-omd-front-form-inline">
                             <?php wp_nonce_field('erp_omd_front_client'); ?>
                             <input type="hidden" name="erp_omd_front_action" value="create_project_note" />
                             <input type="hidden" name="project_id" value="<?php echo esc_attr((string) $selected_project_id); ?>" />
+                            <input type="hidden" name="project_scope" value="<?php echo esc_attr((string) $project_scope); ?>" />
+                            <input type="hidden" name="sort_by" value="<?php echo esc_attr((string) $project_sort_by); ?>" />
+                            <input type="hidden" name="sort_order" value="<?php echo esc_attr((string) $project_sort_order); ?>" />
                             <div class="erp-omd-front-grid erp-omd-front-grid-two">
                                 <div class="erp-omd-front-field">
                                     <label for="erp-omd-client-note"><?php esc_html_e('Dodaj nową uwagę', 'erp-omd'); ?></label>

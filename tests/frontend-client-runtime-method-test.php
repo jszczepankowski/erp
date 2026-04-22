@@ -10,6 +10,7 @@ $newCount = substr_count($runtime, 'function render_client_front_dashboard(');
 $handleCount = substr_count($runtime, 'function handle_client_screen(');
 $processClientCount = substr_count($runtime, 'function process_client_request(');
 $createClientNoteCount = substr_count($runtime, 'function create_client_project_note(');
+$collectClientArgsCount = substr_count($runtime, 'function collect_client_dashboard_args(');
 $encodedClientNoticeCount = substr_count($runtime, "rawurlencode(\$message)");
 
 if ($legacyCount !== 0) {
@@ -32,9 +33,13 @@ if ($createClientNoteCount !== 1) {
     throw new RuntimeException('Expected exactly one create_client_project_note method.');
 }
 
+if ($collectClientArgsCount !== 1) {
+    throw new RuntimeException('Expected exactly one collect_client_dashboard_args method.');
+}
+
 if ($encodedClientNoticeCount !== 0) {
     throw new RuntimeException('Client notice redirect should not rawurlencode message.');
 }
 
-echo "Assertions: 6\n";
+echo "Assertions: 7\n";
 echo "Frontend runtime method naming test passed.\n";
