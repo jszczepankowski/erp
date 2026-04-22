@@ -69,6 +69,7 @@ class ERP_OMD_Frontend
         add_rewrite_rule('^erp-front/logout/?$', 'index.php?erp_omd_front=logout', 'top');
         add_rewrite_rule('^erp-front/worker/?$', 'index.php?erp_omd_front=worker', 'top');
         add_rewrite_rule('^erp-front/manager/?$', 'index.php?erp_omd_front=manager', 'top');
+        add_rewrite_rule('^erp-front/client/?$', 'index.php?erp_omd_front=client', 'top');
         add_rewrite_rule('^erp-front/estimate-decision/?$', 'index.php?erp_omd_front=estimate-decision', 'top');
     }
 
@@ -209,6 +210,11 @@ class ERP_OMD_Frontend
             return;
         }
 
+        if ($screen === 'client') {
+            $this->handle_client_screen($current_user);
+            return;
+        }
+
         $this->handle_manager_screen($current_user);
     }
 
@@ -288,6 +294,11 @@ class ERP_OMD_Frontend
             wp_safe_redirect($this->front_url('login', ['denied' => 1]));
             exit;
         }
+
+        if ($screen === 'client' && ! user_can($user, 'erp_omd_front_client')) {
+            wp_safe_redirect($this->front_url('login', ['denied' => 1]));
+            exit;
+        }
     }
 
     private function should_hide_admin_for_user($user)
@@ -304,7 +315,7 @@ class ERP_OMD_Frontend
             return false;
         }
 
-        return user_can($user, 'erp_omd_front_manager') || user_can($user, 'erp_omd_front_worker');
+        return user_can($user, 'erp_omd_front_manager') || user_can($user, 'erp_omd_front_worker') || user_can($user, 'erp_omd_front_client');
     }
 
     private function resolve_dashboard_url_for_user($user)
@@ -321,7 +332,138 @@ class ERP_OMD_Frontend
             return $this->front_url('worker');
         }
 
+        if (user_can($user, 'erp_omd_front_client')) {
+            return $this->front_url('client');
+        }
+
         return admin_url();
+    }
+
+    private function handle_client_screen(WP_User $user)
+    {
+        $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+        $client_profile = $client_id > 0 ? $this->clients->find($client_id) : null;
+        $client_rates = [];
+        if ($client_id > 0 && class_exists('ERP_OMD_Client_Rate_Repository')) {
+            $client_rates_repo = new ERP_OMD_Client_Rate_Repository();
+            $client_rates = (array) $client_rates_repo->for_client($client_id);
+        }
+        $projects = $client_id > 0
+            ? $this->projects->all(['client_id' => $client_id])
+            : [];
+        $project_scope = sanitize_key((string) ($_GET['project_scope'] ?? 'current'));
+        if (! in_array($project_scope, ['current', 'archive'], true)) {
+            $project_scope = 'current';
+        }
+        $archived_statuses = ['archiwum', 'zakonczony', 'zamkniete', 'closed'];
+        $projects = array_values(
+            array_filter(
+                $projects,
+                static function ($project_item) use ($project_scope, $archived_statuses) {
+                    $status = strtolower((string) ($project_item['status'] ?? ''));
+                    $is_archived = in_array($status, $archived_statuses, true);
+
+                    if ($project_scope === 'archive') {
+                        return $is_archived;
+                    }
+
+                    return ! $is_archived;
+                }
+            )
+        );
+        $project_sort_by = sanitize_key((string) ($_GET['sort_by'] ?? 'deadline'));
+        if (! in_array($project_sort_by, ['name', 'status', 'budget', 'start_date', 'end_date', 'billing_type', 'deadline'], true)) {
+            $project_sort_by = 'deadline';
+        }
+        $project_sort_order = strtolower(sanitize_key((string) ($_GET['sort_order'] ?? 'asc')));
+        if (! in_array($project_sort_order, ['asc', 'desc'], true)) {
+            $project_sort_order = 'asc';
+        }
+        $selected_project_id = (int) ($_GET['project_id'] ?? 0);
+        if ($selected_project_id <= 0 && ! empty($projects)) {
+            $selected_project_id = (int) ($projects[0]['id'] ?? 0);
+        }
+
+        usort(
+            $projects,
+            static function ($left, $right) use ($project_sort_by, $project_sort_order) {
+                $left_value = $left[$project_sort_by] ?? '';
+                $right_value = $right[$project_sort_by] ?? '';
+
+                if ($project_sort_by === 'budget') {
+                    $left_comp = (float) $left_value;
+                    $right_comp = (float) $right_value;
+                    $result = $left_comp <=> $right_comp;
+                } else {
+                    $result = strcasecmp((string) $left_value, (string) $right_value);
+                }
+
+                if ($result === 0) {
+                    $result = strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+                }
+
+                return $project_sort_order === 'desc' ? -$result : $result;
+            }
+        );
+
+        $visible_project_ids = array_map(
+            'intval',
+            wp_list_pluck($projects, 'id')
+        );
+        if ($selected_project_id > 0 && ! in_array($selected_project_id, $visible_project_ids, true)) {
+            $selected_project_id = 0;
+        }
+
+        $client_portal_service = class_exists('ERP_OMD_Client_Portal_Service')
+            ? new ERP_OMD_Client_Portal_Service($this->projects, $this->project_revenues, $this->project_costs)
+            : null;
+        $selected_project_finance = null;
+        if ($selected_project_id > 0 && $client_portal_service instanceof ERP_OMD_Client_Portal_Service) {
+            $selected_project_finance = $client_portal_service->build_project_finance_view($selected_project_id);
+        }
+        $selected_project_reported_hours = 0.0;
+        $selected_project_reported_entries = 0;
+        $selected_project_reported_items = [];
+        if ($selected_project_id > 0) {
+            $reported_entries = (array) $this->time_entries->all(['project_id' => $selected_project_id]);
+            $selected_project_reported_entries = count($reported_entries);
+            foreach ($reported_entries as $reported_entry) {
+                $selected_project_reported_hours += (float) ($reported_entry['hours'] ?? 0);
+                $selected_project_reported_items[] = [
+                    'entry_date' => (string) ($reported_entry['entry_date'] ?? ''),
+                    'hours' => (float) ($reported_entry['hours'] ?? 0),
+                    'role_name' => (string) ($reported_entry['role_name'] ?? ''),
+                    'description' => (string) ($reported_entry['description'] ?? ''),
+                ];
+            }
+        }
+        $selected_project_notes = [];
+        if ($selected_project_id > 0 && class_exists('ERP_OMD_Project_Note_Repository')) {
+            $project_notes_repo = new ERP_OMD_Project_Note_Repository();
+            $selected_project_notes = (array) $project_notes_repo->for_project($selected_project_id);
+        }
+
+        $project_status_labels = [
+            'new' => __('Nowy', 'erp-omd'),
+            'active' => __('W realizacji', 'erp-omd'),
+            'on_hold' => __('Wstrzymany', 'erp-omd'),
+            'completed' => __('Zakończony', 'erp-omd'),
+            'cancelled' => __('Anulowany', 'erp-omd'),
+        ];
+        $project_billing_type_labels = [
+            'time_material' => __('Time & Material', 'erp-omd'),
+            'fixed_price' => __('Fixed Price', 'erp-omd'),
+            'retainer' => __('Retainer', 'erp-omd'),
+            'mixed' => __('Mixed', 'erp-omd'),
+        ];
+
+        $dashboard_title = __('Panel klienta', 'erp-omd');
+        $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
+        $front_logout_url = $this->front_url('logout');
+        $front_client_url = $this->front_url('client');
+        $this->send_front_headers();
+        include ERP_OMD_PATH . 'templates/front/client-dashboard.php';
+        exit;
     }
 
     private function is_front_employee_inactive($user_id)
