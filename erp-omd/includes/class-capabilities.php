@@ -22,6 +22,7 @@ class ERP_OMD_Capabilities
             'erp_omd_approve_time',
             'erp_omd_front_worker',
             'erp_omd_front_manager',
+            'erp_omd_front_client',
         ];
     }
 
@@ -58,9 +59,14 @@ class ERP_OMD_Capabilities
             'erp_omd_manage_time' => true,
             'erp_omd_front_worker' => true,
         ];
+        $client_caps = [
+            'read' => true,
+            'erp_omd_front_client' => true,
+        ];
 
         add_role('erp_omd_manager', __('ERP Manager', 'erp-omd'), $manager_caps);
         add_role('erp_omd_worker', __('ERP Worker', 'erp-omd'), $worker_caps);
+        add_role('erp_omd_client', __('ERP Client', 'erp-omd'), $client_caps);
 
         $administrator = get_role('administrator');
         if ($administrator instanceof WP_Role) {
@@ -80,6 +86,13 @@ class ERP_OMD_Capabilities
         if ($worker instanceof WP_Role) {
             foreach ($worker_caps as $cap => $grant) {
                 $worker->add_cap($cap, $grant);
+            }
+        }
+
+        $client = get_role('erp_omd_client');
+        if ($client instanceof WP_Role) {
+            foreach ($client_caps as $cap => $grant) {
+                $client->add_cap($cap, $grant);
             }
         }
     }
