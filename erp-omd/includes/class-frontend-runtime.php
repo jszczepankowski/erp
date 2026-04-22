@@ -2143,18 +2143,15 @@ class ERP_OMD_Frontend
 
     private function redirect_client_with_notice($type, $message, array $extra_args = [])
     {
-        wp_safe_redirect(
-            add_query_arg(
-                array_merge(
-                    [
-                        'notice' => $type,
-                        'message' => rawurlencode($message),
-                    ],
-                    $extra_args
-                ),
-                $this->front_url('client')
-            )
+        $args = array_merge(
+            [
+                'notice' => $type,
+                'message' => $message,
+            ],
+            $extra_args
         );
+
+        wp_safe_redirect($this->front_url('client', $args));
         exit;
     }
 
