@@ -255,7 +255,7 @@
                                     <tr>
                                         <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
                                         <th><?php esc_html_e('Godziny', 'erp-omd'); ?></th>
-                                        <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Rola', 'erp-omd'); ?></th>
                                         <th><?php esc_html_e('Opis', 'erp-omd'); ?></th>
                                     </tr>
                                 </thead>
@@ -265,7 +265,7 @@
                                             <tr>
                                                 <td><?php echo esc_html((string) ($reported_item['entry_date'] ?? '—')); ?></td>
                                                 <td><?php echo esc_html(number_format_i18n((float) ($reported_item['hours'] ?? 0), 2)); ?></td>
-                                                <td><?php echo esc_html((string) ($reported_item['status'] ?? '—')); ?></td>
+                                                <td><?php echo esc_html((string) ($reported_item['role_name'] ?? '—')); ?></td>
                                                 <td><?php echo esc_html((string) ($reported_item['description'] ?? '')); ?></td>
                                             </tr>
                                         <?php endforeach; ?>

@@ -432,7 +432,7 @@ class ERP_OMD_Frontend
                 $selected_project_reported_items[] = [
                     'entry_date' => (string) ($reported_entry['entry_date'] ?? ''),
                     'hours' => (float) ($reported_entry['hours'] ?? 0),
-                    'status' => (string) ($reported_entry['status'] ?? ''),
+                    'role_name' => (string) ($reported_entry['role_name'] ?? ''),
                     'description' => (string) ($reported_entry['description'] ?? ''),
                 ];
             }
