@@ -341,6 +341,11 @@ class ERP_OMD_Frontend
 
     private function handle_client_screen(WP_User $user)
     {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->process_client_request($user);
+            return;
+        }
+
         $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
         $client_profile = $client_id > 0 ? $this->clients->find($client_id) : null;
         $client_rates = [];
@@ -490,6 +495,12 @@ class ERP_OMD_Frontend
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
         $front_logout_url = $this->front_url('logout');
         $front_client_url = $this->front_url('client');
+        $client_notice_type = sanitize_key(wp_unslash($_GET['notice'] ?? ''));
+        $client_notice_message = sanitize_text_field(wp_unslash($_GET['message'] ?? ''));
+        if (! in_array($client_notice_type, ['', 'success', 'error', 'warning'], true)) {
+            $client_notice_type = '';
+            $client_notice_message = '';
+        }
         $this->send_front_headers();
         include ERP_OMD_PATH . 'templates/front/client-dashboard.php';
         exit;
@@ -574,6 +585,19 @@ class ERP_OMD_Frontend
         }
 
         $this->redirect_worker_with_notice('error', __('Nieobsługiwana akcja formularza FRONT.', 'erp-omd'));
+    }
+
+    private function process_client_request(WP_User $user)
+    {
+        check_admin_referer('erp_omd_front_client');
+
+        $action = sanitize_text_field(wp_unslash($_POST['erp_omd_front_action'] ?? ''));
+        if ($action === 'create_project_note') {
+            $this->create_client_project_note($user);
+            return;
+        }
+
+        $this->redirect_client_with_notice('error', __('Nieobsługiwana akcja formularza klienta.', 'erp-omd'));
     }
 
     private function process_manager_request(WP_User $user)
@@ -2117,6 +2141,23 @@ class ERP_OMD_Frontend
         exit;
     }
 
+    private function redirect_client_with_notice($type, $message, array $extra_args = [])
+    {
+        wp_safe_redirect(
+            add_query_arg(
+                array_merge(
+                    [
+                        'notice' => $type,
+                        'message' => rawurlencode($message),
+                    ],
+                    $extra_args
+                ),
+                $this->front_url('client')
+            )
+        );
+        exit;
+    }
+
     private function redirect_manager_with_notice($type, $message, array $extra_args = [])
     {
         $args = array_merge(
@@ -2411,6 +2452,35 @@ class ERP_OMD_Frontend
             default:
                 return __('Godzinowy', 'erp-omd');
         }
+    }
+
+    private function create_client_project_note(WP_User $user)
+    {
+        if (! class_exists('ERP_OMD_Project_Note_Repository')) {
+            $this->redirect_client_with_notice('error', __('Repozytorium uwag projektu jest niedostępne.', 'erp-omd'));
+        }
+
+        $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+        if ($client_id <= 0) {
+            $this->redirect_client_with_notice('error', __('Brak przypisanego klienta do bieżącego konta.', 'erp-omd'));
+        }
+
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $note = sanitize_textarea_field(wp_unslash($_POST['note'] ?? ''));
+        if ($project_id <= 0 || $note === '') {
+            $extra_args = $project_id > 0 ? ['project_id' => $project_id] : [];
+            $this->redirect_client_with_notice('error', __('Projekt i treść uwagi są wymagane.', 'erp-omd'), $extra_args);
+        }
+
+        $project = $this->projects->find($project_id);
+        if (! $project || (int) ($project['client_id'] ?? 0) !== $client_id) {
+            $this->redirect_client_with_notice('error', __('Nie możesz dodawać uwag do tego projektu.', 'erp-omd'));
+        }
+
+        $project_notes_repo = new ERP_OMD_Project_Note_Repository();
+        $project_notes_repo->create($project_id, $note, (int) $user->ID);
+
+        $this->redirect_client_with_notice('success', __('Uwaga została dodana.', 'erp-omd'), ['project_id' => $project_id]);
     }
 
     private function find_request_in_collection(array $requests, $request_id)

@@ -8,6 +8,8 @@ if ($runtime === '') {
 $legacyCount = substr_count($runtime, 'function render_client_dashboard(');
 $newCount = substr_count($runtime, 'function render_client_front_dashboard(');
 $handleCount = substr_count($runtime, 'function handle_client_screen(');
+$processClientCount = substr_count($runtime, 'function process_client_request(');
+$createClientNoteCount = substr_count($runtime, 'function create_client_project_note(');
 
 if ($legacyCount !== 0) {
     throw new RuntimeException('Legacy method render_client_dashboard should not exist.');
@@ -21,5 +23,13 @@ if ($handleCount !== 1) {
     throw new RuntimeException('Expected exactly one handle_client_screen method.');
 }
 
-echo "Assertions: 3\n";
+if ($processClientCount !== 1) {
+    throw new RuntimeException('Expected exactly one process_client_request method.');
+}
+
+if ($createClientNoteCount !== 1) {
+    throw new RuntimeException('Expected exactly one create_client_project_note method.');
+}
+
+echo "Assertions: 5\n";
 echo "Frontend runtime method naming test passed.\n";
