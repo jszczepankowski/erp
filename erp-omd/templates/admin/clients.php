@@ -97,6 +97,25 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
+                            <div class="erp-omd-form-field">
+                                <label for="client-front-user"><?php esc_html_e('Konto front klienta', 'erp-omd'); ?></label>
+                                <select id="client-front-user" name="client_front_user_id">
+                                    <option value="0"><?php esc_html_e('Brak przypisania', 'erp-omd'); ?></option>
+                                    <?php foreach ($client_front_users as $front_user_item) : ?>
+                                        <option value="<?php echo esc_attr((int) ($front_user_item->ID ?? 0)); ?>" <?php selected((int) ($client['front_user_id'] ?? 0), (int) ($front_user_item->ID ?? 0)); ?>>
+                                            <?php
+                                            echo esc_html(
+                                                (string) ($front_user_item->user_login ?? '—')
+                                                . ' <'
+                                                . (string) ($front_user_item->user_email ?? '—')
+                                                . '>'
+                                            );
+                                            ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <p class="description"><?php esc_html_e('Po zapisaniu konto zostanie przypięte do klienta i otrzyma rolę frontową klienta.', 'erp-omd'); ?></p>
+                            </div>
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
                                 <label for="client-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
                                 <select id="client-status" name="status">
@@ -137,6 +156,7 @@
                         <h3><?php esc_html_e('Kontekst operacyjny', 'erp-omd'); ?></h3>
                         <div class="erp-omd-detail-list">
                             <div class="erp-omd-detail-item"><strong><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['account_manager_login'] ?? '—'); ?></span></div>
+                            <div class="erp-omd-detail-item"><strong><?php esc_html_e('Konto front klienta', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['front_user_login'] ?? '—'); ?></span></div>
                             <div class="erp-omd-detail-item"><strong><?php esc_html_e('Email', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['email'] ?? '—'); ?></span></div>
                             <div class="erp-omd-detail-item"><strong><?php esc_html_e('Telefon', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['phone'] ?? '—'); ?></span></div>
                             <div class="erp-omd-detail-item"><strong><?php esc_html_e('Kontakt główny', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_client['contact_person_name'] ?? '—'); ?></span></div>
@@ -327,10 +347,10 @@
                 </div>
             </form>
             <table class="widefat striped">
-                <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-client-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Firma', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-client-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Firma', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></th><th><?php esc_html_e('Konto front', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                 <tbody>
                 <?php if (empty($clients)) : ?>
-                    <tr><td colspan="8"><?php esc_html_e('Brak klientów dla wybranych filtrów. Spróbuj zmienić kryteria albo dodaj nowego klienta.', 'erp-omd'); ?></td></tr>
+                    <tr><td colspan="9"><?php esc_html_e('Brak klientów dla wybranych filtrów. Spróbuj zmienić kryteria albo dodaj nowego klienta.', 'erp-omd'); ?></td></tr>
                 <?php else : ?>
                     <?php foreach ($clients as $client_row) : ?>
                         <tr>
@@ -340,6 +360,7 @@
                             <td><?php echo esc_html($client_row['company']); ?></td>
                             <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($client_row['status'], 'active')); ?>"><?php echo esc_html($this->active_status_label($client_row['status'])); ?></span></td>
                             <td><?php echo esc_html($client_row['account_manager_login'] ?: '—'); ?></td>
+                            <td><?php echo esc_html($client_row['front_user_login'] ?: '—'); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($client_row['total_profit'] ?? 0), 2)); ?></td>
                             <td>
                                 <?php $client_is_inactive = ($client_row['status'] ?? '') === 'inactive'; ?>
