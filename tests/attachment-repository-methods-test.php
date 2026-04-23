@@ -11,6 +11,7 @@ $requiredMethods = [
     'function create(',
     'function delete(',
     'function count_links_for_attachment(',
+    'function count_for_entity_label(',
 ];
 
 foreach ($requiredMethods as $methodSnippet) {

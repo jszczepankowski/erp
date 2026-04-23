@@ -70,4 +70,18 @@ class ERP_OMD_Attachment_Repository
             )
         );
     }
+
+    public function count_for_entity_label($entity_type, $entity_id, $label)
+    {
+        global $wpdb;
+
+        return (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_name()} WHERE entity_type = %s AND entity_id = %d AND label = %s",
+                (string) $entity_type,
+                (int) $entity_id,
+                (string) $label
+            )
+        );
+    }
 }

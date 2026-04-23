@@ -25,6 +25,7 @@ $clientAttachmentUploadStagedVariableCount = substr_count($runtime, '$uploaded_a
 $deleteClientAttachmentActionCount = substr_count($runtime, "\$action === 'delete_project_attachment'");
 $deleteAttachmentMediaCleanupCount = substr_count($runtime, 'wp_delete_attachment($attachment_id, true);');
 $deleteAttachmentResultCheckCount = substr_count($runtime, '$delete_result = $attachments_repo->delete($attachment_relation_id);');
+$attachmentVersionedLabelCount = substr_count($runtime, "sprintf('%s (v%d)'");
 
 if ($legacyCount !== 0) {
     throw new RuntimeException('Legacy method render_client_dashboard should not exist.');
@@ -106,5 +107,9 @@ if ($deleteAttachmentResultCheckCount < 1) {
     throw new RuntimeException('Attachment delete flow should handle failed relation deletion.');
 }
 
-echo "Assertions: 20\n";
+if ($attachmentVersionedLabelCount < 1) {
+    throw new RuntimeException('Attachment upload flow should produce a versioned label suffix (vN).');
+}
+
+echo "Assertions: 21\n";
 echo "Frontend runtime method naming test passed.\n";
