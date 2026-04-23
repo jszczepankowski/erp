@@ -215,6 +215,7 @@
                                 <th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th>
                                 <th><?php esc_html_e('Liczba projektów', 'erp-omd'); ?></th>
                                 <th><?php esc_html_e('Suma budżetów', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Statusy', 'erp-omd'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -233,10 +234,11 @@
                                         </td>
                                         <td><?php echo esc_html((string) ((int) ($history_row['projects_count'] ?? 0))); ?></td>
                                         <td><?php echo esc_html(number_format_i18n((float) ($history_row['budget_total'] ?? 0), 2)); ?></td>
+                                        <td><?php echo esc_html((string) ($history_row['status_summary'] ?? '—')); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else : ?>
-                                <tr><td colspan="3"><?php esc_html_e('Brak historii zleceń dla klienta.', 'erp-omd'); ?></td></tr>
+                                <tr><td colspan="4"><?php esc_html_e('Brak historii zleceń dla klienta.', 'erp-omd'); ?></td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

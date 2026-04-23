@@ -494,12 +494,31 @@ class ERP_OMD_Frontend
                     'month' => $history_month,
                     'projects_count' => 0,
                     'budget_total' => 0.0,
+                    'status_counts' => [],
                 ];
             }
 
             $monthly_order_history[$history_month]['projects_count']++;
             $monthly_order_history[$history_month]['budget_total'] += (float) ($history_project_row['budget'] ?? 0);
+            $history_status = sanitize_key((string) ($history_project_row['status'] ?? ''));
+            if ($history_status === '') {
+                $history_status = 'unknown';
+            }
+            if (! isset($monthly_order_history[$history_month]['status_counts'][$history_status])) {
+                $monthly_order_history[$history_month]['status_counts'][$history_status] = 0;
+            }
+            $monthly_order_history[$history_month]['status_counts'][$history_status]++;
         }
+        foreach ($monthly_order_history as &$monthly_history_row) {
+            $status_counts = (array) ($monthly_history_row['status_counts'] ?? []);
+            ksort($status_counts);
+            $status_fragments = [];
+            foreach ($status_counts as $status_key => $status_value) {
+                $status_fragments[] = sprintf('%s: %d', $status_key, (int) $status_value);
+            }
+            $monthly_history_row['status_summary'] = $status_fragments ? implode(', ', $status_fragments) : '—';
+        }
+        unset($monthly_history_row);
         usort(
             $monthly_order_history,
             static function ($left, $right) {

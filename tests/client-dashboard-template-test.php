@@ -14,6 +14,7 @@ $requiredSnippets = [
     "esc_html_e('Załączniki projektu', 'erp-omd')",
     "esc_html_e('Źródło', 'erp-omd')",
     "esc_html_e('Wyczyść filtr miesiąca', 'erp-omd')",
+    "esc_html_e('Statusy', 'erp-omd')",
     'usort(',
 ];
 
