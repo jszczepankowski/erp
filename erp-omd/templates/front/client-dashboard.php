@@ -88,9 +88,6 @@
                     if (! empty($history_month_filter)) {
                         $scope_base_args['history_month'] = $history_month_filter;
                     }
-                    if (! empty($deadline_month_filter)) {
-                        $scope_base_args['deadline_month'] = $deadline_month_filter;
-                    }
                     ?>
                     <a
                         class="erp-omd-front-button <?php echo $project_scope === 'current' ? 'erp-omd-front-button-primary' : 'erp-omd-front-button-ghost'; ?>"
@@ -120,40 +117,12 @@
                         </span>
                         <?php
                         $history_clear_args = ['project_scope' => $project_scope, 'sort_by' => $project_sort_by, 'sort_order' => $project_sort_order];
-                        if (! empty($deadline_month_filter)) {
-                            $history_clear_args['deadline_month'] = $deadline_month_filter;
-                        }
                         ?>
                         <a class="erp-omd-front-button erp-omd-front-button-ghost" href="<?php echo esc_url(add_query_arg($history_clear_args, $front_client_url)); ?>">
                             <?php esc_html_e('Wyczyść filtr miesiąca', 'erp-omd'); ?>
                         </a>
                     </div>
                 <?php endif; ?>
-                <form method="get" class="erp-omd-front-form erp-omd-front-form-inline">
-                    <input type="hidden" name="erp_omd_front" value="client" />
-                    <input type="hidden" name="project_scope" value="<?php echo esc_attr((string) $project_scope); ?>" />
-                    <input type="hidden" name="sort_by" value="<?php echo esc_attr((string) $project_sort_by); ?>" />
-                    <input type="hidden" name="sort_order" value="<?php echo esc_attr((string) $project_sort_order); ?>" />
-                    <input type="hidden" name="history_month" value="<?php echo esc_attr((string) $history_month_filter); ?>" />
-                    <div class="erp-omd-front-grid erp-omd-front-grid-two">
-                        <div class="erp-omd-front-field">
-                            <label for="erp-omd-deadline-month-filter"><?php esc_html_e('Filtr deadline (miesiąc)', 'erp-omd'); ?></label>
-                            <input id="erp-omd-deadline-month-filter" type="month" name="deadline_month" value="<?php echo esc_attr((string) $deadline_month_filter); ?>" />
-                        </div>
-                    </div>
-                    <div class="erp-omd-front-actions">
-                        <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Filtruj deadline', 'erp-omd'); ?></button>
-                        <?php
-                        $deadline_clear_args = ['project_scope' => $project_scope, 'sort_by' => $project_sort_by, 'sort_order' => $project_sort_order];
-                        if (! empty($history_month_filter)) {
-                            $deadline_clear_args['history_month'] = $history_month_filter;
-                        }
-                        ?>
-                        <a class="erp-omd-front-button erp-omd-front-button-ghost" href="<?php echo esc_url(add_query_arg($deadline_clear_args, $front_client_url)); ?>">
-                            <?php esc_html_e('Wyczyść filtr deadline', 'erp-omd'); ?>
-                        </a>
-                    </div>
-                </form>
 
                 <?php if ($client_id <= 0) : ?>
                     <div class="erp-omd-front-notice erp-omd-front-notice-warning">
@@ -167,9 +136,6 @@
                     $sort_base_args['project_scope'] = $project_scope;
                     if (! empty($history_month_filter)) {
                         $sort_base_args['history_month'] = $history_month_filter;
-                    }
-                    if (! empty($deadline_month_filter)) {
-                        $sort_base_args['deadline_month'] = $deadline_month_filter;
                     }
                     if (! empty($_GET['project_id'])) {
                         $sort_base_args['project_id'] = (int) $_GET['project_id'];
@@ -264,9 +230,6 @@
                                             <?php if (preg_match('/^\d{4}-\d{2}$/', $history_month_value)) : ?>
                                                 <?php
                                                 $history_link_args = ['project_scope' => $project_scope, 'sort_by' => $project_sort_by, 'sort_order' => $project_sort_order, 'history_month' => $history_month_value];
-                                                if (! empty($deadline_month_filter)) {
-                                                    $history_link_args['deadline_month'] = $deadline_month_filter;
-                                                }
                                                 ?>
                                                 <a href="<?php echo esc_url(add_query_arg($history_link_args, $front_client_url)); ?>">
                                                     <?php echo esc_html($history_month_value); ?>
@@ -545,7 +508,6 @@
                             <input type="hidden" name="sort_by" value="<?php echo esc_attr((string) $project_sort_by); ?>" />
                             <input type="hidden" name="sort_order" value="<?php echo esc_attr((string) $project_sort_order); ?>" />
                             <input type="hidden" name="history_month" value="<?php echo esc_attr((string) $history_month_filter); ?>" />
-                            <input type="hidden" name="deadline_month" value="<?php echo esc_attr((string) $deadline_month_filter); ?>" />
                             <div class="erp-omd-front-grid erp-omd-front-grid-two">
                                 <div class="erp-omd-front-field">
                                     <label for="erp-omd-client-note"><?php esc_html_e('Dodaj nową uwagę', 'erp-omd'); ?></label>
