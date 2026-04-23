@@ -388,6 +388,8 @@
                                     <th><?php esc_html_e('Źródło', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Etykieta', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Plik', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Rozmiar', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Data dodania', 'erp-omd'); ?></th>
                                 </tr>
                             </thead>
@@ -416,6 +418,12 @@
                                         $attachment_post = $attachment_id > 0 ? get_post($attachment_id) : null;
                                         $attachment_url = $attachment_id > 0 ? wp_get_attachment_url($attachment_id) : '';
                                         $attachment_title = $attachment_id > 0 ? get_the_title($attachment_id) : '';
+                                        $attachment_file = $attachment_id > 0 ? get_attached_file($attachment_id) : '';
+                                        $attachment_filetype = $attachment_id > 0 ? wp_check_filetype((string) $attachment_file) : [];
+                                        $attachment_ext = strtolower((string) ($attachment_filetype['ext'] ?? ''));
+                                        $attachment_size = (is_string($attachment_file) && $attachment_file !== '' && file_exists($attachment_file))
+                                            ? size_format((int) filesize($attachment_file))
+                                            : '—';
                                         $attachment_name = $attachment_title;
                                         if ($attachment_name === '' && is_object($attachment_post) && ! empty($attachment_post->post_name)) {
                                             $attachment_name = (string) $attachment_post->post_name;
@@ -434,11 +442,13 @@
                                                     <?php echo esc_html($attachment_name); ?>
                                                 <?php endif; ?>
                                             </td>
+                                            <td><?php echo esc_html($attachment_ext !== '' ? strtoupper($attachment_ext) : '—'); ?></td>
+                                            <td><?php echo esc_html((string) $attachment_size); ?></td>
                                             <td><?php echo esc_html((string) ($project_attachment_item['created_at'] ?? '—')); ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else : ?>
-                                    <tr><td colspan="4"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="6"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
