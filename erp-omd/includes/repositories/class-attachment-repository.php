@@ -75,12 +75,19 @@ class ERP_OMD_Attachment_Repository
     {
         global $wpdb;
 
+        $base_label = trim((string) $label);
+        if ($base_label === '') {
+            return 0;
+        }
+        $versioned_pattern = $wpdb->esc_like($base_label) . ' (v%';
+
         return (int) $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->table_name()} WHERE entity_type = %s AND entity_id = %d AND label = %s",
+                "SELECT COUNT(*) FROM {$this->table_name()} WHERE entity_type = %s AND entity_id = %d AND (label = %s OR label LIKE %s)",
                 (string) $entity_type,
                 (int) $entity_id,
-                (string) $label
+                $base_label,
+                $versioned_pattern
             )
         );
     }

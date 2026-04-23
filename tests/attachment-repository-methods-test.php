@@ -20,5 +20,16 @@ foreach ($requiredMethods as $methodSnippet) {
     }
 }
 
-echo "Assertions: " . count($requiredMethods) . "\n";
+$requiredLogicSnippets = [
+    'label LIKE %s',
+    'esc_like($base_label)',
+];
+
+foreach ($requiredLogicSnippets as $logicSnippet) {
+    if (strpos($repository, $logicSnippet) === false) {
+        throw new RuntimeException('Missing repository logic snippet: ' . $logicSnippet);
+    }
+}
+
+echo "Assertions: " . (count($requiredMethods) + count($requiredLogicSnippets)) . "\n";
 echo "Attachment repository methods test passed.\n";

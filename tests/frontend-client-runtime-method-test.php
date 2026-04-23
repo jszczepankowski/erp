@@ -15,6 +15,7 @@ $handleClientAttachmentUploadCount = substr_count($runtime, 'function handle_cli
 $collectClientArgsCount = substr_count($runtime, 'function collect_client_dashboard_args(');
 $encodedClientNoticeCount = substr_count($runtime, "rawurlencode(\$message)");
 $historyMonthCollectionCount = substr_count($runtime, "\$args['history_month'] = \$history_month;");
+$deadlineMonthCollectionCount = substr_count($runtime, "\$args['deadline_month'] = \$deadline_month;");
 $monthlyStatusSummaryCount = substr_count($runtime, "\$monthly_history_row['status_summary']");
 $clientAttachmentUploadCallCount = substr_count($runtime, "media_handle_upload('attachment_file'");
 $clientAttachmentFileSignatureValidationCount = substr_count($runtime, 'wp_check_filetype_and_ext(');
@@ -26,6 +27,7 @@ $deleteClientAttachmentActionCount = substr_count($runtime, "\$action === 'delet
 $deleteAttachmentMediaCleanupCount = substr_count($runtime, 'wp_delete_attachment($attachment_id, true);');
 $deleteAttachmentResultCheckCount = substr_count($runtime, '$delete_result = $attachments_repo->delete($attachment_relation_id);');
 $attachmentVersionedLabelCount = substr_count($runtime, "sprintf('%s (v%d)'");
+$attachmentVersionLabelNormalizationCount = substr_count($runtime, "preg_replace('/\\s*\\(v\\d+\\)\\s*$/i', '', \$base_attachment_label)");
 
 if ($legacyCount !== 0) {
     throw new RuntimeException('Legacy method render_client_dashboard should not exist.');
@@ -65,6 +67,10 @@ if ($encodedClientNoticeCount !== 0) {
 
 if ($historyMonthCollectionCount !== 1) {
     throw new RuntimeException('collect_client_dashboard_args should include history_month propagation.');
+}
+
+if ($deadlineMonthCollectionCount !== 1) {
+    throw new RuntimeException('collect_client_dashboard_args should include deadline_month propagation.');
 }
 
 if ($monthlyStatusSummaryCount !== 1) {
@@ -111,5 +117,9 @@ if ($attachmentVersionedLabelCount < 1) {
     throw new RuntimeException('Attachment upload flow should produce a versioned label suffix (vN).');
 }
 
-echo "Assertions: 21\n";
+if ($attachmentVersionLabelNormalizationCount < 1) {
+    throw new RuntimeException('Attachment upload flow should normalize existing (vN) suffixes from labels.');
+}
+
+echo "Assertions: 23\n";
 echo "Frontend runtime method naming test passed.\n";

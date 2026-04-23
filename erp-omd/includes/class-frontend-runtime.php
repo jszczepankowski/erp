@@ -361,6 +361,10 @@ class ERP_OMD_Frontend
         if (! preg_match('/^\d{4}-\d{2}$/', $history_month_filter)) {
             $history_month_filter = '';
         }
+        $deadline_month_filter = sanitize_text_field(wp_unslash($_GET['deadline_month'] ?? ''));
+        if (! preg_match('/^\d{4}-\d{2}$/', $deadline_month_filter)) {
+            $deadline_month_filter = '';
+        }
         $project_scope = sanitize_key((string) ($_GET['project_scope'] ?? 'current'));
         if (! in_array($project_scope, ['current', 'archive'], true)) {
             $project_scope = 'current';
@@ -392,6 +396,18 @@ class ERP_OMD_Frontend
                         }
 
                         return strpos($project_date, $history_month_filter) === 0;
+                    }
+                )
+            );
+        }
+        if ($deadline_month_filter !== '') {
+            $projects = array_values(
+                array_filter(
+                    $projects,
+                    static function ($project_item) use ($deadline_month_filter) {
+                        $deadline = (string) ($project_item['deadline'] ?? '');
+
+                        return strpos($deadline, $deadline_month_filter) === 0;
                     }
                 )
             );
@@ -2563,6 +2579,8 @@ class ERP_OMD_Frontend
         if ($uploaded_attachment_id > 0) {
             $attachments_repo = new ERP_OMD_Attachment_Repository();
             $base_attachment_label = trim((string) $attachment_label);
+            $base_attachment_label = preg_replace('/\s*\(v\d+\)\s*$/i', '', $base_attachment_label);
+            $base_attachment_label = trim((string) $base_attachment_label);
             if ($base_attachment_label === '') {
                 $base_attachment_label = __('Bez etykiety', 'erp-omd');
             }
@@ -2745,6 +2763,11 @@ class ERP_OMD_Frontend
         $history_month = sanitize_text_field((string) wp_unslash($_REQUEST['history_month'] ?? ''));
         if (preg_match('/^\d{4}-\d{2}$/', $history_month)) {
             $args['history_month'] = $history_month;
+        }
+
+        $deadline_month = sanitize_text_field((string) wp_unslash($_REQUEST['deadline_month'] ?? ''));
+        if (preg_match('/^\d{4}-\d{2}$/', $deadline_month)) {
+            $args['deadline_month'] = $deadline_month;
         }
 
         return $args;
