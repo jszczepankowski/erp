@@ -113,11 +113,11 @@
                             <input id="erp-omd-client-request-start-date" type="date" name="start_date" />
                         </div>
                         <div class="erp-omd-front-field">
-                            <label for="erp-omd-client-request-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label>
-                            <input id="erp-omd-client-request-end-date" type="date" name="end_date" />
+                            <label for="erp-omd-client-request-deadline"><?php esc_html_e('Deadline', 'erp-omd'); ?></label>
+                            <input id="erp-omd-client-request-deadline" type="date" name="deadline" />
                         </div>
                         <div class="erp-omd-front-field">
-                            <label for="erp-omd-client-request-brief"><?php esc_html_e('Brief / uzasadnienie', 'erp-omd'); ?></label>
+                            <label for="erp-omd-client-request-brief"><?php esc_html_e('Brief / opis projektu', 'erp-omd'); ?></label>
                             <textarea id="erp-omd-client-request-brief" name="brief" rows="3" required></textarea>
                         </div>
                     </div>

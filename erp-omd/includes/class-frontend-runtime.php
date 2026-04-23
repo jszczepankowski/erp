@@ -2647,7 +2647,7 @@ class ERP_OMD_Frontend
             'estimate_id' => 0,
             'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')),
             'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')),
-            'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')),
+            'end_date' => sanitize_text_field(wp_unslash($_POST['deadline'] ?? '')),
             'status' => 'new',
             'reviewed_by_user_id' => 0,
             'reviewed_at' => null,

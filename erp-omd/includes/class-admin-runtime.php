@@ -1425,10 +1425,35 @@ class ERP_OMD_Admin
     public function render_project_requests()
     {
         $project_requests = $this->project_requests->all();
+        $request_tab = sanitize_key(wp_unslash($_GET['tab'] ?? 'employee'));
+        if (! in_array($request_tab, ['employee', 'client'], true)) {
+            $request_tab = 'employee';
+        }
         $request_filters = [
             'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? '')),
             'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
+            'tab' => $request_tab,
         ];
+
+        if ($request_tab === 'client') {
+            $project_requests = array_values(
+                array_filter(
+                    $project_requests,
+                    static function ($request_row) {
+                        return (int) ($request_row['requester_employee_id'] ?? 0) <= 0;
+                    }
+                )
+            );
+        } else {
+            $project_requests = array_values(
+                array_filter(
+                    $project_requests,
+                    static function ($request_row) {
+                        return (int) ($request_row['requester_employee_id'] ?? 0) > 0;
+                    }
+                )
+            );
+        }
 
         if ($request_filters['status'] !== '') {
             $project_requests = array_values(
