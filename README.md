@@ -13,6 +13,7 @@ ERP_OMD V2 — wersja 3.2.0 przygotowana pod wdrożenie Sprintu 10.
 - Routing użytkownika po logowaniu:
   - pracownik: `/erp-front/worker/`
   - manager: `/erp-front/manager/`
+  - klient: `/erp-front/client/`
 - Wylogowanie: `/erp-front/logout/`
 - FRONT-2 (pracownik):
   - własny formularz wpisu czasu,
