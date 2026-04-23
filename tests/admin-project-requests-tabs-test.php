@@ -13,8 +13,11 @@ if ($template === '') {
 $runtimeSnippets = [
     "sanitize_key(wp_unslash(\$_GET['tab'] ?? 'employee'))",
     "in_array(\$request_tab, ['employee', 'client'], true)",
-    "user_can(\$requester_user_id, 'erp_omd_front_client')",
-    "return ! (\$requester_user_id > 0 && user_can(\$requester_user_id, 'erp_omd_front_client'));",
+    "return \$this->is_client_project_request(\$request_row);",
+    "return ! \$this->is_client_project_request(\$request_row);",
+    "private function is_client_project_request(\$request_row)",
+    "in_array('erp_omd_client', \$requester_roles, true)",
+    "get_user_meta(\$requester_user_id, 'erp_omd_client_id', true)",
 ];
 
 foreach ($runtimeSnippets as $snippet) {

@@ -1439,9 +1439,8 @@ class ERP_OMD_Admin
             $project_requests = array_values(
                 array_filter(
                     $project_requests,
-                    static function ($request_row) {
-                        $requester_user_id = (int) ($request_row['requester_user_id'] ?? 0);
-                        return $requester_user_id > 0 && user_can($requester_user_id, 'erp_omd_front_client');
+                    function ($request_row) {
+                        return $this->is_client_project_request($request_row);
                     }
                 )
             );
@@ -1449,9 +1448,8 @@ class ERP_OMD_Admin
             $project_requests = array_values(
                 array_filter(
                     $project_requests,
-                    static function ($request_row) {
-                        $requester_user_id = (int) ($request_row['requester_user_id'] ?? 0);
-                        return ! ($requester_user_id > 0 && user_can($requester_user_id, 'erp_omd_front_client'));
+                    function ($request_row) {
+                        return ! $this->is_client_project_request($request_row);
                     }
                 )
             );
@@ -1494,6 +1492,35 @@ class ERP_OMD_Admin
         }
 
         include ERP_OMD_PATH . 'templates/admin/project-requests.php';
+    }
+
+    private function is_client_project_request($request_row)
+    {
+        $requester_employee_id = (int) ($request_row['requester_employee_id'] ?? 0);
+        if ($requester_employee_id > 0) {
+            return false;
+        }
+
+        $requester_user_id = (int) ($request_row['requester_user_id'] ?? 0);
+        if ($requester_user_id <= 0) {
+            return false;
+        }
+
+        $requester_user = get_userdata($requester_user_id);
+        if (! ($requester_user instanceof WP_User)) {
+            return false;
+        }
+
+        if (user_can($requester_user, 'erp_omd_front_client')) {
+            return true;
+        }
+
+        $requester_roles = (array) ($requester_user->roles ?? []);
+        if (in_array('erp_omd_client', $requester_roles, true)) {
+            return true;
+        }
+
+        return (int) get_user_meta($requester_user_id, 'erp_omd_client_id', true) > 0;
     }
 
     public function render_cost_invoices()
