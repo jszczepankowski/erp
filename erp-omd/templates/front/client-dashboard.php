@@ -392,6 +392,7 @@
                                     <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Rozmiar', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Data dodania', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -461,10 +462,27 @@
                                             <td><?php echo esc_html($attachment_ext !== '' ? strtoupper($attachment_ext) : '—'); ?></td>
                                             <td><?php echo esc_html((string) $attachment_size); ?></td>
                                             <td><?php echo esc_html((string) ($project_attachment_item['created_at'] ?? '—')); ?></td>
+                                            <td>
+                                                <?php if ((string) ($project_attachment_item['source'] ?? '') === __('Projekt', 'erp-omd') && (int) ($project_attachment_item['created_by_user_id'] ?? 0) === (int) $user->ID) : ?>
+                                                    <form method="post" class="erp-omd-front-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć załącznik?', 'erp-omd')); ?>');">
+                                                        <?php wp_nonce_field('erp_omd_front_client'); ?>
+                                                        <input type="hidden" name="erp_omd_front_action" value="delete_project_attachment" />
+                                                        <input type="hidden" name="attachment_relation_id" value="<?php echo esc_attr((string) ($project_attachment_item['id'] ?? 0)); ?>" />
+                                                        <input type="hidden" name="project_id" value="<?php echo esc_attr((string) $selected_project_id); ?>" />
+                                                        <input type="hidden" name="project_scope" value="<?php echo esc_attr((string) $project_scope); ?>" />
+                                                        <input type="hidden" name="sort_by" value="<?php echo esc_attr((string) $project_sort_by); ?>" />
+                                                        <input type="hidden" name="sort_order" value="<?php echo esc_attr((string) $project_sort_order); ?>" />
+                                                        <input type="hidden" name="history_month" value="<?php echo esc_attr((string) $history_month_filter); ?>" />
+                                                        <button type="submit" class="erp-omd-front-button erp-omd-front-button-ghost"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                                    </form>
+                                                <?php else : ?>
+                                                    —
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else : ?>
-                                    <tr><td colspan="7"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="8"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
