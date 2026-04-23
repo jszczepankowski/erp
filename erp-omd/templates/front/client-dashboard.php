@@ -367,6 +367,12 @@
                                     $estimate_attachment_item['source'] = __('Kosztorys', 'erp-omd');
                                     $client_attachment_rows[] = $estimate_attachment_item;
                                 }
+                                usort(
+                                    $client_attachment_rows,
+                                    static function ($left, $right) {
+                                        return [(string) ($right['created_at'] ?? ''), (int) ($right['id'] ?? 0)] <=> [(string) ($left['created_at'] ?? ''), (int) ($left['id'] ?? 0)];
+                                    }
+                                );
                                 ?>
                                 <?php if (! empty($client_attachment_rows)) : ?>
                                     <?php foreach ($client_attachment_rows as $project_attachment_item) : ?>

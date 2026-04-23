@@ -12,6 +12,7 @@ $requiredSnippets = [
     "name=\"erp_omd_front_action\" value=\"create_project_note\"",
     "esc_html_e('Załączniki projektu', 'erp-omd')",
     "esc_html_e('Źródło', 'erp-omd')",
+    'usort(',
 ];
 
 foreach ($requiredSnippets as $snippet) {
