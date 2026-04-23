@@ -23,6 +23,9 @@ $clientAttachmentAuditNoteCount = substr_count($runtime, 'Dodano załącznik: %1
 $clientAttachmentDeletionAuditNoteCount = substr_count($runtime, 'Usunięto załącznik: %1$s (%2$s).');
 $clientAttachmentUploadStagedVariableCount = substr_count($runtime, '$uploaded_attachment_id = 0;');
 $deleteClientAttachmentActionCount = substr_count($runtime, "\$action === 'delete_project_attachment'");
+$deleteAttachmentMediaCleanupCount = substr_count($runtime, 'wp_delete_attachment($attachment_id, true);');
+$deleteAttachmentResultCheckCount = substr_count($runtime, '$delete_result = $attachments_repo->delete($attachment_relation_id);');
+$attachmentVersionedLabelCount = substr_count($runtime, "sprintf('%s (v%d)'");
 
 if ($legacyCount !== 0) {
     throw new RuntimeException('Legacy method render_client_dashboard should not exist.');
@@ -96,5 +99,17 @@ if ($deleteClientAttachmentActionCount !== 1) {
     throw new RuntimeException('Client request processor should handle delete_project_attachment action.');
 }
 
-echo "Assertions: 18\n";
+if ($deleteAttachmentMediaCleanupCount < 1) {
+    throw new RuntimeException('Attachment delete flow should cleanup media files when no links remain.');
+}
+
+if ($deleteAttachmentResultCheckCount < 1) {
+    throw new RuntimeException('Attachment delete flow should handle failed relation deletion.');
+}
+
+if ($attachmentVersionedLabelCount < 1) {
+    throw new RuntimeException('Attachment upload flow should produce a versioned label suffix (vN).');
+}
+
+echo "Assertions: 21\n";
 echo "Frontend runtime method naming test passed.\n";

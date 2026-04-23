@@ -2562,11 +2562,20 @@ class ERP_OMD_Frontend
 
         if ($uploaded_attachment_id > 0) {
             $attachments_repo = new ERP_OMD_Attachment_Repository();
+            $base_attachment_label = trim((string) $attachment_label);
+            if ($base_attachment_label === '') {
+                $base_attachment_label = __('Bez etykiety', 'erp-omd');
+            }
+            $existing_versions = method_exists($attachments_repo, 'count_for_entity_label')
+                ? (int) $attachments_repo->count_for_entity_label('project', $project_id, $base_attachment_label)
+                : 0;
+            $attachment_version_number = max(1, $existing_versions + 1);
+            $versioned_attachment_label = sprintf('%s (v%d)', $base_attachment_label, $attachment_version_number);
             $attachments_repo->create([
                 'entity_type' => 'project',
                 'entity_id' => $project_id,
                 'attachment_id' => $uploaded_attachment_id,
-                'label' => $attachment_label,
+                'label' => $versioned_attachment_label,
                 'created_by_user_id' => (int) $user->ID,
             ]);
 
@@ -2577,7 +2586,7 @@ class ERP_OMD_Frontend
             $attachment_note_text = sprintf(
                 /* translators: 1: attachment label, 2: attachment title */
                 __('Dodano załącznik: %1$s (%2$s).', 'erp-omd'),
-                $attachment_label !== '' ? $attachment_label : __('Bez etykiety', 'erp-omd'),
+                $versioned_attachment_label,
                 $attachment_title
             );
             $project_notes_repo->create($project_id, $attachment_note_text, (int) $user->ID);
@@ -2645,7 +2654,17 @@ class ERP_OMD_Frontend
             $project_notes_repo->create($project_id, $deletion_note, (int) $user->ID);
         }
 
-        $attachments_repo->delete($attachment_relation_id);
+        $attachment_id = (int) ($attachment_relation['attachment_id'] ?? 0);
+        $delete_result = $attachments_repo->delete($attachment_relation_id);
+        if ($delete_result === false || (int) $delete_result <= 0) {
+            $this->redirect_client_with_notice('error', __('Nie udało się usunąć załącznika.', 'erp-omd'), $extra_args);
+        }
+        if ($attachment_id > 0 && method_exists($attachments_repo, 'count_links_for_attachment')) {
+            $remaining_links = (int) $attachments_repo->count_links_for_attachment($attachment_id);
+            if ($remaining_links <= 0) {
+                wp_delete_attachment($attachment_id, true);
+            }
+        }
         $this->redirect_client_with_notice('success', __('Załącznik został usunięty.', 'erp-omd'), $extra_args);
     }
 

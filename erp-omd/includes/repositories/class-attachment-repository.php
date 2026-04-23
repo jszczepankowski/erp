@@ -58,4 +58,30 @@ class ERP_OMD_Attachment_Repository
 
         return $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
     }
+
+    public function count_links_for_attachment($attachment_id)
+    {
+        global $wpdb;
+
+        return (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_name()} WHERE attachment_id = %d",
+                (int) $attachment_id
+            )
+        );
+    }
+
+    public function count_for_entity_label($entity_type, $entity_id, $label)
+    {
+        global $wpdb;
+
+        return (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_name()} WHERE entity_type = %s AND entity_id = %d AND label = %s",
+                (string) $entity_type,
+                (int) $entity_id,
+                (string) $label
+            )
+        );
+    }
 }

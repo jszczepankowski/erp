@@ -25,6 +25,7 @@ $requiredSnippets = [
     "esc_html_e('Statusy', 'erp-omd')",
     'usort(',
     '$attachment_version_totals',
+    "['source_key'] = 'project'",
 ];
 
 foreach ($requiredSnippets as $snippet) {

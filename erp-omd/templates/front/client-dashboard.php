@@ -400,10 +400,12 @@
                                 $client_attachment_rows = [];
                                 foreach ((array) $selected_project_attachments as $project_attachment_item) {
                                     $project_attachment_item['source'] = __('Projekt', 'erp-omd');
+                                    $project_attachment_item['source_key'] = 'project';
                                     $client_attachment_rows[] = $project_attachment_item;
                                 }
                                 foreach ((array) $selected_estimate_attachments as $estimate_attachment_item) {
                                     $estimate_attachment_item['source'] = __('Kosztorys', 'erp-omd');
+                                    $estimate_attachment_item['source_key'] = 'estimate';
                                     $client_attachment_rows[] = $estimate_attachment_item;
                                 }
                                 usort(
@@ -463,7 +465,7 @@
                                             <td><?php echo esc_html((string) $attachment_size); ?></td>
                                             <td><?php echo esc_html((string) ($project_attachment_item['created_at'] ?? '—')); ?></td>
                                             <td>
-                                                <?php if ((string) ($project_attachment_item['source'] ?? '') === __('Projekt', 'erp-omd') && (int) ($project_attachment_item['created_by_user_id'] ?? 0) === (int) $user->ID) : ?>
+                                                <?php if ((string) ($project_attachment_item['source_key'] ?? '') === 'project' && (int) ($project_attachment_item['created_by_user_id'] ?? 0) === (int) $user->ID) : ?>
                                                     <form method="post" class="erp-omd-front-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć załącznik?', 'erp-omd')); ?>');">
                                                         <?php wp_nonce_field('erp_omd_front_client'); ?>
                                                         <input type="hidden" name="erp_omd_front_action" value="delete_project_attachment" />
