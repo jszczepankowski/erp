@@ -2646,7 +2646,10 @@ class ERP_OMD_Frontend
         }
 
         $attachment_id = (int) ($attachment_relation['attachment_id'] ?? 0);
-        $attachments_repo->delete($attachment_relation_id);
+        $delete_result = $attachments_repo->delete($attachment_relation_id);
+        if ($delete_result === false || (int) $delete_result <= 0) {
+            $this->redirect_client_with_notice('error', __('Nie udało się usunąć załącznika.', 'erp-omd'), $extra_args);
+        }
         if ($attachment_id > 0 && method_exists($attachments_repo, 'count_links_for_attachment')) {
             $remaining_links = (int) $attachments_repo->count_links_for_attachment($attachment_id);
             if ($remaining_links <= 0) {
