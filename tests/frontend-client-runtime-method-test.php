@@ -9,6 +9,7 @@ $legacyCount = substr_count($runtime, 'function render_client_dashboard(');
 $newCount = substr_count($runtime, 'function render_client_front_dashboard(');
 $handleCount = substr_count($runtime, 'function handle_client_screen(');
 $processClientCount = substr_count($runtime, 'function process_client_request(');
+$createClientRequestCount = substr_count($runtime, 'function create_client_project_request(');
 $createClientNoteCount = substr_count($runtime, 'function create_client_project_note(');
 $deleteClientAttachmentCount = substr_count($runtime, 'function delete_client_project_attachment(');
 $handleClientAttachmentUploadCount = substr_count($runtime, 'function handle_client_project_attachment_upload(');
@@ -23,6 +24,7 @@ $clientAttachmentAuditNoteCount = substr_count($runtime, 'Dodano załącznik: %1
 $clientAttachmentDeletionAuditNoteCount = substr_count($runtime, 'Usunięto załącznik: %1$s (%2$s).');
 $clientAttachmentUploadStagedVariableCount = substr_count($runtime, '$uploaded_attachment_id = 0;');
 $deleteClientAttachmentActionCount = substr_count($runtime, "\$action === 'delete_project_attachment'");
+$createClientRequestActionCount = substr_count($runtime, "if (\$action === 'create_project_request') {\n            \$this->create_client_project_request(\$user);");
 $missingClientRedirectCount = substr_count($runtime, "'missing_client' => 1");
 $deleteAttachmentMediaCleanupCount = substr_count($runtime, 'wp_delete_attachment($attachment_id, true);');
 $deleteAttachmentResultCheckCount = substr_count($runtime, '$delete_result = $attachments_repo->delete($attachment_relation_id);');
@@ -43,6 +45,10 @@ if ($handleCount !== 1) {
 
 if ($processClientCount !== 1) {
     throw new RuntimeException('Expected exactly one process_client_request method.');
+}
+
+if ($createClientRequestCount !== 1) {
+    throw new RuntimeException('Expected exactly one create_client_project_request method.');
 }
 
 if ($createClientNoteCount !== 1) {
@@ -101,6 +107,10 @@ if ($deleteClientAttachmentActionCount !== 1) {
     throw new RuntimeException('Client request processor should handle delete_project_attachment action.');
 }
 
+if ($createClientRequestActionCount < 1) {
+    throw new RuntimeException('Client request processor should handle create_project_request action.');
+}
+
 if ($missingClientRedirectCount < 1) {
     throw new RuntimeException('Client access guard should redirect when erp_omd_client_id is missing.');
 }
@@ -121,5 +131,5 @@ if ($attachmentVersionLabelNormalizationCount < 1) {
     throw new RuntimeException('Attachment upload flow should normalize existing (vN) suffixes from labels.');
 }
 
-echo "Assertions: 23\n";
+echo "Assertions: 25\n";
 echo "Frontend runtime method naming test passed.\n";

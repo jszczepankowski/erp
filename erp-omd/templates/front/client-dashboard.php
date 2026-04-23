@@ -79,6 +79,52 @@
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Projekty klienta (status + deadline)', 'erp-omd'); ?></h2>
                 </div>
+                <form method="post" class="erp-omd-front-form erp-omd-front-form-inline">
+                    <?php wp_nonce_field('erp_omd_front_client'); ?>
+                    <input type="hidden" name="erp_omd_front_action" value="create_project_request" />
+                    <div class="erp-omd-front-grid erp-omd-front-grid-two">
+                        <div class="erp-omd-front-field">
+                            <label for="erp-omd-client-request-project-name"><?php esc_html_e('Nowy wniosek projektowy: nazwa projektu', 'erp-omd'); ?></label>
+                            <input id="erp-omd-client-request-project-name" type="text" name="project_name" required />
+                        </div>
+                        <div class="erp-omd-front-field">
+                            <label for="erp-omd-client-request-billing-type"><?php esc_html_e('Typ projektu', 'erp-omd'); ?></label>
+                            <select id="erp-omd-client-request-billing-type" name="billing_type">
+                                <?php foreach (['time_material', 'fixed_price', 'retainer', 'mixed'] as $billing_type) : ?>
+                                    <option value="<?php echo esc_attr($billing_type); ?>">
+                                        <?php echo esc_html($project_billing_type_labels[$billing_type] ?? $billing_type); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="erp-omd-front-field">
+                            <label for="erp-omd-client-request-manager"><?php esc_html_e('Preferowany manager', 'erp-omd'); ?></label>
+                            <select id="erp-omd-client-request-manager" name="preferred_manager_id">
+                                <option value="0"><?php esc_html_e('Bez preferencji', 'erp-omd'); ?></option>
+                                <?php foreach ((array) $client_request_available_managers as $manager_item) : ?>
+                                    <option value="<?php echo esc_attr((string) ($manager_item['id'] ?? 0)); ?>">
+                                        <?php echo esc_html((string) ($manager_item['user_login'] ?? ('#' . (int) ($manager_item['id'] ?? 0)))); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="erp-omd-front-field">
+                            <label for="erp-omd-client-request-start-date"><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></label>
+                            <input id="erp-omd-client-request-start-date" type="date" name="start_date" />
+                        </div>
+                        <div class="erp-omd-front-field">
+                            <label for="erp-omd-client-request-end-date"><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></label>
+                            <input id="erp-omd-client-request-end-date" type="date" name="end_date" />
+                        </div>
+                        <div class="erp-omd-front-field">
+                            <label for="erp-omd-client-request-brief"><?php esc_html_e('Brief / uzasadnienie', 'erp-omd'); ?></label>
+                            <textarea id="erp-omd-client-request-brief" name="brief" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    <div class="erp-omd-front-actions">
+                        <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Wyślij wniosek projektowy', 'erp-omd'); ?></button>
+                    </div>
+                </form>
                 <div class="erp-omd-front-inline-actions">
                     <?php
                     $scope_base_args = [

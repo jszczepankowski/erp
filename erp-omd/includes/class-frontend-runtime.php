@@ -553,6 +553,16 @@ class ERP_OMD_Frontend
             'retainer' => __('Retainer', 'erp-omd'),
             'mixed' => __('Mixed', 'erp-omd'),
         ];
+        $client_request_available_managers = array_values(
+            array_filter(
+                $this->employees->all(),
+                static function ($employee_row) {
+                    $user_id = (int) ($employee_row['user_id'] ?? 0);
+                    return ((string) ($employee_row['account_type'] ?? '') === 'manager' || ($user_id > 0 && user_can($user_id, 'administrator')))
+                        && (string) ($employee_row['status'] ?? '') === 'active';
+                }
+            )
+        );
 
         $dashboard_title = __('Panel klienta', 'erp-omd');
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
@@ -655,6 +665,10 @@ class ERP_OMD_Frontend
         check_admin_referer('erp_omd_front_client');
 
         $action = sanitize_text_field(wp_unslash($_POST['erp_omd_front_action'] ?? ''));
+        if ($action === 'create_project_request') {
+            $this->create_client_project_request($user);
+            return;
+        }
         if ($action === 'create_project_note') {
             $this->create_client_project_note($user);
             return;
@@ -2613,6 +2627,40 @@ class ERP_OMD_Frontend
             ? __('Uwaga i załącznik zostały dodane.', 'erp-omd')
             : __('Uwaga została dodana.', 'erp-omd');
         $this->redirect_client_with_notice('success', $success_message, $extra_args);
+    }
+
+    private function create_client_project_request(WP_User $user)
+    {
+        $dashboard_args = $this->collect_client_dashboard_args();
+        $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+        if ($client_id <= 0) {
+            $this->redirect_client_with_notice('error', __('Brak przypisanego klienta do bieżącego konta.', 'erp-omd'), $dashboard_args);
+        }
+
+        $payload = $this->project_request_service->prepare([
+            'requester_user_id' => (int) $user->ID,
+            'requester_employee_id' => 0,
+            'client_id' => $client_id,
+            'project_name' => sanitize_text_field(wp_unslash($_POST['project_name'] ?? '')),
+            'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')),
+            'preferred_manager_id' => (int) ($_POST['preferred_manager_id'] ?? 0),
+            'estimate_id' => 0,
+            'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')),
+            'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')),
+            'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')),
+            'status' => 'new',
+            'reviewed_by_user_id' => 0,
+            'reviewed_at' => null,
+            'converted_project_id' => 0,
+        ]);
+
+        $errors = $this->project_request_service->validate($payload);
+        if ($errors) {
+            $this->redirect_client_with_notice('error', implode(' ', array_unique($errors)), $dashboard_args);
+        }
+
+        $this->project_requests->create($payload);
+        $this->redirect_client_with_notice('success', __('Wniosek projektowy został wysłany.', 'erp-omd'), $dashboard_args);
     }
 
     private function delete_client_project_attachment(WP_User $user)

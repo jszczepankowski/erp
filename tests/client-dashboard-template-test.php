@@ -10,6 +10,8 @@ $requiredSnippets = [
     'name="sort_by"',
     'name="sort_order"',
     'name="history_month"',
+    "value=\"create_project_request\"",
+    "esc_html_e('Wyślij wniosek projektowy', 'erp-omd')",
     "name=\"erp_omd_front_action\" value=\"create_project_note\"",
     'enctype="multipart/form-data"',
     'name="attachment_label"',
