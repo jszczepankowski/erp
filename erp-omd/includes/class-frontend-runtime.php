@@ -2628,6 +2628,23 @@ class ERP_OMD_Frontend
             $this->redirect_client_with_notice('error', __('Możesz usuwać tylko własne załączniki.', 'erp-omd'), $extra_args);
         }
 
+        if (class_exists('ERP_OMD_Project_Note_Repository')) {
+            $attachment_label = (string) ($attachment_relation['label'] ?? '');
+            $attachment_id = (int) ($attachment_relation['attachment_id'] ?? 0);
+            $attachment_title = $attachment_id > 0 ? (string) get_the_title($attachment_id) : '';
+            if ($attachment_title === '') {
+                $attachment_title = $attachment_id > 0 ? ('#' . $attachment_id) : __('Nieznany plik', 'erp-omd');
+            }
+            $deletion_note = sprintf(
+                /* translators: 1: attachment label, 2: attachment title */
+                __('Usunięto załącznik: %1$s (%2$s).', 'erp-omd'),
+                $attachment_label !== '' ? $attachment_label : __('Bez etykiety', 'erp-omd'),
+                $attachment_title
+            );
+            $project_notes_repo = new ERP_OMD_Project_Note_Repository();
+            $project_notes_repo->create($project_id, $deletion_note, (int) $user->ID);
+        }
+
         $attachments_repo->delete($attachment_relation_id);
         $this->redirect_client_with_notice('success', __('Załącznik został usunięty.', 'erp-omd'), $extra_args);
     }

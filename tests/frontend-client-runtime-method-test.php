@@ -20,6 +20,7 @@ $clientAttachmentUploadCallCount = substr_count($runtime, "media_handle_upload('
 $clientAttachmentFileSignatureValidationCount = substr_count($runtime, 'wp_check_filetype_and_ext(');
 $clientAttachmentZipMimeFallbackCount = substr_count($runtime, 'application/x-zip-compressed');
 $clientAttachmentAuditNoteCount = substr_count($runtime, 'Dodano załącznik: %1$s (%2$s).');
+$clientAttachmentDeletionAuditNoteCount = substr_count($runtime, 'Usunięto załącznik: %1$s (%2$s).');
 $clientAttachmentUploadStagedVariableCount = substr_count($runtime, '$uploaded_attachment_id = 0;');
 $deleteClientAttachmentActionCount = substr_count($runtime, "\$action === 'delete_project_attachment'");
 
@@ -87,9 +88,13 @@ if ($clientAttachmentUploadStagedVariableCount < 1) {
     throw new RuntimeException('Client upload flow should stage attachment id before persisting notes/relations.');
 }
 
+if ($clientAttachmentDeletionAuditNoteCount < 1) {
+    throw new RuntimeException('Client attachment deletion should append a project note entry.');
+}
+
 if ($deleteClientAttachmentActionCount !== 1) {
     throw new RuntimeException('Client request processor should handle delete_project_attachment action.');
 }
 
-echo "Assertions: 17\n";
+echo "Assertions: 18\n";
 echo "Frontend runtime method naming test passed.\n";
