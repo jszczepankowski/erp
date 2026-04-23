@@ -399,6 +399,7 @@ class ERP_OMD_Admin
                 $this->redirect_with_notice('erp-omd-settings', 'success', __('Odtworzenie backupu (SQL + ustawienia) zakończone sukcesem.', 'erp-omd'), ['tab' => 'backup_restore']);
                 break;
             case 'add_project_note': $this->handle_project_note_add(); break;
+            case 'delete_project_note': $this->handle_project_note_delete(); break;
             case 'save_project_rate': $this->handle_project_rate_save(); break;
             case 'delete_project_rate': $this->handle_project_rate_delete(); break;
             case 'save_project_cost': $this->handle_project_cost_save(); break;
@@ -727,7 +728,7 @@ class ERP_OMD_Admin
         $client_front_user_logins_by_client_id = [];
         $client_front_user_ids_by_client_id = [];
         foreach ($client_front_users as $client_front_user) {
-            if (! $client_front_user instanceof WP_User) {
+            if (! is_object($client_front_user) || ! isset($client_front_user->ID)) {
                 continue;
             }
 
@@ -3008,6 +3009,28 @@ class ERP_OMD_Admin
         if (! $project_id || $note === '') { $this->redirect_with_notice('erp-omd-projects', 'error', __('Projekt i treść uwagi są wymagane.', 'erp-omd')); }
         $this->project_notes->create($project_id, $note, get_current_user_id());
         $this->redirect_with_notice('erp-omd-projects', 'success', __('Uwaga klienta została dodana.', 'erp-omd'), ['id' => $project_id]);
+    }
+
+    private function handle_project_note_delete()
+    {
+        check_admin_referer('erp_omd_delete_project_note');
+        $this->require_capability('erp_omd_manage_projects');
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $note_id = (int) ($_POST['note_id'] ?? 0);
+        if ($project_id <= 0 || $note_id <= 0) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie wskazano uwagi do usunięcia.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        if (! method_exists($this->project_notes, 'delete')) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Repozytorium uwag nie obsługuje usuwania.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        $delete_result = (int) $this->project_notes->delete($note_id);
+        if ($delete_result <= 0) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie udało się usunąć uwagi klienta.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Uwaga klienta została usunięta.', 'erp-omd'), ['id' => $project_id]);
     }
 
     private function handle_project_rate_save()
