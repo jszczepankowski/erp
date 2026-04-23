@@ -77,7 +77,7 @@
 
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
-                    <h2><?php esc_html_e('Projekty klienta (status + deadline)', 'erp-omd'); ?></h2>
+                    <h2><?php esc_html_e('Nowy wniosek projektowy', 'erp-omd'); ?></h2>
                 </div>
                 <form method="post" class="erp-omd-front-form erp-omd-front-form-inline">
                     <?php wp_nonce_field('erp_omd_front_client'); ?>
@@ -125,6 +125,12 @@
                         <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Wyślij wniosek projektowy', 'erp-omd'); ?></button>
                     </div>
                 </form>
+            </article>
+
+            <article class="erp-omd-front-panel">
+                <div class="erp-omd-front-section-heading">
+                    <h2><?php esc_html_e('Projekty klienta (status + deadline)', 'erp-omd'); ?></h2>
+                </div>
                 <div class="erp-omd-front-inline-actions">
                     <?php
                     $scope_base_args = [
