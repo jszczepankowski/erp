@@ -193,7 +193,7 @@ Legenda:
 - 🚀 Sprint 6 rozpoczęty.
 - 🔄 Trwa realizacja etapów F1/F2 zgodnie z kolejnością z sekcji „Kolejność sprintów”.
 
-## 2d) Status Sprintu 7 (ERP_4.0) — start 2026-04-21
+## 2d) Status Sprintu 7 (ERP_4.0) — aktualizacja 2026-04-23
 
 ### Zakres
 - G0: konto klienta i dostęp do frontu.
@@ -205,8 +205,11 @@ Legenda:
 - G5: historia zleceń miesięcznie.
 
 ### Status bieżący
-- 🚀 Sprint 7 rozpoczęty.
-- 🧭 Punktem odniesienia dla realizacji jest ten backlog oraz dokument wykonawczy: `docs/SPRINT_7_CLIENT_PANEL_TICKETS_DOD.md`.
+- ✅ Sprint 7 formalnie zamknięty (CLOSED / DONE).
+- ✅ Zakres G0, G1.1, G1, G2, G3, G4, G5 został dostarczony w MVP panelu klienta.
+- ✅ Decyzja produktowa: deadline w liście projektów klienta pozostaje sortowalny; usunięto osobny filtr miesiąca deadline.
+- 📄 UAT: `docs/UAT_CHECKLIST_SPRINT_7_CLIENT_PANEL_2026-04-23.md`.
+- 📄 Closure: `docs/RELEASE_CLOSURE_SPRINT_7_2026-04-23.md`.
 
 ---
 

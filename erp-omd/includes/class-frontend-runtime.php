@@ -299,6 +299,14 @@ class ERP_OMD_Frontend
             wp_safe_redirect($this->front_url('login', ['denied' => 1]));
             exit;
         }
+
+        if ($screen === 'client') {
+            $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+            if ($client_id <= 0) {
+                wp_safe_redirect($this->front_url('login', ['denied' => 1, 'missing_client' => 1]));
+                exit;
+            }
+        }
     }
 
     private function should_hide_admin_for_user($user)

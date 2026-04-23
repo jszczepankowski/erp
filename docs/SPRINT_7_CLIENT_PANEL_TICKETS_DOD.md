@@ -36,10 +36,10 @@ Dokument źródłowy zakresu: `docs/ERP_4_0_BACKLOG_MASTER.md` (EPIC G).
 - Ograniczenie widoczności tylko do danych klienta (tenant isolation).
 
 **DoD**
-- [ ] Klient loguje się przez dedykowany ekran login/hasło.
-- [ ] Klient bez poprawnych uprawnień nie widzi danych innych klientów.
-- [ ] Logowanie i wylogowanie mają poprawny redirect UX.
-- [ ] Testy uprawnień i izolacji danych przechodzą.
+- [x] Klient loguje się przez dedykowany ekran login/hasło.
+- [x] Klient bez poprawnych uprawnień nie widzi danych innych klientów.
+- [x] Logowanie i wylogowanie mają poprawny redirect UX.
+- [x] Testy uprawnień i izolacji danych przechodzą.
 
 ---
 
@@ -47,13 +47,13 @@ Dokument źródłowy zakresu: `docs/ERP_4_0_BACKLOG_MASTER.md` (EPIC G).
 **Zakres**
 - Lista projektów klienta na panelu front.
 - Widoczne pola: nazwa projektu, status, deadline, podstawowe metadane.
-- Sortowanie i filtrowanie po statusie i miesiącu deadline.
+- Sortowanie listy projektów (w tym po deadline) bez dodatkowego filtra miesiąca deadline.
 
 **DoD**
-- [ ] Klient widzi wyłącznie swoje projekty.
-- [ ] Każdy rekord pokazuje status i deadline.
-- [ ] Filtry działają dla statusu i miesiąca deadline.
-- [ ] Testy listy i filtrów przechodzą.
+- [x] Klient widzi wyłącznie swoje projekty.
+- [x] Każdy rekord pokazuje status i deadline.
+- [x] Sortowanie (w tym po deadline) działa poprawnie.
+- [x] Testy listy i sortowania przechodzą.
 
 ---
 
@@ -64,10 +64,10 @@ Dokument źródłowy zakresu: `docs/ERP_4_0_BACKLOG_MASTER.md` (EPIC G).
 - Chronologiczna historia zmian budżetu.
 
 **DoD**
-- [ ] Klient widzi budżet planowany i zwiększenia.
-- [ ] Koszty wewnętrzne nie są prezentowane klientowi.
-- [ ] Historia zmian budżetu jest czytelna i uporządkowana czasowo.
-- [ ] Testy mapowania danych finansowych przechodzą.
+- [x] Klient widzi budżet planowany i zwiększenia.
+- [x] Koszty wewnętrzne nie są prezentowane klientowi.
+- [x] Historia zmian budżetu jest czytelna i uporządkowana czasowo.
+- [x] Testy mapowania danych finansowych przechodzą.
 
 ---
 
@@ -78,10 +78,10 @@ Dokument źródłowy zakresu: `docs/ERP_4_0_BACKLOG_MASTER.md` (EPIC G).
 - Wersjonowanie załączników i historia zmian pliku.
 
 **DoD**
-- [ ] Dodanie wiadomości zapisuje wpis w wątku projektu.
-- [ ] Walidacja typu i rozmiaru pliku działa zgodnie z limitem 30MB.
-- [ ] Każda nowa wersja pliku jest możliwa do audytu.
-- [ ] Testy uploadu i wersjonowania przechodzą.
+- [x] Dodanie wiadomości zapisuje wpis w wątku projektu.
+- [x] Walidacja typu i rozmiaru pliku działa zgodnie z limitem 30MB.
+- [x] Każda nowa wersja pliku jest możliwa do audytu.
+- [x] Testy uploadu i wersjonowania przechodzą.
 
 ---
 
@@ -92,10 +92,10 @@ Dokument źródłowy zakresu: `docs/ERP_4_0_BACKLOG_MASTER.md` (EPIC G).
 - Przejście z widoku miesiąca do szczegółów pozycji.
 
 **DoD**
-- [ ] Historia jest grupowana po miesiącach.
-- [ ] Agregacje miesięczne są poprawne względem danych źródłowych.
-- [ ] Użytkownik może wejść z miesiąca do szczegółu zlecenia/projektu.
-- [ ] Testy poprawności agregacji przechodzą.
+- [x] Historia jest grupowana po miesiącach.
+- [x] Agregacje miesięczne są poprawne względem danych źródłowych.
+- [x] Użytkownik może wejść z miesiąca do szczegółu zlecenia/projektu.
+- [x] Testy poprawności agregacji przechodzą.
 
 ---
 
@@ -105,9 +105,9 @@ Dokument źródłowy zakresu: `docs/ERP_4_0_BACKLOG_MASTER.md` (EPIC G).
 - Release notes i closure doc Sprintu 7.
 
 **DoD**
-- [ ] UAT checklist wykonana i podpisana przez ownera.
-- [ ] Release notes + closure dodane do `docs/`.
-- [ ] Brak krytycznych blockerów P1/P2 dla MVP.
+- [x] UAT checklist wykonana i podpisana przez ownera.
+- [x] Release notes + closure dodane do `docs/`.
+- [x] Brak krytycznych blockerów P1/P2 dla MVP.
 
 ---
 
@@ -129,7 +129,7 @@ Dokument źródłowy zakresu: `docs/ERP_4_0_BACKLOG_MASTER.md` (EPIC G).
 - autoryzacja i routing dostępu frontowego.
 
 2. Funkcjonalne:
-- lista projektów + status + deadline + filtry,
+- lista projektów + status + deadline + sortowanie,
 - budżet i koszty per pozycja (bez kosztów wewnętrznych),
 - historia zmian budżetu,
 - komunikacja i załączniki (typ/limit/wersjonowanie),
@@ -150,3 +150,10 @@ Sprint 7 uznajemy za zakończony, gdy:
 - komunikacja projektowa i załączniki (z wersjonowaniem) działają produkcyjnie,
 - historia zleceń miesięcznie jest dostępna i czytelna,
 - UAT jest podpisany i nie ma blockerów krytycznych.
+
+## 5) Status zamknięcia (2026-04-23)
+
+- ✅ Sprint 7 formalnie zamknięty (CLOSED / DONE).
+- ✅ Decyzja produktowa: deadline w liście projektów jest **sortowalny**, bez osobnego filtra miesiąca deadline.
+- 📄 UAT: `docs/UAT_CHECKLIST_SPRINT_7_CLIENT_PANEL_2026-04-23.md`
+- 📄 Closure: `docs/RELEASE_CLOSURE_SPRINT_7_2026-04-23.md`
