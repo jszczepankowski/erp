@@ -13,11 +13,13 @@ $requiredSnippets = [
     "name=\"erp_omd_front_action\" value=\"create_project_note\"",
     "esc_html_e('Załączniki projektu', 'erp-omd')",
     "esc_html_e('Źródło', 'erp-omd')",
+    "esc_html_e('Wersja', 'erp-omd')",
     "esc_html_e('Typ', 'erp-omd')",
     "esc_html_e('Rozmiar', 'erp-omd')",
     "esc_html_e('Wyczyść filtr miesiąca', 'erp-omd')",
     "esc_html_e('Statusy', 'erp-omd')",
     'usort(',
+    '$attachment_version_totals',
 ];
 
 foreach ($requiredSnippets as $snippet) {

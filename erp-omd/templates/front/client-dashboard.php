@@ -388,6 +388,7 @@
                                     <th><?php esc_html_e('Źródło', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Etykieta', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Plik', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Wersja', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Rozmiar', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Data dodania', 'erp-omd'); ?></th>
@@ -410,6 +411,15 @@
                                         return [(string) ($right['created_at'] ?? ''), (int) ($right['id'] ?? 0)] <=> [(string) ($left['created_at'] ?? ''), (int) ($left['id'] ?? 0)];
                                     }
                                 );
+                                $attachment_version_totals = [];
+                                foreach ($client_attachment_rows as $attachment_row) {
+                                    $attachment_key = strtolower((string) ($attachment_row['source'] ?? '')) . '|' . strtolower(trim((string) ($attachment_row['label'] ?? '')));
+                                    if (! isset($attachment_version_totals[$attachment_key])) {
+                                        $attachment_version_totals[$attachment_key] = 0;
+                                    }
+                                    $attachment_version_totals[$attachment_key]++;
+                                }
+                                $attachment_version_remaining = $attachment_version_totals;
                                 ?>
                                 <?php if (! empty($client_attachment_rows)) : ?>
                                     <?php foreach ($client_attachment_rows as $project_attachment_item) : ?>
@@ -431,6 +441,11 @@
                                         if ($attachment_name === '') {
                                             $attachment_name = $attachment_id > 0 ? ('#' . $attachment_id) : '—';
                                         }
+                                        $version_key = strtolower((string) ($project_attachment_item['source'] ?? '')) . '|' . strtolower(trim((string) ($project_attachment_item['label'] ?? '')));
+                                        $version_number = (int) ($attachment_version_remaining[$version_key] ?? 1);
+                                        if (isset($attachment_version_remaining[$version_key])) {
+                                            $attachment_version_remaining[$version_key] = max(0, $attachment_version_remaining[$version_key] - 1);
+                                        }
                                         ?>
                                         <tr>
                                             <td><?php echo esc_html((string) ($project_attachment_item['source'] ?? '—')); ?></td>
@@ -442,13 +457,14 @@
                                                     <?php echo esc_html($attachment_name); ?>
                                                 <?php endif; ?>
                                             </td>
+                                            <td><?php echo esc_html('v' . (string) max(1, $version_number)); ?></td>
                                             <td><?php echo esc_html($attachment_ext !== '' ? strtoupper($attachment_ext) : '—'); ?></td>
                                             <td><?php echo esc_html((string) $attachment_size); ?></td>
                                             <td><?php echo esc_html((string) ($project_attachment_item['created_at'] ?? '—')); ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else : ?>
-                                    <tr><td colspan="6"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="7"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
