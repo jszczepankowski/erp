@@ -45,4 +45,15 @@ class ERP_OMD_Project_Note_Repository
 
         return (int) $wpdb->insert_id;
     }
+
+    public function delete($id)
+    {
+        global $wpdb;
+
+        return (int) $wpdb->delete(
+            $this->table_name(),
+            ['id' => (int) $id],
+            ['%d']
+        );
+    }
 }

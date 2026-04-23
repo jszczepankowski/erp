@@ -2,9 +2,22 @@
     <h1><?php esc_html_e('ERP OMD — Wnioski projektowe', 'erp-omd'); ?></h1>
 
     <section class="erp-omd-card">
-        <h2><?php esc_html_e('Lista wniosków', 'erp-omd'); ?></h2>
+        <h2 class="nav-tab-wrapper">
+            <a class="nav-tab <?php echo ($request_filters['tab'] ?? 'employee') === 'employee' ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-requests', 'tab' => 'employee'], admin_url('admin.php'))); ?>">
+                <?php esc_html_e('Wnioski pracowników', 'erp-omd'); ?>
+            </a>
+            <a class="nav-tab <?php echo ($request_filters['tab'] ?? 'employee') === 'client' ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-requests', 'tab' => 'client'], admin_url('admin.php'))); ?>">
+                <?php esc_html_e('Wnioski klientów', 'erp-omd'); ?>
+            </a>
+        </h2>
+        <h2>
+            <?php echo ($request_filters['tab'] ?? 'employee') === 'client'
+                ? esc_html__('Lista wniosków klientów', 'erp-omd')
+                : esc_html__('Lista wniosków pracowników', 'erp-omd'); ?>
+        </h2>
         <form method="get" class="erp-omd-filter-form">
             <input type="hidden" name="page" value="erp-omd-requests" />
+            <input type="hidden" name="tab" value="<?php echo esc_attr((string) ($request_filters['tab'] ?? 'employee')); ?>" />
             <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj po nazwie projektu, kliencie, statusie…', 'erp-omd'); ?>" value="<?php echo esc_attr($request_filters['search'] ?? ''); ?>">
             <select name="status">
                 <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
