@@ -85,6 +85,9 @@
                         'sort_by' => $project_sort_by,
                         'sort_order' => $project_sort_order,
                     ];
+                    if (! empty($history_month_filter)) {
+                        $scope_base_args['history_month'] = $history_month_filter;
+                    }
                     ?>
                     <a
                         class="erp-omd-front-button <?php echo $project_scope === 'current' ? 'erp-omd-front-button-primary' : 'erp-omd-front-button-ghost'; ?>"
@@ -99,6 +102,24 @@
                         <?php esc_html_e('Archiwum', 'erp-omd'); ?>
                     </a>
                 </div>
+                <?php if (! empty($history_month_filter)) : ?>
+                    <div class="erp-omd-front-inline-actions">
+                        <span class="erp-omd-front-eyebrow">
+                            <?php
+                            echo esc_html(
+                                sprintf(
+                                    /* translators: %s: month filter */
+                                    __('Aktywny filtr miesiąca: %s', 'erp-omd'),
+                                    $history_month_filter
+                                )
+                            );
+                            ?>
+                        </span>
+                        <a class="erp-omd-front-button erp-omd-front-button-ghost" href="<?php echo esc_url(add_query_arg(['project_scope' => $project_scope, 'sort_by' => $project_sort_by, 'sort_order' => $project_sort_order], $front_client_url)); ?>">
+                            <?php esc_html_e('Wyczyść filtr miesiąca', 'erp-omd'); ?>
+                        </a>
+                    </div>
+                <?php endif; ?>
 
                 <?php if ($client_id <= 0) : ?>
                     <div class="erp-omd-front-notice erp-omd-front-notice-warning">
@@ -110,6 +131,9 @@
                     <?php
                     $sort_base_args = [];
                     $sort_base_args['project_scope'] = $project_scope;
+                    if (! empty($history_month_filter)) {
+                        $sort_base_args['history_month'] = $history_month_filter;
+                    }
                     if (! empty($_GET['project_id'])) {
                         $sort_base_args['project_id'] = (int) $_GET['project_id'];
                     }
@@ -197,7 +221,16 @@
                             <?php if (! empty($monthly_order_history)) : ?>
                                 <?php foreach ($monthly_order_history as $history_row) : ?>
                                     <tr>
-                                        <td><?php echo esc_html((string) ($history_row['month'] ?? '—')); ?></td>
+                                        <td>
+                                            <?php $history_month_value = (string) ($history_row['month'] ?? ''); ?>
+                                            <?php if (preg_match('/^\d{4}-\d{2}$/', $history_month_value)) : ?>
+                                                <a href="<?php echo esc_url(add_query_arg(['project_scope' => $project_scope, 'sort_by' => $project_sort_by, 'sort_order' => $project_sort_order, 'history_month' => $history_month_value], $front_client_url)); ?>">
+                                                    <?php echo esc_html($history_month_value); ?>
+                                                </a>
+                                            <?php else : ?>
+                                                <?php echo esc_html($history_month_value !== '' ? $history_month_value : '—'); ?>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?php echo esc_html((string) ((int) ($history_row['projects_count'] ?? 0))); ?></td>
                                         <td><?php echo esc_html(number_format_i18n((float) ($history_row['budget_total'] ?? 0), 2)); ?></td>
                                     </tr>
@@ -420,6 +453,7 @@
                             <input type="hidden" name="project_scope" value="<?php echo esc_attr((string) $project_scope); ?>" />
                             <input type="hidden" name="sort_by" value="<?php echo esc_attr((string) $project_sort_by); ?>" />
                             <input type="hidden" name="sort_order" value="<?php echo esc_attr((string) $project_sort_order); ?>" />
+                            <input type="hidden" name="history_month" value="<?php echo esc_attr((string) $history_month_filter); ?>" />
                             <div class="erp-omd-front-grid erp-omd-front-grid-two">
                                 <div class="erp-omd-front-field">
                                     <label for="erp-omd-client-note"><?php esc_html_e('Dodaj nową uwagę', 'erp-omd'); ?></label>

@@ -357,6 +357,10 @@ class ERP_OMD_Frontend
             ? $this->projects->all(['client_id' => $client_id])
             : [];
         $projects = $all_client_projects;
+        $history_month_filter = sanitize_text_field(wp_unslash($_GET['history_month'] ?? ''));
+        if (! preg_match('/^\d{4}-\d{2}$/', $history_month_filter)) {
+            $history_month_filter = '';
+        }
         $project_scope = sanitize_key((string) ($_GET['project_scope'] ?? 'current'));
         if (! in_array($project_scope, ['current', 'archive'], true)) {
             $project_scope = 'current';
@@ -377,6 +381,21 @@ class ERP_OMD_Frontend
                 }
             )
         );
+        if ($history_month_filter !== '') {
+            $projects = array_values(
+                array_filter(
+                    $projects,
+                    static function ($project_item) use ($history_month_filter) {
+                        $project_date = (string) ($project_item['start_date'] ?? '');
+                        if ($project_date === '') {
+                            $project_date = (string) ($project_item['created_at'] ?? '');
+                        }
+
+                        return strpos($project_date, $history_month_filter) === 0;
+                    }
+                )
+            );
+        }
         $project_sort_by = sanitize_key((string) ($_GET['sort_by'] ?? 'deadline'));
         if (! in_array($project_sort_by, ['name', 'status', 'budget', 'start_date', 'end_date', 'billing_type', 'deadline'], true)) {
             $project_sort_by = 'deadline';
@@ -2515,6 +2534,11 @@ class ERP_OMD_Frontend
         $sort_order = sanitize_key((string) wp_unslash($_REQUEST['sort_order'] ?? ''));
         if (in_array($sort_order, ['asc', 'desc'], true)) {
             $args['sort_order'] = $sort_order;
+        }
+
+        $history_month = sanitize_text_field((string) wp_unslash($_REQUEST['history_month'] ?? ''));
+        if (preg_match('/^\d{4}-\d{2}$/', $history_month)) {
+            $args['history_month'] = $history_month;
         }
 
         return $args;

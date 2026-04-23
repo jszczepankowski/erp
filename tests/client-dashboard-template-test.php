@@ -9,9 +9,11 @@ $requiredSnippets = [
     'name="project_scope"',
     'name="sort_by"',
     'name="sort_order"',
+    'name="history_month"',
     "name=\"erp_omd_front_action\" value=\"create_project_note\"",
     "esc_html_e('Załączniki projektu', 'erp-omd')",
     "esc_html_e('Źródło', 'erp-omd')",
+    "esc_html_e('Wyczyść filtr miesiąca', 'erp-omd')",
     'usort(',
 ];
 

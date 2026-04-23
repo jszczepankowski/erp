@@ -12,6 +12,7 @@ $processClientCount = substr_count($runtime, 'function process_client_request(')
 $createClientNoteCount = substr_count($runtime, 'function create_client_project_note(');
 $collectClientArgsCount = substr_count($runtime, 'function collect_client_dashboard_args(');
 $encodedClientNoticeCount = substr_count($runtime, "rawurlencode(\$message)");
+$historyMonthCollectionCount = substr_count($runtime, "\$args['history_month'] = \$history_month;");
 
 if ($legacyCount !== 0) {
     throw new RuntimeException('Legacy method render_client_dashboard should not exist.');
@@ -41,5 +42,9 @@ if ($encodedClientNoticeCount !== 0) {
     throw new RuntimeException('Client notice redirect should not rawurlencode message.');
 }
 
-echo "Assertions: 7\n";
+if ($historyMonthCollectionCount !== 1) {
+    throw new RuntimeException('collect_client_dashboard_args should include history_month propagation.');
+}
+
+echo "Assertions: 8\n";
 echo "Frontend runtime method naming test passed.\n";
