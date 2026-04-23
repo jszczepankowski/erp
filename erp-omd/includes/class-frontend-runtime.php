@@ -2560,6 +2560,18 @@ class ERP_OMD_Frontend
                 'label' => $attachment_label,
                 'created_by_user_id' => (int) $user->ID,
             ]);
+
+            $attachment_title = (string) get_the_title((int) $upload_result);
+            if ($attachment_title === '') {
+                $attachment_title = '#' . (int) $upload_result;
+            }
+            $attachment_note_text = sprintf(
+                /* translators: 1: attachment label, 2: attachment title */
+                __('Dodano załącznik: %1$s (%2$s).', 'erp-omd'),
+                $attachment_label !== '' ? $attachment_label : __('Bez etykiety', 'erp-omd'),
+                $attachment_title
+            );
+            $project_notes_repo->create($project_id, $attachment_note_text, (int) $user->ID);
         }
 
         $extra_args = array_merge($dashboard_args, ['project_id' => $project_id]);

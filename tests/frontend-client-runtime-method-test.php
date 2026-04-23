@@ -18,6 +18,7 @@ $monthlyStatusSummaryCount = substr_count($runtime, "\$monthly_history_row['stat
 $clientAttachmentUploadCallCount = substr_count($runtime, "media_handle_upload('attachment_file'");
 $clientAttachmentFileSignatureValidationCount = substr_count($runtime, 'wp_check_filetype_and_ext(');
 $clientAttachmentZipMimeFallbackCount = substr_count($runtime, 'application/x-zip-compressed');
+$clientAttachmentAuditNoteCount = substr_count($runtime, 'Dodano załącznik: %1$s (%2$s).');
 
 if ($legacyCount !== 0) {
     throw new RuntimeException('Legacy method render_client_dashboard should not exist.');
@@ -71,5 +72,9 @@ if ($clientAttachmentZipMimeFallbackCount < 1) {
     throw new RuntimeException('Client attachment upload should allow x-zip-compressed MIME fallback.');
 }
 
-echo "Assertions: 13\n";
+if ($clientAttachmentAuditNoteCount < 1) {
+    throw new RuntimeException('Client attachment upload should append a project note entry for uploaded files.');
+}
+
+echo "Assertions: 14\n";
 echo "Frontend runtime method naming test passed.\n";
