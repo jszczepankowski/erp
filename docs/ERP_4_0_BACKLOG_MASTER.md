@@ -228,8 +228,8 @@ Legenda:
 - B6 (edytowalne szablony maili)
 - D5 (alert admin przy błędzie sync)
 - E5 (MVP audit log krytyczny)
-- G2 (historia zmian budżetu)
-- G5 (historia zleceń miesięcznie)
+- G2 (historia zmian budżetu) — ✅ zrealizowane w Sprint 7 MVP
+- G5 (historia zleceń miesięcznie) — ✅ zrealizowane w Sprint 7 MVP
 
 ## COULD
 - Dodatkowe raporty KPI dla dostawców i jakości sync,
