@@ -1440,7 +1440,8 @@ class ERP_OMD_Admin
                 array_filter(
                     $project_requests,
                     static function ($request_row) {
-                        return (int) ($request_row['requester_employee_id'] ?? 0) <= 0;
+                        $requester_user_id = (int) ($request_row['requester_user_id'] ?? 0);
+                        return $requester_user_id > 0 && user_can($requester_user_id, 'erp_omd_front_client');
                     }
                 )
             );
@@ -1449,7 +1450,8 @@ class ERP_OMD_Admin
                 array_filter(
                     $project_requests,
                     static function ($request_row) {
-                        return (int) ($request_row['requester_employee_id'] ?? 0) > 0;
+                        $requester_user_id = (int) ($request_row['requester_user_id'] ?? 0);
+                        return ! ($requester_user_id > 0 && user_can($requester_user_id, 'erp_omd_front_client'));
                     }
                 )
             );

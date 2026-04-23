@@ -2636,6 +2636,11 @@ class ERP_OMD_Frontend
         if ($client_id <= 0) {
             $this->redirect_client_with_notice('error', __('Brak przypisanego klienta do bieżącego konta.', 'erp-omd'), $dashboard_args);
         }
+        $deadline = sanitize_text_field(wp_unslash($_POST['deadline'] ?? ''));
+        $brief = sanitize_textarea_field(wp_unslash($_POST['brief'] ?? ''));
+        if ($deadline !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $deadline)) {
+            $brief = trim($brief . "\n" . sprintf(__('Deadline klienta: %s', 'erp-omd'), $deadline));
+        }
 
         $payload = $this->project_request_service->prepare([
             'requester_user_id' => (int) $user->ID,
@@ -2645,9 +2650,9 @@ class ERP_OMD_Frontend
             'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')),
             'preferred_manager_id' => (int) ($_POST['preferred_manager_id'] ?? 0),
             'estimate_id' => 0,
-            'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')),
+            'brief' => $brief,
             'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')),
-            'end_date' => sanitize_text_field(wp_unslash($_POST['deadline'] ?? '')),
+            'end_date' => sanitize_text_field(wp_unslash($_POST['end_date'] ?? '')),
             'status' => 'new',
             'reviewed_by_user_id' => 0,
             'reviewed_at' => null,

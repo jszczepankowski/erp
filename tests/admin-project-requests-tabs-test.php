@@ -13,8 +13,8 @@ if ($template === '') {
 $runtimeSnippets = [
     "sanitize_key(wp_unslash(\$_GET['tab'] ?? 'employee'))",
     "in_array(\$request_tab, ['employee', 'client'], true)",
-    "return (int) (\$request_row['requester_employee_id'] ?? 0) <= 0;",
-    "return (int) (\$request_row['requester_employee_id'] ?? 0) > 0;",
+    "user_can(\$requester_user_id, 'erp_omd_front_client')",
+    "return ! (\$requester_user_id > 0 && user_can(\$requester_user_id, 'erp_omd_front_client'));",
 ];
 
 foreach ($runtimeSnippets as $snippet) {

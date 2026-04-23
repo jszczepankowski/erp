@@ -26,6 +26,7 @@ $clientAttachmentUploadStagedVariableCount = substr_count($runtime, '$uploaded_a
 $deleteClientAttachmentActionCount = substr_count($runtime, "\$action === 'delete_project_attachment'");
 $createClientRequestActionCount = substr_count($runtime, "if (\$action === 'create_project_request') {\n            \$this->create_client_project_request(\$user);");
 $clientRequestDeadlineFieldCount = substr_count($runtime, "wp_unslash(\$_POST['deadline'] ?? '')");
+$clientRequestEndDateFieldCount = substr_count($runtime, "wp_unslash(\$_POST['end_date'] ?? '')");
 $missingClientRedirectCount = substr_count($runtime, "'missing_client' => 1");
 $deleteAttachmentMediaCleanupCount = substr_count($runtime, 'wp_delete_attachment($attachment_id, true);');
 $deleteAttachmentResultCheckCount = substr_count($runtime, '$delete_result = $attachments_repo->delete($attachment_relation_id);');
@@ -116,6 +117,10 @@ if ($clientRequestDeadlineFieldCount < 1) {
     throw new RuntimeException('Client project request should map deadline field.');
 }
 
+if ($clientRequestEndDateFieldCount < 1) {
+    throw new RuntimeException('Client project request should preserve end_date field.');
+}
+
 if ($missingClientRedirectCount < 1) {
     throw new RuntimeException('Client access guard should redirect when erp_omd_client_id is missing.');
 }
@@ -136,5 +141,5 @@ if ($attachmentVersionLabelNormalizationCount < 1) {
     throw new RuntimeException('Attachment upload flow should normalize existing (vN) suffixes from labels.');
 }
 
-echo "Assertions: 26\n";
+echo "Assertions: 27\n";
 echo "Frontend runtime method naming test passed.\n";
