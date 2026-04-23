@@ -496,16 +496,25 @@
                             </div>
                         </form>
                         <table class="widefat striped">
-                            <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Autor', 'erp-omd'); ?></th><th><?php esc_html_e('Treść', 'erp-omd'); ?></th></tr></thead>
+                            <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Autor', 'erp-omd'); ?></th><th><?php esc_html_e('Treść', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                             <tbody>
                                 <?php if (empty($project_notes)) : ?>
-                                    <tr><td colspan="3"><?php esc_html_e('Brak uwag klienta.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="4"><?php esc_html_e('Brak uwag klienta.', 'erp-omd'); ?></td></tr>
                                 <?php else : ?>
                                     <?php foreach ($project_notes as $note_item) : ?>
                                         <tr>
                                             <td><?php echo esc_html($note_item['created_at']); ?></td>
                                             <td><?php echo esc_html($note_item['author_login'] ?: '—'); ?></td>
                                             <td><?php echo esc_html($note_item['note']); ?></td>
+                                            <td>
+                                                <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć uwagę klienta?', 'erp-omd')); ?>');">
+                                                    <?php wp_nonce_field('erp_omd_delete_project_note'); ?>
+                                                    <input type="hidden" name="erp_omd_action" value="delete_project_note" />
+                                                    <input type="hidden" name="project_id" value="<?php echo esc_attr((string) ($project['id'] ?? 0)); ?>" />
+                                                    <input type="hidden" name="note_id" value="<?php echo esc_attr((string) ($note_item['id'] ?? 0)); ?>" />
+                                                    <button type="submit" class="button button-link-delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                                </form>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
