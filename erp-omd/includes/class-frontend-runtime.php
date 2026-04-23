@@ -69,6 +69,7 @@ class ERP_OMD_Frontend
         add_rewrite_rule('^erp-front/logout/?$', 'index.php?erp_omd_front=logout', 'top');
         add_rewrite_rule('^erp-front/worker/?$', 'index.php?erp_omd_front=worker', 'top');
         add_rewrite_rule('^erp-front/manager/?$', 'index.php?erp_omd_front=manager', 'top');
+        add_rewrite_rule('^erp-front/client/?$', 'index.php?erp_omd_front=client', 'top');
         add_rewrite_rule('^erp-front/estimate-decision/?$', 'index.php?erp_omd_front=estimate-decision', 'top');
     }
 
@@ -209,6 +210,11 @@ class ERP_OMD_Frontend
             return;
         }
 
+        if ($screen === 'client') {
+            $this->handle_client_screen($current_user);
+            return;
+        }
+
         $this->handle_manager_screen($current_user);
     }
 
@@ -288,6 +294,11 @@ class ERP_OMD_Frontend
             wp_safe_redirect($this->front_url('login', ['denied' => 1]));
             exit;
         }
+
+        if ($screen === 'client' && ! user_can($user, 'erp_omd_front_client')) {
+            wp_safe_redirect($this->front_url('login', ['denied' => 1]));
+            exit;
+        }
     }
 
     private function should_hide_admin_for_user($user)
@@ -304,7 +315,7 @@ class ERP_OMD_Frontend
             return false;
         }
 
-        return user_can($user, 'erp_omd_front_manager') || user_can($user, 'erp_omd_front_worker');
+        return user_can($user, 'erp_omd_front_manager') || user_can($user, 'erp_omd_front_worker') || user_can($user, 'erp_omd_front_client');
     }
 
     private function resolve_dashboard_url_for_user($user)
@@ -321,7 +332,227 @@ class ERP_OMD_Frontend
             return $this->front_url('worker');
         }
 
+        if (user_can($user, 'erp_omd_front_client')) {
+            return $this->front_url('client');
+        }
+
         return admin_url();
+    }
+
+    private function handle_client_screen(WP_User $user)
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->process_client_request($user);
+            return;
+        }
+
+        $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+        $client_profile = $client_id > 0 ? $this->clients->find($client_id) : null;
+        $client_rates = [];
+        if ($client_id > 0 && class_exists('ERP_OMD_Client_Rate_Repository')) {
+            $client_rates_repo = new ERP_OMD_Client_Rate_Repository();
+            $client_rates = (array) $client_rates_repo->for_client($client_id);
+        }
+        $all_client_projects = $client_id > 0
+            ? $this->projects->all(['client_id' => $client_id])
+            : [];
+        $projects = $all_client_projects;
+        $history_month_filter = sanitize_text_field(wp_unslash($_GET['history_month'] ?? ''));
+        if (! preg_match('/^\d{4}-\d{2}$/', $history_month_filter)) {
+            $history_month_filter = '';
+        }
+        $project_scope = sanitize_key((string) ($_GET['project_scope'] ?? 'current'));
+        if (! in_array($project_scope, ['current', 'archive'], true)) {
+            $project_scope = 'current';
+        }
+        $archived_statuses = ['archiwum', 'zakonczony', 'zamkniete', 'closed'];
+        $projects = array_values(
+            array_filter(
+                $projects,
+                static function ($project_item) use ($project_scope, $archived_statuses) {
+                    $status = strtolower((string) ($project_item['status'] ?? ''));
+                    $is_archived = in_array($status, $archived_statuses, true);
+
+                    if ($project_scope === 'archive') {
+                        return $is_archived;
+                    }
+
+                    return ! $is_archived;
+                }
+            )
+        );
+        if ($history_month_filter !== '') {
+            $projects = array_values(
+                array_filter(
+                    $projects,
+                    static function ($project_item) use ($history_month_filter) {
+                        $project_date = (string) ($project_item['start_date'] ?? '');
+                        if ($project_date === '') {
+                            $project_date = (string) ($project_item['created_at'] ?? '');
+                        }
+
+                        return strpos($project_date, $history_month_filter) === 0;
+                    }
+                )
+            );
+        }
+        $project_sort_by = sanitize_key((string) ($_GET['sort_by'] ?? 'deadline'));
+        if (! in_array($project_sort_by, ['name', 'status', 'budget', 'start_date', 'end_date', 'billing_type', 'deadline'], true)) {
+            $project_sort_by = 'deadline';
+        }
+        $project_sort_order = strtolower(sanitize_key((string) ($_GET['sort_order'] ?? 'asc')));
+        if (! in_array($project_sort_order, ['asc', 'desc'], true)) {
+            $project_sort_order = 'asc';
+        }
+        $selected_project_id = (int) ($_GET['project_id'] ?? 0);
+        if ($selected_project_id <= 0 && ! empty($projects)) {
+            $selected_project_id = (int) ($projects[0]['id'] ?? 0);
+        }
+
+        usort(
+            $projects,
+            static function ($left, $right) use ($project_sort_by, $project_sort_order) {
+                $left_value = $left[$project_sort_by] ?? '';
+                $right_value = $right[$project_sort_by] ?? '';
+
+                if ($project_sort_by === 'budget') {
+                    $left_comp = (float) $left_value;
+                    $right_comp = (float) $right_value;
+                    $result = $left_comp <=> $right_comp;
+                } else {
+                    $result = strcasecmp((string) $left_value, (string) $right_value);
+                }
+
+                if ($result === 0) {
+                    $result = strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+                }
+
+                return $project_sort_order === 'desc' ? -$result : $result;
+            }
+        );
+
+        $visible_project_ids = array_map(
+            'intval',
+            wp_list_pluck($projects, 'id')
+        );
+        if ($selected_project_id > 0 && ! in_array($selected_project_id, $visible_project_ids, true)) {
+            $selected_project_id = 0;
+        }
+
+        $client_portal_service = class_exists('ERP_OMD_Client_Portal_Service')
+            ? new ERP_OMD_Client_Portal_Service($this->projects, $this->project_revenues, $this->project_costs)
+            : null;
+        $selected_project_finance = null;
+        if ($selected_project_id > 0 && $client_portal_service instanceof ERP_OMD_Client_Portal_Service) {
+            $selected_project_finance = $client_portal_service->build_project_finance_view($selected_project_id);
+        }
+        $selected_project_reported_hours = 0.0;
+        $selected_project_reported_entries = 0;
+        $selected_project_reported_items = [];
+        if ($selected_project_id > 0) {
+            $reported_entries = (array) $this->time_entries->all(['project_id' => $selected_project_id]);
+            $selected_project_reported_entries = count($reported_entries);
+            foreach ($reported_entries as $reported_entry) {
+                $selected_project_reported_hours += (float) ($reported_entry['hours'] ?? 0);
+                $selected_project_reported_items[] = [
+                    'entry_date' => (string) ($reported_entry['entry_date'] ?? ''),
+                    'hours' => (float) ($reported_entry['hours'] ?? 0),
+                    'role_name' => (string) ($reported_entry['role_name'] ?? ''),
+                    'description' => (string) ($reported_entry['description'] ?? ''),
+                ];
+            }
+        }
+        $selected_project_notes = [];
+        if ($selected_project_id > 0 && class_exists('ERP_OMD_Project_Note_Repository')) {
+            $project_notes_repo = new ERP_OMD_Project_Note_Repository();
+            $selected_project_notes = (array) $project_notes_repo->for_project($selected_project_id);
+        }
+        $selected_project_attachments = [];
+        $selected_estimate_attachments = [];
+        if ($selected_project_id > 0 && class_exists('ERP_OMD_Attachment_Repository')) {
+            $attachments_repo = new ERP_OMD_Attachment_Repository();
+            $selected_project_attachments = (array) $attachments_repo->for_entity('project', $selected_project_id);
+            $selected_project = $this->projects->find($selected_project_id);
+            $estimate_id = (int) ($selected_project['estimate_id'] ?? 0);
+            if ($estimate_id > 0) {
+                $selected_estimate_attachments = (array) $attachments_repo->for_entity('estimate', $estimate_id);
+            }
+        }
+        $monthly_order_history = [];
+        foreach ($all_client_projects as $history_project_row) {
+            $history_date = (string) ($history_project_row['start_date'] ?? '');
+            if ($history_date === '') {
+                $history_date = (string) ($history_project_row['created_at'] ?? '');
+            }
+            $history_month = substr($history_date, 0, 7);
+            if (! preg_match('/^\d{4}-\d{2}$/', $history_month)) {
+                $history_month = __('Brak daty', 'erp-omd');
+            }
+
+            if (! isset($monthly_order_history[$history_month])) {
+                $monthly_order_history[$history_month] = [
+                    'month' => $history_month,
+                    'projects_count' => 0,
+                    'budget_total' => 0.0,
+                    'status_counts' => [],
+                ];
+            }
+
+            $monthly_order_history[$history_month]['projects_count']++;
+            $monthly_order_history[$history_month]['budget_total'] += (float) ($history_project_row['budget'] ?? 0);
+            $history_status = sanitize_key((string) ($history_project_row['status'] ?? ''));
+            if ($history_status === '') {
+                $history_status = 'unknown';
+            }
+            if (! isset($monthly_order_history[$history_month]['status_counts'][$history_status])) {
+                $monthly_order_history[$history_month]['status_counts'][$history_status] = 0;
+            }
+            $monthly_order_history[$history_month]['status_counts'][$history_status]++;
+        }
+        foreach ($monthly_order_history as &$monthly_history_row) {
+            $status_counts = (array) ($monthly_history_row['status_counts'] ?? []);
+            ksort($status_counts);
+            $status_fragments = [];
+            foreach ($status_counts as $status_key => $status_value) {
+                $status_fragments[] = sprintf('%s: %d', $status_key, (int) $status_value);
+            }
+            $monthly_history_row['status_summary'] = $status_fragments ? implode(', ', $status_fragments) : '—';
+        }
+        unset($monthly_history_row);
+        usort(
+            $monthly_order_history,
+            static function ($left, $right) {
+                return strcasecmp((string) ($right['month'] ?? ''), (string) ($left['month'] ?? ''));
+            }
+        );
+
+        $project_status_labels = [
+            'new' => __('Nowy', 'erp-omd'),
+            'active' => __('W realizacji', 'erp-omd'),
+            'on_hold' => __('Wstrzymany', 'erp-omd'),
+            'completed' => __('Zakończony', 'erp-omd'),
+            'cancelled' => __('Anulowany', 'erp-omd'),
+        ];
+        $project_billing_type_labels = [
+            'time_material' => __('Time & Material', 'erp-omd'),
+            'fixed_price' => __('Fixed Price', 'erp-omd'),
+            'retainer' => __('Retainer', 'erp-omd'),
+            'mixed' => __('Mixed', 'erp-omd'),
+        ];
+
+        $dashboard_title = __('Panel klienta', 'erp-omd');
+        $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
+        $front_logout_url = $this->front_url('logout');
+        $front_client_url = $this->front_url('client');
+        $client_notice_type = sanitize_key(wp_unslash($_GET['notice'] ?? ''));
+        $client_notice_message = sanitize_text_field(wp_unslash($_GET['message'] ?? ''));
+        if (! in_array($client_notice_type, ['', 'success', 'error', 'warning'], true)) {
+            $client_notice_type = '';
+            $client_notice_message = '';
+        }
+        $this->send_front_headers();
+        include ERP_OMD_PATH . 'templates/front/client-dashboard.php';
+        exit;
     }
 
     private function is_front_employee_inactive($user_id)
@@ -403,6 +634,19 @@ class ERP_OMD_Frontend
         }
 
         $this->redirect_worker_with_notice('error', __('Nieobsługiwana akcja formularza FRONT.', 'erp-omd'));
+    }
+
+    private function process_client_request(WP_User $user)
+    {
+        check_admin_referer('erp_omd_front_client');
+
+        $action = sanitize_text_field(wp_unslash($_POST['erp_omd_front_action'] ?? ''));
+        if ($action === 'create_project_note') {
+            $this->create_client_project_note($user);
+            return;
+        }
+
+        $this->redirect_client_with_notice('error', __('Nieobsługiwana akcja formularza klienta.', 'erp-omd'));
     }
 
     private function process_manager_request(WP_User $user)
@@ -1946,6 +2190,20 @@ class ERP_OMD_Frontend
         exit;
     }
 
+    private function redirect_client_with_notice($type, $message, array $extra_args = [])
+    {
+        $args = array_merge(
+            [
+                'notice' => $type,
+                'message' => $message,
+            ],
+            $extra_args
+        );
+
+        wp_safe_redirect($this->front_url('client', $args));
+        exit;
+    }
+
     private function redirect_manager_with_notice($type, $message, array $extra_args = [])
     {
         $args = array_merge(
@@ -2240,6 +2498,139 @@ class ERP_OMD_Frontend
             default:
                 return __('Godzinowy', 'erp-omd');
         }
+    }
+
+    private function create_client_project_note(WP_User $user)
+    {
+        $dashboard_args = $this->collect_client_dashboard_args();
+
+        if (! class_exists('ERP_OMD_Project_Note_Repository')) {
+            $this->redirect_client_with_notice('error', __('Repozytorium uwag projektu jest niedostępne.', 'erp-omd'), $dashboard_args);
+        }
+
+        $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+        if ($client_id <= 0) {
+            $this->redirect_client_with_notice('error', __('Brak przypisanego klienta do bieżącego konta.', 'erp-omd'), $dashboard_args);
+        }
+
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $note = sanitize_textarea_field(wp_unslash($_POST['note'] ?? ''));
+        $has_uploaded_file = isset($_FILES['attachment_file']) && is_array($_FILES['attachment_file']) && (int) ($_FILES['attachment_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if ($project_id <= 0 || ($note === '' && ! $has_uploaded_file)) {
+            $extra_args = $dashboard_args;
+            if ($project_id > 0) {
+                $extra_args['project_id'] = $project_id;
+            }
+            $this->redirect_client_with_notice('error', __('Projekt i treść uwagi lub załącznik są wymagane.', 'erp-omd'), $extra_args);
+        }
+
+        $project = $this->projects->find($project_id);
+        if (! $project || (int) ($project['client_id'] ?? 0) !== $client_id) {
+            $extra_args = array_merge($dashboard_args, ['project_id' => $project_id]);
+            $this->redirect_client_with_notice('error', __('Nie możesz dodawać uwag do tego projektu.', 'erp-omd'), $extra_args);
+        }
+
+        if ($has_uploaded_file && ! class_exists('ERP_OMD_Attachment_Repository')) {
+            $extra_args = array_merge($dashboard_args, ['project_id' => $project_id]);
+            $this->redirect_client_with_notice('error', __('Repozytorium załączników projektu jest niedostępne.', 'erp-omd'), $extra_args);
+        }
+
+        $project_notes_repo = new ERP_OMD_Project_Note_Repository();
+        if ($note !== '') {
+            $project_notes_repo->create($project_id, $note, (int) $user->ID);
+        }
+
+        if ($has_uploaded_file) {
+            $upload_result = $this->handle_client_project_attachment_upload((int) $user->ID);
+            if (is_wp_error($upload_result)) {
+                $extra_args = array_merge($dashboard_args, ['project_id' => $project_id]);
+                $this->redirect_client_with_notice('error', $upload_result->get_error_message(), $extra_args);
+            }
+
+            $attachment_label = sanitize_text_field(wp_unslash($_POST['attachment_label'] ?? ''));
+            if ($attachment_label === '') {
+                $attachment_label = (string) get_the_title((int) $upload_result);
+            }
+
+            $attachments_repo = new ERP_OMD_Attachment_Repository();
+            $attachments_repo->create([
+                'entity_type' => 'project',
+                'entity_id' => $project_id,
+                'attachment_id' => (int) $upload_result,
+                'label' => $attachment_label,
+                'created_by_user_id' => (int) $user->ID,
+            ]);
+        }
+
+        $extra_args = array_merge($dashboard_args, ['project_id' => $project_id]);
+        $success_message = $has_uploaded_file
+            ? __('Uwaga i załącznik zostały dodane.', 'erp-omd')
+            : __('Uwaga została dodana.', 'erp-omd');
+        $this->redirect_client_with_notice('success', $success_message, $extra_args);
+    }
+
+    private function handle_client_project_attachment_upload($author_user_id)
+    {
+        $allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png', 'zip'];
+        $max_file_size_bytes = 30 * 1024 * 1024;
+        $file_payload = isset($_FILES['attachment_file']) && is_array($_FILES['attachment_file']) ? $_FILES['attachment_file'] : null;
+        if (! is_array($file_payload)) {
+            return new WP_Error('erp_omd_front_attachment_missing', __('Nie przesłano pliku załącznika.', 'erp-omd'));
+        }
+
+        $file_error = (int) ($file_payload['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($file_error !== UPLOAD_ERR_OK) {
+            return new WP_Error('erp_omd_front_attachment_upload_error', __('Nie udało się przesłać załącznika.', 'erp-omd'));
+        }
+
+        $file_name = (string) ($file_payload['name'] ?? '');
+        $file_size = (int) ($file_payload['size'] ?? 0);
+        $file_extension = strtolower((string) pathinfo($file_name, PATHINFO_EXTENSION));
+        if (! in_array($file_extension, $allowed_extensions, true)) {
+            return new WP_Error('erp_omd_front_attachment_invalid_type', __('Dozwolone typy plików: pdf, jpg, jpeg, png, zip.', 'erp-omd'));
+        }
+
+        if ($file_size <= 0 || $file_size > $max_file_size_bytes) {
+            return new WP_Error('erp_omd_front_attachment_invalid_size', __('Maksymalny rozmiar załącznika to 30MB.', 'erp-omd'));
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+
+        $attachment_id = media_handle_upload('attachment_file', 0, ['post_author' => (int) $author_user_id]);
+        if (is_wp_error($attachment_id)) {
+            return new WP_Error('erp_omd_front_attachment_insert_error', __('Nie udało się zapisać załącznika.', 'erp-omd'));
+        }
+
+        return (int) $attachment_id;
+    }
+
+    private function collect_client_dashboard_args()
+    {
+        $args = [];
+
+        $project_scope = sanitize_key((string) wp_unslash($_REQUEST['project_scope'] ?? ''));
+        if (in_array($project_scope, ['current', 'archive'], true)) {
+            $args['project_scope'] = $project_scope;
+        }
+
+        $sort_by = sanitize_key((string) wp_unslash($_REQUEST['sort_by'] ?? ''));
+        if (in_array($sort_by, ['name', 'status', 'budget', 'start_date', 'end_date', 'billing_type', 'deadline'], true)) {
+            $args['sort_by'] = $sort_by;
+        }
+
+        $sort_order = sanitize_key((string) wp_unslash($_REQUEST['sort_order'] ?? ''));
+        if (in_array($sort_order, ['asc', 'desc'], true)) {
+            $args['sort_order'] = $sort_order;
+        }
+
+        $history_month = sanitize_text_field((string) wp_unslash($_REQUEST['history_month'] ?? ''));
+        if (preg_match('/^\d{4}-\d{2}$/', $history_month)) {
+            $args['history_month'] = $history_month;
+        }
+
+        return $args;
     }
 
     private function find_request_in_collection(array $requests, $request_id)
