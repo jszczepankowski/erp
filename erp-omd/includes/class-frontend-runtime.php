@@ -2572,11 +2572,11 @@ class ERP_OMD_Frontend
     private function handle_client_project_attachment_upload($author_user_id)
     {
         $allowed_mime_types = [
-            'pdf' => 'application/pdf',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'zip' => 'application/zip',
+            'pdf' => ['application/pdf'],
+            'jpg' => ['image/jpeg'],
+            'jpeg' => ['image/jpeg'],
+            'png' => ['image/png'],
+            'zip' => ['application/zip', 'application/x-zip-compressed', 'multipart/x-zip'],
         ];
         $max_file_size_bytes = 30 * 1024 * 1024;
         $file_payload = isset($_FILES['attachment_file']) && is_array($_FILES['attachment_file']) ? $_FILES['attachment_file'] : null;
@@ -2607,7 +2607,8 @@ class ERP_OMD_Frontend
         if ($validated_extension === '' || ! isset($allowed_mime_types[$validated_extension])) {
             return new WP_Error('erp_omd_front_attachment_invalid_signature', __('Niepoprawny format pliku załącznika.', 'erp-omd'));
         }
-        if ($validated_mime !== '' && ! in_array($validated_mime, $allowed_mime_types, true)) {
+        $allowed_mimes_for_extension = (array) ($allowed_mime_types[$validated_extension] ?? []);
+        if ($validated_mime !== '' && ! in_array($validated_mime, $allowed_mimes_for_extension, true)) {
             return new WP_Error('erp_omd_front_attachment_invalid_mime', __('Niepoprawny typ MIME załącznika.', 'erp-omd'));
         }
 
