@@ -474,7 +474,7 @@
                 <article class="erp-omd-front-panel">
                     <h2><?php esc_html_e('Historia uwag klienta', 'erp-omd'); ?></h2>
                     <?php if ($selected_project_id > 0) : ?>
-                        <form method="post" class="erp-omd-front-form erp-omd-front-form-inline">
+                        <form method="post" enctype="multipart/form-data" class="erp-omd-front-form erp-omd-front-form-inline">
                             <?php wp_nonce_field('erp_omd_front_client'); ?>
                             <input type="hidden" name="erp_omd_front_action" value="create_project_note" />
                             <input type="hidden" name="project_id" value="<?php echo esc_attr((string) $selected_project_id); ?>" />
@@ -485,7 +485,15 @@
                             <div class="erp-omd-front-grid erp-omd-front-grid-two">
                                 <div class="erp-omd-front-field">
                                     <label for="erp-omd-client-note"><?php esc_html_e('Dodaj nową uwagę', 'erp-omd'); ?></label>
-                                    <textarea id="erp-omd-client-note" name="note" rows="3" required></textarea>
+                                    <textarea id="erp-omd-client-note" name="note" rows="3"></textarea>
+                                </div>
+                                <div class="erp-omd-front-field">
+                                    <label for="erp-omd-client-attachment-label"><?php esc_html_e('Etykieta załącznika (opcjonalnie)', 'erp-omd'); ?></label>
+                                    <input id="erp-omd-client-attachment-label" type="text" name="attachment_label" />
+                                </div>
+                                <div class="erp-omd-front-field">
+                                    <label for="erp-omd-client-attachment-file"><?php esc_html_e('Załącznik (pdf/jpg/jpeg/png/zip, max 30MB)', 'erp-omd'); ?></label>
+                                    <input id="erp-omd-client-attachment-file" type="file" name="attachment_file" accept=".pdf,.jpg,.jpeg,.png,.zip" />
                                 </div>
                             </div>
                             <div class="erp-omd-front-actions">

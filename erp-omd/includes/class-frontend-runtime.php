@@ -2515,12 +2515,13 @@ class ERP_OMD_Frontend
 
         $project_id = (int) ($_POST['project_id'] ?? 0);
         $note = sanitize_textarea_field(wp_unslash($_POST['note'] ?? ''));
-        if ($project_id <= 0 || $note === '') {
+        $has_uploaded_file = isset($_FILES['attachment_file']) && is_array($_FILES['attachment_file']) && (int) ($_FILES['attachment_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if ($project_id <= 0 || ($note === '' && ! $has_uploaded_file)) {
             $extra_args = $dashboard_args;
             if ($project_id > 0) {
                 $extra_args['project_id'] = $project_id;
             }
-            $this->redirect_client_with_notice('error', __('Projekt i treść uwagi są wymagane.', 'erp-omd'), $extra_args);
+            $this->redirect_client_with_notice('error', __('Projekt i treść uwagi lub załącznik są wymagane.', 'erp-omd'), $extra_args);
         }
 
         $project = $this->projects->find($project_id);
@@ -2529,11 +2530,80 @@ class ERP_OMD_Frontend
             $this->redirect_client_with_notice('error', __('Nie możesz dodawać uwag do tego projektu.', 'erp-omd'), $extra_args);
         }
 
+        if ($has_uploaded_file && ! class_exists('ERP_OMD_Attachment_Repository')) {
+            $extra_args = array_merge($dashboard_args, ['project_id' => $project_id]);
+            $this->redirect_client_with_notice('error', __('Repozytorium załączników projektu jest niedostępne.', 'erp-omd'), $extra_args);
+        }
+
         $project_notes_repo = new ERP_OMD_Project_Note_Repository();
-        $project_notes_repo->create($project_id, $note, (int) $user->ID);
+        if ($note !== '') {
+            $project_notes_repo->create($project_id, $note, (int) $user->ID);
+        }
+
+        if ($has_uploaded_file) {
+            $upload_result = $this->handle_client_project_attachment_upload((int) $user->ID);
+            if (is_wp_error($upload_result)) {
+                $extra_args = array_merge($dashboard_args, ['project_id' => $project_id]);
+                $this->redirect_client_with_notice('error', $upload_result->get_error_message(), $extra_args);
+            }
+
+            $attachment_label = sanitize_text_field(wp_unslash($_POST['attachment_label'] ?? ''));
+            if ($attachment_label === '') {
+                $attachment_label = (string) get_the_title((int) $upload_result);
+            }
+
+            $attachments_repo = new ERP_OMD_Attachment_Repository();
+            $attachments_repo->create([
+                'entity_type' => 'project',
+                'entity_id' => $project_id,
+                'attachment_id' => (int) $upload_result,
+                'label' => $attachment_label,
+                'created_by_user_id' => (int) $user->ID,
+            ]);
+        }
 
         $extra_args = array_merge($dashboard_args, ['project_id' => $project_id]);
-        $this->redirect_client_with_notice('success', __('Uwaga została dodana.', 'erp-omd'), $extra_args);
+        $success_message = $has_uploaded_file
+            ? __('Uwaga i załącznik zostały dodane.', 'erp-omd')
+            : __('Uwaga została dodana.', 'erp-omd');
+        $this->redirect_client_with_notice('success', $success_message, $extra_args);
+    }
+
+    private function handle_client_project_attachment_upload($author_user_id)
+    {
+        $allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png', 'zip'];
+        $max_file_size_bytes = 30 * 1024 * 1024;
+        $file_payload = isset($_FILES['attachment_file']) && is_array($_FILES['attachment_file']) ? $_FILES['attachment_file'] : null;
+        if (! is_array($file_payload)) {
+            return new WP_Error('erp_omd_front_attachment_missing', __('Nie przesłano pliku załącznika.', 'erp-omd'));
+        }
+
+        $file_error = (int) ($file_payload['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($file_error !== UPLOAD_ERR_OK) {
+            return new WP_Error('erp_omd_front_attachment_upload_error', __('Nie udało się przesłać załącznika.', 'erp-omd'));
+        }
+
+        $file_name = (string) ($file_payload['name'] ?? '');
+        $file_size = (int) ($file_payload['size'] ?? 0);
+        $file_extension = strtolower((string) pathinfo($file_name, PATHINFO_EXTENSION));
+        if (! in_array($file_extension, $allowed_extensions, true)) {
+            return new WP_Error('erp_omd_front_attachment_invalid_type', __('Dozwolone typy plików: pdf, jpg, jpeg, png, zip.', 'erp-omd'));
+        }
+
+        if ($file_size <= 0 || $file_size > $max_file_size_bytes) {
+            return new WP_Error('erp_omd_front_attachment_invalid_size', __('Maksymalny rozmiar załącznika to 30MB.', 'erp-omd'));
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+
+        $attachment_id = media_handle_upload('attachment_file', 0, ['post_author' => (int) $author_user_id]);
+        if (is_wp_error($attachment_id)) {
+            return new WP_Error('erp_omd_front_attachment_insert_error', __('Nie udało się zapisać załącznika.', 'erp-omd'));
+        }
+
+        return (int) $attachment_id;
     }
 
     private function collect_client_dashboard_args()
