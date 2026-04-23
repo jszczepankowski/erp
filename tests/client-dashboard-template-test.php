@@ -19,6 +19,8 @@ $requiredSnippets = [
     "esc_html_e('Wersja', 'erp-omd')",
     "esc_html_e('Typ', 'erp-omd')",
     "esc_html_e('Rozmiar', 'erp-omd')",
+    "esc_html_e('Akcje', 'erp-omd')",
+    "value=\"delete_project_attachment\"",
     "esc_html_e('Wyczyść filtr miesiąca', 'erp-omd')",
     "esc_html_e('Statusy', 'erp-omd')",
     'usort(',

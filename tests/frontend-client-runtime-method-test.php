@@ -10,6 +10,7 @@ $newCount = substr_count($runtime, 'function render_client_front_dashboard(');
 $handleCount = substr_count($runtime, 'function handle_client_screen(');
 $processClientCount = substr_count($runtime, 'function process_client_request(');
 $createClientNoteCount = substr_count($runtime, 'function create_client_project_note(');
+$deleteClientAttachmentCount = substr_count($runtime, 'function delete_client_project_attachment(');
 $handleClientAttachmentUploadCount = substr_count($runtime, 'function handle_client_project_attachment_upload(');
 $collectClientArgsCount = substr_count($runtime, 'function collect_client_dashboard_args(');
 $encodedClientNoticeCount = substr_count($runtime, "rawurlencode(\$message)");
@@ -20,6 +21,7 @@ $clientAttachmentFileSignatureValidationCount = substr_count($runtime, 'wp_check
 $clientAttachmentZipMimeFallbackCount = substr_count($runtime, 'application/x-zip-compressed');
 $clientAttachmentAuditNoteCount = substr_count($runtime, 'Dodano załącznik: %1$s (%2$s).');
 $clientAttachmentUploadStagedVariableCount = substr_count($runtime, '$uploaded_attachment_id = 0;');
+$deleteClientAttachmentActionCount = substr_count($runtime, "\$action === 'delete_project_attachment'");
 
 if ($legacyCount !== 0) {
     throw new RuntimeException('Legacy method render_client_dashboard should not exist.');
@@ -39,6 +41,10 @@ if ($processClientCount !== 1) {
 
 if ($createClientNoteCount !== 1) {
     throw new RuntimeException('Expected exactly one create_client_project_note method.');
+}
+
+if ($deleteClientAttachmentCount !== 1) {
+    throw new RuntimeException('Expected exactly one delete_client_project_attachment method.');
 }
 
 if ($handleClientAttachmentUploadCount !== 1) {
@@ -81,5 +87,9 @@ if ($clientAttachmentUploadStagedVariableCount < 1) {
     throw new RuntimeException('Client upload flow should stage attachment id before persisting notes/relations.');
 }
 
-echo "Assertions: 15\n";
+if ($deleteClientAttachmentActionCount !== 1) {
+    throw new RuntimeException('Client request processor should handle delete_project_attachment action.');
+}
+
+echo "Assertions: 17\n";
 echo "Frontend runtime method naming test passed.\n";

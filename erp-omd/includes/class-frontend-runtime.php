@@ -645,6 +645,10 @@ class ERP_OMD_Frontend
             $this->create_client_project_note($user);
             return;
         }
+        if ($action === 'delete_project_attachment') {
+            $this->delete_client_project_attachment($user);
+            return;
+        }
 
         $this->redirect_client_with_notice('error', __('Nieobsługiwana akcja formularza klienta.', 'erp-omd'));
     }
@@ -2584,6 +2588,48 @@ class ERP_OMD_Frontend
             ? __('Uwaga i załącznik zostały dodane.', 'erp-omd')
             : __('Uwaga została dodana.', 'erp-omd');
         $this->redirect_client_with_notice('success', $success_message, $extra_args);
+    }
+
+    private function delete_client_project_attachment(WP_User $user)
+    {
+        $dashboard_args = $this->collect_client_dashboard_args();
+        $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+        if ($client_id <= 0) {
+            $this->redirect_client_with_notice('error', __('Brak przypisanego klienta do bieżącego konta.', 'erp-omd'), $dashboard_args);
+        }
+
+        if (! class_exists('ERP_OMD_Attachment_Repository')) {
+            $this->redirect_client_with_notice('error', __('Repozytorium załączników projektu jest niedostępne.', 'erp-omd'), $dashboard_args);
+        }
+
+        $attachment_relation_id = (int) ($_POST['attachment_relation_id'] ?? 0);
+        if ($attachment_relation_id <= 0) {
+            $this->redirect_client_with_notice('error', __('Nie wskazano załącznika do usunięcia.', 'erp-omd'), $dashboard_args);
+        }
+
+        $attachments_repo = new ERP_OMD_Attachment_Repository();
+        $attachment_relation = $attachments_repo->find($attachment_relation_id);
+        if (! $attachment_relation) {
+            $this->redirect_client_with_notice('error', __('Nie znaleziono załącznika projektu.', 'erp-omd'), $dashboard_args);
+        }
+
+        $project_id = (int) ($attachment_relation['entity_id'] ?? 0);
+        $extra_args = $project_id > 0 ? array_merge($dashboard_args, ['project_id' => $project_id]) : $dashboard_args;
+        if ((string) ($attachment_relation['entity_type'] ?? '') !== 'project' || $project_id <= 0) {
+            $this->redirect_client_with_notice('error', __('Możesz usuwać tylko załączniki projektowe dodane z panelu klienta.', 'erp-omd'), $extra_args);
+        }
+
+        $project = $this->projects->find($project_id);
+        if (! $project || (int) ($project['client_id'] ?? 0) !== $client_id) {
+            $this->redirect_client_with_notice('error', __('Nie możesz usuwać załączników dla tego projektu.', 'erp-omd'), $extra_args);
+        }
+
+        if ((int) ($attachment_relation['created_by_user_id'] ?? 0) !== (int) $user->ID) {
+            $this->redirect_client_with_notice('error', __('Możesz usuwać tylko własne załączniki.', 'erp-omd'), $extra_args);
+        }
+
+        $attachments_repo->delete($attachment_relation_id);
+        $this->redirect_client_with_notice('success', __('Załącznik został usunięty.', 'erp-omd'), $extra_args);
     }
 
     private function handle_client_project_attachment_upload($author_user_id)
