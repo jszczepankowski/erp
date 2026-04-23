@@ -51,7 +51,9 @@ class ERP_OMD_Project_Request_Service
             $errors[] = __('Wniosek musi być powiązany z użytkownikiem zgłaszającym.', 'erp-omd');
         }
 
-        if (! $this->employees->find((int) $data['requester_employee_id'])) {
+        $requester_user = $data['requester_user_id'] > 0 ? get_user_by('id', (int) $data['requester_user_id']) : null;
+        $is_front_client_requester = $requester_user instanceof WP_User && user_can($requester_user, 'erp_omd_front_client');
+        if (! $is_front_client_requester && ! $this->employees->find((int) $data['requester_employee_id'])) {
             $errors[] = __('Wniosek musi być powiązany z istniejącym pracownikiem.', 'erp-omd');
         }
 
