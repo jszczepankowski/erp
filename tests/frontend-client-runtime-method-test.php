@@ -16,6 +16,7 @@ $encodedClientNoticeCount = substr_count($runtime, "rawurlencode(\$message)");
 $historyMonthCollectionCount = substr_count($runtime, "\$args['history_month'] = \$history_month;");
 $monthlyStatusSummaryCount = substr_count($runtime, "\$monthly_history_row['status_summary']");
 $clientAttachmentUploadCallCount = substr_count($runtime, "media_handle_upload('attachment_file'");
+$clientAttachmentFileSignatureValidationCount = substr_count($runtime, 'wp_check_filetype_and_ext(');
 
 if ($legacyCount !== 0) {
     throw new RuntimeException('Legacy method render_client_dashboard should not exist.');
@@ -61,5 +62,9 @@ if ($clientAttachmentUploadCallCount !== 1) {
     throw new RuntimeException('Client attachment upload should use media_handle_upload for attachment_file.');
 }
 
-echo "Assertions: 11\n";
+if ($clientAttachmentFileSignatureValidationCount < 1) {
+    throw new RuntimeException('Client attachment upload should validate file signature with wp_check_filetype_and_ext.');
+}
+
+echo "Assertions: 12\n";
 echo "Frontend runtime method naming test passed.\n";

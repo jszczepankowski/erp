@@ -2571,7 +2571,13 @@ class ERP_OMD_Frontend
 
     private function handle_client_project_attachment_upload($author_user_id)
     {
-        $allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png', 'zip'];
+        $allowed_mime_types = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'zip' => 'application/zip',
+        ];
         $max_file_size_bytes = 30 * 1024 * 1024;
         $file_payload = isset($_FILES['attachment_file']) && is_array($_FILES['attachment_file']) ? $_FILES['attachment_file'] : null;
         if (! is_array($file_payload)) {
@@ -2585,13 +2591,24 @@ class ERP_OMD_Frontend
 
         $file_name = (string) ($file_payload['name'] ?? '');
         $file_size = (int) ($file_payload['size'] ?? 0);
+        $tmp_name = (string) ($file_payload['tmp_name'] ?? '');
         $file_extension = strtolower((string) pathinfo($file_name, PATHINFO_EXTENSION));
-        if (! in_array($file_extension, $allowed_extensions, true)) {
+        if (! isset($allowed_mime_types[$file_extension])) {
             return new WP_Error('erp_omd_front_attachment_invalid_type', __('Dozwolone typy plików: pdf, jpg, jpeg, png, zip.', 'erp-omd'));
         }
 
         if ($file_size <= 0 || $file_size > $max_file_size_bytes) {
             return new WP_Error('erp_omd_front_attachment_invalid_size', __('Maksymalny rozmiar załącznika to 30MB.', 'erp-omd'));
+        }
+
+        $validated_filetype = wp_check_filetype_and_ext($tmp_name, $file_name, wp_get_mime_types());
+        $validated_extension = strtolower((string) ($validated_filetype['ext'] ?? ''));
+        $validated_mime = (string) ($validated_filetype['type'] ?? '');
+        if ($validated_extension === '' || ! isset($allowed_mime_types[$validated_extension])) {
+            return new WP_Error('erp_omd_front_attachment_invalid_signature', __('Niepoprawny format pliku załącznika.', 'erp-omd'));
+        }
+        if ($validated_mime !== '' && ! in_array($validated_mime, $allowed_mime_types, true)) {
+            return new WP_Error('erp_omd_front_attachment_invalid_mime', __('Niepoprawny typ MIME załącznika.', 'erp-omd'));
         }
 
         require_once ABSPATH . 'wp-admin/includes/file.php';
