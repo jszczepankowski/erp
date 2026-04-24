@@ -90,12 +90,16 @@
                         <div class="erp-omd-front-field">
                             <label for="erp-omd-client-request-billing-type"><?php esc_html_e('Typ projektu', 'erp-omd'); ?></label>
                             <select id="erp-omd-client-request-billing-type" name="billing_type">
-                                <?php foreach (['time_material', 'fixed_price', 'retainer', 'mixed'] as $billing_type) : ?>
+                                <?php foreach (['time_material', 'fixed_price', 'mixed'] as $billing_type) : ?>
                                     <option value="<?php echo esc_attr($billing_type); ?>">
                                         <?php echo esc_html($project_billing_type_labels[$billing_type] ?? $billing_type); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+                        <div class="erp-omd-front-field" data-client-budget-field hidden>
+                            <label for="erp-omd-client-request-budget"><?php esc_html_e('Budżet projektu (wymagany dla Ryczałtu)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-client-request-budget" type="number" name="budget" min="0" step="0.01" />
                         </div>
                         <div class="erp-omd-front-field">
                             <label for="erp-omd-client-request-manager"><?php esc_html_e('Preferowany manager', 'erp-omd'); ?></label>
@@ -129,6 +133,53 @@
                         <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Wyślij wniosek projektowy', 'erp-omd'); ?></button>
                     </div>
                 </form>
+            </article>
+
+            <article class="erp-omd-front-panel">
+                <div class="erp-omd-front-section-heading">
+                    <h2><?php esc_html_e('Wnioski projektowe klienta', 'erp-omd'); ?></h2>
+                </div>
+                <?php if ($selected_client_request) : ?>
+                    <div class="erp-omd-front-detail-grid">
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Nazwa projektu', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_request['project_name'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_request['status'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></strong><span><?php echo esc_html($project_billing_type_labels[(string) ($selected_client_request['billing_type'] ?? '')] ?? (string) ($selected_client_request['billing_type'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Budżet', 'erp-omd'); ?></strong><span><?php echo (float) ($selected_client_request['budget'] ?? 0) > 0 ? esc_html(number_format_i18n((float) ($selected_client_request['budget'] ?? 0), 2)) : esc_html__('brak', 'erp-omd'); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_request['start_date'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_request['end_date'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Brief', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_request['brief'] ?? '—')); ?></span></div>
+                    </div>
+                <?php endif; ?>
+                <div class="erp-omd-front-table-wrap">
+                    <table class="erp-omd-front-table">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Akcja', 'erp-omd'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if ($client_project_requests) : ?>
+                                <?php foreach ($client_project_requests as $client_request_row) : ?>
+                                    <tr>
+                                        <td><?php echo esc_html((string) ($client_request_row['project_name'] ?? '—')); ?></td>
+                                        <td><?php echo esc_html((string) ($client_request_row['status'] ?? '—')); ?></td>
+                                        <td><?php echo esc_html($project_billing_type_labels[(string) ($client_request_row['billing_type'] ?? '')] ?? (string) ($client_request_row['billing_type'] ?? '—')); ?></td>
+                                        <td>
+                                            <a class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-button-ghost" href="<?php echo esc_url(add_query_arg(['request_id' => (int) ($client_request_row['id'] ?? 0)], $front_client_url)); ?>">
+                                                <?php esc_html_e('Podgląd szczegółów', 'erp-omd'); ?>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else : ?>
+                                <tr><td colspan="4"><?php esc_html_e('Brak wniosków projektowych.', 'erp-omd'); ?></td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </article>
 
             <article class="erp-omd-front-panel">
@@ -613,6 +664,46 @@
             <?php endif; ?>
         </section>
     </main>
+    <script>
+    (function (document) {
+        var billingTypeField = document.getElementById('erp-omd-client-request-billing-type');
+        var budgetFieldWraps = Array.prototype.slice.call(document.querySelectorAll('[data-client-budget-field]'));
+        var budgetFieldWrap = budgetFieldWraps.length ? budgetFieldWraps[budgetFieldWraps.length - 1] : null;
+        var budgetInput = document.getElementById('erp-omd-client-request-budget');
+        if (!billingTypeField || !budgetFieldWrap || !budgetInput) {
+            return;
+        }
+
+        budgetFieldWraps.slice(0, -1).forEach(function (wrapNode) {
+            if (wrapNode && wrapNode.parentNode) {
+                wrapNode.parentNode.removeChild(wrapNode);
+            }
+        });
+        Array.prototype.slice.call(document.querySelectorAll('input[name="budget"]')).forEach(function (candidate) {
+            if (candidate === budgetInput || !candidate.parentNode) {
+                return;
+            }
+            var container = candidate.closest('.erp-omd-front-field');
+            if (container && container !== budgetFieldWrap && container.parentNode) {
+                container.parentNode.removeChild(container);
+            } else if (candidate.parentNode) {
+                candidate.parentNode.removeChild(candidate);
+            }
+        });
+
+        var applyState = function () {
+            var shouldShow = billingTypeField.value === 'fixed_price';
+            budgetFieldWrap.hidden = !shouldShow;
+            budgetInput.required = shouldShow;
+            if (!shouldShow) {
+                budgetInput.value = '';
+            }
+        };
+
+        billingTypeField.addEventListener('change', applyState);
+        applyState();
+    }(document));
+    </script>
     <?php wp_footer(); ?>
 </body>
 </html>

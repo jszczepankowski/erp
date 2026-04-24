@@ -1137,6 +1137,16 @@
                                     </div>
 
                                     <p class="erp-omd-front-lead"><?php echo esc_html($project_request['brief'] ?? ''); ?></p>
+                                    <details class="erp-omd-front-request-preview">
+                                        <summary class="erp-omd-front-button erp-omd-front-button-ghost erp-omd-front-button-small"><?php esc_html_e('Podgląd szczegółów wniosku', 'erp-omd'); ?></summary>
+                                        <div class="erp-omd-front-detail-grid">
+                                            <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></strong><span><?php echo esc_html($this->billing_type_label((string) ($project_request['billing_type'] ?? ''))); ?></span></div>
+                                            <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Budżet', 'erp-omd'); ?></strong><span><?php echo (float) ($project_request['budget'] ?? 0) > 0 ? esc_html(number_format_i18n((float) ($project_request['budget'] ?? 0), 2)) : esc_html__('brak', 'erp-omd'); ?></span></div>
+                                            <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($project_request['start_date'] ?? '—')); ?></span></div>
+                                            <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($project_request['end_date'] ?? '—')); ?></span></div>
+                                            <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Brief', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($project_request['brief'] ?? '—')); ?></span></div>
+                                        </div>
+                                    </details>
 
                                     <?php $can_review_request = $this->can_review_project_request($project_request, $employee, $user); ?>
                                     <div class="erp-omd-front-inline-actions">
@@ -1154,6 +1164,10 @@
                                                 <?php wp_nonce_field('erp_omd_front_manager'); ?>
                                                 <input type="hidden" name="erp_omd_front_action" value="approve_project_request">
                                                 <input type="hidden" name="request_id" value="<?php echo esc_attr((string) ($project_request['id'] ?? 0)); ?>">
+                                                <label>
+                                                    <input type="checkbox" name="request_preview_ack" value="1" required>
+                                                    <?php esc_html_e('Potwierdzam, że sprawdzono szczegóły wniosku.', 'erp-omd'); ?>
+                                                </label>
                                                 <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary erp-omd-front-button-small"><?php esc_html_e('Zatwierdź', 'erp-omd'); ?></button>
                                             </form>
 
