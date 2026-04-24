@@ -11,7 +11,7 @@
                 <div class="erp-omd-form-sections">
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
-                            <h3><?php esc_html_e('Kontekst wpisu', 'erp-omd'); ?></h3>
+                            <h3><?php esc_html_e('Kontekst wpisu + czas i status', 'erp-omd'); ?></h3>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-time-context">
                             <div class="erp-omd-form-field">
@@ -56,12 +56,6 @@
                                 </select>
                             </div>
                         </div>
-                    </section>
-
-                    <section class="erp-omd-form-section">
-                        <div class="erp-omd-form-section-header">
-                            <h3><?php esc_html_e('Czas i status', 'erp-omd'); ?></h3>
-						</div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-time-status">
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
                                 <label for="time-hours"><?php esc_html_e('Godziny', 'erp-omd'); ?></label>
