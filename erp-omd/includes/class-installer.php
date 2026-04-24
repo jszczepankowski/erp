@@ -395,6 +395,7 @@ class ERP_OMD_Installer
                 client_id BIGINT UNSIGNED NOT NULL,
                 project_name VARCHAR(191) NOT NULL,
                 billing_type VARCHAR(32) NOT NULL DEFAULT 'time_material',
+                budget DECIMAL(12,2) NOT NULL DEFAULT 0.00,
                 preferred_manager_id BIGINT UNSIGNED NULL,
                 estimate_id BIGINT UNSIGNED NULL,
                 brief LONGTEXT NULL,
@@ -416,6 +417,7 @@ class ERP_OMD_Installer
                 KEY converted_project_id (converted_project_id)
             ) ENGINE=InnoDB {$charset_collate};"
         );
+        self::add_column_if_missing($project_requests_table, 'budget', "ALTER TABLE {$project_requests_table} ADD COLUMN budget DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER billing_type");
 
         dbDelta(
             "CREATE TABLE {$attachments_table} (
