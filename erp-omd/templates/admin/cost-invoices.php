@@ -364,7 +364,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             <table class="widefat striped">
                 <thead>
                     <tr>
-                        <th><input type="checkbox" id="cost-invoice-select-all" /></th><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Ref KSeF', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
+                        <th><input type="checkbox" id="cost-invoice-select-all" /></th><th>ID</th><th><?php esc_html_e('Data wystawienia', 'erp-omd'); ?></th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -376,10 +376,10 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                         <tr>
                             <td><input type="checkbox" class="cost-invoice-checkbox" name="cost_invoice_ids[]" value="<?php echo esc_attr((string) $invoice_id); ?>" /></td>
                             <td><?php echo esc_html((string) $invoice_id); ?></td>
+                            <td><?php echo esc_html((string) ($invoice['issue_date'] ?? '')); ?></td>
                             <td><?php echo esc_html((string) ($invoice['invoice_number'] ?? '')); ?></td>
                             <td><?php echo esc_html((string) ($supplier_name_by_id[(int) ($invoice['supplier_id'] ?? 0)] ?? ('#' . (int) ($invoice['supplier_id'] ?? 0)))); ?></td>
                             <td><?php echo esc_html((string) ($project_name_by_id[(int) ($invoice['project_id'] ?? 0)] ?? ('#' . (int) ($invoice['project_id'] ?? 0)))); ?></td>
-                            <td><code><?php echo esc_html((string) ($invoice['ksef_reference_number'] ?? '')); ?></code></td>
                             <td><?php echo esc_html((string) ($invoice['description'] ?? '')); ?></td>
                             <td><?php echo esc_html((string) ($invoice['status'] ?? '')); ?></td>
                             <td><?php echo esc_html(number_format((float) ($invoice['gross_amount'] ?? 0), 2, '.', ' ')); ?></td>
