@@ -913,6 +913,16 @@
     grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 0.7fr) minmax(160px, 0.7fr);
 }
 
+.erp-omd-admin .erp-omd-form-grid-employee-account-roles {
+    align-items: start;
+    grid-template-columns: minmax(220px, 1fr) minmax(320px, 2fr);
+}
+
+.erp-omd-admin .erp-omd-form-grid-employee-account-stack,
+.erp-omd-admin .erp-omd-form-grid-employee-roles-stack {
+    grid-template-columns: 1fr;
+}
+
 .erp-omd-admin .erp-omd-form-grid-employee-salary {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -969,6 +979,10 @@
 
 .erp-omd-admin .erp-omd-form-grid-estimate-item-row {
     grid-template-columns: minmax(260px, 2fr) minmax(120px, 1fr) minmax(140px, 1fr) minmax(160px, 1fr);
+}
+
+.erp-omd-admin .erp-omd-form-grid-estimate-basics-lifecycle {
+    grid-template-columns: minmax(220px, 1.4fr) minmax(220px, 1.2fr) minmax(180px, 0.8fr);
 }
 
 .erp-omd-admin .erp-omd-form-grid-project-lifecycle-row {
@@ -1290,6 +1304,9 @@
     }
 
     .erp-omd-admin .erp-omd-form-grid-employee-account,
+    .erp-omd-admin .erp-omd-form-grid-employee-account-roles,
+    .erp-omd-admin .erp-omd-form-grid-employee-account-stack,
+    .erp-omd-admin .erp-omd-form-grid-employee-roles-stack,
     .erp-omd-admin .erp-omd-form-grid-employee-salary,
     .erp-omd-admin .erp-omd-form-grid-role-definition,
     .erp-omd-admin .erp-omd-form-grid-client-basics,
@@ -1304,6 +1321,7 @@
     .erp-omd-admin .erp-omd-form-grid-time-status,
     .erp-omd-admin .erp-omd-form-grid-estimate-item-pricing,
     .erp-omd-admin .erp-omd-form-grid-estimate-item-row,
+    .erp-omd-admin .erp-omd-form-grid-estimate-basics-lifecycle,
     .erp-omd-admin .erp-omd-settings-media-grid {
         grid-template-columns: 1fr;
     }
@@ -1644,6 +1662,14 @@
 .erp-omd-admin .erp-omd-estimate-create-item-actions {
     display: flex;
     justify-content: flex-end;
+}
+
+.erp-omd-admin .erp-omd-estimate-create-preview {
+    margin-top: 12px;
+}
+
+.erp-omd-admin .erp-omd-estimate-create-preview h4 {
+    margin: 0 0 10px;
 }
 
 .erp-omd-admin table.widefat td input[type="text"],

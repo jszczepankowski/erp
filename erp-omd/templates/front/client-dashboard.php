@@ -461,7 +461,6 @@
                     </article>
                 </div>
 
-
                 <article class="erp-omd-front-panel">
                     <h2><?php esc_html_e('Historia zmian budżetu', 'erp-omd'); ?></h2>
                     <div class="erp-omd-front-table-wrap">

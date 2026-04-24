@@ -1,15 +1,16 @@
 <div class="wrap erp-omd-admin">
     <h1><?php esc_html_e('ERP OMD — Wnioski projektowe', 'erp-omd'); ?></h1>
 
+    <nav class="nav-tab-wrapper erp-omd-nav-tabs">
+        <a class="nav-tab <?php echo ($request_filters['tab'] ?? 'employee') === 'employee' ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-requests', 'tab' => 'employee'], admin_url('admin.php'))); ?>">
+            <?php esc_html_e('Wnioski pracowników', 'erp-omd'); ?>
+        </a>
+        <a class="nav-tab <?php echo ($request_filters['tab'] ?? 'employee') === 'client' ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-requests', 'tab' => 'client'], admin_url('admin.php'))); ?>">
+            <?php esc_html_e('Wnioski klientów', 'erp-omd'); ?>
+        </a>
+    </nav>
+
     <section class="erp-omd-card">
-        <h2 class="nav-tab-wrapper">
-            <a class="nav-tab <?php echo ($request_filters['tab'] ?? 'employee') === 'employee' ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-requests', 'tab' => 'employee'], admin_url('admin.php'))); ?>">
-                <?php esc_html_e('Wnioski pracowników', 'erp-omd'); ?>
-            </a>
-            <a class="nav-tab <?php echo ($request_filters['tab'] ?? 'employee') === 'client' ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-requests', 'tab' => 'client'], admin_url('admin.php'))); ?>">
-                <?php esc_html_e('Wnioski klientów', 'erp-omd'); ?>
-            </a>
-        </h2>
         <h2>
             <?php echo ($request_filters['tab'] ?? 'employee') === 'client'
                 ? esc_html__('Lista wniosków klientów', 'erp-omd')
