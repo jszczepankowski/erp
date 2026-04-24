@@ -98,7 +98,7 @@ class ERP_OMD_Admin
         $menu_notifications = $this->get_kolko_notifications_summary();
         add_menu_page(
             __('ERP OMD', 'erp-omd'),
-            $this->with_kolko_menu_badge(__('ERP OMD', 'erp-omd'), (int) ($menu_notifications['total'] ?? 0)),
+            __('ERP OMD', 'erp-omd'),
             'erp_omd_access',
             'erp-omd',
             [$this, 'render_dashboard'],
@@ -302,11 +302,20 @@ class ERP_OMD_Admin
 
         $time_entries = (int) $this->time_entries->count_filtered(['status' => 'submitted']);
 
-        $accepted_estimates = (array) $this->estimates->all(['status' => 'zaakceptowany']);
+        $accepted_estimates = (array) $this->estimates->all();
         $unhandled_estimates = 0;
         foreach ($accepted_estimates as $estimate_row) {
-            $project_id = (int) ($estimate_row['project_id'] ?? 0);
-            if ($project_id <= 0) {
+            if ((string) ($estimate_row['status'] ?? '') !== 'zaakceptowany') {
+                continue;
+            }
+
+            $estimate_id = (int) ($estimate_row['id'] ?? 0);
+            if ($estimate_id <= 0) {
+                continue;
+            }
+
+            $project = $this->projects->find_by_estimate_id($estimate_id);
+            if (! $project) {
                 $unhandled_estimates++;
             }
         }

@@ -41,7 +41,6 @@ Jedno zdarzenie = jedna notyfikacja (po rekordzie źródłowym).
 
 ## Zakres wdrożenia (aktualny)
 W menu WordPress (ERP OMD) dodano badge przy pozycjach:
-- ERP OMD (suma)
 - Czas pracy
 - Kosztorysy
 - Wnioski (suma wniosków pracowników i klientów)
