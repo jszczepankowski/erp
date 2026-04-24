@@ -471,6 +471,7 @@ class ERP_OMD_Admin
             case 'change_time_status': $this->handle_time_status_change(); break;
             case 'delete_time_entry': $this->handle_time_entry_delete(); break;
             case 'bulk_time_entries': $this->handle_time_entries_bulk_action(); break;
+            case 'bulk_project_requests': $this->handle_project_requests_bulk_action(); break;
             case 'update_project_request_status': $this->handle_project_request_status_update_action(); break;
             case 'convert_project_request': $this->handle_project_request_conversion_action(); break;
             case 'delete_project_request': $this->handle_project_request_delete_action(); break;
@@ -1491,6 +1492,16 @@ class ERP_OMD_Admin
             );
         }
 
+        $selected_request_id = max(0, (int) ($_GET['id'] ?? 0));
+        $selected_request = null;
+        if ($selected_request_id > 0) {
+            foreach ($project_requests as $request_row) {
+                if ((int) ($request_row['id'] ?? 0) === $selected_request_id) {
+                    $selected_request = $request_row;
+                    break;
+                }
+            }
+        }
         include ERP_OMD_PATH . 'templates/admin/project-requests.php';
     }
 
@@ -1695,6 +1706,73 @@ class ERP_OMD_Admin
 
         $this->project_requests->delete($request_id);
         $this->redirect_with_notice('erp-omd-requests', 'success', __('Wniosek projektowy został usunięty.', 'erp-omd'));
+    }
+
+    private function handle_project_requests_bulk_action()
+    {
+        check_admin_referer('erp_omd_bulk_project_requests');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $bulk_action = sanitize_text_field(wp_unslash($_POST['bulk_action'] ?? ''));
+        $request_ids = array_values(array_filter(array_map('intval', (array) ($_POST['request_ids'] ?? []))));
+        $extra_args = [
+            'tab' => sanitize_key(wp_unslash($_POST['tab'] ?? 'employee')),
+            'status' => sanitize_text_field(wp_unslash($_POST['status_filter'] ?? '')),
+            'search' => sanitize_text_field(wp_unslash($_POST['search_filter'] ?? '')),
+        ];
+        if (! in_array((string) $extra_args['tab'], ['employee', 'client'], true)) {
+            $extra_args['tab'] = 'employee';
+        }
+
+        if ($bulk_action === '' || $request_ids === []) {
+            $this->redirect_with_notice('erp-omd-requests', 'error', __('Wybierz akcję masową oraz co najmniej jeden wniosek.', 'erp-omd'), $extra_args);
+        }
+
+        $updated = 0;
+        $deleted = 0;
+        foreach ($request_ids as $request_id) {
+            $request = $this->project_requests->find($request_id);
+            if (! $request) {
+                continue;
+            }
+
+            if ($bulk_action === 'delete') {
+                $this->project_requests->delete($request_id);
+                $deleted++;
+                continue;
+            }
+
+            $target_status = $bulk_action === 'approve' ? 'approved' : ($bulk_action === 'reject' ? 'rejected' : '');
+            if ($target_status === '') {
+                continue;
+            }
+
+            $payload = $this->project_request_service->prepare(
+                array_merge(
+                    $request,
+                    [
+                        'status' => $target_status,
+                        'reviewed_by_user_id' => get_current_user_id(),
+                        'reviewed_at' => current_time('mysql'),
+                    ]
+                ),
+                $request
+            );
+            $errors = $this->project_request_service->validate($payload, $request);
+            if ($errors) {
+                continue;
+            }
+
+            $this->project_requests->update($request_id, $payload);
+            $updated++;
+        }
+
+        if ($bulk_action === 'delete') {
+            $this->redirect_with_notice('erp-omd-requests', 'success', sprintf(__('Usunięto wnioski: %d.', 'erp-omd'), $deleted), $extra_args);
+        }
+
+        $action_label = $bulk_action === 'approve' ? __('zatwierdzono', 'erp-omd') : __('odrzucono', 'erp-omd');
+        $this->redirect_with_notice('erp-omd-requests', 'success', sprintf(__('Zaktualizowano wnioski (%1$s): %2$d.', 'erp-omd'), $action_label, $updated), $extra_args);
     }
 
     private function handle_inline_employee_update_action()
