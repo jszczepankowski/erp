@@ -7,12 +7,16 @@ if ($template === '') {
 
 $requiredSnippets = [
     "esc_html_e('Podgląd szczegółów wniosku', 'erp-omd')",
-    "esc_html_e('Nazwa projektu:', 'erp-omd')",
-    "esc_html_e('Typ rozliczenia:', 'erp-omd')",
-    "esc_html_e('Budżet:', 'erp-omd')",
-    "esc_html_e('Data rozpoczęcia:', 'erp-omd')",
-    "esc_html_e('Data zakończenia:', 'erp-omd')",
-    "esc_html_e('Brief:', 'erp-omd')",
+    'class="erp-omd-detail-card"',
+    'class="erp-omd-detail-list erp-omd-detail-list-horizontal"',
+    "esc_html_e('Wybierz akcję „Podgląd szczegółów” przy wybranym wniosku.', 'erp-omd')",
+    "esc_html_e('Podgląd szczegółów', 'erp-omd')",
+    "esc_html_e('Nazwa projektu', 'erp-omd')",
+    "esc_html_e('Typ rozliczenia', 'erp-omd')",
+    "esc_html_e('Budżet', 'erp-omd')",
+    "esc_html_e('Data rozpoczęcia', 'erp-omd')",
+    "esc_html_e('Data zakończenia', 'erp-omd')",
+    "esc_html_e('Brief', 'erp-omd')",
 ];
 
 foreach ($requiredSnippets as $snippet) {

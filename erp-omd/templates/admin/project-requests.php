@@ -16,15 +16,26 @@
                 : esc_html__('Lista wniosków pracowników', 'erp-omd'); ?>
         </h2>
         <?php if ($selected_request) : ?>
-            <div class="notice notice-info inline">
-                <p><strong><?php esc_html_e('Podgląd szczegółów wniosku', 'erp-omd'); ?></strong></p>
-                <p><strong><?php esc_html_e('Nazwa projektu:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($selected_request['project_name'] ?? '—')); ?></p>
-                <p><strong><?php esc_html_e('Klient:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($selected_request['client_name'] ?? '—')); ?></p>
-                <p><strong><?php esc_html_e('Typ rozliczenia:', 'erp-omd'); ?></strong> <?php echo esc_html($this->billing_type_label((string) ($selected_request['billing_type'] ?? ''))); ?></p>
-                <p><strong><?php esc_html_e('Budżet:', 'erp-omd'); ?></strong> <?php echo (float) ($selected_request['budget'] ?? 0) > 0 ? esc_html(number_format_i18n((float) ($selected_request['budget'] ?? 0), 2)) : esc_html__('brak', 'erp-omd'); ?></p>
-                <p><strong><?php esc_html_e('Data rozpoczęcia:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($selected_request['start_date'] ?? '—')); ?></p>
-                <p><strong><?php esc_html_e('Data zakończenia:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($selected_request['end_date'] ?? '—')); ?></p>
-                <p><strong><?php esc_html_e('Brief:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($selected_request['brief'] ?? '—')); ?></p>
+            <div id="erp-omd-request-details" class="erp-omd-detail-grid erp-omd-detail-grid-vertical">
+                <div class="erp-omd-detail-card">
+                    <h3><?php esc_html_e('Podgląd szczegółów wniosku', 'erp-omd'); ?></h3>
+                    <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Nazwa projektu', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_request['project_name'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Klient', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_request['client_name'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></strong><span><?php echo esc_html($this->billing_type_label((string) ($selected_request['billing_type'] ?? ''))); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Budżet', 'erp-omd'); ?></strong><span><?php echo (float) ($selected_request['budget'] ?? 0) > 0 ? esc_html(number_format_i18n((float) ($selected_request['budget'] ?? 0), 2)) : esc_html__('brak', 'erp-omd'); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_request['start_date'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_request['end_date'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-detail-item"><strong><?php esc_html_e('Brief', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_request['brief'] ?? '—')); ?></span></div>
+                    </div>
+                </div>
+            </div>
+        <?php else : ?>
+            <div id="erp-omd-request-details" class="erp-omd-detail-grid erp-omd-detail-grid-vertical">
+                <div class="erp-omd-detail-card">
+                    <h3><?php esc_html_e('Podgląd szczegółów wniosku', 'erp-omd'); ?></h3>
+                    <p><?php esc_html_e('Wybierz akcję „Podgląd szczegółów” przy wybranym wniosku.', 'erp-omd'); ?></p>
+                </div>
             </div>
         <?php endif; ?>
         <form method="get" class="erp-omd-filter-form">
@@ -78,7 +89,7 @@
                         <tr>
                             <td><input type="checkbox" name="request_ids[]" value="<?php echo esc_attr((string) ($request_row['id'] ?? 0)); ?>" /></td>
                             <td>#<?php echo esc_html((string) ($request_row['id'] ?? 0)); ?></td>
-                            <td><a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-requests', 'tab' => (string) ($request_filters['tab'] ?? 'employee'), 'status' => (string) ($request_filters['status'] ?? ''), 'search' => (string) ($request_filters['search'] ?? ''), 'id' => (int) ($request_row['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php echo esc_html((string) ($request_row['project_name'] ?? '—')); ?></a></td>
+                            <td><?php echo esc_html((string) ($request_row['project_name'] ?? '—')); ?></td>
                             <td><?php echo esc_html((string) ($request_row['client_name'] ?? '—')); ?></td>
                             <td><?php echo esc_html($this->billing_type_label((string) ($request_row['billing_type'] ?? ''))); ?></td>
                             <td><?php echo esc_html((string) ($request_row['requester_login'] ?? '—')); ?></td>
@@ -88,6 +99,7 @@
                                 <details class="erp-omd-list-actions">
                                     <summary class="button button-small"><?php esc_html_e('Akcje', 'erp-omd'); ?></summary>
                                     <div class="erp-omd-list-actions-menu">
+                                        <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-requests', 'tab' => (string) ($request_filters['tab'] ?? 'employee'), 'status' => (string) ($request_filters['status'] ?? ''), 'search' => (string) ($request_filters['search'] ?? ''), 'id' => (int) ($request_row['id'] ?? 0)], admin_url('admin.php')) . '#erp-omd-request-details'); ?>"><?php esc_html_e('Podgląd szczegółów', 'erp-omd'); ?></a>
                                         <?php foreach (['under_review' => __('Do analizy', 'erp-omd'), 'approved' => __('Zatwierdź', 'erp-omd'), 'rejected' => __('Odrzuć', 'erp-omd')] as $target_status => $target_label) : ?>
                                             <form method="post" class="erp-omd-inline-form">
                                                 <?php wp_nonce_field('erp_omd_update_project_request_status'); ?>

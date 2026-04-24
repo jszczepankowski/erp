@@ -370,6 +370,14 @@ class ERP_OMD_Frontend
         $all_client_projects = $client_id > 0
             ? $this->projects->all(['client_id' => $client_id])
             : [];
+        $client_project_requests = $client_id > 0
+            ? (array) $this->project_requests->all(['client_id' => $client_id])
+            : [];
+        $selected_client_request_id = (int) ($_GET['request_id'] ?? 0);
+        $selected_client_request = null;
+        if ($selected_client_request_id > 0) {
+            $selected_client_request = $this->find_request_in_collection($client_project_requests, $selected_client_request_id);
+        }
         $projects = $all_client_projects;
         $history_month_filter = sanitize_text_field(wp_unslash($_GET['history_month'] ?? ''));
         if (! preg_match('/^\d{4}-\d{2}$/', $history_month_filter)) {
@@ -2825,6 +2833,11 @@ class ERP_OMD_Frontend
         $history_month = sanitize_text_field((string) wp_unslash($_REQUEST['history_month'] ?? ''));
         if (preg_match('/^\d{4}-\d{2}$/', $history_month)) {
             $args['history_month'] = $history_month;
+        }
+
+        $request_id = (int) wp_unslash($_REQUEST['request_id'] ?? 0);
+        if ($request_id > 0) {
+            $args['request_id'] = $request_id;
         }
 
         return $args;

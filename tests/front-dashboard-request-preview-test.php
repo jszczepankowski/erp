@@ -13,9 +13,11 @@ if ($runtime === '') {
 $templateSnippets = [
     "esc_html_e('Podgląd szczegółów wniosku', 'erp-omd')",
     '<summary class="erp-omd-front-button erp-omd-front-button-ghost erp-omd-front-button-small">',
+    '<div class="erp-omd-front-detail-grid">',
+    "esc_html_e('Typ rozliczenia', 'erp-omd')",
+    "esc_html_e('Budżet', 'erp-omd')",
     "name=\"request_preview_ack\" value=\"1\" required",
     "esc_html_e('Potwierdzam, że sprawdzono szczegóły wniosku.', 'erp-omd')",
-    "esc_html__('Budżet: %s', 'erp-omd')",
 ];
 
 $runtimeSnippets = [

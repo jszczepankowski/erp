@@ -1502,10 +1502,6 @@ class ERP_OMD_Admin
                 }
             }
         }
-        if (! $selected_request && ! empty($project_requests)) {
-            $selected_request = $project_requests[0];
-        }
-
         include ERP_OMD_PATH . 'templates/admin/project-requests.php';
     }
 
