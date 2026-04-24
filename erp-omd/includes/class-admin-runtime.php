@@ -343,7 +343,8 @@ class ERP_OMD_Admin
             case 'delete_supplier': $this->handle_supplier_delete(); break;
             case 'save_cost_invoice': $this->handle_cost_invoice_save(); break;
             case 'delete_cost_invoice': $this->handle_cost_invoice_delete(); break;
-            case 'bulk_cost_invoices': $this->handle_cost_invoice_bulk_action(); break;
+            case 'bulk_cost_invoices': $this->handle_cost_invoice_bulk_action('invoices'); break;
+            case 'bulk_ksef_cost_invoices': $this->handle_cost_invoice_bulk_action('ksef-cost'); break;
             case 'attach_cost_invoice_to_project': $this->handle_attach_cost_invoice_to_project(); break;
             case 'moderate_ksef_queue': $this->handle_ksef_queue_moderation_action(); break;
             case 'bulk_ksef_queue': $this->handle_ksef_queue_bulk_action(); break;
@@ -2143,15 +2144,16 @@ class ERP_OMD_Admin
         $this->redirect_cost_invoice_page(['tab' => 'invoices', 'message' => 'cost_invoice_deleted']);
     }
 
-    private function handle_cost_invoice_bulk_action()
+    private function handle_cost_invoice_bulk_action($tab = 'invoices')
     {
-        check_admin_referer('erp_omd_bulk_cost_invoices');
+        $tab = $tab === 'ksef-cost' ? 'ksef-cost' : 'invoices';
+        check_admin_referer($tab === 'ksef-cost' ? 'erp_omd_bulk_ksef_cost_invoices' : 'erp_omd_bulk_cost_invoices');
         $this->require_capability('erp_omd_manage_projects');
 
         $action = sanitize_key((string) ($_POST['bulk_action'] ?? ''));
         $invoice_ids = array_values(array_filter(array_map('intval', (array) ($_POST['cost_invoice_ids'] ?? []))));
         if ($action === '' || $invoice_ids === []) {
-            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => rawurlencode(__('Wybierz akcję i co najmniej jedną fakturę.', 'erp-omd'))]);
+            $this->redirect_cost_invoice_page(['tab' => $tab, 'error' => rawurlencode(__('Wybierz akcję i co najmniej jedną fakturę.', 'erp-omd'))]);
         }
 
         if ($action === 'delete') {
@@ -2162,7 +2164,7 @@ class ERP_OMD_Admin
                     $this->delete_cost_invoice_with_side_effects($invoice);
                 }
             }
-            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'message' => 'cost_invoice_bulk_deleted']);
+            $this->redirect_cost_invoice_page(['tab' => $tab, 'message' => 'cost_invoice_bulk_deleted']);
         }
 
         $status_map = [
@@ -2170,9 +2172,10 @@ class ERP_OMD_Admin
             'status_weryfikacja' => 'weryfikacja',
             'status_zatwierdzona' => 'zatwierdzona',
             'status_przypisana' => 'przypisana',
+            'status_nieistotne' => 'nieistotne',
         ];
         if (! isset($status_map[$action])) {
-            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => rawurlencode(__('Nieobsługiwana akcja zbiorowa.', 'erp-omd'))]);
+            $this->redirect_cost_invoice_page(['tab' => $tab, 'error' => rawurlencode(__('Nieobsługiwana akcja zbiorowa.', 'erp-omd'))]);
         }
 
         $target_status = (string) $status_map[$action];
@@ -2191,10 +2194,10 @@ class ERP_OMD_Admin
         }
 
         if ($errors !== []) {
-            $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => rawurlencode(implode(' | ', $errors))]);
+            $this->redirect_cost_invoice_page(['tab' => $tab, 'error' => rawurlencode(implode(' | ', $errors))]);
         }
 
-        $this->redirect_cost_invoice_page(['tab' => 'invoices', 'message' => 'cost_invoice_bulk_status_updated']);
+        $this->redirect_cost_invoice_page(['tab' => $tab, 'message' => 'cost_invoice_bulk_status_updated']);
     }
 
     /**
