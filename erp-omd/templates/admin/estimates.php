@@ -12,10 +12,10 @@
                 <div class="erp-omd-form-sections">
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
-                            <h3><?php esc_html_e('Podstawy kosztorysu', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Nazwa i klient, dla którego przygotowujemy wycenę.', 'erp-omd'); ?></p>
+                            <h3><?php esc_html_e('Podstawy kosztorysu + lifecycle', 'erp-omd'); ?></h3>
+                            <p><?php esc_html_e('Nazwa, klient i status kosztorysu w jednym wierszu.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-grid erp-omd-form-grid-estimate-basics-lifecycle">
                             <div class="erp-omd-form-field">
                                 <label for="estimate-name"><?php esc_html_e('Nazwa kosztorysu', 'erp-omd'); ?></label>
                                 <input id="estimate-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($estimate['name'] ?? ''); ?>" required>
@@ -30,13 +30,6 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                        </div>
-                    </section>
-                    <section class="erp-omd-form-section">
-                        <div class="erp-omd-form-section-header">
-                            <h3><?php esc_html_e('Lifecycle', 'erp-omd'); ?></h3>
-                        </div>
-                        <div class="erp-omd-form-grid">
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
                                 <label for="estimate-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
                                 <select id="estimate-status" name="status">
@@ -45,19 +38,44 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="erp-omd-form-field">
-                                <span class="erp-omd-form-label"><?php esc_html_e('Informacja o akceptacji', 'erp-omd'); ?></span>
-                                <?php if (($estimate['status'] ?? '') === 'zaakceptowany') : ?>
-                                    <p class="description"><?php esc_html_e('Zaakceptowany kosztorys zachowuje zablokowane pozycje i dane klienta, ale administrator nadal może zmienić jego status.', 'erp-omd'); ?></p>
-                                <?php else : ?>
-                                    <p class="description"><?php esc_html_e('Po akceptacji kosztorys pozostaje widoczny, ale jego pozycje są trybie tylko do odczytu.', 'erp-omd'); ?></p>
-                                <?php endif; ?>
-                                <?php if (! empty($estimate['accepted_at'])) : ?>
-                                    <p class="description"><?php echo esc_html(sprintf(__('Zaakceptowano: %s', 'erp-omd'), $estimate['accepted_at'])); ?></p>
-                                <?php endif; ?>
-                            </div>
                         </div>
                     </section>
+                    <?php if ($estimate) : ?>
+                        <section class="erp-omd-form-section">
+                            <div class="erp-omd-form-section-header">
+                                <h3><?php esc_html_e('Pozycje kosztorysu (podgląd)', 'erp-omd'); ?></h3>
+                            </div>
+                            <table class="widefat striped">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Ilość', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Cena', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Wartość', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Komentarz', 'erp-omd'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($estimate_items)) : ?>
+                                        <tr><td colspan="6"><?php esc_html_e('Brak pozycji kosztorysu.', 'erp-omd'); ?></td></tr>
+                                    <?php else : ?>
+                                        <?php foreach ($estimate_items as $item_row) : ?>
+                                            <?php $preview_total = (float) ($item_row['qty'] ?? 0) * (float) ($item_row['unit_price'] ?? 0); ?>
+                                            <tr>
+                                                <td><?php echo esc_html((string) ($item_row['name'] ?? '—')); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n((float) ($item_row['qty'] ?? 0), 2)); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n((float) ($item_row['unit_price'] ?? 0), 2)); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n($preview_total, 2)); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n((float) ($item_row['internal_cost'] ?? 0), 2)); ?></td>
+                                                <td><?php echo esc_html((string) ($item_row['comment'] ?? '—')); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </section>
+                    <?php endif; ?>
                     <?php if (! $estimate) : ?>
                         <section class="erp-omd-form-section">
                             <div class="erp-omd-form-section-header">
@@ -96,11 +114,29 @@
                             <div class="erp-omd-form-actions">
                                 <button type="button" class="button button-secondary" data-admin-add-item><?php esc_html_e('Dodaj kolejną pozycję', 'erp-omd'); ?></button>
                             </div>
+                            <div class="erp-omd-estimate-create-preview">
+                                <h4><?php esc_html_e('Pozycje kosztorysu (podgląd)', 'erp-omd'); ?></h4>
+                                <table class="widefat striped">
+                                    <thead>
+                                        <tr>
+                                            <th><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></th>
+                                            <th><?php esc_html_e('Ilość', 'erp-omd'); ?></th>
+                                            <th><?php esc_html_e('Cena', 'erp-omd'); ?></th>
+                                            <th><?php esc_html_e('Wartość', 'erp-omd'); ?></th>
+                                            <th><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></th>
+                                            <th><?php esc_html_e('Komentarz', 'erp-omd'); ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody data-admin-preview-items>
+                                        <tr><td colspan="6"><?php esc_html_e('Brak pozycji do podglądu.', 'erp-omd'); ?></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </section>
                     <?php endif; ?>
                 </div>
                 <div class="erp-omd-form-actions">
-                    <?php submit_button($estimate ? __('Zapisz kosztorys', 'erp-omd') : __('Dodaj kosztorys', 'erp-omd')); ?>
+                    <?php submit_button($estimate ? __('Zapisz kosztorys', 'erp-omd') : __('Utwórz kosztorys', 'erp-omd')); ?>
                     <?php if ($estimate) : ?>
                         <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-estimates&id=' . (int) $estimate['id'])); ?>"><?php esc_html_e('Przejdź do szczegółów', 'erp-omd'); ?></a>
                     <?php endif; ?>
@@ -115,9 +151,57 @@
             (function () {
                 var root = document.querySelector('[data-admin-initial-items]');
                 var addButton = document.querySelector('[data-admin-add-item]');
+                var previewBody = document.querySelector('[data-admin-preview-items]');
                 if (!root || !addButton) {
                     return;
                 }
+
+                var escapeHtml = function (value) {
+                    return String(value)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;');
+                };
+
+                var renderPreview = function () {
+                    if (!previewBody) {
+                        return;
+                    }
+
+                    var rows = root.querySelectorAll('[data-admin-initial-item-row]');
+                    var previewRows = [];
+
+                    rows.forEach(function (row) {
+                        var name = (row.querySelector('input[name="initial_item_name[]"]') || {}).value || '';
+                        var qtyRaw = (row.querySelector('input[name="initial_item_qty[]"]') || {}).value || '0';
+                        var priceRaw = (row.querySelector('input[name="initial_item_price[]"]') || {}).value || '0';
+                        var internalRaw = (row.querySelector('input[name="initial_item_cost_internal[]"]') || {}).value || '0';
+                        var comment = (row.querySelector('textarea[name="initial_item_comment[]"]') || {}).value || '';
+                        var qty = parseFloat(qtyRaw) || 0;
+                        var price = parseFloat(priceRaw) || 0;
+                        var internalCost = parseFloat(internalRaw) || 0;
+                        var total = qty * price;
+                        if (name === '' && qty === 0 && price === 0 && internalCost === 0 && comment === '') {
+                            return;
+                        }
+                        previewRows.push(
+                            '<tr>' +
+                            '<td>' + escapeHtml(name || '—') + '</td>' +
+                            '<td>' + escapeHtml(qty.toFixed(2)) + '</td>' +
+                            '<td>' + escapeHtml(price.toFixed(2)) + '</td>' +
+                            '<td>' + escapeHtml(total.toFixed(2)) + '</td>' +
+                            '<td>' + escapeHtml(internalCost.toFixed(2)) + '</td>' +
+                            '<td>' + escapeHtml(comment || '—') + '</td>' +
+                            '</tr>'
+                        );
+                    });
+
+                    previewBody.innerHTML = previewRows.length > 0
+                        ? previewRows.join('')
+                        : '<tr><td colspan="6"><?php echo esc_js(__('Brak pozycji do podglądu.', 'erp-omd')); ?></td></tr>';
+                };
 
                 var updateRemoveButtons = function () {
                     var rows = root.querySelectorAll('[data-admin-initial-item-row]');
@@ -152,6 +236,7 @@
                     });
                     root.appendChild(clone);
                     updateRemoveButtons();
+                    renderPreview();
                 });
 
                 root.addEventListener('click', function (event) {
@@ -169,9 +254,15 @@
                     }
                     row.remove();
                     updateRemoveButtons();
+                    renderPreview();
+                });
+
+                root.addEventListener('input', function () {
+                    renderPreview();
                 });
 
                 updateRemoveButtons();
+                renderPreview();
             }());
         </script>
     <?php endif; ?>
