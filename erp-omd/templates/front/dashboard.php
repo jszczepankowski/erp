@@ -1138,7 +1138,7 @@
 
                                     <p class="erp-omd-front-lead"><?php echo esc_html($project_request['brief'] ?? ''); ?></p>
                                     <details class="erp-omd-front-request-preview">
-                                        <summary><?php esc_html_e('Podgląd szczegółów wniosku', 'erp-omd'); ?></summary>
+                                        <summary class="erp-omd-front-button erp-omd-front-button-ghost erp-omd-front-button-small"><?php esc_html_e('Podgląd szczegółów wniosku', 'erp-omd'); ?></summary>
                                         <ul>
                                             <li><?php printf(esc_html__('Typ rozliczenia: %s', 'erp-omd'), esc_html($this->billing_type_label((string) ($project_request['billing_type'] ?? '')))); ?></li>
                                             <li><?php printf(esc_html__('Budżet: %s', 'erp-omd'), (float) ($project_request['budget'] ?? 0) > 0 ? esc_html(number_format_i18n((float) ($project_request['budget'] ?? 0), 2)) : esc_html__('brak', 'erp-omd')); ?></li>
