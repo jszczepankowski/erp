@@ -216,6 +216,7 @@ final class ClientProjectServiceTestRunner
             'erp_omd_ksef_sales_inbox' => [
                 ['id' => 1, 'project_id' => 13, 'is_final' => 1],
                 ['id' => 2, 'project_id' => 13, 'is_final' => 0],
+                ['id' => 3, 'project_id' => 14, 'is_final' => 1],
             ],
         ];
 
@@ -228,6 +229,7 @@ final class ClientProjectServiceTestRunner
                 'project:13' => [
                     ['attachment_id' => 1001],
                 ],
+                'project:14' => [],
             ])
         );
 
@@ -462,6 +464,12 @@ final class ClientProjectServiceTestRunner
             ['id' => 13, 'client_id' => 1, 'name' => 'Projekt z poprawną fakturą', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'do_faktury', 'manager_id' => 5]
         );
         $this->assertSame(false, in_array('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury PDF.', $validCloseErrors, true), 'Project with valid PDF should be allowed to close.');
+
+        $finalSalesOnlyErrors = $service->validate_project(
+            ['client_id' => 1, 'name' => 'Projekt z końcową fakturą sprzedażową', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'zakonczony', 'manager_id' => 5],
+            ['id' => 14, 'client_id' => 1, 'name' => 'Projekt z końcową fakturą sprzedażową', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'do_faktury', 'manager_id' => 5]
+        );
+        $this->assertSame([], $finalSalesOnlyErrors, 'Project with final sales invoice should not require additional final PDF attachment.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "Client project service tests passed.\n";

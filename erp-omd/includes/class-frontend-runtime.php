@@ -2476,13 +2476,15 @@ class ERP_OMD_Frontend
         if (user_can($user, 'administrator')) {
             return $requests;
         }
+        $visible_client_ids = array_map('intval', wp_list_pluck($this->get_manager_available_clients((int) $current_employee_id, false), 'id'));
 
         return array_values(
             array_filter(
                 $requests,
-                function ($request) use ($current_employee_id) {
+                function ($request) use ($current_employee_id, $visible_client_ids) {
                     return (int) ($request['requester_employee_id'] ?? 0) === (int) $current_employee_id
-                        || (int) ($request['preferred_manager_id'] ?? 0) === (int) $current_employee_id;
+                        || (int) ($request['preferred_manager_id'] ?? 0) === (int) $current_employee_id
+                        || in_array((int) ($request['client_id'] ?? 0), $visible_client_ids, true);
                 }
             )
         );
@@ -2664,7 +2666,11 @@ class ERP_OMD_Frontend
             $this->redirect_client_with_notice('error', implode(' ', array_unique($errors)), $dashboard_args);
         }
 
-        $this->project_requests->create($payload);
+        $request_id = (int) $this->project_requests->create($payload);
+        if ($request_id <= 0) {
+            $this->redirect_client_with_notice('error', __('Nie udało się zapisać wniosku projektowego. Zweryfikuj mapowanie konta klienta i spróbuj ponownie.', 'erp-omd'), $dashboard_args);
+        }
+
         $this->redirect_client_with_notice('success', __('Wniosek projektowy został wysłany.', 'erp-omd'), $dashboard_args);
     }
 
