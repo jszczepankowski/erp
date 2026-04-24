@@ -102,10 +102,6 @@
                             <input id="erp-omd-client-request-budget" type="number" name="budget" min="0" step="0.01" />
                         </div>
                         <div class="erp-omd-front-field">
-                            <label for="erp-omd-client-request-budget"><?php esc_html_e('Budżet projektu (wymagany dla Ryczałtu)', 'erp-omd'); ?></label>
-                            <input id="erp-omd-client-request-budget" type="number" name="budget" min="0" step="0.01" />
-                        </div>
-                        <div class="erp-omd-front-field">
                             <label for="erp-omd-client-request-manager"><?php esc_html_e('Preferowany manager', 'erp-omd'); ?></label>
                             <select id="erp-omd-client-request-manager" name="preferred_manager_id">
                                 <option value="0"><?php esc_html_e('Bez preferencji', 'erp-omd'); ?></option>
@@ -624,11 +620,29 @@
     <script>
     (function (document) {
         var billingTypeField = document.getElementById('erp-omd-client-request-billing-type');
-        var budgetFieldWrap = document.querySelector('[data-client-budget-field]');
+        var budgetFieldWraps = Array.prototype.slice.call(document.querySelectorAll('[data-client-budget-field]'));
+        var budgetFieldWrap = budgetFieldWraps.length ? budgetFieldWraps[budgetFieldWraps.length - 1] : null;
         var budgetInput = document.getElementById('erp-omd-client-request-budget');
         if (!billingTypeField || !budgetFieldWrap || !budgetInput) {
             return;
         }
+
+        budgetFieldWraps.slice(0, -1).forEach(function (wrapNode) {
+            if (wrapNode && wrapNode.parentNode) {
+                wrapNode.parentNode.removeChild(wrapNode);
+            }
+        });
+        Array.prototype.slice.call(document.querySelectorAll('input[name="budget"]')).forEach(function (candidate) {
+            if (candidate === budgetInput || !candidate.parentNode) {
+                return;
+            }
+            var container = candidate.closest('.erp-omd-front-field');
+            if (container && container !== budgetFieldWrap && container.parentNode) {
+                container.parentNode.removeChild(container);
+            } else if (candidate.parentNode) {
+                candidate.parentNode.removeChild(candidate);
+            }
+        });
 
         var applyState = function () {
             var shouldShow = billingTypeField.value === 'fixed_price';
