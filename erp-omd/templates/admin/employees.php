@@ -11,44 +11,39 @@
                 <div class="erp-omd-form-sections">
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
-                            <h3><?php esc_html_e('Konto i dostęp', 'erp-omd'); ?></h3>
+                            <h3><?php esc_html_e('Konto i dostęp + role projektowe', 'erp-omd'); ?></h3>
                         </div>
-                        <div class="erp-omd-form-grid erp-omd-form-grid-employee-account">
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="erp-user-id"><?php esc_html_e('Konto WordPress', 'erp-omd'); ?></label>
-                                <select id="erp-user-id" name="user_id" required>
-                                    <option value=""><?php esc_html_e('Wybierz konto', 'erp-omd'); ?></option>
-                                    <?php foreach ($users as $user) : ?>
-                                        <option value="<?php echo esc_attr($user->ID); ?>" <?php selected((int) ($employee['user_id'] ?? 0), (int) $user->ID); ?>>
-                                            <?php echo esc_html($user->user_login . ' (' . $user->user_email . ')'); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                        <div class="erp-omd-form-grid erp-omd-form-grid-employee-account-roles">
+                            <div class="erp-omd-form-grid erp-omd-form-grid-employee-account-stack">
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="erp-user-id"><?php esc_html_e('Konto WordPress', 'erp-omd'); ?></label>
+                                    <select id="erp-user-id" name="user_id" required>
+                                        <option value=""><?php esc_html_e('Wybierz konto', 'erp-omd'); ?></option>
+                                        <?php foreach ($users as $user) : ?>
+                                            <option value="<?php echo esc_attr($user->ID); ?>" <?php selected((int) ($employee['user_id'] ?? 0), (int) $user->ID); ?>>
+                                                <?php echo esc_html($user->user_login . ' (' . $user->user_email . ')'); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="erp-account-type"><?php esc_html_e('Typ konta', 'erp-omd'); ?></label>
+                                    <select id="erp-account-type" name="account_type">
+                                        <option value="admin" <?php selected($employee['account_type'] ?? 'worker', 'admin'); ?>><?php esc_html_e('Administrator', 'erp-omd'); ?></option>
+                                        <option value="manager" <?php selected($employee['account_type'] ?? 'worker', 'manager'); ?>><?php esc_html_e('Manager', 'erp-omd'); ?></option>
+                                        <option value="worker" <?php selected($employee['account_type'] ?? 'worker', 'worker'); ?>><?php esc_html_e('Pracownik', 'erp-omd'); ?></option>
+                                    </select>
+                                </div>
+                                <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <label for="erp-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
+                                    <select id="erp-status" name="status">
+                                        <option value="active" <?php selected($employee['status'] ?? 'active', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
+                                        <option value="inactive" <?php selected($employee['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="erp-account-type"><?php esc_html_e('Typ konta', 'erp-omd'); ?></label>
-                                <select id="erp-account-type" name="account_type">
-                                    <option value="admin" <?php selected($employee['account_type'] ?? 'worker', 'admin'); ?>><?php esc_html_e('Administrator', 'erp-omd'); ?></option>
-                                    <option value="manager" <?php selected($employee['account_type'] ?? 'worker', 'manager'); ?>><?php esc_html_e('Manager', 'erp-omd'); ?></option>
-                                    <option value="worker" <?php selected($employee['account_type'] ?? 'worker', 'worker'); ?>><?php esc_html_e('Pracownik', 'erp-omd'); ?></option>
-                                </select>
-                            </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="erp-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
-                                <select id="erp-status" name="status">
-                                    <option value="active" <?php selected($employee['status'] ?? 'active', 'active'); ?>><?php esc_html_e('Aktywny', 'erp-omd'); ?></option>
-                                    <option value="inactive" <?php selected($employee['status'] ?? '', 'inactive'); ?>><?php esc_html_e('Nieaktywny', 'erp-omd'); ?></option>
-                                </select>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="erp-omd-form-section">
-                        <div class="erp-omd-form-section-header">
-                            <h3><?php esc_html_e('Role projektowe', 'erp-omd'); ?></h3>
-                        </div>
-                        <div class="erp-omd-form-grid">
-                            <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <div class="erp-omd-form-grid erp-omd-form-grid-employee-roles-stack">
+                                <div class="erp-omd-form-field">
                                 <label for="erp-role-ids"><?php esc_html_e('Role projektowe', 'erp-omd'); ?></label>
                                 <select id="erp-role-ids" name="role_ids[]" multiple size="6" class="erp-omd-multiselect">
                                     <?php foreach ($roles as $role_item) : ?>
@@ -59,16 +54,17 @@
                                 </select>
                                 <p class="description"><?php esc_html_e('Wybierz jedną lub więcej ról raportowych.', 'erp-omd'); ?></p>
                             </div>
-                            <div class="erp-omd-form-field">
-                                <label for="erp-default-role"><?php esc_html_e('Domyślna rola', 'erp-omd'); ?></label>
-                                <select id="erp-default-role" name="default_role_id">
-                                    <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
-                                    <?php foreach ($roles as $role_item) : ?>
-                                        <option value="<?php echo esc_attr($role_item['id']); ?>" <?php selected((int) ($employee['default_role_id'] ?? 0), (int) $role_item['id']); ?>>
-                                            <?php echo esc_html($role_item['name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <div class="erp-omd-form-field">
+                                    <label for="erp-default-role"><?php esc_html_e('Domyślna rola', 'erp-omd'); ?></label>
+                                    <select id="erp-default-role" name="default_role_id">
+                                        <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
+                                        <?php foreach ($roles as $role_item) : ?>
+                                            <option value="<?php echo esc_attr($role_item['id']); ?>" <?php selected((int) ($employee['default_role_id'] ?? 0), (int) $role_item['id']); ?>>
+                                                <?php echo esc_html($role_item['name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </section>
