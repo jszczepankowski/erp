@@ -15,6 +15,18 @@
                 ? esc_html__('Lista wniosków klientów', 'erp-omd')
                 : esc_html__('Lista wniosków pracowników', 'erp-omd'); ?>
         </h2>
+        <?php if ($selected_request) : ?>
+            <div class="notice notice-info inline">
+                <p><strong><?php esc_html_e('Podgląd szczegółów wniosku', 'erp-omd'); ?></strong></p>
+                <p><strong><?php esc_html_e('Nazwa projektu:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($selected_request['project_name'] ?? '—')); ?></p>
+                <p><strong><?php esc_html_e('Klient:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($selected_request['client_name'] ?? '—')); ?></p>
+                <p><strong><?php esc_html_e('Typ rozliczenia:', 'erp-omd'); ?></strong> <?php echo esc_html($this->billing_type_label((string) ($selected_request['billing_type'] ?? ''))); ?></p>
+                <p><strong><?php esc_html_e('Budżet:', 'erp-omd'); ?></strong> <?php echo (float) ($selected_request['budget'] ?? 0) > 0 ? esc_html(number_format_i18n((float) ($selected_request['budget'] ?? 0), 2)) : esc_html__('brak', 'erp-omd'); ?></p>
+                <p><strong><?php esc_html_e('Data rozpoczęcia:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($selected_request['start_date'] ?? '—')); ?></p>
+                <p><strong><?php esc_html_e('Data zakończenia:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($selected_request['end_date'] ?? '—')); ?></p>
+                <p><strong><?php esc_html_e('Brief:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($selected_request['brief'] ?? '—')); ?></p>
+            </div>
+        <?php endif; ?>
         <form method="get" class="erp-omd-filter-form">
             <input type="hidden" name="page" value="erp-omd-requests" />
             <input type="hidden" name="tab" value="<?php echo esc_attr((string) ($request_filters['tab'] ?? 'employee')); ?>" />
@@ -28,9 +40,26 @@
             <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
         </form>
 
+        <form method="post">
+            <?php wp_nonce_field('erp_omd_bulk_project_requests'); ?>
+            <input type="hidden" name="erp_omd_action" value="bulk_project_requests" />
+            <input type="hidden" name="tab" value="<?php echo esc_attr((string) ($request_filters['tab'] ?? 'employee')); ?>" />
+            <input type="hidden" name="status_filter" value="<?php echo esc_attr((string) ($request_filters['status'] ?? '')); ?>" />
+            <input type="hidden" name="search_filter" value="<?php echo esc_attr((string) ($request_filters['search'] ?? '')); ?>" />
+            <div style="margin: 10px 0; display:flex; gap:8px; align-items:center;">
+                <select name="bulk_action">
+                    <option value=""><?php esc_html_e('Masowe akcje', 'erp-omd'); ?></option>
+                    <option value="approve"><?php esc_html_e('Zatwierdź', 'erp-omd'); ?></option>
+                    <option value="reject"><?php esc_html_e('Odrzuć', 'erp-omd'); ?></option>
+                    <option value="delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></option>
+                </select>
+                <button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
+            </div>
+
         <table class="widefat striped">
             <thead>
                 <tr>
+                    <th><input type="checkbox" id="erp-omd-request-check-all" /></th>
                     <th><?php esc_html_e('ID', 'erp-omd'); ?></th>
                     <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
                     <th><?php esc_html_e('Klient', 'erp-omd'); ?></th>
@@ -43,12 +72,13 @@
             </thead>
             <tbody>
                 <?php if (empty($project_requests)) : ?>
-                    <tr><td colspan="8"><?php esc_html_e('Brak wniosków projektowych.', 'erp-omd'); ?></td></tr>
+                    <tr><td colspan="9"><?php esc_html_e('Brak wniosków projektowych.', 'erp-omd'); ?></td></tr>
                 <?php else : ?>
                     <?php foreach ($project_requests as $request_row) : ?>
                         <tr>
+                            <td><input type="checkbox" name="request_ids[]" value="<?php echo esc_attr((string) ($request_row['id'] ?? 0)); ?>" /></td>
                             <td>#<?php echo esc_html((string) ($request_row['id'] ?? 0)); ?></td>
-                            <td><?php echo esc_html((string) ($request_row['project_name'] ?? '—')); ?></td>
+                            <td><a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-requests', 'tab' => (string) ($request_filters['tab'] ?? 'employee'), 'status' => (string) ($request_filters['status'] ?? ''), 'search' => (string) ($request_filters['search'] ?? ''), 'id' => (int) ($request_row['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php echo esc_html((string) ($request_row['project_name'] ?? '—')); ?></a></td>
                             <td><?php echo esc_html((string) ($request_row['client_name'] ?? '—')); ?></td>
                             <td><?php echo esc_html($this->billing_type_label((string) ($request_row['billing_type'] ?? ''))); ?></td>
                             <td><?php echo esc_html((string) ($request_row['requester_login'] ?? '—')); ?></td>
@@ -91,5 +121,19 @@
                 <?php endif; ?>
             </tbody>
         </table>
+        </form>
+        <script>
+        (function (document) {
+            var checkAll = document.getElementById('erp-omd-request-check-all');
+            if (!checkAll) {
+                return;
+            }
+            checkAll.addEventListener('change', function () {
+                document.querySelectorAll('input[name="request_ids[]"]').forEach(function (checkbox) {
+                    checkbox.checked = checkAll.checked;
+                });
+            });
+        }(document));
+        </script>
     </section>
 </div>
