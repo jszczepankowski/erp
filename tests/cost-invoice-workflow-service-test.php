@@ -333,6 +333,25 @@ if (count($ksefReferenceOptionalErrors) !== 0) {
     throw new RuntimeException('Expected KSeF invoice validation to allow empty KSeF reference for manual imports.');
 }
 
+$irrelevantWithoutProjectErrors = $service->validate_invoice_data(
+    [
+        'supplier_id' => 2,
+        'project_id' => 0,
+        'invoice_number' => 'FV/NI/1',
+        'issue_date' => '2026-04-14',
+        'status' => 'nieistotne',
+        'source' => 'manual',
+        'net_amount' => 10.00,
+        'vat_amount' => 2.30,
+        'gross_amount' => 12.30,
+    ]
+);
+
+$assertions++;
+if (count($irrelevantWithoutProjectErrors) !== 0) {
+    throw new RuntimeException('Expected "nieistotne" status to allow empty project_id for cost invoices.');
+}
+
 $relationLockErrors = $service->validate_invoice_data(
     [
         'id' => 1200,
