@@ -1161,6 +1161,14 @@ class ERP_OMD_Admin
             $project_row['deadline_status_label'] = $this->project_deadline_status_label($project_row['deadline_status']);
         }
         unset($project_row);
+        $can_view_kolko_notifications = $this->can_view_kolko_notifications();
+        $kolko_project_acknowledged = $can_view_kolko_notifications ? $this->get_project_kolko_acknowledgements() : [];
+        foreach ($projects as &$project_row) {
+            $project_signature = $can_view_kolko_notifications ? $this->build_project_kolko_signature($project_row) : '';
+            $project_row['kolko_unhandled'] = $project_signature !== ''
+                && (($kolko_project_acknowledged[(int) ($project_row['id'] ?? 0)] ?? '') !== $project_signature);
+        }
+        unset($project_row);
         $project_filters = [
             'search' => sanitize_text_field(wp_unslash($_GET['search'] ?? '')),
             'client_id' => (int) ($_GET['client_id'] ?? 0),

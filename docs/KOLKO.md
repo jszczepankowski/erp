@@ -43,6 +43,7 @@ Jedno zdarzenie = jedna notyfikacja (po rekordzie źródłowym).
 - stały kolor akcentu: `#ddb178`
 - bez priorytetów kolorystycznych
 - sortowanie list (po stronie widoków) docelowo po dacie malejąco
+- lista projektów: projekty odpowiadające aktywnemu badge są subtelnie podświetlone wierszem
 
 ## Zakres wdrożenia (aktualny)
 W menu WordPress (ERP OMD) dodano badge przy pozycjach:
