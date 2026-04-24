@@ -6,7 +6,7 @@ if ($template === '') {
 }
 
 $requiredSnippets = [
-    "esc_html_e('Podgląd szczegółów', 'erp-omd')",
+    "esc_html_e('Podgląd szczegółów wniosku', 'erp-omd')",
     "esc_html_e('Nazwa projektu:', 'erp-omd')",
     "esc_html_e('Typ rozliczenia:', 'erp-omd')",
     "esc_html_e('Budżet:', 'erp-omd')",
