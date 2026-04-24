@@ -355,15 +355,15 @@ class ERP_OMD_Client_Project_Service
 
         if ($current_status === 'do_faktury' && $target_status === 'zakonczony') {
             $project_id = (int) ($existing_project['id'] ?? 0);
+            $has_final_sales_invoice = $project_id > 0 && $this->has_final_sales_invoice_for_project($project_id);
             $has_valid_final_invoice_pdf = false;
-            if ($project_id > 0 && $this->project_attachment_service) {
+            if (! $has_final_sales_invoice && $project_id > 0 && $this->project_attachment_service) {
                 $attachment_errors = [];
                 $has_valid_final_invoice_pdf = $this->project_attachment_service->has_valid_final_invoice_pdf($project_id, $attachment_errors);
                 if (! $has_valid_final_invoice_pdf) {
                     $errors = array_merge($errors, $attachment_errors);
                 }
             }
-            $has_final_sales_invoice = $project_id > 0 && $this->has_final_sales_invoice_for_project($project_id);
             if (! $has_final_sales_invoice && ! $has_valid_final_invoice_pdf) {
                 $errors[] = __('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury sprzedażowej lub poprawnej końcowej faktury PDF.', 'erp-omd');
             }

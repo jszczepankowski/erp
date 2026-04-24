@@ -2476,13 +2476,15 @@ class ERP_OMD_Frontend
         if (user_can($user, 'administrator')) {
             return $requests;
         }
+        $visible_client_ids = array_map('intval', wp_list_pluck($this->get_manager_available_clients((int) $current_employee_id, false), 'id'));
 
         return array_values(
             array_filter(
                 $requests,
-                function ($request) use ($current_employee_id) {
+                function ($request) use ($current_employee_id, $visible_client_ids) {
                     return (int) ($request['requester_employee_id'] ?? 0) === (int) $current_employee_id
-                        || (int) ($request['preferred_manager_id'] ?? 0) === (int) $current_employee_id;
+                        || (int) ($request['preferred_manager_id'] ?? 0) === (int) $current_employee_id
+                        || in_array((int) ($request['client_id'] ?? 0), $visible_client_ids, true);
                 }
             )
         );
