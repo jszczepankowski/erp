@@ -9,6 +9,42 @@ if (! function_exists('__')) {
     }
 }
 
+if (! class_exists('WP_User')) {
+    class WP_User
+    {
+        public $ID;
+        public function __construct($id)
+        {
+            $this->ID = (int) $id;
+        }
+    }
+}
+
+if (! function_exists('get_user_by')) {
+    function get_user_by($field, $value)
+    {
+        if ($field !== 'id') {
+            return null;
+        }
+
+        $users = (array) ($GLOBALS['erp_omd_test_users'] ?? []);
+        if (! isset($users[(int) $value])) {
+            return null;
+        }
+
+        return new WP_User((int) $value);
+    }
+}
+
+if (! function_exists('user_can')) {
+    function user_can($user, $capability)
+    {
+        $user_id = is_object($user) && isset($user->ID) ? (int) $user->ID : (int) $user;
+        $caps = (array) ($GLOBALS['erp_omd_test_user_caps'][$user_id] ?? []);
+        return in_array((string) $capability, $caps, true);
+    }
+}
+
 if (! class_exists('ERP_OMD_Client_Repository')) {
     class ERP_OMD_Client_Repository
     {
@@ -95,12 +131,16 @@ final class ProjectRequestServiceTestRunner
             'client_id' => 10,
             'project_name' => ' Nowy projekt ',
             'billing_type' => 'fixed_price',
+            'budget' => 12000.50,
             'preferred_manager_id' => 2,
             'estimate_id' => 100,
             'brief' => ' Start ',
         ]);
+        $GLOBALS['erp_omd_test_users'] = [20 => true, 21 => true];
+        $GLOBALS['erp_omd_test_user_caps'] = [20 => [], 21 => ['erp_omd_front_client']];
         $this->assertSame('Nowy projekt', $payload['project_name'], 'Prepare should trim project name.');
         $this->assertSame('fixed_price', $payload['billing_type'], 'Prepare should keep billing type.');
+        $this->assertSame(12000.50, $payload['budget'], 'Prepare should map request budget.');
 
         $errors = $service->validate($payload);
         $this->assertSame([], $errors, 'Valid project request payload should pass validation.');
@@ -122,6 +162,30 @@ final class ProjectRequestServiceTestRunner
 
         $conversionErrors = $service->validate_conversion(array_merge($payload, ['status' => 'approved']));
         $this->assertSame([], $conversionErrors, 'Approved request should be convertible when project payload validates.');
+        $projectPayload = $service->build_project_payload($payload);
+        $this->assertSame(12000.50, (float) ($projectPayload['budget'] ?? 0), 'Conversion payload should keep request budget.');
+
+        $clientRetainerErrors = $service->validate([
+            'requester_user_id' => 21,
+            'requester_employee_id' => 0,
+            'client_id' => 10,
+            'project_name' => 'Wniosek klienta',
+            'billing_type' => 'retainer',
+            'budget' => 0,
+            'status' => 'new',
+        ]);
+        $this->assertTrue(in_array('Typ rozliczenia wniosku jest niepoprawny.', $clientRetainerErrors, true), 'Client request should reject retainer billing type.');
+
+        $clientFixedNoBudgetErrors = $service->validate([
+            'requester_user_id' => 21,
+            'requester_employee_id' => 0,
+            'client_id' => 10,
+            'project_name' => 'Wniosek klienta',
+            'billing_type' => 'fixed_price',
+            'budget' => 0,
+            'status' => 'new',
+        ]);
+        $this->assertTrue(in_array('Dla typu rozliczenia Ryczałt klient musi podać budżet większy od zera.', $clientFixedNoBudgetErrors, true), 'Client fixed-price request should require budget.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "Project request service tests passed.\n";

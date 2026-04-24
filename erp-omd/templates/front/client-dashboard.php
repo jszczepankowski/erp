@@ -90,12 +90,16 @@
                         <div class="erp-omd-front-field">
                             <label for="erp-omd-client-request-billing-type"><?php esc_html_e('Typ projektu', 'erp-omd'); ?></label>
                             <select id="erp-omd-client-request-billing-type" name="billing_type">
-                                <?php foreach (['time_material', 'fixed_price', 'retainer', 'mixed'] as $billing_type) : ?>
+                                <?php foreach (['time_material', 'fixed_price', 'mixed'] as $billing_type) : ?>
                                     <option value="<?php echo esc_attr($billing_type); ?>">
                                         <?php echo esc_html($project_billing_type_labels[$billing_type] ?? $billing_type); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+                        <div class="erp-omd-front-field">
+                            <label for="erp-omd-client-request-budget"><?php esc_html_e('Budżet projektu (wymagany dla Ryczałtu)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-client-request-budget" type="number" name="budget" min="0" step="0.01" />
                         </div>
                         <div class="erp-omd-front-field">
                             <label for="erp-omd-client-request-manager"><?php esc_html_e('Preferowany manager', 'erp-omd'); ?></label>
