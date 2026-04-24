@@ -114,11 +114,12 @@ class ERP_OMD_Project_Request_Repository
         global $wpdb;
 
         $now = current_time('mysql');
+        $requester_employee_id = (int) ($data['requester_employee_id'] ?? 0);
         $wpdb->insert(
             $this->table_name(),
             [
                 'requester_user_id' => (int) $data['requester_user_id'],
-                'requester_employee_id' => (int) $data['requester_employee_id'],
+                'requester_employee_id' => $requester_employee_id > 0 ? $requester_employee_id : null,
                 'client_id' => (int) $data['client_id'],
                 'project_name' => $data['project_name'],
                 'billing_type' => $data['billing_type'],

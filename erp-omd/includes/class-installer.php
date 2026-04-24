@@ -28,6 +28,7 @@ class ERP_OMD_Installer
 
         self::maybe_cleanup_legacy_time_entry_indexes();
         self::maybe_cleanup_legacy_ksef_api_options();
+        self::maybe_allow_nullable_project_request_requester_employee_id();
     }
 
     public static function migrate()
@@ -390,7 +391,7 @@ class ERP_OMD_Installer
             "CREATE TABLE {$project_requests_table} (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 requester_user_id BIGINT UNSIGNED NOT NULL,
-                requester_employee_id BIGINT UNSIGNED NOT NULL,
+                requester_employee_id BIGINT UNSIGNED NULL,
                 client_id BIGINT UNSIGNED NOT NULL,
                 project_name VARCHAR(191) NOT NULL,
                 billing_type VARCHAR(32) NOT NULL DEFAULT 'time_material',
@@ -2792,6 +2793,7 @@ class ERP_OMD_Installer
         add_option('erp_omd_fixed_monthly_cost_items', []);
         self::maybe_cleanup_legacy_time_entry_indexes();
         self::maybe_cleanup_legacy_ksef_api_options();
+        self::maybe_allow_nullable_project_request_requester_employee_id();
     }
 
     private static function maybe_cleanup_legacy_time_entry_indexes()
@@ -2834,6 +2836,30 @@ class ERP_OMD_Installer
         }
 
         update_option('erp_omd_ksef_api_cleanup_done', '1');
+    }
+
+    private static function maybe_allow_nullable_project_request_requester_employee_id()
+    {
+        if (get_option('erp_omd_project_request_requester_employee_nullable_done') === '1') {
+            return;
+        }
+
+        global $wpdb;
+        $project_requests_table = $wpdb->prefix . 'erp_omd_project_requests';
+        $is_nullable = $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s LIMIT 1',
+                DB_NAME,
+                $project_requests_table,
+                'requester_employee_id'
+            )
+        );
+
+        if ($is_nullable === 'NO') {
+            $wpdb->query("ALTER TABLE {$project_requests_table} MODIFY requester_employee_id BIGINT UNSIGNED NULL");
+        }
+
+        update_option('erp_omd_project_request_requester_employee_nullable_done', '1');
     }
 
     private static function drop_legacy_time_entry_unique_indexes($time_entries_table)

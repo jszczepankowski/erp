@@ -2666,7 +2666,11 @@ class ERP_OMD_Frontend
             $this->redirect_client_with_notice('error', implode(' ', array_unique($errors)), $dashboard_args);
         }
 
-        $this->project_requests->create($payload);
+        $request_id = (int) $this->project_requests->create($payload);
+        if ($request_id <= 0) {
+            $this->redirect_client_with_notice('error', __('Nie udało się zapisać wniosku projektowego. Zweryfikuj mapowanie konta klienta i spróbuj ponownie.', 'erp-omd'), $dashboard_args);
+        }
+
         $this->redirect_client_with_notice('success', __('Wniosek projektowy został wysłany.', 'erp-omd'), $dashboard_args);
     }
 
