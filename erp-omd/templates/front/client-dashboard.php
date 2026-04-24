@@ -102,6 +102,10 @@
                             <input id="erp-omd-client-request-budget" type="number" name="budget" min="0" step="0.01" />
                         </div>
                         <div class="erp-omd-front-field">
+                            <label for="erp-omd-client-request-budget"><?php esc_html_e('Budżet projektu (wymagany dla Ryczałtu)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-client-request-budget" type="number" name="budget" min="0" step="0.01" />
+                        </div>
+                        <div class="erp-omd-front-field">
                             <label for="erp-omd-client-request-manager"><?php esc_html_e('Preferowany manager', 'erp-omd'); ?></label>
                             <select id="erp-omd-client-request-manager" name="preferred_manager_id">
                                 <option value="0"><?php esc_html_e('Bez preferencji', 'erp-omd'); ?></option>
