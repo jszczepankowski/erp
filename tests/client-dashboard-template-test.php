@@ -49,5 +49,15 @@ foreach ($requiredSnippets as $snippet) {
     }
 }
 
+$projectsHeadingPos = strpos($template, "esc_html_e('Lista projektów', 'erp-omd')");
+$detailsHeadingPos = strpos($template, "esc_html_e('Szczegóły projektu', 'erp-omd')");
+$historyHeadingPos = strpos($template, "esc_html_e('Historia zmian budżetu', 'erp-omd')");
+if ($projectsHeadingPos === false || $detailsHeadingPos === false || $historyHeadingPos === false) {
+    throw new RuntimeException('Missing heading snippets required for section order validation.');
+}
+if (! ($projectsHeadingPos < $detailsHeadingPos && $detailsHeadingPos < $historyHeadingPos)) {
+    throw new RuntimeException('Expected section order: Lista projektów -> Szczegóły projektu -> Historia zmian budżetu.');
+}
+
 echo "Assertions: " . count($requiredSnippets) . "\n";
 echo "Client dashboard template test passed.\n";
