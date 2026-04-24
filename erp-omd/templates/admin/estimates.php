@@ -40,6 +40,42 @@
                             </div>
                         </div>
                     </section>
+                    <?php if ($estimate) : ?>
+                        <section class="erp-omd-form-section">
+                            <div class="erp-omd-form-section-header">
+                                <h3><?php esc_html_e('Pozycje kosztorysu (podgląd)', 'erp-omd'); ?></h3>
+                            </div>
+                            <table class="widefat striped">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Ilość', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Cena', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Wartość', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></th>
+                                        <th><?php esc_html_e('Komentarz', 'erp-omd'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($estimate_items)) : ?>
+                                        <tr><td colspan="6"><?php esc_html_e('Brak pozycji kosztorysu.', 'erp-omd'); ?></td></tr>
+                                    <?php else : ?>
+                                        <?php foreach ($estimate_items as $item_row) : ?>
+                                            <?php $preview_total = (float) ($item_row['qty'] ?? 0) * (float) ($item_row['unit_price'] ?? 0); ?>
+                                            <tr>
+                                                <td><?php echo esc_html((string) ($item_row['name'] ?? '—')); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n((float) ($item_row['qty'] ?? 0), 2)); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n((float) ($item_row['unit_price'] ?? 0), 2)); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n($preview_total, 2)); ?></td>
+                                                <td><?php echo esc_html(number_format_i18n((float) ($item_row['internal_cost'] ?? 0), 2)); ?></td>
+                                                <td><?php echo esc_html((string) ($item_row['comment'] ?? '—')); ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </section>
+                    <?php endif; ?>
                     <?php if (! $estimate) : ?>
                         <section class="erp-omd-form-section">
                             <div class="erp-omd-form-section-header">

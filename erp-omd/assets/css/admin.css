@@ -970,6 +970,7 @@
 }
 
 .erp-omd-admin .erp-omd-form-grid-time-status {
+    margin-top: 10px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
