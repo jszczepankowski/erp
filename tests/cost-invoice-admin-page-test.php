@@ -62,6 +62,7 @@ $templateFragments = [
     'cost-invoice-items-table',
     'cost_invoice_items',
     'erp_omd_bulk_cost_invoices',
+    'status_nieistotne',
     'cost_invoice_ksef_reference_number',
     'cost_invoice_description',
     'Ref KSeF',

@@ -35,7 +35,7 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
      */
     public function allowed_statuses()
     {
-        return ['zaimportowana', 'weryfikacja', 'zatwierdzona', 'przypisana'];
+        return ['zaimportowana', 'weryfikacja', 'zatwierdzona', 'przypisana', 'nieistotne'];
     }
 
     /**
@@ -57,10 +57,11 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
         }
 
         $transitions = [
-            'zaimportowana' => ['weryfikacja'],
-            'weryfikacja' => ['zaimportowana', 'zatwierdzona'],
-            'zatwierdzona' => ['weryfikacja', 'przypisana'],
+            'zaimportowana' => ['weryfikacja', 'nieistotne'],
+            'weryfikacja' => ['zaimportowana', 'zatwierdzona', 'nieistotne'],
+            'zatwierdzona' => ['weryfikacja', 'przypisana', 'nieistotne'],
             'przypisana' => ['zatwierdzona'],
+            'nieistotne' => ['zaimportowana', 'weryfikacja'],
         ];
 
         return in_array($next_status, $transitions[$current_status] ?? [], true);
