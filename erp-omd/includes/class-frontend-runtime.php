@@ -2154,6 +2154,9 @@ class ERP_OMD_Frontend
         if ($target_status === '') {
             $this->redirect_manager_with_notice('error', __('Nieobsługiwana akcja wniosku projektowego.', 'erp-omd'));
         }
+        if ($action === 'approve_project_request' && empty($_POST['request_preview_ack'])) {
+            $this->redirect_manager_with_notice('error', __('Przed akceptacją zapoznaj się ze szczegółami i potwierdź podgląd wniosku.', 'erp-omd'), ['request_id' => $request_id]);
+        }
 
         $request_payload = $this->project_request_service->prepare(
             array_merge(

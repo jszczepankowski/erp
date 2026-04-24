@@ -97,6 +97,10 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <div class="erp-omd-front-field" data-client-budget-field hidden>
+                            <label for="erp-omd-client-request-budget"><?php esc_html_e('Budżet projektu (wymagany dla Ryczałtu)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-client-request-budget" type="number" name="budget" min="0" step="0.01" />
+                        </div>
                         <div class="erp-omd-front-field">
                             <label for="erp-omd-client-request-budget"><?php esc_html_e('Budżet projektu (wymagany dla Ryczałtu)', 'erp-omd'); ?></label>
                             <input id="erp-omd-client-request-budget" type="number" name="budget" min="0" step="0.01" />
@@ -617,6 +621,28 @@
             <?php endif; ?>
         </section>
     </main>
+    <script>
+    (function (document) {
+        var billingTypeField = document.getElementById('erp-omd-client-request-billing-type');
+        var budgetFieldWrap = document.querySelector('[data-client-budget-field]');
+        var budgetInput = document.getElementById('erp-omd-client-request-budget');
+        if (!billingTypeField || !budgetFieldWrap || !budgetInput) {
+            return;
+        }
+
+        var applyState = function () {
+            var shouldShow = billingTypeField.value === 'fixed_price';
+            budgetFieldWrap.hidden = !shouldShow;
+            budgetInput.required = shouldShow;
+            if (!shouldShow) {
+                budgetInput.value = '';
+            }
+        };
+
+        billingTypeField.addEventListener('change', applyState);
+        applyState();
+    }(document));
+    </script>
     <?php wp_footer(); ?>
 </body>
 </html>
