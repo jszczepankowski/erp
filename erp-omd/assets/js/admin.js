@@ -1549,7 +1549,11 @@ window.erpOmdInitSettingsAdminCorrection =
       }
 
       document.querySelectorAll('.erp-omd-list-actions[open]').forEach((otherNode) => {
-        if (otherNode !== detailsNode) {
+        if (
+          otherNode !== detailsNode &&
+          !otherNode.contains(detailsNode) &&
+          !detailsNode.contains(otherNode)
+        ) {
           otherNode.open = false;
         }
       });
