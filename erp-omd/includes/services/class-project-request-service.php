@@ -30,6 +30,7 @@ class ERP_OMD_Project_Request_Service
             'client_id' => (int) ($data['client_id'] ?? ($existing['client_id'] ?? 0)),
             'project_name' => trim((string) ($data['project_name'] ?? ($existing['project_name'] ?? ''))),
             'billing_type' => trim((string) ($data['billing_type'] ?? ($existing['billing_type'] ?? 'time_material'))) ?: 'time_material',
+            'budget' => (float) ($data['budget'] ?? ($existing['budget'] ?? 0)),
             'preferred_manager_id' => (int) ($data['preferred_manager_id'] ?? ($existing['preferred_manager_id'] ?? 0)),
             'estimate_id' => (int) ($data['estimate_id'] ?? ($existing['estimate_id'] ?? 0)),
             'brief' => trim((string) ($data['brief'] ?? ($existing['brief'] ?? ''))),
@@ -65,8 +66,17 @@ class ERP_OMD_Project_Request_Service
             $errors[] = __('Nazwa projektu we wniosku jest wymagana.', 'erp-omd');
         }
 
-        if (! in_array($data['billing_type'], ['time_material', 'fixed_price', 'retainer', 'mixed'], true)) {
+        $allowed_billing_types = $is_front_client_requester
+            ? ['time_material', 'fixed_price', 'mixed']
+            : ['time_material', 'fixed_price', 'retainer', 'mixed'];
+        if (! in_array($data['billing_type'], $allowed_billing_types, true)) {
             $errors[] = __('Typ rozliczenia wniosku jest niepoprawny.', 'erp-omd');
+        }
+        if ($data['budget'] < 0) {
+            $errors[] = __('Budżet wniosku nie może być ujemny.', 'erp-omd');
+        }
+        if ($is_front_client_requester && $data['billing_type'] === 'fixed_price' && $data['budget'] <= 0) {
+            $errors[] = __('Dla typu rozliczenia Ryczałt klient musi podać budżet większy od zera.', 'erp-omd');
         }
 
         if ($data['preferred_manager_id'] > 0 && ! $this->employees->find((int) $data['preferred_manager_id'])) {
@@ -127,7 +137,7 @@ class ERP_OMD_Project_Request_Service
             'client_id' => (int) ($request['client_id'] ?? 0),
             'name' => (string) ($request['project_name'] ?? ''),
             'billing_type' => (string) ($request['billing_type'] ?? 'time_material'),
-            'budget' => 0,
+            'budget' => (float) ($request['budget'] ?? 0),
             'retainer_monthly_fee' => 0,
             'status' => 'do_rozpoczecia',
             'manager_id' => (int) ($request['preferred_manager_id'] ?? 0),
