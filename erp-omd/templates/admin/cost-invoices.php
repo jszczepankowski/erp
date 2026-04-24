@@ -251,7 +251,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                 <div class="erp-omd-form-field erp-omd-form-field-compact">
                                     <label for="cost_invoice_status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
                                     <select id="cost_invoice_status" name="cost_invoice_status" required>
-                                        <?php foreach (['zaimportowana', 'weryfikacja', 'zatwierdzona', 'przypisana'] as $status) : ?>
+                                        <?php foreach (['zaimportowana', 'weryfikacja', 'zatwierdzona', 'przypisana', 'nieistotne'] as $status) : ?>
                                             <option value="<?php echo esc_attr($status); ?>" <?php selected((string) ($invoice_form['status'] ?? 'zaimportowana'), $status); ?>><?php echo esc_html($status); ?></option>
                                         <?php endforeach; ?>
                                     </select>
@@ -357,6 +357,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                         <option value="status_weryfikacja"><?php esc_html_e('Status: weryfikacja', 'erp-omd'); ?></option>
                         <option value="status_zatwierdzona"><?php esc_html_e('Status: zatwierdzona', 'erp-omd'); ?></option>
                         <option value="status_przypisana"><?php esc_html_e('Status: przypisana', 'erp-omd'); ?></option>
+                        <option value="status_nieistotne"><?php esc_html_e('Status: nieistotne', 'erp-omd'); ?></option>
                     </select>
                     <button type="submit" class="button button-secondary"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
                 </p>
@@ -472,6 +473,10 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                 <input id="ksef-sales-xml-files" type="file" name="ksef_sales_xml_files[]" accept=".xml,text/xml,application/xml" multiple />
             </p>
             <p>
+                <label for="ksef-sales-xml-content"><?php esc_html_e('Lub wklej XML sprzedażowy (opcjonalnie)', 'erp-omd'); ?></label><br />
+                <textarea id="ksef-sales-xml-content" name="ksef_sales_xml_content" rows="4" class="large-text"></textarea>
+            </p>
+            <p>
                 <label for="ksef-sales-description"><?php esc_html_e('Opis faktury sprzedażowej (opcjonalny, dla importu manualnego)', 'erp-omd'); ?></label><br />
                 <textarea id="ksef-sales-description" name="ksef_sales_description" rows="2" class="large-text"></textarea>
             </p>
@@ -533,11 +538,29 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                 <label for="ksef-cost-xml-files"><?php esc_html_e('Wybierz plik/pliki XML (import zbiorowy)', 'erp-omd'); ?></label><br />
                 <input id="ksef-cost-xml-files" type="file" name="ksef_cost_xml_files[]" accept=".xml,text/xml,application/xml" multiple />
             </p>
+            <p>
+                <label for="ksef-cost-xml-content"><?php esc_html_e('Lub wklej XML kosztowy (opcjonalnie)', 'erp-omd'); ?></label><br />
+                <textarea id="ksef-cost-xml-content" name="ksef_cost_xml_content" rows="4" class="large-text"></textarea>
+            </p>
             <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML kosztowy', 'erp-omd'); ?></button></p>
         </form>
+        <form method="post">
+            <?php wp_nonce_field('erp_omd_bulk_ksef_cost_invoices'); ?>
+            <input type="hidden" name="erp_omd_action" value="bulk_ksef_cost_invoices" />
+            <div class="tablenav top">
+                <div class="alignleft actions">
+                    <select name="bulk_action">
+                        <option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option>
+                        <option value="status_nieistotne"><?php esc_html_e('Status: nieistotne', 'erp-omd'); ?></option>
+                        <option value="delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></option>
+                    </select>
+                    <button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
+                </div>
+            </div>
         <table class="widefat striped">
             <thead>
                 <tr>
+                    <th><input type="checkbox" id="ksef-cost-invoice-select-all" /></th>
                     <th>ID</th>
                     <th><?php esc_html_e('Numer', 'erp-omd'); ?></th>
                     <th><?php esc_html_e('NIP sprzedawcy', 'erp-omd'); ?></th>
@@ -551,12 +574,13 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             </thead>
             <tbody>
             <?php if (empty($ksef_cost_invoices)) : ?>
-                <tr><td colspan="9"><?php esc_html_e('Brak zaimportowanych kosztowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="10"><?php esc_html_e('Brak zaimportowanych kosztowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
             <?php else : ?>
                 <?php foreach ((array) $ksef_cost_invoices as $ksef_cost_row) : ?>
                     <?php $ksef_invoice_id = (int) ($ksef_cost_row['id'] ?? 0); ?>
                     <?php $ksef_items = (array) ($ksef_cost_items_by_invoice_id[$ksef_invoice_id] ?? []); ?>
                     <tr>
+                        <td><input type="checkbox" class="ksef-cost-invoice-checkbox" name="cost_invoice_ids[]" value="<?php echo esc_attr((string) $ksef_invoice_id); ?>" /></td>
                         <td><?php echo esc_html((string) $ksef_invoice_id); ?></td>
                         <td><?php echo esc_html((string) ($ksef_cost_row['invoice_number'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($supplier_nip_by_id[(int) ($ksef_cost_row['supplier_id'] ?? 0)] ?? '')); ?></td>
@@ -608,6 +632,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             <?php endif; ?>
             </tbody>
         </table>
+        </form>
     </section>
     <?php endif; ?>
 
@@ -649,6 +674,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         var grossAmountField = document.getElementById('cost_invoice_gross_amount');
         var addItemButton = document.getElementById('cost-invoice-add-item');
         var selectAll = document.getElementById('cost-invoice-select-all');
+        var ksefCostSelectAll = document.getElementById('ksef-cost-invoice-select-all');
         if (!netField || !vatAmountField || !grossAmountField) { return; }
 
         var recalculate = function () {
@@ -722,6 +748,13 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             selectAll.addEventListener('change', function () {
                 document.querySelectorAll('.cost-invoice-checkbox').forEach(function (checkbox) {
                     checkbox.checked = !!selectAll.checked;
+                });
+            });
+        }
+        if (ksefCostSelectAll) {
+            ksefCostSelectAll.addEventListener('change', function () {
+                document.querySelectorAll('.ksef-cost-invoice-checkbox').forEach(function (checkbox) {
+                    checkbox.checked = !!ksefCostSelectAll.checked;
                 });
             });
         }

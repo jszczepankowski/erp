@@ -113,8 +113,23 @@ if (! $service->can_transition('zaimportowana', 'weryfikacja')) {
 }
 
 $assertions++;
+if (! in_array('nieistotne', $service->allowed_statuses(), true)) {
+    throw new RuntimeException('Expected "nieistotne" in allowed cost invoice statuses.');
+}
+
+$assertions++;
+if (! $service->can_transition('zaimportowana', 'nieistotne')) {
+    throw new RuntimeException('Expected transition zaimportowana -> nieistotne to be valid.');
+}
+
+$assertions++;
 if ($service->can_transition('zaimportowana', 'przypisana')) {
     throw new RuntimeException('Expected transition zaimportowana -> przypisana to be invalid.');
+}
+
+$assertions++;
+if ($service->can_transition('przypisana', 'nieistotne')) {
+    throw new RuntimeException('Expected transition przypisana -> nieistotne to be invalid.');
 }
 
 $errors = $service->validate_invoice_data(
