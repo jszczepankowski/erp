@@ -260,6 +260,13 @@
     margin: 6px 0 0;
 }
 
+#adminmenu .update-plugins.erp-omd-kolko-badge,
+#adminmenu .update-plugins.erp-omd-kolko-badge .plugin-count {
+    background: #ddb178;
+    border-color: #ddb178;
+    color: #212123;
+}
+
 .erp-omd-admin .erp-omd-chart-period {
     background: #fff7ed;
     border: 1px solid rgba(221, 177, 120, 0.5);

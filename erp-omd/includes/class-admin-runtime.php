@@ -95,16 +95,46 @@ class ERP_OMD_Admin
 
     public function register_menu()
     {
-        add_menu_page(__('ERP OMD', 'erp-omd'), __('ERP OMD', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard'], 'dashicons-chart-pie', 56);
+        $menu_notifications = $this->get_kolko_notifications_summary();
+        add_menu_page(
+            __('ERP OMD', 'erp-omd'),
+            $this->with_kolko_menu_badge(__('ERP OMD', 'erp-omd'), (int) ($menu_notifications['total'] ?? 0)),
+            'erp_omd_access',
+            'erp-omd',
+            [$this, 'render_dashboard'],
+            'dashicons-chart-pie',
+            56
+        );
         add_submenu_page('erp-omd', __('Dashboard', 'erp-omd'), __('Dashboard', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-team');
         add_submenu_page('erp-omd', __('Pracownicy', 'erp-omd'), __('Pracownicy', 'erp-omd'), 'erp_omd_manage_employees', 'erp-omd-employees', [$this, 'render_employees']);
         add_submenu_page('erp-omd', __('Role', 'erp-omd'), __('Role', 'erp-omd'), 'erp_omd_manage_roles', 'erp-omd-roles', [$this, 'render_roles']);
         add_submenu_page('erp-omd', __('Klienci', 'erp-omd'), __('Klienci', 'erp-omd'), 'erp_omd_manage_clients', 'erp-omd-clients', [$this, 'render_clients']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-commercial');
-        add_submenu_page('erp-omd', __('Czas pracy', 'erp-omd'), __('Czas pracy', 'erp-omd'), 'erp_omd_manage_time', 'erp-omd-time', [$this, 'render_time_entries']);
-        add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
-        add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
+        add_submenu_page(
+            'erp-omd',
+            __('Czas pracy', 'erp-omd'),
+            $this->with_kolko_menu_badge(__('Czas pracy', 'erp-omd'), (int) ($menu_notifications['time_entries'] ?? 0)),
+            'erp_omd_manage_time',
+            'erp-omd-time',
+            [$this, 'render_time_entries']
+        );
+        add_submenu_page(
+            'erp-omd',
+            __('Kosztorysy', 'erp-omd'),
+            $this->with_kolko_menu_badge(__('Kosztorysy', 'erp-omd'), (int) ($menu_notifications['estimates'] ?? 0)),
+            'erp_omd_manage_projects',
+            'erp-omd-estimates',
+            [$this, 'render_estimates']
+        );
+        add_submenu_page(
+            'erp-omd',
+            __('Wnioski', 'erp-omd'),
+            $this->with_kolko_menu_badge(__('Wnioski', 'erp-omd'), (int) ($menu_notifications['requests_total'] ?? 0)),
+            'erp_omd_manage_projects',
+            'erp-omd-requests',
+            [$this, 'render_project_requests']
+        );
         add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
         add_submenu_page('erp-omd', __('Faktury/KSEF', 'erp-omd'), __('Faktury/KSEF', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
@@ -237,6 +267,91 @@ class ERP_OMD_Admin
             $menu_slug,
             '__return_null'
         );
+    }
+
+    private function with_kolko_menu_badge($label, $count)
+    {
+        $count = max(0, (int) $count);
+        if ($count <= 0) {
+            return $label;
+        }
+
+        $display_count = $count > 99 ? '99+' : (string) $count;
+        $bubble_markup = sprintf(
+            ' <span class="update-plugins erp-omd-kolko-badge"><span class="plugin-count">%s</span></span>',
+            esc_html($display_count)
+        );
+
+        return (string) $label . $bubble_markup;
+    }
+
+    private function get_kolko_notifications_summary()
+    {
+        $empty = [
+            'time_entries' => 0,
+            'estimates' => 0,
+            'requests_employee' => 0,
+            'requests_client' => 0,
+            'requests_total' => 0,
+            'total' => 0,
+        ];
+
+        if (! $this->can_view_kolko_notifications()) {
+            return $empty;
+        }
+
+        $time_entries = (int) $this->time_entries->count_filtered(['status' => 'submitted']);
+
+        $accepted_estimates = (array) $this->estimates->all(['status' => 'zaakceptowany']);
+        $unhandled_estimates = 0;
+        foreach ($accepted_estimates as $estimate_row) {
+            $project_id = (int) ($estimate_row['project_id'] ?? 0);
+            if ($project_id <= 0) {
+                $unhandled_estimates++;
+            }
+        }
+
+        $new_requests = (array) $this->project_requests->all(['status' => 'new']);
+        $requests_client = 0;
+        $requests_employee = 0;
+        foreach ($new_requests as $request_row) {
+            if ($this->is_client_project_request($request_row)) {
+                $requests_client++;
+                continue;
+            }
+
+            $requests_employee++;
+        }
+
+        $requests_total = $requests_employee + $requests_client;
+        $total = $time_entries + $unhandled_estimates + $requests_total;
+
+        return [
+            'time_entries' => $time_entries,
+            'estimates' => $unhandled_estimates,
+            'requests_employee' => $requests_employee,
+            'requests_client' => $requests_client,
+            'requests_total' => $requests_total,
+            'total' => $total,
+        ];
+    }
+
+    private function can_view_kolko_notifications()
+    {
+        if (! is_user_logged_in()) {
+            return false;
+        }
+
+        if (current_user_can('administrator')) {
+            return true;
+        }
+
+        $user = wp_get_current_user();
+        if (! ($user instanceof WP_User)) {
+            return false;
+        }
+
+        return in_array('erp_omd_manager', (array) $user->roles, true);
     }
 
     public function handle_forms()
