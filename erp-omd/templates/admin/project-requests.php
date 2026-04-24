@@ -58,6 +58,19 @@
                                 <details class="erp-omd-list-actions">
                                     <summary class="button button-small"><?php esc_html_e('Akcje', 'erp-omd'); ?></summary>
                                     <div class="erp-omd-list-actions-menu">
+                                        <details class="erp-omd-list-actions">
+                                            <summary class="button button-small"><?php esc_html_e('Podgląd szczegółów', 'erp-omd'); ?></summary>
+                                            <div class="erp-omd-list-actions-menu">
+                                                <p><strong><?php esc_html_e('Nazwa projektu:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($request_row['project_name'] ?? '—')); ?></p>
+                                                <p><strong><?php esc_html_e('Klient:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($request_row['client_name'] ?? '—')); ?></p>
+                                                <p><strong><?php esc_html_e('Typ rozliczenia:', 'erp-omd'); ?></strong> <?php echo esc_html($this->billing_type_label((string) ($request_row['billing_type'] ?? ''))); ?></p>
+                                                <p><strong><?php esc_html_e('Budżet:', 'erp-omd'); ?></strong> <?php echo (float) ($request_row['budget'] ?? 0) > 0 ? esc_html(number_format_i18n((float) ($request_row['budget'] ?? 0), 2)) : esc_html__('brak', 'erp-omd'); ?></p>
+                                                <p><strong><?php esc_html_e('Data rozpoczęcia:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($request_row['start_date'] ?? '—')); ?></p>
+                                                <p><strong><?php esc_html_e('Data zakończenia:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($request_row['end_date'] ?? '—')); ?></p>
+                                                <p><strong><?php esc_html_e('Brief:', 'erp-omd'); ?></strong> <?php echo esc_html((string) ($request_row['brief'] ?? '—')); ?></p>
+                                            </div>
+                                        </details>
+
                                         <?php foreach (['under_review' => __('Do analizy', 'erp-omd'), 'approved' => __('Zatwierdź', 'erp-omd'), 'rejected' => __('Odrzuć', 'erp-omd')] as $target_status => $target_label) : ?>
                                             <form method="post" class="erp-omd-inline-form">
                                                 <?php wp_nonce_field('erp_omd_update_project_request_status'); ?>
