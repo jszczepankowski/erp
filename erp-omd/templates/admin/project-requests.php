@@ -30,13 +30,6 @@
                     </div>
                 </div>
             </div>
-        <?php else : ?>
-            <div id="erp-omd-request-details" class="erp-omd-detail-grid erp-omd-detail-grid-vertical">
-                <div class="erp-omd-detail-card">
-                    <h3><?php esc_html_e('Podgląd szczegółów wniosku', 'erp-omd'); ?></h3>
-                    <p><?php esc_html_e('Wybierz akcję „Podgląd szczegółów” przy wybranym wniosku.', 'erp-omd'); ?></p>
-                </div>
-            </div>
         <?php endif; ?>
         <form method="get" class="erp-omd-filter-form">
             <input type="hidden" name="page" value="erp-omd-requests" />

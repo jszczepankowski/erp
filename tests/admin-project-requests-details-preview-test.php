@@ -9,7 +9,6 @@ $requiredSnippets = [
     "esc_html_e('Podgląd szczegółów wniosku', 'erp-omd')",
     'class="erp-omd-detail-card"',
     'class="erp-omd-detail-list erp-omd-detail-list-horizontal"',
-    "esc_html_e('Wybierz akcję „Podgląd szczegółów” przy wybranym wniosku.', 'erp-omd')",
     "esc_html_e('Podgląd szczegółów', 'erp-omd')",
     "esc_html_e('Nazwa projektu', 'erp-omd')",
     "esc_html_e('Typ rozliczenia', 'erp-omd')",
