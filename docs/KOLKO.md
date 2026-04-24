@@ -26,6 +26,11 @@ Licznik znika dopiero po akcji na rekordzie.
 - rekord liczy się od momentu utworzenia (`new`)
 - rekord przestaje się liczyć po otwarciu lub po zmianie statusu
 
+### 4) Projekty
+- rekord liczy się, gdy projekt ma bliski deadline (status deadline `risk` / `overdue`)
+- rekord liczy się, gdy istnieje nowa uwaga klienta (najnowsza uwaga od użytkownika z rolą `erp_omd_client`)
+- rekord przestaje się liczyć po wejściu w szczegóły projektu (`#erp-omd-project-details`)
+
 ## Deduplikacja
 Jedno zdarzenie = jedna notyfikacja (po rekordzie źródłowym).
 
@@ -44,3 +49,4 @@ W menu WordPress (ERP OMD) dodano badge przy pozycjach:
 - Czas pracy
 - Kosztorysy
 - Wnioski (suma wniosków pracowników i klientów)
+- Projekty

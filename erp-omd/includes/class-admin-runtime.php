@@ -135,7 +135,14 @@ class ERP_OMD_Admin
             'erp-omd-requests',
             [$this, 'render_project_requests']
         );
-        add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
+        add_submenu_page(
+            'erp-omd',
+            __('Projekty', 'erp-omd'),
+            $this->with_kolko_menu_badge(__('Projekty', 'erp-omd'), (int) ($menu_notifications['projects'] ?? 0)),
+            'erp_omd_manage_projects',
+            'erp-omd-projects',
+            [$this, 'render_projects']
+        );
         add_submenu_page('erp-omd', __('Faktury/KSEF', 'erp-omd'), __('Faktury/KSEF', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
         add_submenu_page('erp-omd', __('Kalendarz', 'erp-omd'), __('Kalendarz', 'erp-omd'), 'erp_omd_access', 'erp-omd-calendar', [$this, 'render_calendar']);
@@ -293,6 +300,7 @@ class ERP_OMD_Admin
             'requests_employee' => 0,
             'requests_client' => 0,
             'requests_total' => 0,
+            'projects' => 0,
             'total' => 0,
         ];
 
@@ -333,7 +341,8 @@ class ERP_OMD_Admin
         }
 
         $requests_total = $requests_employee + $requests_client;
-        $total = $time_entries + $unhandled_estimates + $requests_total;
+        $projects = $this->count_unhandled_projects_for_kolko();
+        $total = $time_entries + $unhandled_estimates + $requests_total + $projects;
 
         return [
             'time_entries' => $time_entries,
@@ -341,8 +350,126 @@ class ERP_OMD_Admin
             'requests_employee' => $requests_employee,
             'requests_client' => $requests_client,
             'requests_total' => $requests_total,
+            'projects' => $projects,
             'total' => $total,
         ];
+    }
+
+    private function count_unhandled_projects_for_kolko()
+    {
+        $projects = (array) $this->projects->all();
+        $acknowledged = $this->get_project_kolko_acknowledgements();
+        $count = 0;
+
+        foreach ($projects as $project_row) {
+            $project_id = (int) ($project_row['id'] ?? 0);
+            if ($project_id <= 0) {
+                continue;
+            }
+
+            $signature = $this->build_project_kolko_signature($project_row);
+            if ($signature === '') {
+                continue;
+            }
+
+            if (($acknowledged[$project_id] ?? '') === $signature) {
+                continue;
+            }
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    private function build_project_kolko_signature(array $project)
+    {
+        $signals = [];
+        $deadline_status = $this->resolve_project_deadline_status($project);
+        if (in_array($deadline_status, ['risk', 'overdue'], true)) {
+            $signals[] = 'deadline:' . (string) ($project['deadline_date'] ?? '');
+        }
+
+        $project_id = (int) ($project['id'] ?? 0);
+        $latest_client_note_id = $project_id > 0 ? $this->latest_client_note_id_for_project($project_id) : 0;
+        if ($latest_client_note_id > 0) {
+            $signals[] = 'note:' . $latest_client_note_id;
+        }
+
+        if ($signals === []) {
+            return '';
+        }
+
+        sort($signals);
+        return implode('|', $signals);
+    }
+
+    private function latest_client_note_id_for_project($project_id)
+    {
+        $notes = (array) $this->project_notes->for_project((int) $project_id);
+        foreach ($notes as $note_row) {
+            $author_user_id = (int) ($note_row['author_user_id'] ?? 0);
+            if ($author_user_id <= 0 || ! $this->is_client_user($author_user_id)) {
+                continue;
+            }
+
+            return (int) ($note_row['id'] ?? 0);
+        }
+
+        return 0;
+    }
+
+    private function acknowledge_project_kolko_notification(array $project, array $project_notes)
+    {
+        if (! $this->can_view_kolko_notifications()) {
+            return;
+        }
+
+        $project_id = (int) ($project['id'] ?? 0);
+        if ($project_id <= 0) {
+            return;
+        }
+
+        $signals = [];
+        $deadline_status = $this->resolve_project_deadline_status($project);
+        if (in_array($deadline_status, ['risk', 'overdue'], true)) {
+            $signals[] = 'deadline:' . (string) ($project['deadline_date'] ?? '');
+        }
+
+        foreach ($project_notes as $note_row) {
+            $author_user_id = (int) ($note_row['author_user_id'] ?? 0);
+            if ($author_user_id <= 0 || ! $this->is_client_user($author_user_id)) {
+                continue;
+            }
+
+            $signals[] = 'note:' . (int) ($note_row['id'] ?? 0);
+            break;
+        }
+
+        if ($signals === []) {
+            return;
+        }
+
+        sort($signals);
+        $acknowledged = $this->get_project_kolko_acknowledgements();
+        $acknowledged[$project_id] = implode('|', $signals);
+        update_user_meta(get_current_user_id(), 'erp_omd_kolko_project_ack', $acknowledged);
+    }
+
+    private function get_project_kolko_acknowledgements()
+    {
+        $raw = get_user_meta(get_current_user_id(), 'erp_omd_kolko_project_ack', true);
+        return is_array($raw) ? $raw : [];
+    }
+
+    private function is_client_user($user_id)
+    {
+        $user = get_userdata((int) $user_id);
+        if (! ($user instanceof WP_User)) {
+            return false;
+        }
+
+        return in_array('erp_omd_client', (array) $user->roles, true);
     }
 
     private function can_view_kolko_notifications()
@@ -983,6 +1110,7 @@ class ERP_OMD_Admin
             $project = $this->projects->find((int) $_GET['id']);
             if ($project) {
                 $project_notes = $this->project_notes->for_project((int) $project['id']);
+                $this->acknowledge_project_kolko_notification($project, $project_notes);
                 $project_rates = $this->project_rates->for_project((int) $project['id']);
                 $project_cost_rows = $this->project_costs->for_project((int) $project['id']);
                 $project_cost_invoice_rows = (new ERP_OMD_Cost_Invoice_Repository())->list(['project_id' => (int) $project['id']]);
