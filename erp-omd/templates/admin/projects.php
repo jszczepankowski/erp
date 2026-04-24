@@ -80,7 +80,7 @@
                                 <label for="project-deadline-completed"><?php esc_html_e('Realizacja deadline', 'erp-omd'); ?></label>
                                 <label style="display:flex; gap:8px; align-items:center; margin-top:8px;">
                                     <input id="project-deadline-completed" type="checkbox" name="deadline_mark_completed" value="1" <?php disabled(! empty($project['deadline_completed_at'])); ?> />
-                                    <span><?php esc_html_e('Oznacz deadline jako zrealizowany', 'erp-omd'); ?></span>
+                                    <span><?php esc_html_e('Zrealizowany', 'erp-omd'); ?></span>
                                 </label>
                                 <p class="description">
                                     <?php if (! empty($project['deadline_completed_at'])) : ?>
