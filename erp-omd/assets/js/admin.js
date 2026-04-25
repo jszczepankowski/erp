@@ -4,6 +4,7 @@ const initTableTools = () => {
     'erp-omd-clients',
     'erp-omd-estimates',
     'erp-omd-projects',
+    'erp-omd-cost-invoices',
     'erp-omd-requests',
     'erp-omd-time',
     'erp-omd-reports',
