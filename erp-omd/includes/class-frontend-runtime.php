@@ -427,9 +427,6 @@ class ERP_OMD_Frontend
             $project_sort_order = 'asc';
         }
         $selected_project_id = (int) ($_GET['project_id'] ?? 0);
-        if ($selected_project_id <= 0 && ! empty($projects)) {
-            $selected_project_id = (int) ($projects[0]['id'] ?? 0);
-        }
 
         usort(
             $projects,
@@ -460,6 +457,7 @@ class ERP_OMD_Frontend
         if ($selected_project_id > 0 && ! in_array($selected_project_id, $visible_project_ids, true)) {
             $selected_project_id = 0;
         }
+        $selected_project = $selected_project_id > 0 ? $this->find_project_in_collection($projects, $selected_project_id) : null;
 
         $client_portal_service = class_exists('ERP_OMD_Client_Portal_Service')
             ? new ERP_OMD_Client_Portal_Service($this->projects, $this->project_revenues, $this->project_costs)
@@ -494,8 +492,11 @@ class ERP_OMD_Frontend
         if ($selected_project_id > 0 && class_exists('ERP_OMD_Attachment_Repository')) {
             $attachments_repo = new ERP_OMD_Attachment_Repository();
             $selected_project_attachments = (array) $attachments_repo->for_entity('project', $selected_project_id);
-            $selected_project = $this->projects->find($selected_project_id);
-            $estimate_id = (int) ($selected_project['estimate_id'] ?? 0);
+            $selected_project_details = $this->projects->find($selected_project_id);
+            if (is_array($selected_project_details)) {
+                $selected_project = array_merge($selected_project_details, (array) $selected_project);
+            }
+            $estimate_id = (int) (($selected_project_details['estimate_id'] ?? $selected_project['estimate_id'] ?? 0));
             if ($estimate_id > 0) {
                 $selected_estimate_attachments = (array) $attachments_repo->for_entity('estimate', $estimate_id);
             }
