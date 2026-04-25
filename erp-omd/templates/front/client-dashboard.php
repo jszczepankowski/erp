@@ -26,18 +26,18 @@
                 </div>
             <?php endif; ?>
 
-            <div class="erp-omd-front-grid erp-omd-front-grid-summary">
+            <div class="erp-omd-front-grid erp-omd-front-grid-summary erp-omd-front-grid-client-account">
                 <article class="erp-omd-front-panel">
                     <h2><?php esc_html_e('Twoje konto', 'erp-omd'); ?></h2>
-                    <ul>
-                        <li><strong><?php esc_html_e('Użytkownik:', 'erp-omd'); ?></strong> <?php echo esc_html($user->user_login); ?></li>
-                        <li><strong><?php esc_html_e('Firma:', 'erp-omd'); ?></strong> <?php echo esc_html($client_profile['company'] ?? '—'); ?></li>
-                        <li><strong><?php esc_html_e('Adres:', 'erp-omd'); ?></strong> <?php echo esc_html(trim((string) ($client_profile['street'] ?? '') . ' ' . (string) ($client_profile['apartment_number'] ?? '') . ', ' . (string) ($client_profile['postal_code'] ?? '') . ' ' . (string) ($client_profile['city'] ?? '') . ', ' . (string) ($client_profile['country'] ?? '')) ?: '—'); ?></li>
-                        <li><strong><?php esc_html_e('Status:', 'erp-omd'); ?></strong> <?php echo esc_html($client_profile['status'] ?? '—'); ?></li>
-                        <li><strong><?php esc_html_e('Email:', 'erp-omd'); ?></strong> <?php echo esc_html($client_profile['email'] ?? ($user->user_email ?? '—')); ?></li>
-                        <li><strong><?php esc_html_e('Telefon:', 'erp-omd'); ?></strong> <?php echo esc_html($client_profile['phone'] ?? '—'); ?></li>
-                        <li><strong><?php esc_html_e('Kontakt główny:', 'erp-omd'); ?></strong> <?php echo esc_html($client_profile['contact_person_name'] ?? '—'); ?></li>
-                    </ul>
+                    <div class="erp-omd-front-metrics">
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Użytkownik', 'erp-omd'); ?></span><strong><?php echo esc_html($user->user_login); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Firma', 'erp-omd'); ?></span><strong><?php echo esc_html($client_profile['company'] ?? '—'); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Status', 'erp-omd'); ?></span><strong><?php echo esc_html($client_profile['status'] ?? '—'); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Email', 'erp-omd'); ?></span><strong><?php echo esc_html($client_profile['email'] ?? ($user->user_email ?? '—')); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Telefon', 'erp-omd'); ?></span><strong><?php echo esc_html($client_profile['phone'] ?? '—'); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Kontakt główny', 'erp-omd'); ?></span><strong><?php echo esc_html($client_profile['contact_person_name'] ?? '—'); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Adres', 'erp-omd'); ?></span><strong><?php echo esc_html(trim((string) ($client_profile['street'] ?? '') . ' ' . (string) ($client_profile['apartment_number'] ?? '') . ', ' . (string) ($client_profile['postal_code'] ?? '') . ' ' . (string) ($client_profile['city'] ?? '') . ', ' . (string) ($client_profile['country'] ?? '')) ?: '—'); ?></strong></div>
+                    </div>
                 </article>
                 <article class="erp-omd-front-panel">
                     <h2><?php esc_html_e('Szybkie podsumowanie', 'erp-omd'); ?></h2>
@@ -48,8 +48,10 @@
                         </div>
                     </div>
                 </article>
-                <article class="erp-omd-front-panel">
-                    <h2><?php esc_html_e('Stawki klienta', 'erp-omd'); ?></h2>
+            </div>
+
+            <article class="erp-omd-front-panel">
+                    <h2><?php esc_html_e('Twoje stawki', 'erp-omd'); ?></h2>
                     <div class="erp-omd-front-table-wrap">
                         <table class="erp-omd-front-table">
                             <thead>
@@ -67,24 +69,23 @@
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else : ?>
-                                    <tr><td colspan="2"><?php esc_html_e('Brak zdefiniowanych stawek klienta.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="2"><?php esc_html_e('Brak zdefiniowanych stawek.', 'erp-omd'); ?></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
                 </article>
-            </div>
 
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
-                    <h2><?php esc_html_e('Nowy wniosek projektowy', 'erp-omd'); ?></h2>
+                    <h2><?php esc_html_e('Zgłoś nowy projekt', 'erp-omd'); ?></h2>
                 </div>
                 <form method="post" class="erp-omd-front-form erp-omd-front-form-inline">
                     <?php wp_nonce_field('erp_omd_front_client'); ?>
                     <input type="hidden" name="erp_omd_front_action" value="create_project_request" />
                     <div class="erp-omd-front-grid erp-omd-front-grid-two">
                         <div class="erp-omd-front-field">
-                            <label for="erp-omd-client-request-project-name"><?php esc_html_e('Nowy wniosek projektowy: nazwa projektu', 'erp-omd'); ?></label>
+                            <label for="erp-omd-client-request-project-name"><?php esc_html_e('Zgłoś nowy projekt', 'erp-omd'); ?></label>
                             <input id="erp-omd-client-request-project-name" type="text" name="project_name" required />
                         </div>
                         <div class="erp-omd-front-field">
@@ -124,7 +125,7 @@
                             <label for="erp-omd-client-request-deadline"><?php esc_html_e('Deadline', 'erp-omd'); ?></label>
                             <input id="erp-omd-client-request-deadline" type="date" name="deadline" />
                         </div>
-                        <div class="erp-omd-front-field">
+                        <div class="erp-omd-front-field erp-omd-front-field-full">
                             <label for="erp-omd-client-request-brief"><?php esc_html_e('Brief / opis projektu', 'erp-omd'); ?></label>
                             <textarea id="erp-omd-client-request-brief" name="brief" rows="3" required></textarea>
                         </div>
@@ -137,7 +138,7 @@
 
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
-                    <h2><?php esc_html_e('Lista projektów', 'erp-omd'); ?></h2>
+                    <h2><?php esc_html_e('Twoje projekty', 'erp-omd'); ?></h2>
                 </div>
                 <div class="erp-omd-front-inline-actions">
                     <?php
@@ -267,52 +268,28 @@
                 </div>
             </article>
 
-            <article class="erp-omd-front-panel">
-                <div class="erp-omd-front-section-heading">
-                    <h2><?php esc_html_e('Szczegóły projektu', 'erp-omd'); ?></h2>
-                </div>
-                <?php if ($selected_client_request) : ?>
-                    <div class="erp-omd-front-detail-grid">
-                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Nazwa projektu', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_request['project_name'] ?? '—')); ?></span></div>
-                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_request['status'] ?? '—')); ?></span></div>
-                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></strong><span><?php echo esc_html($project_billing_type_labels[(string) ($selected_client_request['billing_type'] ?? '')] ?? (string) ($selected_client_request['billing_type'] ?? '—')); ?></span></div>
-                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Budżet', 'erp-omd'); ?></strong><span><?php echo (float) ($selected_client_request['budget'] ?? 0) > 0 ? esc_html(number_format_i18n((float) ($selected_client_request['budget'] ?? 0), 2)) : esc_html__('brak', 'erp-omd'); ?></span></div>
-                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_request['start_date'] ?? '—')); ?></span></div>
-                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_request['end_date'] ?? '—')); ?></span></div>
-                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Brief', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_request['brief'] ?? '—')); ?></span></div>
+            <?php if ($selected_project_id > 0 && ! empty($selected_project)) : ?>
+                <article class="erp-omd-front-panel">
+                    <div class="erp-omd-front-section-heading">
+                        <h2><?php esc_html_e('Szczegóły projektu', 'erp-omd'); ?></h2>
                     </div>
-                <?php endif; ?>
-                <div class="erp-omd-front-table-wrap">
-                    <table class="erp-omd-front-table">
-                        <thead>
-                            <tr>
-                                <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
-                                <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
-                                <th><?php esc_html_e('Typ', 'erp-omd'); ?></th>
-                                <th><?php esc_html_e('Akcja', 'erp-omd'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if ($client_project_requests) : ?>
-                                <?php foreach ($client_project_requests as $client_request_row) : ?>
-                                    <tr>
-                                        <td><?php echo esc_html((string) ($client_request_row['project_name'] ?? '—')); ?></td>
-                                        <td><?php echo esc_html((string) ($client_request_row['status'] ?? '—')); ?></td>
-                                        <td><?php echo esc_html($project_billing_type_labels[(string) ($client_request_row['billing_type'] ?? '')] ?? (string) ($client_request_row['billing_type'] ?? '—')); ?></td>
-                                        <td>
-                                            <a class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-button-ghost" href="<?php echo esc_url(add_query_arg(['request_id' => (int) ($client_request_row['id'] ?? 0)], $front_client_url)); ?>">
-                                                <?php esc_html_e('Podgląd szczegółów', 'erp-omd'); ?>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else : ?>
-                                <tr><td colspan="4"><?php esc_html_e('Brak wniosków projektowych.', 'erp-omd'); ?></td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                    <div class="erp-omd-front-detail-grid">
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Nazwa projektu', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_project['name'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($project_status_labels[(string) ($selected_project['status'] ?? '')] ?? ($selected_project['status'] ?? '—'))); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></strong><span><?php echo esc_html($project_billing_type_labels[(string) ($selected_project['billing_type'] ?? '')] ?? (string) ($selected_project['billing_type'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Budżet', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($selected_project['budget'] ?? 0), 2)); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Data rozpoczęcia', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_project['start_date'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Data zakończenia', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_project['end_date'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Deadline', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_project['deadline_date'] ?? $selected_project['deadline'] ?? '—')); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Brief', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_project['brief'] ?? '—')); ?></span></div>
+                    </div>
+                </article>
+            <?php endif; ?>
+            <?php if ($selected_project_id <= 0) : ?>
+                <div class="erp-omd-front-notice erp-omd-front-notice-info">
+                    <?php esc_html_e('Wybierz projekt z listy i kliknij „Otwórz”, aby zobaczyć szczegóły projektu, finanse, czas pracy, historię budżetu, załączniki i uwagi.', 'erp-omd'); ?>
                 </div>
-            </article>
+            <?php endif; ?>
 
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
@@ -498,6 +475,7 @@
                         <table class="erp-omd-front-table">
                             <thead>
                                 <tr>
+                                    <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Źródło', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Etykieta', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Plik', 'erp-omd'); ?></th>
@@ -564,6 +542,7 @@
                                         }
                                         ?>
                                         <tr>
+                                            <td><?php echo esc_html((string) ($selected_project_finance['project_name'] ?? ($selected_project['name'] ?? '—'))); ?></td>
                                             <td><?php echo esc_html((string) ($project_attachment_item['source'] ?? '—')); ?></td>
                                             <td><?php echo esc_html((string) ($project_attachment_item['label'] ?? '—')); ?></td>
                                             <td>
@@ -597,7 +576,7 @@
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else : ?>
-                                    <tr><td colspan="8"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="9"><?php esc_html_e('Brak załączników dla wybranego projektu.', 'erp-omd'); ?></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -605,7 +584,7 @@
                 </article>
 
                 <article class="erp-omd-front-panel">
-                    <h2><?php esc_html_e('Historia uwag klienta', 'erp-omd'); ?></h2>
+                    <h2><?php esc_html_e('Historia uwag', 'erp-omd'); ?></h2>
                     <?php if ($selected_project_id > 0) : ?>
                         <form method="post" enctype="multipart/form-data" class="erp-omd-front-form erp-omd-front-form-inline">
                             <?php wp_nonce_field('erp_omd_front_client'); ?>
@@ -641,6 +620,7 @@
                             <thead>
                                 <tr>
                                     <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Autor', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Treść uwagi', 'erp-omd'); ?></th>
                                 </tr>
@@ -650,12 +630,13 @@
                                     <?php foreach ($selected_project_notes as $project_note_item) : ?>
                                         <tr>
                                             <td><?php echo esc_html((string) ($project_note_item['created_at'] ?? '—')); ?></td>
+                                            <td><?php echo esc_html((string) ($selected_project_finance['project_name'] ?? ($selected_project['name'] ?? '—'))); ?></td>
                                             <td><?php echo esc_html((string) ($project_note_item['author_login'] ?? '—')); ?></td>
                                             <td><?php echo esc_html((string) ($project_note_item['note'] ?? '')); ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else : ?>
-                                    <tr><td colspan="3"><?php esc_html_e('Brak uwag dla wybranego projektu.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="4"><?php esc_html_e('Brak uwag dla wybranego projektu.', 'erp-omd'); ?></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>

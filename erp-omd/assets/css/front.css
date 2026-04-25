@@ -102,6 +102,10 @@ background-image: none !important;
     gap: 8px;
 }
 
+.erp-omd-front-field-full {
+    grid-column: 1 / -1;
+}
+
 .erp-omd-front-form label {
     font-weight: 600;
 }
@@ -207,6 +211,10 @@ background-image: none !important;
 .erp-omd-front-grid-summary {
     margin-bottom: 24px;
 	margin-top: 24px;
+}
+
+.erp-omd-front-grid-client-account {
+    grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr);
 }
 
 .erp-omd-front-grid-manager {
@@ -666,6 +674,10 @@ background-image: none !important;
     }
 
     .erp-omd-front-grid-manager {
+        grid-template-columns: 1fr;
+    }
+
+    .erp-omd-front-grid-client-account {
         grid-template-columns: 1fr;
     }
 

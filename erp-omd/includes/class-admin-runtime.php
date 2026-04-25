@@ -95,17 +95,54 @@ class ERP_OMD_Admin
 
     public function register_menu()
     {
-        add_menu_page(__('ERP OMD', 'erp-omd'), __('ERP OMD', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard'], 'dashicons-chart-pie', 56);
+        $menu_notifications = $this->get_kolko_notifications_summary();
+        add_menu_page(
+            __('ERP OMD', 'erp-omd'),
+            __('ERP OMD', 'erp-omd'),
+            'erp_omd_access',
+            'erp-omd',
+            [$this, 'render_dashboard'],
+            'dashicons-chart-pie',
+            56
+        );
         add_submenu_page('erp-omd', __('Dashboard', 'erp-omd'), __('Dashboard', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-team');
         add_submenu_page('erp-omd', __('Pracownicy', 'erp-omd'), __('Pracownicy', 'erp-omd'), 'erp_omd_manage_employees', 'erp-omd-employees', [$this, 'render_employees']);
         add_submenu_page('erp-omd', __('Role', 'erp-omd'), __('Role', 'erp-omd'), 'erp_omd_manage_roles', 'erp-omd-roles', [$this, 'render_roles']);
         add_submenu_page('erp-omd', __('Klienci', 'erp-omd'), __('Klienci', 'erp-omd'), 'erp_omd_manage_clients', 'erp-omd-clients', [$this, 'render_clients']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-commercial');
-        add_submenu_page('erp-omd', __('Czas pracy', 'erp-omd'), __('Czas pracy', 'erp-omd'), 'erp_omd_manage_time', 'erp-omd-time', [$this, 'render_time_entries']);
-        add_submenu_page('erp-omd', __('Kosztorysy', 'erp-omd'), __('Kosztorysy', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates', [$this, 'render_estimates']);
-        add_submenu_page('erp-omd', __('Wnioski', 'erp-omd'), __('Wnioski', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-requests', [$this, 'render_project_requests']);
-        add_submenu_page('erp-omd', __('Projekty', 'erp-omd'), __('Projekty', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects', [$this, 'render_projects']);
+        add_submenu_page(
+            'erp-omd',
+            __('Czas pracy', 'erp-omd'),
+            $this->with_kolko_menu_badge(__('Czas pracy', 'erp-omd'), (int) ($menu_notifications['time_entries'] ?? 0)),
+            'erp_omd_manage_time',
+            'erp-omd-time',
+            [$this, 'render_time_entries']
+        );
+        add_submenu_page(
+            'erp-omd',
+            __('Kosztorysy', 'erp-omd'),
+            $this->with_kolko_menu_badge(__('Kosztorysy', 'erp-omd'), (int) ($menu_notifications['estimates'] ?? 0)),
+            'erp_omd_manage_projects',
+            'erp-omd-estimates',
+            [$this, 'render_estimates']
+        );
+        add_submenu_page(
+            'erp-omd',
+            __('Wnioski', 'erp-omd'),
+            $this->with_kolko_menu_badge(__('Wnioski', 'erp-omd'), (int) ($menu_notifications['requests_total'] ?? 0)),
+            'erp_omd_manage_projects',
+            'erp-omd-requests',
+            [$this, 'render_project_requests']
+        );
+        add_submenu_page(
+            'erp-omd',
+            __('Projekty', 'erp-omd'),
+            $this->with_kolko_menu_badge(__('Projekty', 'erp-omd'), (int) ($menu_notifications['projects'] ?? 0)),
+            'erp_omd_manage_projects',
+            'erp-omd-projects',
+            [$this, 'render_projects']
+        );
         add_submenu_page('erp-omd', __('Faktury/KSEF', 'erp-omd'), __('Faktury/KSEF', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
         add_submenu_page('erp-omd', __('Kalendarz', 'erp-omd'), __('Kalendarz', 'erp-omd'), 'erp_omd_access', 'erp-omd-calendar', [$this, 'render_calendar']);
@@ -237,6 +274,220 @@ class ERP_OMD_Admin
             $menu_slug,
             '__return_null'
         );
+    }
+
+    private function with_kolko_menu_badge($label, $count)
+    {
+        $count = max(0, (int) $count);
+        if ($count <= 0) {
+            return $label;
+        }
+
+        $display_count = $count > 99 ? '99+' : (string) $count;
+        $bubble_markup = sprintf(
+            ' <span class="update-plugins erp-omd-kolko-badge"><span class="plugin-count">%s</span></span>',
+            esc_html($display_count)
+        );
+
+        return (string) $label . $bubble_markup;
+    }
+
+    private function get_kolko_notifications_summary()
+    {
+        $empty = [
+            'time_entries' => 0,
+            'estimates' => 0,
+            'requests_employee' => 0,
+            'requests_client' => 0,
+            'requests_total' => 0,
+            'projects' => 0,
+            'total' => 0,
+        ];
+
+        if (! $this->can_view_kolko_notifications()) {
+            return $empty;
+        }
+
+        $time_entries = (int) $this->time_entries->count_filtered(['status' => 'submitted']);
+
+        $accepted_estimates = (array) $this->estimates->all();
+        $unhandled_estimates = 0;
+        foreach ($accepted_estimates as $estimate_row) {
+            if ((string) ($estimate_row['status'] ?? '') !== 'zaakceptowany') {
+                continue;
+            }
+
+            $estimate_id = (int) ($estimate_row['id'] ?? 0);
+            if ($estimate_id <= 0) {
+                continue;
+            }
+
+            $project = $this->projects->find_by_estimate_id($estimate_id);
+            if (! $project) {
+                $unhandled_estimates++;
+            }
+        }
+
+        $new_requests = (array) $this->project_requests->all(['status' => 'new']);
+        $requests_client = 0;
+        $requests_employee = 0;
+        foreach ($new_requests as $request_row) {
+            if ($this->is_client_project_request($request_row)) {
+                $requests_client++;
+                continue;
+            }
+
+            $requests_employee++;
+        }
+
+        $requests_total = $requests_employee + $requests_client;
+        $projects = $this->count_unhandled_projects_for_kolko();
+        $total = $time_entries + $unhandled_estimates + $requests_total + $projects;
+
+        return [
+            'time_entries' => $time_entries,
+            'estimates' => $unhandled_estimates,
+            'requests_employee' => $requests_employee,
+            'requests_client' => $requests_client,
+            'requests_total' => $requests_total,
+            'projects' => $projects,
+            'total' => $total,
+        ];
+    }
+
+    private function count_unhandled_projects_for_kolko()
+    {
+        $projects = (array) $this->projects->all();
+        $acknowledged = $this->get_project_kolko_acknowledgements();
+        $count = 0;
+
+        foreach ($projects as $project_row) {
+            $project_id = (int) ($project_row['id'] ?? 0);
+            if ($project_id <= 0) {
+                continue;
+            }
+
+            $signature = $this->build_project_kolko_signature($project_row);
+            if ($signature === '') {
+                continue;
+            }
+
+            if (($acknowledged[$project_id] ?? '') === $signature) {
+                continue;
+            }
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    private function build_project_kolko_signature(array $project)
+    {
+        $signals = [];
+        $deadline_status = $this->resolve_project_deadline_status($project);
+        if (in_array($deadline_status, ['risk', 'overdue'], true)) {
+            $signals[] = 'deadline:' . (string) ($project['deadline_date'] ?? '');
+        }
+
+        $project_id = (int) ($project['id'] ?? 0);
+        $latest_client_note_id = $project_id > 0 ? $this->latest_client_note_id_for_project($project_id) : 0;
+        if ($latest_client_note_id > 0) {
+            $signals[] = 'note:' . $latest_client_note_id;
+        }
+
+        if ($signals === []) {
+            return '';
+        }
+
+        sort($signals);
+        return implode('|', $signals);
+    }
+
+    private function latest_client_note_id_for_project($project_id)
+    {
+        $notes = (array) $this->project_notes->for_project((int) $project_id);
+        foreach ($notes as $note_row) {
+            $author_user_id = (int) ($note_row['author_user_id'] ?? 0);
+            if ($author_user_id <= 0 || ! $this->is_client_user($author_user_id)) {
+                continue;
+            }
+
+            return (int) ($note_row['id'] ?? 0);
+        }
+
+        return 0;
+    }
+
+    private function acknowledge_project_kolko_notification(array $project, array $project_notes)
+    {
+        if (! $this->can_view_kolko_notifications()) {
+            return;
+        }
+
+        $project_id = (int) ($project['id'] ?? 0);
+        if ($project_id <= 0) {
+            return;
+        }
+
+        $signals = [];
+        $deadline_status = $this->resolve_project_deadline_status($project);
+        if (in_array($deadline_status, ['risk', 'overdue'], true)) {
+            $signals[] = 'deadline:' . (string) ($project['deadline_date'] ?? '');
+        }
+
+        foreach ($project_notes as $note_row) {
+            $author_user_id = (int) ($note_row['author_user_id'] ?? 0);
+            if ($author_user_id <= 0 || ! $this->is_client_user($author_user_id)) {
+                continue;
+            }
+
+            $signals[] = 'note:' . (int) ($note_row['id'] ?? 0);
+            break;
+        }
+
+        if ($signals === []) {
+            return;
+        }
+
+        sort($signals);
+        $acknowledged = $this->get_project_kolko_acknowledgements();
+        $acknowledged[$project_id] = implode('|', $signals);
+        update_user_meta(get_current_user_id(), 'erp_omd_kolko_project_ack', $acknowledged);
+    }
+
+    private function get_project_kolko_acknowledgements()
+    {
+        $raw = get_user_meta(get_current_user_id(), 'erp_omd_kolko_project_ack', true);
+        return is_array($raw) ? $raw : [];
+    }
+
+    private function is_client_user($user_id)
+    {
+        $user = get_userdata((int) $user_id);
+        if (! ($user instanceof WP_User)) {
+            return false;
+        }
+
+        return in_array('erp_omd_client', (array) $user->roles, true);
+    }
+
+    private function can_view_kolko_notifications()
+    {
+        if (! is_user_logged_in()) {
+            return false;
+        }
+
+        if (current_user_can('administrator')) {
+            return true;
+        }
+
+        $user = wp_get_current_user();
+        if (! ($user instanceof WP_User)) {
+            return false;
+        }
+
+        return in_array('erp_omd_manager', (array) $user->roles, true);
     }
 
     public function handle_forms()
@@ -859,6 +1110,7 @@ class ERP_OMD_Admin
             $project = $this->projects->find((int) $_GET['id']);
             if ($project) {
                 $project_notes = $this->project_notes->for_project((int) $project['id']);
+                $this->acknowledge_project_kolko_notification($project, $project_notes);
                 $project_rates = $this->project_rates->for_project((int) $project['id']);
                 $project_cost_rows = $this->project_costs->for_project((int) $project['id']);
                 $project_cost_invoice_rows = (new ERP_OMD_Cost_Invoice_Repository())->list(['project_id' => (int) $project['id']]);
@@ -907,6 +1159,14 @@ class ERP_OMD_Admin
             $project_row['alerts'] = $project_alerts[(int) $project_row['id']] ?? [];
             $project_row['deadline_status'] = $this->resolve_project_deadline_status($project_row);
             $project_row['deadline_status_label'] = $this->project_deadline_status_label($project_row['deadline_status']);
+        }
+        unset($project_row);
+        $can_view_kolko_notifications = $this->can_view_kolko_notifications();
+        $kolko_project_acknowledged = $can_view_kolko_notifications ? $this->get_project_kolko_acknowledgements() : [];
+        foreach ($projects as &$project_row) {
+            $project_signature = $can_view_kolko_notifications ? $this->build_project_kolko_signature($project_row) : '';
+            $project_row['kolko_unhandled'] = $project_signature !== ''
+                && (($kolko_project_acknowledged[(int) ($project_row['id'] ?? 0)] ?? '') !== $project_signature);
         }
         unset($project_row);
         $project_filters = [

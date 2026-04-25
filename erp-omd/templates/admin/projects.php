@@ -649,8 +649,9 @@
                         <?php
                         $deadline_status = (string) ($project_row['deadline_status'] ?? '');
                         $deadline_is_attention = in_array($deadline_status, ['risk', 'overdue'], true);
+                        $project_row_class = ! empty($project_row['kolko_unhandled']) ? 'erp-omd-project-kolko-row' : '';
                         ?>
-                        <tr>
+                        <tr class="<?php echo esc_attr($project_row_class); ?>">
                             <td><input class="erp-omd-project-checkbox" type="checkbox" name="project_ids[]" value="<?php echo esc_attr($project_row['id']); ?>" form="erp-omd-bulk-projects-form" /></td>
                             <td><?php echo esc_html($project_row['id']); ?></td>
                             <td><?php echo esc_html($project_row['client_name']); ?></td>
