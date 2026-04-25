@@ -346,6 +346,39 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     <h3><?php esc_html_e('Lista faktur kosztowych', 'erp-omd'); ?></h3>
                 </div>
             </div>
+            <form method="get" class="erp-omd-filter-form" style="margin-bottom:12px;">
+                <input type="hidden" name="page" value="erp-omd-cost-invoices" />
+                <input type="hidden" name="tab" value="invoices" />
+                <input type="hidden" name="invoice_id" value="<?php echo esc_attr((string) $selected_invoice_id); ?>" />
+                <select name="invoice_supplier_id">
+                    <option value="0"><?php esc_html_e('Wszyscy dostawcy', 'erp-omd'); ?></option>
+                    <?php foreach ((array) $suppliers as $supplier_filter_option) : ?>
+                        <?php $supplier_filter_id = (int) ($supplier_filter_option['id'] ?? 0); ?>
+                        <option value="<?php echo esc_attr((string) $supplier_filter_id); ?>" <?php selected((int) ($invoice_list_filters['supplier_id'] ?? 0), $supplier_filter_id); ?>>
+                            <?php echo esc_html((string) ($supplier_filter_option['name'] ?? '')); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <select name="invoice_project_id">
+                    <option value="0"><?php esc_html_e('Wszystkie projekty', 'erp-omd'); ?></option>
+                    <?php foreach ((array) $projects as $project_filter_option) : ?>
+                        <?php $project_filter_id = (int) ($project_filter_option['id'] ?? 0); ?>
+                        <?php $project_filter_client_name = (string) ($project_filter_option['client_name'] ?? ''); ?>
+                        <option value="<?php echo esc_attr((string) $project_filter_id); ?>" <?php selected((int) ($invoice_list_filters['project_id'] ?? 0), $project_filter_id); ?>>
+                            <?php echo esc_html(($project_filter_client_name !== '' ? '[' . $project_filter_client_name . '] ' : '') . (string) ($project_filter_option['name'] ?? '')); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <select name="invoice_status">
+                    <option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option>
+                    <?php foreach (['zaimportowana', 'weryfikacja', 'zatwierdzona', 'przypisana', 'nieistotne'] as $invoice_status_option) : ?>
+                        <option value="<?php echo esc_attr($invoice_status_option); ?>" <?php selected((string) ($invoice_list_filters['status'] ?? ''), $invoice_status_option); ?>>
+                            <?php echo esc_html($invoice_status_option); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
+            </form>
             <form method="post">
                 <?php wp_nonce_field('erp_omd_bulk_cost_invoices'); ?>
                 <input type="hidden" name="erp_omd_action" value="bulk_cost_invoices" />

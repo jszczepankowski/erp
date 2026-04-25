@@ -1815,7 +1815,34 @@ class ERP_OMD_Admin
             $project_row['client_name'] = (string) ($client_name_by_id[(int) ($project_row['client_id'] ?? 0)] ?? '');
         }
         unset($project_row);
-        $cost_invoices = (array) $cost_invoice_repository->list();
+        $all_cost_invoices = (array) $cost_invoice_repository->list();
+        $cost_invoices = $all_cost_invoices;
+        $invoice_list_filters = [
+            'supplier_id' => max(0, (int) ($_GET['invoice_supplier_id'] ?? 0)),
+            'project_id' => max(0, (int) ($_GET['invoice_project_id'] ?? 0)),
+            'status' => sanitize_text_field(wp_unslash($_GET['invoice_status'] ?? '')),
+        ];
+        if ($invoice_list_filters['supplier_id'] > 0 || $invoice_list_filters['project_id'] > 0 || $invoice_list_filters['status'] !== '') {
+            $cost_invoices = array_values(array_filter($all_cost_invoices, static function ($invoice_row) use ($invoice_list_filters) {
+                $supplier_id = (int) ($invoice_row['supplier_id'] ?? 0);
+                $project_id = (int) ($invoice_row['project_id'] ?? 0);
+                $status = (string) ($invoice_row['status'] ?? '');
+
+                if ($invoice_list_filters['supplier_id'] > 0 && $supplier_id !== $invoice_list_filters['supplier_id']) {
+                    return false;
+                }
+
+                if ($invoice_list_filters['project_id'] > 0 && $project_id !== $invoice_list_filters['project_id']) {
+                    return false;
+                }
+
+                if ($invoice_list_filters['status'] !== '' && $status !== $invoice_list_filters['status']) {
+                    return false;
+                }
+
+                return true;
+            }));
+        }
         $project_supplier_pairs = (array) $cost_invoice_repository->project_supplier_pairs();
         $ksef_service = new ERP_OMD_KSeF_Import_Service(
             new ERP_OMD_Cost_Invoice_Workflow_Service($cost_invoice_repository, $cost_invoice_audit_repository, $suppliers_repository, $this->projects),
@@ -1828,7 +1855,7 @@ class ERP_OMD_Admin
         $ksef_moderation_filter_status = sanitize_key((string) ($_GET['ksef_status'] ?? ''));
         $ksef_moderation_queue = $ksef_service->list_moderation_queue(['status' => $ksef_moderation_filter_status]);
         $ksef_sales_inbox = $ksef_service->list_sales_inbox();
-        $ksef_cost_invoices = array_values(array_filter((array) $cost_invoices, static function ($invoice_row) {
+        $ksef_cost_invoices = array_values(array_filter((array) $all_cost_invoices, static function ($invoice_row) {
             $source = (string) ($invoice_row['source'] ?? '');
             return strpos($source, 'ksef') !== false;
         }));
