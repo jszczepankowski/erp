@@ -308,3 +308,66 @@ Etap 1 uznajemy za zamknięty, gdy:
 ### 8.6 Następny krok po Etapie 1
 
 Po zamknięciu Etapu 1 od razu przechodzimy do Etapu 2 (stan synchronizacji i harmonogram), bo bez tego nie da się uruchomić bezpiecznego pipeline'u eksportowego opartego o HWM.
+
+## 9. Nazwa funkcjonalności i nazwy działań wdrożeniowych
+
+Żeby łatwiej prowadzić development, testy i komunikację (ticketing/release notes), proponuję spójne nazewnictwo.
+
+### 9.1 Nazwa główna funkcjonalności
+
+**KSeF Sync Hub**
+
+Krótki opis produktu: moduł odpowiedzialny za bezpieczne uwierzytelnianie do KSeF, przyrostowe pobieranie dokumentów oraz kontrolowany import do ERP OMD.
+
+**Alias techniczny (prefix):** `ksef_sync_hub`
+
+Przykładowe użycie aliasu:
+- feature flag: `erp_omd_ksef_sync_hub_enabled`
+- tryb pracy: `erp_omd_ksef_sync_hub_mode`
+- log channel: `ksef_sync_hub`
+
+### 9.2 Nazwy strumieni działań (workstreams)
+
+1. **WS1 – KSeF Sync Hub / Auth Core**
+   - zakres: challenge, auth, redeem, refresh, storage tokenów.
+2. **WS2 – KSeF Sync Hub / State & Scheduler**
+   - zakres: sync state, cron, lock, retry policy.
+3. **WS3 – KSeF Sync Hub / Export Engine**
+   - zakres: `/invoices/exports`, polling, HWM, batch processing.
+4. **WS4 – KSeF Sync Hub / ERP Mapping**
+   - zakres: mapowanie danych i integracja z `ERP_OMD_KSeF_Import_Service`.
+5. **WS5 – KSeF Sync Hub / Ops Console**
+   - zakres: UI diagnostyczne, observability, metryki, alerting.
+
+### 9.3 Nazwy działań wdrożeniowych (milestones)
+
+1. **M1: Auth Ready**
+   - ukończony Etap 1 (stabilne logowanie i odświeżanie tokenów).
+2. **M2: Sync Ready**
+   - ukończony Etap 2 (stan synchronizacji + harmonogram + lock).
+3. **M3: Export Ready**
+   - ukończony Etap 3 (eksport paczek + HWM).
+4. **M4: Import Ready**
+   - ukończony Etap 4 (pełne spięcie z workflow ERP).
+5. **M5: Go-Live Ready**
+   - ukończony Etap 5 (UI operacyjne + cutover).
+
+### 9.4 Nazwy ticketów (proponowany standard)
+
+Format:
+`[KSeF Sync Hub][WSx][Mx] Krótki opis`
+
+Przykłady:
+1. `[KSeF Sync Hub][WS1][M1] Implementacja class-ksef-auth-service.php`
+2. `[KSeF Sync Hub][WS1][M1] Dodanie tests/ksef-auth-service-test.php`
+3. `[KSeF Sync Hub][WS3][M3] Obsługa LastPermanentStorageDate i HWM`
+4. `[KSeF Sync Hub][WS5][M5] Dashboard diagnostyczny KSeF w settings.php`
+
+### 9.5 Nazwy release’ów (proponowany standard)
+
+- `KSH-Alpha` – zakończony M1
+- `KSH-Beta` – zakończone M1–M3
+- `KSH-RC` – zakończone M1–M5, start walidacji przedprodukcyjnej
+- `KSH-GA` – produkcyjne uruchomienie
+
+Dzięki temu nazewnictwu wszystkie prace będą łatwe do śledzenia end-to-end: od ticketów, przez commity i PR, po checklisty wdrożeniowe i runbook operacyjny.
