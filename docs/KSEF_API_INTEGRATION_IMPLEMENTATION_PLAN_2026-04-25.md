@@ -173,3 +173,138 @@ Najważniejsze obserwacje z dokumentacji KSeF:
 4. Na końcu Etap 5 (UI + cutover).
 
 Dzięki takiej kolejności minimalizujemy ryzyko regresji manualnego importu XML i unikamy „big bang” przełączenia.
+
+## 8. Etap 1 — pełna rozpiska wykonawcza (checklista implementacyjna)
+
+Poniżej jest rozpisany **dokładny plan realizacji Etapu 1** tak, aby można było wejść od razu w development i review.
+
+### 8.1 Cel Etapu 1
+
+Dostarczyć stabilną, testowalną warstwę auth KSeF, która zapewnia:
+1. `challenge`,
+2. rozpoczęcie autoryzacji (token KSeF / alternatywnie XAdES),
+3. polling statusu autoryzacji,
+4. wymianę tokenów (`redeem`),
+5. odświeżanie tokenu (`refresh`),
+6. bezpieczne przechowywanie sekretów i tokenów per środowisko.
+
+### 8.2 Zakres kodu (MVP Etapu 1)
+
+**Nowe klasy/pliki:**
+1. `erp-omd/includes/services/class-ksef-auth-service.php`
+2. `erp-omd/includes/services/class-ksef-auth-storage.php`
+3. `erp-omd/includes/services/class-ksef-public-key-service.php`
+4. `erp-omd/includes/contracts/interface-ksef-auth-provider.php`
+5. `tests/ksef-auth-service-test.php`
+6. `tests/ksef-auth-storage-test.php`
+
+**Modyfikacje istniejących plików:**
+1. `erp-omd/includes/class-autoloader.php` (rejestracja nowych klas)
+2. `erp-omd/includes/services/class-ksef-connector.php` (opcjonalnie: jawna obsługa metod HTTP i nagłówków)
+3. `erp-omd/includes/class-admin.php` + `erp-omd/templates/admin/settings.php` (minimalny panel diagnostyczny Etapu 1)
+
+### 8.3 Kolejność prac (task-by-task)
+
+#### Krok 1: Kontrakty i DTO
+1. Dodać `interface-ksef-auth-provider.php` z metodami:
+   - `get_challenge($environment)`
+   - `authenticate_with_ksef_token($environment, $ksef_token, $context_identifier)`
+   - `get_auth_status($environment, $reference_number, $authentication_token)`
+   - `redeem_token($environment, $authentication_token)`
+   - `refresh_access_token($environment, $refresh_token)`
+2. Zdefiniować spójny format odpowiedzi tablicowych:
+   - `ok`, `code`, `data`, `error_code`, `error_message`, `retry_after`.
+
+#### Krok 2: Storage tokenów i sekretów
+1. Wydzielić `class-ksef-auth-storage.php`.
+2. Wprowadzić klucze opcji per env, np.:
+   - `erp_omd_ksef_auth_test`,
+   - `erp_omd_ksef_auth_demo`,
+   - `erp_omd_ksef_auth_prod`.
+3. Zapisywać minimum:
+   - `access_token`, `refresh_token`,
+   - `access_expires_at`, `refresh_expires_at`,
+   - `updated_at`, `token_type`.
+4. Dodać helpery:
+   - `save_tokens($env, array $tokens)`
+   - `get_tokens($env)`
+   - `clear_tokens($env)`.
+
+#### Krok 3: Public key + encrypted token
+1. Dodać `class-ksef-public-key-service.php`:
+   - pobranie certyfikatu/klucza dla środowiska,
+   - cache z TTL,
+   - kontrola fingerprint.
+2. Dodać helper szyfrowania tokenu KSeF zgodny ze spec:
+   - budowa plaintext `token|timestamp_ms`,
+   - RSA-OAEP SHA-256 + MGF1,
+   - Base64 output.
+3. Dodać walidację błędów kryptograficznych z czytelnymi kodami błędów.
+
+#### Krok 4: Implementacja `class-ksef-auth-service.php`
+1. Wstrzykiwane zależności:
+   - `ERP_OMD_KSeF_Connector`,
+   - `ERP_OMD_KSeF_Auth_Storage`,
+   - `ERP_OMD_KSeF_Public_Key_Service`.
+2. Implementacja metod:
+   - `get_challenge()` -> request do `/auth/challenge`, walidacja TTL,
+   - `authenticate_with_ksef_token()` -> generacja encryptedToken i request auth,
+   - `get_auth_status()` -> polling statusu,
+   - `redeem_token()` -> zapis `access/refresh` do storage,
+   - `refresh_access_token()` -> update storage + fallback na re-auth, gdy refresh wygasł.
+3. Dodać metodę orchestration:
+   - `ensure_access_token($env)`
+   - logika: jeśli access ważny -> zwróć; jeśli wygasł -> refresh; jeśli refresh nie działa -> pełny auth.
+
+#### Krok 5: Hardening błędów i limitów
+1. Ujednolicić mapowanie błędów HTTP:
+   - 400/401/403 -> auth failure,
+   - 404/405 -> kontrakt endpointu,
+   - 429 -> rate limited (`retry_after`),
+   - 5xx -> transient upstream error.
+2. Dodać retry tylko dla transient/rate-limit (nie dla 4xx biznesowych).
+3. Dodać correlation fields do logów:
+   - `environment`, `referenceNumber`, `request_id`, `phase`.
+
+#### Krok 6: Integracja z panelem admina (minimalna)
+1. W `settings.php` dodać sekcję „KSeF Auth Diagnostics”:
+   - aktywne środowisko,
+   - status tokenu (valid/expired/missing),
+   - timestamp ostatniego odświeżenia.
+2. W `class-admin.php` dodać akcję ręczną:
+   - „Sprawdź połączenie auth (dry-run)”.
+3. Pokazać bezpieczny komunikat (bez wycieku tokenów).
+
+#### Krok 7: Testy (must-have)
+1. `tests/ksef-auth-service-test.php`:
+   - challenge success/fail,
+   - auth + redeem success,
+   - refresh success,
+   - refresh fail -> fallback re-auth,
+   - 429 -> retry_after,
+   - 5xx -> retryable error.
+2. `tests/ksef-auth-storage-test.php`:
+   - separacja danych per env,
+   - save/get/clear,
+   - brak wycieku między TEST/DEMO/PRD.
+3. Test regresji autoloadera po dodaniu klas.
+
+### 8.4 Definition of Done dla Etapu 1
+
+Etap 1 uznajemy za zamknięty, gdy:
+1. wszystkie nowe testy Etapu 1 przechodzą lokalnie,
+2. `ensure_access_token($env)` działa stabilnie dla min. 20 kolejnych wywołań,
+3. panel diagnostyczny pokazuje poprawny status tokenów,
+4. logi zawierają wystarczające informacje do supportu (bez sekretów),
+5. nie ma regresji w istniejącym manualnym imporcie XML.
+
+### 8.5 Plan wykonania dzień po dniu
+
+**Dzień 1:** kontrakty + storage + autoloader.  
+**Dzień 2:** public key + encrypted token + auth methods.  
+**Dzień 3:** refresh/orchestration + błędy/limity + logowanie.  
+**Dzień 4:** UI diagnostyczne + testy + poprawki po review.
+
+### 8.6 Następny krok po Etapie 1
+
+Po zamknięciu Etapu 1 od razu przechodzimy do Etapu 2 (stan synchronizacji i harmonogram), bo bez tego nie da się uruchomić bezpiecznego pipeline'u eksportowego opartego o HWM.
