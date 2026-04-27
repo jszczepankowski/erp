@@ -129,23 +129,23 @@ class ERP_OMD_Admin
         );
         add_submenu_page(
             'erp-omd',
-            __('Wnioski', 'erp-omd'),
-            $this->with_kolko_menu_badge(__('Wnioski', 'erp-omd'), (int) ($menu_notifications['requests_total'] ?? 0)),
-            'erp_omd_manage_projects',
-            'erp-omd-requests',
-            [$this, 'render_project_requests']
-        );
-        add_submenu_page(
-            'erp-omd',
             __('Projekty', 'erp-omd'),
             $this->with_kolko_menu_badge(__('Projekty', 'erp-omd'), (int) ($menu_notifications['projects'] ?? 0)),
             'erp_omd_manage_projects',
             'erp-omd-projects',
             [$this, 'render_projects']
         );
-        add_submenu_page('erp-omd', __('Faktury/KSEF', 'erp-omd'), __('Faktury/KSEF', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
+        add_submenu_page(
+            'erp-omd',
+            __('Wnioski', 'erp-omd'),
+            $this->with_kolko_menu_badge(__('Wnioski', 'erp-omd'), (int) ($menu_notifications['requests_total'] ?? 0)),
+            'erp_omd_manage_projects',
+            'erp-omd-requests',
+            [$this, 'render_project_requests']
+        );
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
         add_submenu_page('erp-omd', __('Kalendarz', 'erp-omd'), __('Kalendarz', 'erp-omd'), 'erp_omd_access', 'erp-omd-calendar', [$this, 'render_calendar']);
+        add_submenu_page('erp-omd', __('Faktury/KSEF', 'erp-omd'), __('Faktury/KSEF', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
         add_submenu_page(
             'erp-omd',
@@ -2506,6 +2506,14 @@ class ERP_OMD_Admin
             $result = $workflow->update_invoice($invoice_id, ['status' => $target_status], get_current_user_id());
             if (! (bool) ($result['ok'] ?? false)) {
                 $errors[] = sprintf('#%d: %s', $invoice_id, implode(' ', (array) ($result['errors'] ?? [])));
+                continue;
+            }
+
+            if ($target_status === 'przypisana') {
+                $attach_errors = $this->sync_attached_cost_invoice_to_project_cost((int) $invoice_id);
+                if ($attach_errors !== []) {
+                    $errors[] = sprintf('#%d: %s', $invoice_id, implode(' ', $attach_errors));
+                }
             }
         }
 
@@ -3016,12 +3024,7 @@ class ERP_OMD_Admin
             ],
         ]);
 
-        $description = sprintf(
-            '%s #%d (%s)',
-            __('Faktura kosztowa', 'erp-omd'),
-            $invoice_id,
-            (string) ($invoice['invoice_number'] ?? '')
-        );
+        $description = $this->build_project_cost_description_for_invoice($invoice_id, $invoice);
         $project_id = (int) ($invoice['project_id'] ?? 0);
         if ($project_id > 0) {
             $project_cost_rows = (array) $this->project_costs->for_project($project_id);
@@ -3271,6 +3274,9 @@ class ERP_OMD_Admin
         ];
         $subject = $this->replace_mail_tokens((string) ($estimate_mail_settings['subject'] ?? $estimate_mail_defaults['subject']), $mail_tokens);
         $body = $this->replace_mail_tokens((string) ($estimate_mail_settings['body'] ?? $estimate_mail_defaults['body']), $mail_tokens);
+        $estimate_items = (array) $this->estimate_items->for_estimate($estimate_id);
+        $estimate_totals = $this->estimate_service->calculate_totals($estimate_items);
+        $body .= $this->build_estimate_summary_table_html($estimate_items, $estimate_totals, true);
         $sent = wp_mail($client_email, $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);
         if (! $sent) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie udało się wysłać e-maila do klienta.', 'erp-omd'), ['id' => $estimate_id]);
@@ -3753,12 +3759,7 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-projects', 'error', __('Ta faktura kosztowa nie jest przypięta do wybranego projektu.', 'erp-omd'), ['id' => $project_id]);
         }
 
-        $description = sprintf(
-            '%s #%d (%s)',
-            __('Faktura kosztowa', 'erp-omd'),
-            $invoice_id,
-            (string) ($invoice['invoice_number'] ?? '')
-        );
+        $description = $this->build_project_cost_description_for_invoice($invoice_id, $invoice);
 
         $existing_project_costs = (array) $this->project_costs->for_project($project_id);
         foreach ($existing_project_costs as $existing_project_cost) {
@@ -3868,12 +3869,7 @@ class ERP_OMD_Admin
             return [__('Nie można zsynchronizować kosztu dla projektu zamkniętego/archiwalnego.', 'erp-omd')];
         }
 
-        $description = sprintf(
-            '%s #%d (%s)',
-            __('Faktura kosztowa', 'erp-omd'),
-            (int) $invoice_id,
-            (string) ($invoice['invoice_number'] ?? '')
-        );
+        $description = $this->build_project_cost_description_for_invoice((int) $invoice_id, $invoice);
         $existing_project_costs = (array) $this->project_costs->for_project($project_id);
         foreach ($existing_project_costs as $existing_project_cost) {
             if ((string) ($existing_project_cost['description'] ?? '') === $description) {
@@ -5132,6 +5128,72 @@ class ERP_OMD_Admin
         }
 
         return $state;
+    }
+
+    /**
+     * @param int $invoice_id
+     * @param array<string,mixed> $invoice
+     * @return string
+     */
+    private function build_project_cost_description_for_invoice($invoice_id, array $invoice)
+    {
+        $base_description = sprintf(
+            '%s #%d (%s)',
+            __('Faktura kosztowa', 'erp-omd'),
+            (int) $invoice_id,
+            (string) ($invoice['invoice_number'] ?? '')
+        );
+        $invoice_description = trim((string) ($invoice['description'] ?? ''));
+        if ($invoice_description === '') {
+            return $base_description;
+        }
+
+        return $base_description . ' / ' . $invoice_description;
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $items
+     * @param array<string,mixed> $totals
+     * @param bool $include_comment_column
+     * @return string
+     */
+    private function build_estimate_summary_table_html(array $items, array $totals, $include_comment_column = false)
+    {
+        if ($items === []) {
+            return '';
+        }
+
+        $html = '<br><table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">';
+        $html .= '<thead><tr><th>' . esc_html__('Pozycja', 'erp-omd') . '</th><th>' . esc_html__('Ilość', 'erp-omd') . '</th><th>' . esc_html__('Cena', 'erp-omd') . '</th><th>' . esc_html__('Wartość', 'erp-omd') . '</th>';
+        if ($include_comment_column) {
+            $html .= '<th>' . esc_html__('Uwagi', 'erp-omd') . '</th>';
+        }
+        $html .= '</tr></thead><tbody>';
+
+        foreach ($items as $item_row) {
+            $qty = (float) ($item_row['qty'] ?? 0);
+            $price = (float) ($item_row['price'] ?? 0);
+            $line_total = $qty * $price;
+            $comment = trim((string) ($item_row['comment'] ?? ''));
+
+            $html .= '<tr>';
+            $html .= '<td>' . esc_html((string) ($item_row['name'] ?? '—')) . '</td>';
+            $html .= '<td>' . esc_html(number_format_i18n($qty, 2)) . '</td>';
+            $html .= '<td>' . esc_html(number_format_i18n($price, 2)) . '</td>';
+            $html .= '<td>' . esc_html(number_format_i18n($line_total, 2)) . '</td>';
+            if ($include_comment_column) {
+                $html .= '<td>' . esc_html($comment !== '' ? $comment : '—') . '</td>';
+            }
+            $html .= '</tr>';
+        }
+
+        $totals_colspan = $include_comment_column ? 4 : 3;
+        $html .= '</tbody><tfoot>';
+        $html .= '<tr><th colspan="' . (int) $totals_colspan . '" style="text-align:right;">' . esc_html__('Suma netto', 'erp-omd') . '</th><th>' . esc_html(number_format_i18n((float) ($totals['net'] ?? 0), 2)) . '</th></tr>';
+        $html .= '<tr><th colspan="' . (int) $totals_colspan . '" style="text-align:right;">' . esc_html__('Suma brutto', 'erp-omd') . '</th><th>' . esc_html(number_format_i18n((float) ($totals['gross'] ?? 0), 2)) . '</th></tr>';
+        $html .= '</tfoot></table>';
+
+        return $html;
     }
 
     private function is_valid_month_string($month)
