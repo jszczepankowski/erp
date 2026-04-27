@@ -305,15 +305,96 @@
                 <?php elseif ($settings_tab === 'ksef') : ?>
                 <section class="erp-omd-form-section">
                     <div class="erp-omd-form-section-header">
-                        <h3><?php esc_html_e('KSeF', 'erp-omd'); ?></h3>
-                        <p><?php esc_html_e('Zachowano wyłącznie ręczny import dokumentów KSeF oraz logikę obsługi dokumentów. Integracja API została wyłączona.', 'erp-omd'); ?></p>
+                        <h3><?php esc_html_e('KSeF Sync Hub', 'erp-omd'); ?></h3>
+                        <p><?php esc_html_e('Konfiguracja środowiska i diagnostyka pipeline API KSeF (auth/export/sync/import).', 'erp-omd'); ?></p>
                     </div>
                     <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label class="erp-omd-form-label">
+                                <input type="checkbox" name="ksef_sync_hub_enabled" value="1" <?php checked(! empty($ksef_sync_hub_enabled)); ?> />
+                                <?php esc_html_e('Włącz KSeF Sync Hub (cron incremental sync)', 'erp-omd'); ?>
+                            </label>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-ksef-sync-hub-env"><?php esc_html_e('Środowisko', 'erp-omd'); ?></label>
+                            <select id="erp-omd-ksef-sync-hub-env" name="ksef_sync_hub_env">
+                                <option value="TEST" <?php selected((string) $ksef_sync_hub_env, 'TEST'); ?>>TEST</option>
+                                <option value="DEMO" <?php selected((string) $ksef_sync_hub_env, 'DEMO'); ?>>DEMO</option>
+                                <option value="PRD" <?php selected((string) $ksef_sync_hub_env, 'PRD'); ?>>PRD</option>
+                            </select>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-ksef-sync-hub-mode"><?php esc_html_e('Tryb pipeline', 'erp-omd'); ?></label>
+                            <select id="erp-omd-ksef-sync-hub-mode" name="ksef_sync_hub_mode">
+                                <option value="dry_run" <?php selected((string) $ksef_sync_hub_mode, 'dry_run'); ?>>dry_run</option>
+                                <option value="active" <?php selected((string) $ksef_sync_hub_mode, 'active'); ?>>active</option>
+                            </select>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-ksef-sync-backfill-hours"><?php esc_html_e('Backfill (h)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-sync-backfill-hours" type="number" min="1" max="168" step="1" name="ksef_sync_backfill_hours" value="<?php echo esc_attr((string) $ksef_sync_backfill_hours); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-api-base-url"><?php esc_html_e('Base URL API KSeF', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-api-base-url" type="text" name="ksef_api_base_url" value="<?php echo esc_attr((string) $ksef_api_base_url); ?>" placeholder="https://ksef.mf.gov.pl" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-sync-subject-types"><?php esc_html_e('SubjectType (lista)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-sync-subject-types" type="text" name="ksef_sync_subject_types" value="<?php echo esc_attr(implode(', ', (array) $ksef_sync_subject_types)); ?>" />
+                            <p class="description"><?php esc_html_e('Wpisz listę po przecinku, np. seller,buyer.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-sync-hub-context"><?php esc_html_e('ContextIdentifier (KSeF auth)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-sync-hub-context" type="text" name="ksef_sync_hub_context_identifier" value="<?php echo esc_attr((string) $ksef_sync_hub_context_identifier); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-sync-hub-ap-token"><?php esc_html_e('Token KSeF z AP (sekret)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-sync-hub-ap-token" type="password" name="ksef_sync_hub_ap_token" value="" autocomplete="new-password" />
+                            <?php if ($ksef_sync_hub_ap_token_masked !== '') : ?>
+                                <p class="description"><?php echo esc_html(sprintf(__('Obecnie zapisany token AP: %s', 'erp-omd'), (string) $ksef_sync_hub_ap_token_masked)); ?></p>
+                            <?php endif; ?>
+                            <label class="erp-omd-form-label">
+                                <input type="checkbox" name="ksef_sync_hub_ap_token_clear" value="1" />
+                                <?php esc_html_e('Wyczyść zapisany token AP', 'erp-omd'); ?>
+                            </label>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-sync-hub-public-key"><?php esc_html_e('Klucz publiczny MF (PEM) dla wybranego środowiska', 'erp-omd'); ?></label>
+                            <textarea id="erp-omd-ksef-sync-hub-public-key" name="ksef_sync_hub_public_key_pem" rows="6" class="large-text"><?php echo esc_textarea((string) $ksef_sync_hub_public_key_pem); ?></textarea>
+                            <p class="description"><?php esc_html_e('Wklej klucz publiczny KSeF (MF) odpowiadający aktualnemu środowisku TEST/DEMO/PRD.', 'erp-omd'); ?></p>
+                        </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label class="erp-omd-form-label">
                                 <input type="checkbox" name="ksef_auto_create_supplier" value="1" <?php checked(! empty($ksef_auto_create_supplier)); ?> />
                                 <?php esc_html_e('Auto-dodawanie dostawcy po NIP, jeśli brak dopasowania (KSeF cost)', 'erp-omd'); ?>
                             </label>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <p><strong><?php esc_html_e('Status auth tokenów:', 'erp-omd'); ?></strong>
+                                <?php echo ! empty($ksef_auth_tokens['access_token']) ? esc_html__('token dostępny', 'erp-omd') : esc_html__('brak tokenu', 'erp-omd'); ?>
+                                <?php if (! empty($ksef_auth_tokens['access_expires_at'])) : ?>
+                                    (<?php echo esc_html(sprintf(__('wygasa: %s', 'erp-omd'), (string) $ksef_auth_tokens['access_expires_at'])); ?>)
+                                <?php endif; ?>
+                            </p>
+                            <p><strong><?php esc_html_e('Ostatni stan sync:', 'erp-omd'); ?></strong>
+                                <?php echo esc_html((string) ($ksef_sync_state['status'] ?? '—')); ?>
+                                <?php if (! empty($ksef_sync_state['last_run_at'])) : ?>
+                                    (<?php echo esc_html((string) $ksef_sync_state['last_run_at']); ?>)
+                                <?php endif; ?>
+                            </p>
+                            <p><strong><?php esc_html_e('Checkpoint HWM (pierwszy SubjectType):', 'erp-omd'); ?></strong>
+                                <?php echo $ksef_sync_hwm_preview !== '' ? esc_html($ksef_sync_hwm_preview) : '—'; ?>
+                            </p>
+                            <p><strong><?php esc_html_e('Ostatni dry-run:', 'erp-omd'); ?></strong>
+                                <?php if (! empty($ksef_sync_hub_last_dry_run['run_at'])) : ?>
+                                    <?php echo esc_html(sprintf('%s | %s | %s', (string) $ksef_sync_hub_last_dry_run['run_at'], (string) ($ksef_sync_hub_last_dry_run['status'] ?? ''), (string) ($ksef_sync_hub_last_dry_run['error_code'] ?? ''))); ?>
+                                <?php else : ?>
+                                    —
+                                <?php endif; ?>
+                            </p>
+                            <p>
+                                <button type="submit" class="button" form="erp-omd-ksef-sync-hub-dry-run-form"><?php esc_html_e('Dry-run connector check', 'erp-omd'); ?></button>
+                            </p>
                         </div>
                     </div>
                 </section>
@@ -507,6 +588,10 @@
         <form id="erp-omd-google-calendar-fetch-calendars-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'google_calendar'], admin_url('admin.php'))); ?>">
             <?php wp_nonce_field('erp_omd_google_calendar_fetch_calendars'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_fetch_calendars" />
+        </form>
+        <form id="erp-omd-ksef-sync-hub-dry-run-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'ksef'], admin_url('admin.php'))); ?>">
+            <?php wp_nonce_field('erp_omd_ksef_sync_hub_dry_run'); ?>
+            <input type="hidden" name="erp_omd_action" value="ksef_sync_hub_dry_run" />
         </form>
     </div>
 </div>
