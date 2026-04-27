@@ -75,10 +75,15 @@ class ERP_OMD_KSeF_Export_Service
 
         $reference = (string) (($started['json']['referenceNumber'] ?? $started['json']['reference_number'] ?? ''));
         if ($reference === '') {
+            $started_payload = (array) ($started['json'] ?? []);
+            $fallback_error = (string) ($started_payload['code'] ?? $started_payload['errorCode'] ?? $started_payload['error_code'] ?? 'missing_reference_number');
+            $fallback_message = (string) ($started_payload['description'] ?? $started_payload['message'] ?? $started_payload['title'] ?? '');
             return [
                 'ok' => false,
                 'status' => 'start_invalid_payload',
-                'error_code' => 'missing_reference_number',
+                'error_code' => $fallback_error,
+                'error_message' => $fallback_message,
+                'raw_start_payload' => $started_payload,
             ];
         }
 

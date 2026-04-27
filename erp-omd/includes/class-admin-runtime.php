@@ -2530,9 +2530,9 @@ class ERP_OMD_Admin
         }
 
         $subject_types = (array) get_option('erp_omd_ksef_sync_subject_types', ['subject1']);
-        $subject_type = sanitize_key((string) ($subject_types[0] ?? 'subject1'));
+        $subject_type = $this->normalize_ksef_subject_type_for_api((string) ($subject_types[0] ?? 'subject1'));
         if ($subject_type === '') {
-            $subject_type = 'subject1';
+            $subject_type = 'Subject1';
         }
 
         $backfill_hours = max(1, min(168, (int) get_option('erp_omd_ksef_sync_backfill_hours', 24)));
@@ -2558,7 +2558,33 @@ class ERP_OMD_Admin
         }
 
         $error_code = (string) ($result['error_code'] ?? 'unknown_error');
-        $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Dry-run KSeF Sync Hub zakończony błędem: %s', 'erp-omd'), $error_code), ['tab' => 'ksef']);
+        $error_message = trim((string) ($result['error_message'] ?? ''));
+        $label = $error_message !== '' ? $error_code . ' (' . $error_message . ')' : $error_code;
+        $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Dry-run KSeF Sync Hub zakończony błędem: %s', 'erp-omd'), $label), ['tab' => 'ksef']);
+    }
+
+    /**
+     * @param string $subject_type
+     * @return string
+     */
+    private function normalize_ksef_subject_type_for_api($subject_type)
+    {
+        $value = strtolower(trim((string) $subject_type));
+        $map = [
+            'subject1' => 'Subject1',
+            'seller' => 'Subject1',
+            'podmiot1' => 'Subject1',
+            'subject2' => 'Subject2',
+            'buyer' => 'Subject2',
+            'podmiot2' => 'Subject2',
+            'subject3' => 'Subject3',
+            'podmiot3' => 'Subject3',
+            'subjectauthorized' => 'SubjectAuthorized',
+            'authorized' => 'SubjectAuthorized',
+            'upowazniony' => 'SubjectAuthorized',
+        ];
+
+        return $map[$value] ?? '';
     }
 
     private function handle_ksef_queue_moderation_action()
