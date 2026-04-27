@@ -341,7 +341,7 @@
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-ksef-sync-subject-types"><?php esc_html_e('SubjectType (lista)', 'erp-omd'); ?></label>
                             <input id="erp-omd-ksef-sync-subject-types" type="text" name="ksef_sync_subject_types" value="<?php echo esc_attr(implode(', ', (array) $ksef_sync_subject_types)); ?>" />
-                            <p class="description"><?php esc_html_e('Wpisz listę po przecinku, np. seller,buyer.', 'erp-omd'); ?></p>
+                            <p class="description"><?php esc_html_e('Wpisz listę po przecinku, np. subject1,subject2 (aliasy seller,buyer też są wspierane).', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-ksef-sync-hub-context"><?php esc_html_e('ContextIdentifier (KSeF auth)', 'erp-omd'); ?></label>

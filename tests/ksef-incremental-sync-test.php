@@ -173,8 +173,13 @@ if (($integrationRun['ok'] ?? false) !== true || count($exportFake->calls) !== 2
 }
 
 $assertions++;
-if (($GLOBALS['erp_omd_ksef_sync_options']['erp_omd_ksef_sync_hwm_test_seller'] ?? '') !== '2026-04-10T10:00:00Z') {
-    throw new RuntimeException('Expected seller HWM checkpoint to be updated from export result.');
+if (($exportFake->calls[0]['subject_type'] ?? '') !== 'Subject1' || ($exportFake->calls[1]['subject_type'] ?? '') !== 'Subject2') {
+    throw new RuntimeException('Expected aliases seller/buyer to be normalized to Subject1/Subject2 for API export.');
+}
+
+$assertions++;
+if (($GLOBALS['erp_omd_ksef_sync_options']['erp_omd_ksef_sync_hwm_test_subject1'] ?? '') !== '2026-04-10T10:00:00Z') {
+    throw new RuntimeException('Expected Subject1 HWM checkpoint to be updated from export result.');
 }
 
 $assertions++;

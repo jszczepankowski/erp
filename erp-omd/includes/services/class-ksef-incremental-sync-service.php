@@ -302,18 +302,18 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
     {
         $configured = get_option('erp_omd_ksef_sync_subject_types', ['subject1']);
         if (! is_array($configured) || $configured === []) {
-            return ['subject1'];
+            return ['Subject1'];
         }
 
         $values = [];
         foreach ($configured as $subject_type) {
-            $subject_type = trim((string) $subject_type);
-            if ($subject_type !== '') {
-                $values[] = $subject_type;
+            $api_subject_type = $this->map_subject_type_for_api($subject_type);
+            if ($api_subject_type !== '') {
+                $values[] = $api_subject_type;
             }
         }
 
-        return $values === [] ? ['subject1'] : array_values(array_unique($values));
+        return $values === [] ? ['Subject1'] : array_values(array_unique($values));
     }
 
     /**
@@ -323,7 +323,7 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
      */
     private function get_subject_hwm($environment, $subject_type)
     {
-        $option_key = 'erp_omd_ksef_sync_hwm_' . strtolower($this->normalize_environment($environment)) . '_' . sanitize_key((string) $subject_type);
+        $option_key = 'erp_omd_ksef_sync_hwm_' . strtolower($this->normalize_environment($environment)) . '_' . $this->normalize_subject_type_key($subject_type);
         $hwm = (string) get_option($option_key, '');
         if ($hwm !== '') {
             return $hwm;
@@ -341,8 +341,55 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
      */
     private function set_subject_hwm($environment, $subject_type, $hwm)
     {
-        $option_key = 'erp_omd_ksef_sync_hwm_' . strtolower($this->normalize_environment($environment)) . '_' . sanitize_key((string) $subject_type);
+        $option_key = 'erp_omd_ksef_sync_hwm_' . strtolower($this->normalize_environment($environment)) . '_' . $this->normalize_subject_type_key($subject_type);
         update_option($option_key, (string) $hwm);
+    }
+
+    /**
+     * @param string $subject_type
+     * @return string
+     */
+    private function map_subject_type_for_api($subject_type)
+    {
+        $value = trim((string) $subject_type);
+        if ($value === '') {
+            return '';
+        }
+
+        $normalized = strtolower($value);
+        $aliases = [
+            'subject1' => 'Subject1',
+            'seller' => 'Subject1',
+            'podmiot1' => 'Subject1',
+            'subject2' => 'Subject2',
+            'buyer' => 'Subject2',
+            'podmiot2' => 'Subject2',
+            'subject3' => 'Subject3',
+            'podmiot3' => 'Subject3',
+            'subjectauthorized' => 'SubjectAuthorized',
+            'authorized' => 'SubjectAuthorized',
+            'upowazniony' => 'SubjectAuthorized',
+        ];
+
+        return $aliases[$normalized] ?? '';
+    }
+
+    /**
+     * @param string $subject_type
+     * @return string
+     */
+    private function normalize_subject_type_key($subject_type)
+    {
+        $mapped = $this->map_subject_type_for_api($subject_type);
+        if ($mapped === 'SubjectAuthorized') {
+            return 'subjectauthorized';
+        }
+
+        if ($mapped !== '') {
+            return strtolower($mapped);
+        }
+
+        return sanitize_key((string) $subject_type);
     }
 
     /**
