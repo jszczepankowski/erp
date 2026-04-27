@@ -68,6 +68,7 @@ class ERP_OMD_Installer
         $estimate_audit_table = $wpdb->prefix . 'erp_omd_estimate_audit';
         $periods_table = $wpdb->prefix . 'erp_omd_periods';
         $adjustment_audit_table = $wpdb->prefix . 'erp_omd_adjustment_audit';
+        $ksef_sync_state_table = $wpdb->prefix . 'erp_omd_ksef_sync_state';
 
         dbDelta(
             "CREATE TABLE {$roles_table} (
@@ -568,6 +569,30 @@ class ERP_OMD_Installer
                 PRIMARY KEY  (month),
                 KEY status (status),
                 KEY correction_window_until (correction_window_until)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+
+        dbDelta(
+            "CREATE TABLE {$ksef_sync_state_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                environment VARCHAR(16) NOT NULL DEFAULT 'TEST',
+                company_nip VARCHAR(16) NOT NULL DEFAULT '',
+                subject_type VARCHAR(64) NOT NULL DEFAULT '',
+                last_hwm_at DATETIME NULL,
+                last_sync_started_at DATETIME NULL,
+                last_sync_finished_at DATETIME NULL,
+                lock_token VARCHAR(64) NOT NULL DEFAULT '',
+                lock_expires_at DATETIME NULL,
+                retry_after_seconds INT UNSIGNED NOT NULL DEFAULT 0,
+                last_error_code VARCHAR(128) NOT NULL DEFAULT '',
+                last_error_message TEXT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                UNIQUE KEY env_company_subject (environment, company_nip, subject_type),
+                KEY lock_expires_at (lock_expires_at),
+                KEY last_hwm_at (last_hwm_at)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 

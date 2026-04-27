@@ -7,6 +7,7 @@ class ERP_OMD_Cron_Manager
     const PROJECT_DEADLINE_HOOK = 'erp_omd_daily_project_deadline_notifications';
     const GOOGLE_CALENDAR_SYNC_HOOK = 'erp_omd_google_calendar_sync';
     const KSEF_RETRY_PIPELINE_HOOK = 'erp_omd_ksef_retry_pipeline';
+    const KSEF_INCREMENTAL_SYNC_HOOK = 'erp_omd_ksef_incremental_sync';
 
     public static function register_hooks()
     {
@@ -16,6 +17,7 @@ class ERP_OMD_Cron_Manager
         add_action(self::PROJECT_DEADLINE_HOOK, [__CLASS__, 'run_project_deadline_notifications']);
         add_action(self::GOOGLE_CALENDAR_SYNC_HOOK, [__CLASS__, 'run_google_calendar_sync']);
         add_action(self::KSEF_RETRY_PIPELINE_HOOK, [__CLASS__, 'run_ksef_retry_pipeline']);
+        add_action(self::KSEF_INCREMENTAL_SYNC_HOOK, [__CLASS__, 'run_ksef_incremental_sync']);
         self::schedule_events();
     }
 
@@ -31,6 +33,7 @@ class ERP_OMD_Cron_Manager
         wp_clear_scheduled_hook(self::PROJECT_DEADLINE_HOOK);
         wp_clear_scheduled_hook(self::GOOGLE_CALENDAR_SYNC_HOOK);
         wp_clear_scheduled_hook(self::KSEF_RETRY_PIPELINE_HOOK);
+        wp_clear_scheduled_hook(self::KSEF_INCREMENTAL_SYNC_HOOK);
     }
 
     public static function register_weekly_schedule($schedules)
@@ -75,6 +78,9 @@ class ERP_OMD_Cron_Manager
         }
         if (! wp_next_scheduled(self::KSEF_RETRY_PIPELINE_HOOK)) {
             wp_schedule_event(time() + 5 * MINUTE_IN_SECONDS, 'erp_omd_five_minutes', self::KSEF_RETRY_PIPELINE_HOOK);
+        }
+        if (! wp_next_scheduled(self::KSEF_INCREMENTAL_SYNC_HOOK)) {
+            wp_schedule_event(time() + 5 * MINUTE_IN_SECONDS, 'erp_omd_five_minutes', self::KSEF_INCREMENTAL_SYNC_HOOK);
         }
     }
 
@@ -209,6 +215,14 @@ class ERP_OMD_Cron_Manager
         $service->sync_all_projects();
     }
 
+
+
+    public static function run_ksef_incremental_sync()
+    {
+        $environment = (string) get_option('erp_omd_ksef_sync_hub_env', 'TEST');
+        $service = new ERP_OMD_KSeF_Incremental_Sync_Service();
+        $service->run_scheduled_sync($environment, 3);
+    }
 
     public static function run_ksef_retry_pipeline()
     {
