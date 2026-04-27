@@ -322,6 +322,9 @@
                                 <option value="DEMO" <?php selected((string) $ksef_sync_hub_env, 'DEMO'); ?>>DEMO</option>
                                 <option value="PRD" <?php selected((string) $ksef_sync_hub_env, 'PRD'); ?>>PRD</option>
                             </select>
+                            <p>
+                                <button type="submit" class="button button-secondary" form="erp-omd-ksef-sync-hub-apply-env-defaults-form"><?php esc_html_e('Ustaw domyślny Base URL wg środowiska', 'erp-omd'); ?></button>
+                            </p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-ksef-sync-hub-mode"><?php esc_html_e('Tryb pipeline', 'erp-omd'); ?></label>
@@ -599,6 +602,10 @@
         <form id="erp-omd-ksef-sync-hub-fetch-public-key-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'ksef'], admin_url('admin.php'))); ?>">
             <?php wp_nonce_field('erp_omd_ksef_sync_hub_fetch_public_key'); ?>
             <input type="hidden" name="erp_omd_action" value="ksef_sync_hub_fetch_public_key" />
+        </form>
+        <form id="erp-omd-ksef-sync-hub-apply-env-defaults-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'ksef'], admin_url('admin.php'))); ?>">
+            <?php wp_nonce_field('erp_omd_ksef_sync_hub_apply_env_defaults'); ?>
+            <input type="hidden" name="erp_omd_action" value="ksef_sync_hub_apply_env_defaults" />
         </form>
     </div>
 </div>
