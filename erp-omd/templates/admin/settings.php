@@ -362,6 +362,9 @@
                             <label for="erp-omd-ksef-sync-hub-public-key"><?php esc_html_e('Klucz publiczny MF (PEM) dla wybranego środowiska', 'erp-omd'); ?></label>
                             <textarea id="erp-omd-ksef-sync-hub-public-key" name="ksef_sync_hub_public_key_pem" rows="6" class="large-text"><?php echo esc_textarea((string) $ksef_sync_hub_public_key_pem); ?></textarea>
                             <p class="description"><?php esc_html_e('Wklej klucz publiczny KSeF (MF) odpowiadający aktualnemu środowisku TEST/DEMO/PRD.', 'erp-omd'); ?></p>
+                            <p>
+                                <button type="submit" class="button button-secondary" form="erp-omd-ksef-sync-hub-fetch-public-key-form"><?php esc_html_e('Pobierz klucz publiczny MF z API', 'erp-omd'); ?></button>
+                            </p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label class="erp-omd-form-label">
@@ -592,6 +595,10 @@
         <form id="erp-omd-ksef-sync-hub-dry-run-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'ksef'], admin_url('admin.php'))); ?>">
             <?php wp_nonce_field('erp_omd_ksef_sync_hub_dry_run'); ?>
             <input type="hidden" name="erp_omd_action" value="ksef_sync_hub_dry_run" />
+        </form>
+        <form id="erp-omd-ksef-sync-hub-fetch-public-key-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'ksef'], admin_url('admin.php'))); ?>">
+            <?php wp_nonce_field('erp_omd_ksef_sync_hub_fetch_public_key'); ?>
+            <input type="hidden" name="erp_omd_action" value="ksef_sync_hub_fetch_public_key" />
         </form>
     </div>
 </div>

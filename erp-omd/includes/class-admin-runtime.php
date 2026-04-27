@@ -603,6 +603,7 @@ class ERP_OMD_Admin
             case 'import_ksef_cost_xml': $this->handle_import_ksef_cost_xml_action(); break;
             case 'attach_ksef_sales_invoice': $this->handle_attach_ksef_sales_invoice_action(); break;
             case 'ksef_sync_hub_dry_run': $this->handle_ksef_sync_hub_dry_run_action(); break;
+            case 'ksef_sync_hub_fetch_public_key': $this->handle_ksef_sync_hub_fetch_public_key_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'mark_project_deadline_completed': $this->handle_mark_project_deadline_completed_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
@@ -2589,6 +2590,89 @@ class ERP_OMD_Admin
         $error_message = trim((string) ($result['error_message'] ?? ''));
         $label = $error_message !== '' ? $error_code . ' (' . $error_message . ')' : $error_code;
         $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Dry-run KSeF Sync Hub zakończony błędem: %s', 'erp-omd'), $label), ['tab' => 'ksef']);
+    }
+
+    private function handle_ksef_sync_hub_fetch_public_key_action()
+    {
+        check_admin_referer('erp_omd_ksef_sync_hub_fetch_public_key');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $environment = strtoupper((string) get_option('erp_omd_ksef_sync_hub_env', 'TEST'));
+        if (! in_array($environment, ['TEST', 'DEMO', 'PRD'], true)) {
+            $environment = 'TEST';
+        }
+
+        $base_url = (string) get_option('erp_omd_ksef_api_base_url', '');
+        if ($base_url === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Ustaw adres API KSeF przed pobraniem klucza publicznego MF.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $connector = new ERP_OMD_KSeF_Connector($base_url);
+        $response = $connector->request('GET', '/security/public-key-certificates', [
+            'Accept' => 'application/json',
+        ]);
+
+        if ($response instanceof WP_Error) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Nie udało się pobrać klucza publicznego MF: %s', 'erp-omd'), (string) $response->get_error_message()), ['tab' => 'ksef']);
+        }
+
+        $payload = (array) ($response['json'] ?? []);
+        if ($payload === []) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('API KSeF nie zwróciło listy certyfikatów klucza publicznego.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $selected_certificate = '';
+        foreach ($payload as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $usage = array_map('strval', (array) ($row['usage'] ?? []));
+            $certificate = trim((string) ($row['certificate'] ?? ''));
+            if ($certificate === '') {
+                continue;
+            }
+
+            if (in_array('KsefTokenEncryption', $usage, true)) {
+                $selected_certificate = $certificate;
+                break;
+            }
+
+            if ($selected_certificate === '') {
+                $selected_certificate = $certificate;
+            }
+        }
+
+        if ($selected_certificate === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Nie znaleziono certyfikatu klucza publicznego MF w odpowiedzi API.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $pem = $this->normalize_certificate_to_pem($selected_certificate);
+        update_option('erp_omd_ksef_public_key_' . strtolower($environment), $pem);
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Pobrano i zapisano klucz publiczny MF dla wybranego środowiska.', 'erp-omd'), ['tab' => 'ksef']);
+    }
+
+    /**
+     * @param string $certificate
+     * @return string
+     */
+    private function normalize_certificate_to_pem($certificate)
+    {
+        $certificate = trim((string) $certificate);
+        if ($certificate === '') {
+            return '';
+        }
+
+        if (strpos($certificate, '-----BEGIN CERTIFICATE-----') !== false || strpos($certificate, '-----BEGIN PUBLIC KEY-----') !== false) {
+            return $certificate;
+        }
+
+        $sanitized = preg_replace('/\s+/', '', $certificate);
+        if (! is_string($sanitized) || $sanitized === '') {
+            return '';
+        }
+
+        return "-----BEGIN CERTIFICATE-----\n" . trim(chunk_split($sanitized, 64, "\n")) . "\n-----END CERTIFICATE-----";
     }
 
     /**

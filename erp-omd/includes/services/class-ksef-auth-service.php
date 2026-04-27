@@ -66,11 +66,15 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         ], $payload, $environment);
     }
 
-    public function get_auth_status($environment, $reference_number, $authentication_token)
+    public function get_auth_status($environment, $reference_number, $authentication_token = '')
     {
-        return $this->request('GET', '/auth/' . rawurlencode((string) $reference_number), [
-            'Authorization' => 'Bearer ' . trim((string) $authentication_token),
-        ], null, $environment);
+        $headers = [];
+        $authentication_token = trim((string) $authentication_token);
+        if ($authentication_token !== '') {
+            $headers['Authorization'] = 'Bearer ' . $authentication_token;
+        }
+
+        return $this->request('GET', '/auth/' . rawurlencode((string) $reference_number), $headers, null, $environment);
     }
 
     public function redeem_token($environment, $authentication_token)
@@ -147,14 +151,24 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             return $auth;
         }
 
-        $authentication_token = (string) (
-            $auth['json']['authenticationToken']['token']
-            ?? $auth['json']['authenticationToken']['Token']
-            ?? $auth['json']['authenticationToken']
-            ?? $auth['json']['authentication_token']['token']
-            ?? $auth['json']['authentication_token']
-            ?? ''
-        );
+        $authentication_token = $this->extract_authentication_token((array) ($auth['json'] ?? []));
+        if ($authentication_token === '') {
+            $reference_number = (string) (($auth['json']['referenceNumber'] ?? $auth['json']['reference_number'] ?? ''));
+            if ($reference_number !== '') {
+                for ($attempt = 0; $attempt < 3; $attempt++) {
+                    $status = $this->get_auth_status($environment, $reference_number, '');
+                    if ($status instanceof WP_Error) {
+                        break;
+                    }
+
+                    $authentication_token = $this->extract_authentication_token((array) ($status['json'] ?? []));
+                    if ($authentication_token !== '') {
+                        break;
+                    }
+                }
+            }
+        }
+
         if ($authentication_token === '') {
             $payload = (array) ($auth['json'] ?? []);
             $upstream_code = (string) ($payload['code'] ?? $payload['errorCode'] ?? $payload['error_code'] ?? 'erp_omd_ksef_authentication_token_missing');
@@ -288,5 +302,21 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         }
 
         return ['type' => 'InternalId', 'value' => $raw];
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @return string
+     */
+    private function extract_authentication_token(array $payload)
+    {
+        return trim((string) (
+            $payload['authenticationToken']['token']
+            ?? $payload['authenticationToken']['Token']
+            ?? $payload['authenticationToken']
+            ?? $payload['authentication_token']['token']
+            ?? $payload['authentication_token']
+            ?? ''
+        ));
     }
 }

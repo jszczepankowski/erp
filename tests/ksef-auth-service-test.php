@@ -163,4 +163,24 @@ if (($authRequestBody['contextIdentifier']['type'] ?? '') !== 'Nip' || ($authReq
     throw new RuntimeException('Expected contextIdentifier payload to be normalized to object format required by KSeF API.');
 }
 
+$connectorAsync = new ERP_OMD_KSeF_Connector_Fake();
+$connectorAsync->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-2']];
+$connectorAsync->responses['POST /auth/ksef-token'] = ['code' => 202, 'json' => ['referenceNumber' => 'REF-ASYNC-1']];
+$connectorAsync->responses['GET /auth/REF-ASYNC-1'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-ASYNC-1']]];
+$connectorAsync->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
+    'accessToken' => 'ACCESS-ASYNC-1',
+    'refreshToken' => 'REFRESH-ASYNC-1',
+    'accessTokenExpiresIn' => 120,
+    'refreshTokenExpiresIn' => 3600,
+]];
+
+$storageAsync = new ERP_OMD_KSeF_Auth_Storage();
+$storageAsync->clear_tokens('TEST');
+$serviceAsync = new ERP_OMD_KSeF_Auth_Service($connectorAsync, $storageAsync, $publicKeyService);
+$asyncResult = $serviceAsync->ensure_access_token('TEST', 'KSEF-TOKEN-2', '1111111111');
+$assertions++;
+if ($asyncResult instanceof WP_Error || ($asyncResult['ok'] ?? false) !== true || ($asyncResult['source'] ?? '') !== 'reauth') {
+    throw new RuntimeException('Expected async auth status fallback to resolve authenticationToken and redeem tokens.');
+}
+
 echo "OK ({$assertions} assertions)\n";
