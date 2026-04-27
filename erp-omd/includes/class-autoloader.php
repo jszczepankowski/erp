@@ -52,6 +52,10 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Period_Service' => 'includes/services/class-omd-period-service.php',
         'ERP_OMD_Cost_Invoice_Workflow_Service' => 'includes/services/class-cost-invoice-workflow-service.php',
         'ERP_OMD_KSeF_Import_Service' => 'includes/services/class-ksef-import-service.php',
+        'ERP_OMD_KSeF_Auth_Provider_Interface' => 'includes/contracts/interface-ksef-auth-provider.php',
+        'ERP_OMD_KSeF_Auth_Storage' => 'includes/services/class-ksef-auth-storage.php',
+        'ERP_OMD_KSeF_Public_Key_Service' => 'includes/services/class-ksef-public-key-service.php',
+        'ERP_OMD_KSeF_Auth_Service' => 'includes/services/class-ksef-auth-service.php',
         'ERP_OMD_Client_Portal_Service' => 'includes/services/class-client-portal-service.php',
     ];
 
