@@ -101,7 +101,7 @@ $assertions = 0;
 
 $connector = new ERP_OMD_KSeF_Connector_Fake();
 $connector->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-1']];
-$connector->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => 'AUTH-1', 'referenceNumber' => 'REF-1']];
+$connector->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-1'], 'referenceNumber' => 'REF-1']];
 $connector->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
     'accessToken' => 'ACCESS-1',
     'refreshToken' => 'REFRESH-1',
@@ -155,6 +155,12 @@ if (($refreshResult['source'] ?? '') !== 'refresh' || ($refreshResult['access_to
 $assertions++;
 if (count($connector->requests) < 3) {
     throw new RuntimeException('Expected connector requests to include challenge/auth/redeem/refresh calls.');
+}
+
+$authRequestBody = (array) ($connector->requests[1]['body'] ?? []);
+$assertions++;
+if (($authRequestBody['contextIdentifier']['type'] ?? '') !== 'Nip' || ($authRequestBody['contextIdentifier']['value'] ?? '') !== '1111111111') {
+    throw new RuntimeException('Expected contextIdentifier payload to be normalized to object format required by KSeF API.');
 }
 
 echo "OK ({$assertions} assertions)\n";

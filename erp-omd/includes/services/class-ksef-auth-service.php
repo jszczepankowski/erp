@@ -50,9 +50,14 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             return $encryption;
         }
 
+        $context_payload = $this->build_context_identifier_payload($context_identifier);
+        if ($context_payload instanceof WP_Error) {
+            return $context_payload;
+        }
+
         $payload = [
             'challenge' => $challenge,
-            'contextIdentifier' => (string) $context_identifier,
+            'contextIdentifier' => $context_payload,
             'encryptedToken' => (string) ($encryption['encrypted_token'] ?? ''),
         ];
 
@@ -142,9 +147,19 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             return $auth;
         }
 
-        $authentication_token = (string) (($auth['json']['authenticationToken'] ?? $auth['json']['authentication_token'] ?? ''));
+        $authentication_token = (string) (
+            $auth['json']['authenticationToken']['token']
+            ?? $auth['json']['authenticationToken']['Token']
+            ?? $auth['json']['authenticationToken']
+            ?? $auth['json']['authentication_token']['token']
+            ?? $auth['json']['authentication_token']
+            ?? ''
+        );
         if ($authentication_token === '') {
-            return new WP_Error('erp_omd_ksef_authentication_token_missing', __('Brak authenticationToken w odpowiedzi auth.', 'erp-omd'));
+            $payload = (array) ($auth['json'] ?? []);
+            $upstream_code = (string) ($payload['code'] ?? $payload['errorCode'] ?? $payload['error_code'] ?? 'erp_omd_ksef_authentication_token_missing');
+            $upstream_message = (string) ($payload['description'] ?? $payload['message'] ?? $payload['title'] ?? __('Brak authenticationToken w odpowiedzi auth.', 'erp-omd'));
+            return new WP_Error($upstream_code, $upstream_message);
         }
 
         $redeem = $this->redeem_token($environment, $authentication_token);
@@ -237,5 +252,41 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     {
         $env = strtoupper(trim((string) $environment));
         return in_array($env, ['TEST', 'DEMO', 'PRD'], true) ? $env : 'TEST';
+    }
+
+    /**
+     * @param string|array<string,mixed> $context_identifier
+     * @return array<string,string>|WP_Error
+     */
+    private function build_context_identifier_payload($context_identifier)
+    {
+        if (is_array($context_identifier)) {
+            $type = trim((string) ($context_identifier['type'] ?? ''));
+            $value = trim((string) ($context_identifier['value'] ?? ''));
+            if ($type !== '' && $value !== '') {
+                return ['type' => $type, 'value' => $value];
+            }
+        }
+
+        $raw = trim((string) $context_identifier);
+        if ($raw === '') {
+            return new WP_Error('erp_omd_ksef_context_identifier_missing', __('ContextIdentifier nie może być pusty.', 'erp-omd'));
+        }
+
+        if (strpos($raw, ':') !== false) {
+            [$type_raw, $value_raw] = array_pad(explode(':', $raw, 2), 2, '');
+            $type = trim((string) $type_raw);
+            $value = trim((string) $value_raw);
+            if ($type !== '' && $value !== '') {
+                return ['type' => $type, 'value' => $value];
+            }
+        }
+
+        $nip = preg_replace('/[^0-9]/', '', $raw);
+        if (is_string($nip) && strlen($nip) === 10) {
+            return ['type' => 'Nip', 'value' => $nip];
+        }
+
+        return ['type' => 'InternalId', 'value' => $raw];
     }
 }
