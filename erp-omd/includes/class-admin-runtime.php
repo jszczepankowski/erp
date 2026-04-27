@@ -602,6 +602,8 @@ class ERP_OMD_Admin
             case 'import_ksef_sales_xml': $this->handle_import_ksef_sales_xml_action(); break;
             case 'import_ksef_cost_xml': $this->handle_import_ksef_cost_xml_action(); break;
             case 'attach_ksef_sales_invoice': $this->handle_attach_ksef_sales_invoice_action(); break;
+            case 'ksef_sync_hub_dry_run': $this->handle_ksef_sync_hub_dry_run_action(); break;
+            case 'ksef_sync_hub_fetch_public_key': $this->handle_ksef_sync_hub_fetch_public_key_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'mark_project_deadline_completed': $this->handle_mark_project_deadline_completed_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
@@ -1346,6 +1348,33 @@ class ERP_OMD_Admin
         $google_calendar_last_sync_at = (string) get_option('erp_omd_google_calendar_last_sync_at', '');
         $google_calendar_last_error = (string) get_option('erp_omd_google_calendar_last_error', '');
         $ksef_auto_create_supplier = (bool) get_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, false);
+        $ksef_sync_hub_enabled = (bool) get_option('erp_omd_ksef_sync_hub_enabled', false);
+        $ksef_sync_hub_env = strtoupper((string) get_option('erp_omd_ksef_sync_hub_env', 'TEST'));
+        if (! in_array($ksef_sync_hub_env, ['TEST', 'DEMO', 'PRD'], true)) {
+            $ksef_sync_hub_env = 'TEST';
+        }
+        $ksef_sync_hub_mode = sanitize_key((string) get_option('erp_omd_ksef_sync_hub_mode', 'dry_run'));
+        if (! in_array($ksef_sync_hub_mode, ['dry_run', 'active'], true)) {
+            $ksef_sync_hub_mode = 'dry_run';
+        }
+        $ksef_api_base_url = (string) get_option('erp_omd_ksef_api_base_url', '');
+        $ksef_sync_subject_types = (array) get_option('erp_omd_ksef_sync_subject_types', ['subject1']);
+        $ksef_sync_subject_types = array_values(array_filter(array_map('sanitize_key', $ksef_sync_subject_types)));
+        if ($ksef_sync_subject_types === []) {
+            $ksef_sync_subject_types = ['subject1'];
+        }
+        $ksef_sync_hub_context_identifier = sanitize_text_field((string) get_option('erp_omd_ksef_sync_hub_context_identifier', ''));
+        $ksef_sync_hub_ap_token_masked = $this->masked_secret($this->decrypt_option_value((string) get_option('erp_omd_ksef_sync_hub_ap_token_enc', '')));
+        $ksef_sync_hub_public_key_pem = (string) get_option('erp_omd_ksef_public_key_' . strtolower($ksef_sync_hub_env), '');
+        $ksef_sync_backfill_hours = max(1, (int) get_option('erp_omd_ksef_sync_backfill_hours', 24));
+        $ksef_sync_state = (array) get_option('erp_omd_ksef_sync_state_' . strtolower($ksef_sync_hub_env), []);
+        $ksef_sync_hwm_preview = (string) get_option('erp_omd_ksef_sync_hwm_' . strtolower($ksef_sync_hub_env) . '_' . sanitize_key((string) ($ksef_sync_subject_types[0] ?? 'subject1')), '');
+        $ksef_sync_hub_last_dry_run = (array) get_option('erp_omd_ksef_sync_hub_last_dry_run', []);
+        $ksef_auth_tokens = [];
+        if (class_exists('ERP_OMD_KSeF_Auth_Storage')) {
+            $ksef_auth_storage = new ERP_OMD_KSeF_Auth_Storage();
+            $ksef_auth_tokens = (array) $ksef_auth_storage->get_tokens($ksef_sync_hub_env);
+        }
 
         include ERP_OMD_PATH . 'templates/admin/settings.php';
     }
@@ -2487,10 +2516,180 @@ class ERP_OMD_Admin
         $this->redirect_cost_invoice_page(['tab' => $tab, 'message' => 'cost_invoice_bulk_status_updated']);
     }
 
+    private function handle_ksef_sync_hub_dry_run_action()
+    {
+        check_admin_referer('erp_omd_ksef_sync_hub_dry_run');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $environment = strtoupper((string) get_option('erp_omd_ksef_sync_hub_env', 'TEST'));
+        if (! in_array($environment, ['TEST', 'DEMO', 'PRD'], true)) {
+            $environment = 'TEST';
+        }
+        $base_url = (string) get_option('erp_omd_ksef_api_base_url', '');
+        if ($base_url === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Ustaw adres API KSeF przed uruchomieniem dry-run.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $subject_types = (array) get_option('erp_omd_ksef_sync_subject_types', ['subject1']);
+        $subject_type = $this->normalize_ksef_subject_type_for_api((string) ($subject_types[0] ?? 'subject1'));
+        if ($subject_type === '') {
+            $subject_type = 'Subject1';
+        }
+
+        $backfill_hours = max(1, min(168, (int) get_option('erp_omd_ksef_sync_backfill_hours', 24)));
+        $from_hwm = gmdate('Y-m-d\\TH:i:s\\Z', time() - ($backfill_hours * HOUR_IN_SECONDS));
+        $to_hwm = gmdate('Y-m-d\\TH:i:s\\Z');
+
+        $context_identifier = trim((string) get_option('erp_omd_ksef_sync_hub_context_identifier', ''));
+        $ap_token = trim((string) $this->decrypt_option_value((string) get_option('erp_omd_ksef_sync_hub_ap_token_enc', '')));
+        if ($context_identifier === '' || $ap_token === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Uzupełnij ContextIdentifier i Token AP przed uruchomieniem dry-run.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $connector = new ERP_OMD_KSeF_Connector($base_url);
+        $auth_service = new ERP_OMD_KSeF_Auth_Service($connector);
+        $token_result = $auth_service->ensure_access_token($environment, $ap_token, $context_identifier);
+        if ($token_result instanceof WP_Error || ! (bool) ($token_result['ok'] ?? false)) {
+            $error_message = $token_result instanceof WP_Error
+                ? (string) $token_result->get_error_message()
+                : (string) ($token_result['error_message'] ?? __('Nie udało się pobrać access tokenu KSeF.', 'erp-omd'));
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Dry-run KSeF Sync Hub zakończony błędem autoryzacji: %s', 'erp-omd'), $error_message), ['tab' => 'ksef']);
+        }
+
+        $access_token = trim((string) ($token_result['access_token'] ?? ''));
+        if ($access_token === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Dry-run KSeF Sync Hub zakończony błędem autoryzacji: brak access tokenu.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $export_service = new ERP_OMD_KSeF_Export_Service($connector, 1, $access_token);
+        $result = (array) $export_service->run_incremental_export($environment, $subject_type, $from_hwm, $to_hwm);
+
+        update_option('erp_omd_ksef_sync_hub_last_dry_run', [
+            'run_at' => current_time('mysql'),
+            'environment' => $environment,
+            'subject_type' => $subject_type,
+            'ok' => ! empty($result['ok']),
+            'status' => (string) ($result['status'] ?? ''),
+            'error_code' => (string) ($result['error_code'] ?? ''),
+            'reference_number' => (string) ($result['reference_number'] ?? ''),
+        ]);
+
+        if (! empty($result['ok'])) {
+            $this->redirect_with_notice('erp-omd-settings', 'success', __('Dry-run KSeF Sync Hub zakończony powodzeniem.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $error_code = (string) ($result['error_code'] ?? 'unknown_error');
+        $error_message = trim((string) ($result['error_message'] ?? ''));
+        $label = $error_message !== '' ? $error_code . ' (' . $error_message . ')' : $error_code;
+        $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Dry-run KSeF Sync Hub zakończony błędem: %s', 'erp-omd'), $label), ['tab' => 'ksef']);
+    }
+
+    private function handle_ksef_sync_hub_fetch_public_key_action()
+    {
+        check_admin_referer('erp_omd_ksef_sync_hub_fetch_public_key');
+        $this->require_capability('erp_omd_manage_settings');
+
+        $environment = strtoupper((string) get_option('erp_omd_ksef_sync_hub_env', 'TEST'));
+        if (! in_array($environment, ['TEST', 'DEMO', 'PRD'], true)) {
+            $environment = 'TEST';
+        }
+
+        $base_url = (string) get_option('erp_omd_ksef_api_base_url', '');
+        if ($base_url === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Ustaw adres API KSeF przed pobraniem klucza publicznego MF.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $connector = new ERP_OMD_KSeF_Connector($base_url);
+        $response = $connector->request('GET', '/security/public-key-certificates', [
+            'Accept' => 'application/json',
+        ]);
+
+        if ($response instanceof WP_Error) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Nie udało się pobrać klucza publicznego MF: %s', 'erp-omd'), (string) $response->get_error_message()), ['tab' => 'ksef']);
+        }
+
+        $payload = (array) ($response['json'] ?? []);
+        if ($payload === []) {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('API KSeF nie zwróciło listy certyfikatów klucza publicznego.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $selected_certificate = '';
+        foreach ($payload as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $usage = array_map('strval', (array) ($row['usage'] ?? []));
+            $certificate = trim((string) ($row['certificate'] ?? ''));
+            if ($certificate === '') {
+                continue;
+            }
+
+            if (in_array('KsefTokenEncryption', $usage, true)) {
+                $selected_certificate = $certificate;
+                break;
+            }
+
+            if ($selected_certificate === '') {
+                $selected_certificate = $certificate;
+            }
+        }
+
+        if ($selected_certificate === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Nie znaleziono certyfikatu klucza publicznego MF w odpowiedzi API.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $pem = $this->normalize_certificate_to_pem($selected_certificate);
+        update_option('erp_omd_ksef_public_key_' . strtolower($environment), $pem);
+        $this->redirect_with_notice('erp-omd-settings', 'success', __('Pobrano i zapisano klucz publiczny MF dla wybranego środowiska.', 'erp-omd'), ['tab' => 'ksef']);
+    }
+
     /**
-     * @param array<string,mixed> $invoice
-     * @return void
+     * @param string $certificate
+     * @return string
      */
+    private function normalize_certificate_to_pem($certificate)
+    {
+        $certificate = trim((string) $certificate);
+        if ($certificate === '') {
+            return '';
+        }
+
+        if (strpos($certificate, '-----BEGIN CERTIFICATE-----') !== false || strpos($certificate, '-----BEGIN PUBLIC KEY-----') !== false) {
+            return $certificate;
+        }
+
+        $sanitized = preg_replace('/\s+/', '', $certificate);
+        if (! is_string($sanitized) || $sanitized === '') {
+            return '';
+        }
+
+        return "-----BEGIN CERTIFICATE-----\n" . trim(chunk_split($sanitized, 64, "\n")) . "\n-----END CERTIFICATE-----";
+    }
+
+    /**
+     * @param string $subject_type
+     * @return string
+     */
+    private function normalize_ksef_subject_type_for_api($subject_type)
+    {
+        $value = strtolower(trim((string) $subject_type));
+        $map = [
+            'subject1' => 'Subject1',
+            'seller' => 'Subject1',
+            'podmiot1' => 'Subject1',
+            'subject2' => 'Subject2',
+            'buyer' => 'Subject2',
+            'podmiot2' => 'Subject2',
+            'subject3' => 'Subject3',
+            'podmiot3' => 'Subject3',
+            'subjectauthorized' => 'SubjectAuthorized',
+            'authorized' => 'SubjectAuthorized',
+            'upowazniony' => 'SubjectAuthorized',
+        ];
+
+        return $map[$value] ?? '';
+    }
 
     private function handle_ksef_queue_moderation_action()
     {
@@ -4166,6 +4365,38 @@ class ERP_OMD_Admin
             }
         } elseif ($settings_tab === 'ksef') {
             update_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, ! empty($_POST['ksef_auto_create_supplier']));
+            $ksef_sync_hub_env = strtoupper(sanitize_key((string) ($_POST['ksef_sync_hub_env'] ?? 'TEST')));
+            if (! in_array($ksef_sync_hub_env, ['TEST', 'DEMO', 'PRD'], true)) {
+                $ksef_sync_hub_env = 'TEST';
+            }
+            $ksef_sync_hub_mode = sanitize_key((string) ($_POST['ksef_sync_hub_mode'] ?? 'dry_run'));
+            if (! in_array($ksef_sync_hub_mode, ['dry_run', 'active'], true)) {
+                $ksef_sync_hub_mode = 'dry_run';
+            }
+            $ksef_sync_subject_types_raw = (string) wp_unslash($_POST['ksef_sync_subject_types'] ?? 'subject1');
+            $ksef_sync_subject_types = array_values(array_filter(array_map('sanitize_key', preg_split('/[\s,;]+/', $ksef_sync_subject_types_raw) ?: [])));
+            if ($ksef_sync_subject_types === []) {
+                $ksef_sync_subject_types = ['subject1'];
+            }
+            $ksef_sync_hub_context_identifier = sanitize_text_field((string) wp_unslash($_POST['ksef_sync_hub_context_identifier'] ?? ''));
+            $ksef_sync_hub_ap_token = trim((string) wp_unslash($_POST['ksef_sync_hub_ap_token'] ?? ''));
+            $ksef_sync_hub_ap_token_clear = ! empty($_POST['ksef_sync_hub_ap_token_clear']);
+            $ksef_sync_hub_public_key_pem = trim((string) wp_unslash($_POST['ksef_sync_hub_public_key_pem'] ?? ''));
+            update_option('erp_omd_ksef_sync_hub_enabled', ! empty($_POST['ksef_sync_hub_enabled']));
+            update_option('erp_omd_ksef_sync_hub_env', $ksef_sync_hub_env);
+            update_option('erp_omd_ksef_sync_hub_mode', $ksef_sync_hub_mode);
+            update_option('erp_omd_ksef_api_base_url', untrailingslashit(esc_url_raw((string) wp_unslash($_POST['ksef_api_base_url'] ?? ''))));
+            update_option('erp_omd_ksef_sync_subject_types', $ksef_sync_subject_types);
+            update_option('erp_omd_ksef_sync_backfill_hours', max(1, min(168, (int) ($_POST['ksef_sync_backfill_hours'] ?? 24))));
+            update_option('erp_omd_ksef_sync_hub_context_identifier', $ksef_sync_hub_context_identifier);
+            if ($ksef_sync_hub_ap_token_clear) {
+                update_option('erp_omd_ksef_sync_hub_ap_token_enc', '');
+            } elseif ($ksef_sync_hub_ap_token !== '') {
+                update_option('erp_omd_ksef_sync_hub_ap_token_enc', $this->encrypt_option_value($ksef_sync_hub_ap_token));
+            }
+            if ($ksef_sync_hub_public_key_pem !== '') {
+                update_option('erp_omd_ksef_public_key_' . strtolower($ksef_sync_hub_env), $ksef_sync_hub_public_key_pem);
+            }
         } elseif ($settings_tab === 'reports_v1_monitoring') {
             update_option('erp_omd_reports_v1_metrics_freshness_minutes', max(5, (int) ($_POST['reports_v1_metrics_freshness_minutes'] ?? 1440)));
             $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) ($_POST['reports_v1_slo_generation_p95_max'] ?? 2500)));
