@@ -8,10 +8,14 @@ class ERP_OMD_KSeF_Export_Service
     /** @var int */
     private $max_status_polls;
 
-    public function __construct($connector, $max_status_polls = null)
+    /** @var string */
+    private $access_token;
+
+    public function __construct($connector, $max_status_polls = null, $access_token = '')
     {
         $this->connector = $connector;
         $this->max_status_polls = is_int($max_status_polls) && $max_status_polls > 0 ? $max_status_polls : 5;
+        $this->access_token = trim((string) $access_token);
     }
 
     /**
@@ -148,6 +152,9 @@ class ERP_OMD_KSeF_Export_Service
     private function request($method, $path, array $headers, $body, $environment)
     {
         $headers['X-Environment'] = $this->normalize_environment($environment);
+        if ($this->access_token !== '' && empty($headers['Authorization'])) {
+            $headers['Authorization'] = 'Bearer ' . $this->access_token;
+        }
         return $this->connector->request($method, $path, $headers, $body);
     }
 

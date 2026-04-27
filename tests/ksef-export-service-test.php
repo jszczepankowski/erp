@@ -85,5 +85,32 @@ if (($result2['ok'] ?? false) !== true || ($result2['next_hwm'] ?? '') !== '2026
     throw new RuntimeException('Expected full export to advance HWM to permanentStorageHwmDate.');
 }
 
+$connector3 = new ERP_OMD_KSeF_Connector_Export_Fake();
+$connector3->responses['POST /invoices/exports'] = static function ($headers, $body) {
+    if (($headers['Authorization'] ?? '') !== 'Bearer token-123') {
+        throw new RuntimeException('Expected Authorization header to be propagated to export start request.');
+    }
+
+    return ['code' => 200, 'json' => ['referenceNumber' => 'REF-3']];
+};
+$connector3->responses['GET /invoices/exports/REF-3'] = static function ($headers, $body) {
+    if (($headers['Authorization'] ?? '') !== 'Bearer token-123') {
+        throw new RuntimeException('Expected Authorization header to be propagated to export status request.');
+    }
+
+    return ['code' => 200, 'json' => [
+        'status' => 'completed',
+        'isTruncated' => false,
+        'permanentStorageHwmDate' => '2026-04-03T11:00:00Z',
+        'parts' => [],
+    ]];
+};
+$service3 = new ERP_OMD_KSeF_Export_Service($connector3, 1, 'token-123');
+$result3 = $service3->run_incremental_export('TEST', 'subject1', '2026-04-03T09:00:00Z', '2026-04-03T12:00:00Z');
+$assertions++;
+if (($result3['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected export to succeed with propagated authorization header.');
+}
+
 echo "Assertions: {$assertions}\n";
 echo "KSeF export service stage-3 test passed.\n";

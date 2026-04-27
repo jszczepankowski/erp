@@ -2539,8 +2539,28 @@ class ERP_OMD_Admin
         $from_hwm = gmdate('Y-m-d\\TH:i:s\\Z', time() - ($backfill_hours * HOUR_IN_SECONDS));
         $to_hwm = gmdate('Y-m-d\\TH:i:s\\Z');
 
+        $context_identifier = trim((string) get_option('erp_omd_ksef_sync_hub_context_identifier', ''));
+        $ap_token = trim((string) $this->decrypt_option_value((string) get_option('erp_omd_ksef_sync_hub_ap_token_enc', '')));
+        if ($context_identifier === '' || $ap_token === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Uzupełnij ContextIdentifier i Token AP przed uruchomieniem dry-run.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
         $connector = new ERP_OMD_KSeF_Connector($base_url);
-        $export_service = new ERP_OMD_KSeF_Export_Service($connector, 1);
+        $auth_service = new ERP_OMD_KSeF_Auth_Service($connector);
+        $token_result = $auth_service->ensure_access_token($environment, $ap_token, $context_identifier);
+        if ($token_result instanceof WP_Error || ! (bool) ($token_result['ok'] ?? false)) {
+            $error_message = $token_result instanceof WP_Error
+                ? (string) $token_result->get_error_message()
+                : (string) ($token_result['error_message'] ?? __('Nie udało się pobrać access tokenu KSeF.', 'erp-omd'));
+            $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Dry-run KSeF Sync Hub zakończony błędem autoryzacji: %s', 'erp-omd'), $error_message), ['tab' => 'ksef']);
+        }
+
+        $access_token = trim((string) ($token_result['access_token'] ?? ''));
+        if ($access_token === '') {
+            $this->redirect_with_notice('erp-omd-settings', 'error', __('Dry-run KSeF Sync Hub zakończony błędem autoryzacji: brak access tokenu.', 'erp-omd'), ['tab' => 'ksef']);
+        }
+
+        $export_service = new ERP_OMD_KSeF_Export_Service($connector, 1, $access_token);
         $result = (array) $export_service->run_incremental_export($environment, $subject_type, $from_hwm, $to_hwm);
 
         update_option('erp_omd_ksef_sync_hub_last_dry_run', [
