@@ -5,11 +5,13 @@ declare(strict_types=1);
 $cron = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-cron-manager.php');
 $autoloader = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-autoloader.php');
 $installer = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-installer.php');
+$admin = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-admin-runtime.php');
+$settingsTemplate = (string) file_get_contents(__DIR__ . '/../erp-omd/templates/admin/settings.php');
 $incrementalServiceExists = file_exists(__DIR__ . '/../erp-omd/includes/services/class-ksef-incremental-sync-service.php');
 $exportServiceExists = file_exists(__DIR__ . '/../erp-omd/includes/services/class-ksef-export-service.php');
 $connectorExists = file_exists(__DIR__ . '/../erp-omd/includes/services/class-ksef-connector.php');
 
-if ($cron === '' || $autoloader === '' || $installer === '') {
+if ($cron === '' || $autoloader === '' || $installer === '' || $admin === '' || $settingsTemplate === '') {
     throw new RuntimeException('Unable to load files for KSeF API sync stage-3 bootstrap test.');
 }
 
@@ -43,6 +45,10 @@ $presentFragments = [
     [$cron, 'new ERP_OMD_KSeF_Export_Service($connector)', 'Cron should bootstrap export service for stage 3 sync.'],
     [$cron, 'new ERP_OMD_KSeF_Import_Service(', 'Cron should bootstrap import service bridge for stage 4 sync.'],
     [$cron, 'new ERP_OMD_KSeF_Incremental_Sync_Service(null, null, $export_service, $import_service)', 'Cron should wire export and import services into incremental sync.'],
+    [$admin, "case 'ksef_sync_hub_dry_run':", 'Admin runtime should handle stage-5 dry-run action.'],
+    [$settingsTemplate, 'name="ksef_sync_hub_enabled"', 'Settings should expose KSeF Sync Hub enable toggle.'],
+    [$settingsTemplate, 'name="ksef_sync_hub_env"', 'Settings should expose KSeF Sync Hub environment selector.'],
+    [$settingsTemplate, 'id="erp-omd-ksef-sync-hub-dry-run-form"', 'Settings should expose KSeF Sync Hub dry-run form.'],
 ];
 
 foreach ($presentFragments as [$source, $fragment, $message]) {
