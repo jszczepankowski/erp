@@ -10,10 +10,18 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
     /** @var array<int,int> */
     private $retry_schedule_seconds;
 
-    public function __construct($lock_ttl_seconds = null, array $retry_schedule_seconds = null)
+    /** @var mixed|null */
+    private $export_service;
+
+    /** @var mixed|null */
+    private $import_service;
+
+    public function __construct($lock_ttl_seconds = null, array $retry_schedule_seconds = null, $export_service = null, $import_service = null)
     {
         $this->lock_ttl_seconds = is_int($lock_ttl_seconds) && $lock_ttl_seconds > 0 ? $lock_ttl_seconds : 240;
         $this->retry_schedule_seconds = $retry_schedule_seconds ?: [30, 120, 300];
+        $this->export_service = $export_service;
+        $this->import_service = $import_service;
     }
 
     /**
@@ -92,9 +100,57 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
      */
     protected function perform_sync_iteration($environment)
     {
+        if (! is_object($this->export_service) || ! method_exists($this->export_service, 'run_incremental_export')) {
+            return [
+                'ok' => true,
+                'environment' => $environment,
+                'status' => 'no_export_service',
+            ];
+        }
+
+        $subject_types = $this->resolve_subject_types();
+        $to_hwm = gmdate('Y-m-d\TH:i:s\Z');
+        $processed = 0;
+
+        foreach ($subject_types as $subject_type) {
+            $from_hwm = $this->get_subject_hwm($environment, $subject_type);
+            $export_result = $this->export_service->run_incremental_export($environment, $subject_type, $from_hwm, $to_hwm);
+            if (! (bool) ($export_result['ok'] ?? false)) {
+                return [
+                    'ok' => false,
+                    'status' => (string) ($export_result['status'] ?? 'export_failed'),
+                    'error_code' => (string) ($export_result['error_code'] ?? 'export_failed'),
+                    'retry_after' => (int) ($export_result['retry_after'] ?? 0),
+                    'http_code' => (int) ($export_result['http_code'] ?? 0),
+                ];
+            }
+
+            $next_hwm = (string) ($export_result['next_hwm'] ?? $to_hwm);
+            $this->set_subject_hwm($environment, $subject_type, $next_hwm);
+
+            $documents = $this->extract_documents_for_import($export_result, $subject_type);
+            if ($documents !== [] && is_object($this->import_service) && method_exists($this->import_service, 'import_documents')) {
+                $import_result = (array) $this->import_service->import_documents($documents, 0);
+                if ((int) ($import_result['failed'] ?? 0) > 0) {
+                    return [
+                        'ok' => false,
+                        'status' => 'import_failed',
+                        'error_code' => 'import_failed',
+                        'retry_after' => 0,
+                        'http_code' => 0,
+                    ];
+                }
+            }
+
+            $processed++;
+        }
+
         return [
             'ok' => true,
             'environment' => $environment,
+            'status' => 'synced',
+            'processed_subject_types' => $processed,
+            'to_hwm' => $to_hwm,
         ];
     }
 
@@ -193,6 +249,100 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
             'retry_after' => (int) ($result['retry_after'] ?? 0),
             'error_code' => (string) ($result['error_code'] ?? ''),
         ]);
+    }
+
+    /**
+     * @param array<string,mixed> $export_result
+     * @param string $subject_type
+     * @return array<int,array<string,mixed>>
+     */
+    private function extract_documents_for_import(array $export_result, $subject_type)
+    {
+        $documents = (array) ($export_result['documents'] ?? $export_result['raw_status']['documents'] ?? []);
+        if ($documents === []) {
+            return [];
+        }
+
+        $mapped = [];
+        foreach ($documents as $document) {
+            if (! is_array($document)) {
+                continue;
+            }
+
+            $invoice_number = (string) ($document['invoice_number'] ?? $document['invoiceNumber'] ?? '');
+            $reference = (string) ($document['ksef_reference_number'] ?? $document['ksefReferenceNumber'] ?? '');
+            if ($invoice_number === '' && $reference === '') {
+                continue;
+            }
+
+            $mapped[] = [
+                'invoice_number' => $invoice_number,
+                'issue_date' => (string) ($document['issue_date'] ?? $document['issueDate'] ?? gmdate('Y-m-d')),
+                'net_amount' => (float) ($document['net_amount'] ?? $document['netAmount'] ?? 0),
+                'vat_amount' => (float) ($document['vat_amount'] ?? $document['vatAmount'] ?? 0),
+                'gross_amount' => (float) ($document['gross_amount'] ?? $document['grossAmount'] ?? 0),
+                'ksef_reference_number' => $reference,
+                'seller_nip' => (string) ($document['seller_nip'] ?? $document['sellerNip'] ?? ''),
+                'buyer_nip' => (string) ($document['buyer_nip'] ?? $document['buyerNip'] ?? ''),
+                'seller_name' => (string) ($document['seller_name'] ?? $document['sellerName'] ?? ''),
+                'items' => (array) ($document['items'] ?? []),
+                'document_kind' => (string) ($document['document_kind'] ?? ''),
+                'api_sync_source' => 'ksef_sync_hub',
+                'subject_type' => (string) $subject_type,
+            ];
+        }
+
+        return $mapped;
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function resolve_subject_types()
+    {
+        $configured = get_option('erp_omd_ksef_sync_subject_types', ['subject1']);
+        if (! is_array($configured) || $configured === []) {
+            return ['subject1'];
+        }
+
+        $values = [];
+        foreach ($configured as $subject_type) {
+            $subject_type = trim((string) $subject_type);
+            if ($subject_type !== '') {
+                $values[] = $subject_type;
+            }
+        }
+
+        return $values === [] ? ['subject1'] : array_values(array_unique($values));
+    }
+
+    /**
+     * @param string $environment
+     * @param string $subject_type
+     * @return string
+     */
+    private function get_subject_hwm($environment, $subject_type)
+    {
+        $option_key = 'erp_omd_ksef_sync_hwm_' . strtolower($this->normalize_environment($environment)) . '_' . sanitize_key((string) $subject_type);
+        $hwm = (string) get_option($option_key, '');
+        if ($hwm !== '') {
+            return $hwm;
+        }
+
+        $fallback_hours = max(1, (int) get_option('erp_omd_ksef_sync_backfill_hours', 24));
+        return gmdate('Y-m-d\TH:i:s\Z', time() - ($fallback_hours * HOUR_IN_SECONDS));
+    }
+
+    /**
+     * @param string $environment
+     * @param string $subject_type
+     * @param string $hwm
+     * @return void
+     */
+    private function set_subject_hwm($environment, $subject_type, $hwm)
+    {
+        $option_key = 'erp_omd_ksef_sync_hwm_' . strtolower($this->normalize_environment($environment)) . '_' . sanitize_key((string) $subject_type);
+        update_option($option_key, (string) $hwm);
     }
 
     /**

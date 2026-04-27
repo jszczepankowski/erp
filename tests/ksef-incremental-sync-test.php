@@ -19,6 +19,19 @@ if (! function_exists('update_option')) {
     }
 }
 
+
+if (! function_exists('sanitize_key')) {
+    function sanitize_key($key)
+    {
+        $key = strtolower((string) $key);
+        return preg_replace('/[^a-z0-9_\-]/', '', $key) ?: '';
+    }
+}
+
+if (! defined('HOUR_IN_SECONDS')) {
+    define('HOUR_IN_SECONDS', 3600);
+}
+
 if (! function_exists('wp_generate_password')) {
     function wp_generate_password($length = 12)
     {
@@ -91,5 +104,83 @@ if (($locked['status'] ?? '') !== 'locked') {
     throw new RuntimeException('Expected locked status when an active lock already exists.');
 }
 
+
+class ERP_OMD_KSeF_Export_Service_Fake
+{
+    /** @var array<int,array<string,mixed>> */
+    public $calls = [];
+
+    public function run_incremental_export($environment, $subject_type, $from_hwm, $to_hwm)
+    {
+        $this->calls[] = [
+            'environment' => $environment,
+            'subject_type' => $subject_type,
+            'from_hwm' => $from_hwm,
+            'to_hwm' => $to_hwm,
+        ];
+
+        return [
+            'ok' => true,
+            'status' => 'completed',
+            'next_hwm' => '2026-04-10T10:00:00Z',
+            'documents' => [
+                [
+                    'invoice_number' => 'FV-' . strtoupper((string) $subject_type),
+                    'ksef_reference_number' => 'REF-' . strtoupper((string) $subject_type),
+                    'issue_date' => '2026-04-10',
+                    'gross_amount' => 123.45,
+                    'seller_nip' => '1111111111',
+                    'buyer_nip' => '2222222222',
+                ],
+            ],
+        ];
+    }
+}
+
+class ERP_OMD_KSeF_Import_Service_Fake
+{
+    /** @var array<int,array<string,mixed>> */
+    public $batches = [];
+
+    public function import_documents(array $documents, $user_id)
+    {
+        $this->batches[] = ['documents' => $documents, 'user_id' => $user_id];
+        return [
+            'total' => count($documents),
+            'imported' => count($documents),
+            'failed' => 0,
+            'duplicates' => 0,
+            'conflicts' => 0,
+            'errors' => [],
+        ];
+    }
+}
+
+$GLOBALS['erp_omd_ksef_sync_options'][$lockKey] = [
+    'token' => '',
+    'expires_at' => 0,
+    'updated_at' => gmdate('Y-m-d H:i:s'),
+];
+
+$GLOBALS['erp_omd_ksef_sync_options']['erp_omd_ksef_sync_subject_types'] = ['seller', 'buyer'];
+$exportFake = new ERP_OMD_KSeF_Export_Service_Fake();
+$importFake = new ERP_OMD_KSeF_Import_Service_Fake();
+$serviceWithExport = new ERP_OMD_KSeF_Incremental_Sync_Service(120, [11, 22, 33], $exportFake, $importFake);
+$integrationRun = $serviceWithExport->run_scheduled_sync('TEST', 1);
+$assertions++;
+if (($integrationRun['ok'] ?? false) !== true || count($exportFake->calls) !== 2) {
+    throw new RuntimeException('Expected stage-3 incremental sync to execute export service for each subject type.');
+}
+
+$assertions++;
+if (($GLOBALS['erp_omd_ksef_sync_options']['erp_omd_ksef_sync_hwm_test_seller'] ?? '') !== '2026-04-10T10:00:00Z') {
+    throw new RuntimeException('Expected seller HWM checkpoint to be updated from export result.');
+}
+
+$assertions++;
+if (count($importFake->batches) !== 2 || (($importFake->batches[0]['documents'][0]['api_sync_source'] ?? '') !== 'ksef_sync_hub')) {
+    throw new RuntimeException('Expected stage-4 bridge to map export documents and forward them to import service.');
+}
+
 echo "Assertions: {$assertions}\n";
-echo "KSeF incremental sync stage-2 test passed.\n";
+echo "KSeF incremental sync stage-3 test passed.\n";
