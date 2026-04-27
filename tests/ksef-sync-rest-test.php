@@ -14,7 +14,8 @@ $fragments = [
     [$rest, "'/ksef/sync/run'", 'REST should expose KSeF sync run route.'],
     [$rest, 'function ksef_sync_status(', 'REST should implement KSeF sync status callback.'],
     [$rest, 'function run_ksef_sync_now(', 'REST should implement KSeF sync run callback.'],
-    [$rest, 'new ERP_OMD_KSeF_Incremental_Sync_Service(null, null, $export_service, $import_service)', 'REST manual run should wire export+import services.'],
+    [$rest, "'mode' => \$mode", 'REST status/run should expose sync mode.'],
+    [$rest, "\$import_service = \$mode === 'active'", 'REST manual run should gate import wiring by active mode.'],
     [$rest, "'erp_omd_ksef_sync_hub_enabled'", 'REST status should expose whether KSeF Sync Hub is enabled.'],
 ];
 

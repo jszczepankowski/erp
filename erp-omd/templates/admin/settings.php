@@ -324,6 +324,13 @@
                             </select>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-ksef-sync-hub-mode"><?php esc_html_e('Tryb pipeline', 'erp-omd'); ?></label>
+                            <select id="erp-omd-ksef-sync-hub-mode" name="ksef_sync_hub_mode">
+                                <option value="dry_run" <?php selected((string) $ksef_sync_hub_mode, 'dry_run'); ?>>dry_run</option>
+                                <option value="active" <?php selected((string) $ksef_sync_hub_mode, 'active'); ?>>active</option>
+                            </select>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-ksef-sync-backfill-hours"><?php esc_html_e('Backfill (h)', 'erp-omd'); ?></label>
                             <input id="erp-omd-ksef-sync-backfill-hours" type="number" min="1" max="168" step="1" name="ksef_sync_backfill_hours" value="<?php echo esc_attr((string) $ksef_sync_backfill_hours); ?>" />
                         </div>
@@ -335,6 +342,26 @@
                             <label for="erp-omd-ksef-sync-subject-types"><?php esc_html_e('SubjectType (lista)', 'erp-omd'); ?></label>
                             <input id="erp-omd-ksef-sync-subject-types" type="text" name="ksef_sync_subject_types" value="<?php echo esc_attr(implode(', ', (array) $ksef_sync_subject_types)); ?>" />
                             <p class="description"><?php esc_html_e('Wpisz listę po przecinku, np. seller,buyer.', 'erp-omd'); ?></p>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-sync-hub-context"><?php esc_html_e('ContextIdentifier (KSeF auth)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-sync-hub-context" type="text" name="ksef_sync_hub_context_identifier" value="<?php echo esc_attr((string) $ksef_sync_hub_context_identifier); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-sync-hub-ap-token"><?php esc_html_e('Token KSeF z AP (sekret)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-sync-hub-ap-token" type="password" name="ksef_sync_hub_ap_token" value="" autocomplete="new-password" />
+                            <?php if ($ksef_sync_hub_ap_token_masked !== '') : ?>
+                                <p class="description"><?php echo esc_html(sprintf(__('Obecnie zapisany token AP: %s', 'erp-omd'), (string) $ksef_sync_hub_ap_token_masked)); ?></p>
+                            <?php endif; ?>
+                            <label class="erp-omd-form-label">
+                                <input type="checkbox" name="ksef_sync_hub_ap_token_clear" value="1" />
+                                <?php esc_html_e('Wyczyść zapisany token AP', 'erp-omd'); ?>
+                            </label>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-sync-hub-public-key"><?php esc_html_e('Klucz publiczny MF (PEM) dla wybranego środowiska', 'erp-omd'); ?></label>
+                            <textarea id="erp-omd-ksef-sync-hub-public-key" name="ksef_sync_hub_public_key_pem" rows="6" class="large-text"><?php echo esc_textarea((string) $ksef_sync_hub_public_key_pem); ?></textarea>
+                            <p class="description"><?php esc_html_e('Wklej klucz publiczny KSeF (MF) odpowiadający aktualnemu środowisku TEST/DEMO/PRD.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label class="erp-omd-form-label">
