@@ -219,7 +219,15 @@ class ERP_OMD_Cron_Manager
 
     public static function run_ksef_incremental_sync()
     {
+        if (! (bool) get_option('erp_omd_ksef_sync_hub_enabled', false)) {
+            return;
+        }
+
         $environment = (string) get_option('erp_omd_ksef_sync_hub_env', 'TEST');
+        $mode = (string) get_option('erp_omd_ksef_sync_hub_mode', 'dry_run');
+        if (! in_array($mode, ['dry_run', 'active'], true)) {
+            $mode = 'dry_run';
+        }
         $base_url = (string) get_option('erp_omd_ksef_api_base_url', '');
         if ($base_url === '') {
             return;
@@ -237,15 +245,17 @@ class ERP_OMD_Cron_Manager
             $supplier_repository,
             new ERP_OMD_Project_Repository()
         );
-        $import_service = new ERP_OMD_KSeF_Import_Service(
-            $workflow,
-            $invoice_repository,
-            $audit_repository,
-            null,
-            null,
-            $supplier_repository,
-            $client_repository
-        );
+        $import_service = $mode === 'active'
+            ? new ERP_OMD_KSeF_Import_Service(
+                $workflow,
+                $invoice_repository,
+                $audit_repository,
+                null,
+                null,
+                $supplier_repository,
+                $client_repository
+            )
+            : null;
         $service = new ERP_OMD_KSeF_Incremental_Sync_Service(null, null, $export_service, $import_service);
         $service->run_scheduled_sync($environment, 3);
     }
