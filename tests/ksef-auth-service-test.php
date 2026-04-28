@@ -96,7 +96,7 @@ class ERP_OMD_KSeF_Connector_Fake
     }
 }
 
-class ERP_OMD_KSeF_Connector_Redeem_Fallback_Fake extends ERP_OMD_KSeF_Connector_Fake
+class ERP_OMD_KSeF_Connector_Redeem_Single_Use_Fake extends ERP_OMD_KSeF_Connector_Fake
 {
     /** @var int */
     public $redeem_calls = 0;
@@ -105,28 +105,7 @@ class ERP_OMD_KSeF_Connector_Redeem_Fallback_Fake extends ERP_OMD_KSeF_Connector
     {
         if (strtoupper((string) $method) === 'POST' && $path === '/auth/token/redeem') {
             $this->redeem_calls++;
-            if ($this->redeem_calls === 1) {
-                return ['code' => 400, 'json' => ['description' => 'Żądanie jest nieprawidłowe.']];
-            }
-
-            return ['code' => 200, 'json' => [
-                'accessToken' => 'ACCESS-FALLBACK',
-                'refreshToken' => 'REFRESH-FALLBACK',
-                'accessTokenExpiresIn' => 120,
-                'refreshTokenExpiresIn' => 3600,
-            ]];
-        }
-
-        return parent::request($method, $path, $headers, $body);
-    }
-}
-
-class ERP_OMD_KSeF_Connector_Redeem_Always_400_Fake extends ERP_OMD_KSeF_Connector_Fake
-{
-    public function request($method, $path, array $headers = [], $body = null)
-    {
-        if (strtoupper((string) $method) === 'POST' && $path === '/auth/token/redeem') {
-            return ['code' => 400, 'json' => ['description' => 'Żądanie jest nieprawidłowe.']];
+            return ['code' => 401, 'json' => ['description' => 'Wymagane jest uwierzytelnienie.']];
         }
 
         return parent::request($method, $path, $headers, $body);
@@ -302,32 +281,20 @@ if (strpos((string) $errorResult->get_error_message(), 'hint: ustaw ContextIdent
     throw new RuntimeException('Expected auth diagnostics hint for likely invalid InternalId context format.');
 }
 
-$connectorRedeemFallback = new ERP_OMD_KSeF_Connector_Redeem_Fallback_Fake();
-$connectorRedeemFallback->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-REDEEM-FALLBACK']];
-$connectorRedeemFallback->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-FALLBACK']]];
-$storageRedeemFallback = new ERP_OMD_KSeF_Auth_Storage();
-$storageRedeemFallback->clear_tokens('TEST');
-$serviceRedeemFallback = new ERP_OMD_KSeF_Auth_Service($connectorRedeemFallback, $storageRedeemFallback, $publicKeyService);
-$fallbackResult = $serviceRedeemFallback->ensure_access_token('TEST', 'KSEF-TOKEN-4', '1111111111');
+$connectorRedeemSingleUse = new ERP_OMD_KSeF_Connector_Redeem_Single_Use_Fake();
+$connectorRedeemSingleUse->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-REDEEM-SINGLE']];
+$connectorRedeemSingleUse->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-SINGLE']]];
+$storageRedeemSingleUse = new ERP_OMD_KSeF_Auth_Storage();
+$storageRedeemSingleUse->clear_tokens('TEST');
+$serviceRedeemSingleUse = new ERP_OMD_KSeF_Auth_Service($connectorRedeemSingleUse, $storageRedeemSingleUse, $publicKeyService);
+$singleUseResult = $serviceRedeemSingleUse->ensure_access_token('TEST', 'KSEF-TOKEN-4', '1111111111');
 $assertions++;
-if ($fallbackResult instanceof WP_Error || ($fallbackResult['ok'] ?? false) !== true) {
-    throw new RuntimeException('Expected redeem flow fallback strategy to recover from initial 400 and obtain tokens.');
+if (! ($singleUseResult instanceof WP_Error) || (string) $singleUseResult->get_error_code() !== 'ksef_http_401') {
+    throw new RuntimeException('Expected redeem single-use flow to propagate 401 without multi-attempt retries.');
 }
 $assertions++;
-if ($connectorRedeemFallback->redeem_calls !== 2) {
-    throw new RuntimeException('Expected redeem flow to retry once with compatibility fallback after HTTP 400.');
-}
-
-$connectorRedeemAlways400 = new ERP_OMD_KSeF_Connector_Redeem_Always_400_Fake();
-$connectorRedeemAlways400->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-REDEEM-400']];
-$connectorRedeemAlways400->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-400']]];
-$storageRedeemAlways400 = new ERP_OMD_KSeF_Auth_Storage();
-$storageRedeemAlways400->clear_tokens('TEST');
-$serviceRedeemAlways400 = new ERP_OMD_KSeF_Auth_Service($connectorRedeemAlways400, $storageRedeemAlways400, $publicKeyService);
-$always400Result = $serviceRedeemAlways400->ensure_access_token('TEST', 'KSEF-TOKEN-5', '1111111111');
-$assertions++;
-if (! ($always400Result instanceof WP_Error) || strpos((string) $always400Result->get_error_message(), 'token_exchange_attempts:') === false) {
-    throw new RuntimeException('Expected redeem diagnostics to include token exchange attempt matrix when all 400 fallbacks fail.');
+if ($connectorRedeemSingleUse->redeem_calls !== 1) {
+    throw new RuntimeException('Expected redeem endpoint to be called exactly once (single-use token).');
 }
 
 echo "OK ({$assertions} assertions)\n";

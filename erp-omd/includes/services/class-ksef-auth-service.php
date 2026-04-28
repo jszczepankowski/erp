@@ -96,7 +96,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
     public function redeem_token($environment, $authentication_token)
     {
-        $response = $this->request_token_exchange('/auth/token/redeem', $authentication_token, $environment);
+        $response = $this->request_token_exchange('/auth/token/redeem', $authentication_token, $environment, true);
 
         if ($response instanceof WP_Error) {
             return $response;
@@ -132,11 +132,18 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
      * @param string $path
      * @param string $token
      * @param string $environment
+     * @param bool $single_use_token
      * @return array<string,mixed>|WP_Error
      */
-    private function request_token_exchange($path, $token, $environment)
+    private function request_token_exchange($path, $token, $environment, $single_use_token = false)
     {
         $raw_token = trim((string) $token);
+        if ($single_use_token) {
+            return $this->request('POST', (string) $path, [
+                'Authorization' => 'Bearer ' . $raw_token,
+            ], null, $environment);
+        }
+
         $authorization_candidates = [
             'Bearer ' . $raw_token,
         ];
