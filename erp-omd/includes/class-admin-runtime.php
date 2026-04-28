@@ -2627,27 +2627,7 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-settings', 'error', __('API KSeF nie zwróciło listy certyfikatów klucza publicznego.', 'erp-omd'), ['tab' => 'ksef']);
         }
 
-        $selected_certificate = '';
-        foreach ($payload as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
-
-            $usage = array_map('strval', (array) ($row['usage'] ?? []));
-            $certificate = trim((string) ($row['certificate'] ?? ''));
-            if ($certificate === '') {
-                continue;
-            }
-
-            if (in_array('KsefTokenEncryption', $usage, true)) {
-                $selected_certificate = $certificate;
-                break;
-            }
-
-            if ($selected_certificate === '') {
-                $selected_certificate = $certificate;
-            }
-        }
+        $selected_certificate = $this->select_ksef_public_certificate_for_environment($payload, $environment);
 
         if ($selected_certificate === '') {
             $this->redirect_with_notice('erp-omd-settings', 'error', __('Nie znaleziono certyfikatu klucza publicznego MF w odpowiedzi API.', 'erp-omd'), ['tab' => 'ksef']);
@@ -2698,6 +2678,68 @@ class ERP_OMD_Admin
         }
 
         return "-----BEGIN CERTIFICATE-----\n" . trim(chunk_split($sanitized, 64, "\n")) . "\n-----END CERTIFICATE-----";
+    }
+
+    /**
+     * @param array<int,mixed> $payload
+     * @param string $environment
+     * @return string
+     */
+    private function select_ksef_public_certificate_for_environment(array $payload, $environment)
+    {
+        $environment = strtoupper((string) $environment);
+        $now = time();
+        $best_score = -1;
+        $best_valid_to = 0;
+        $best_certificate = '';
+
+        foreach ($payload as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $certificate = trim((string) ($row['certificate'] ?? ($row['certificatePem'] ?? '')));
+            if ($certificate === '') {
+                continue;
+            }
+
+            $score = 0;
+            $usage = array_map('strval', (array) ($row['usage'] ?? []));
+            if (in_array('KsefTokenEncryption', $usage, true)) {
+                $score += 100;
+            }
+
+            $env_value = strtoupper(trim((string) ($row['environment'] ?? $row['env'] ?? '')));
+            if ($env_value !== '' && $env_value === $environment) {
+                $score += 40;
+            } elseif ($env_value !== '') {
+                $score -= 100;
+            }
+
+            $status = strtolower(trim((string) ($row['status'] ?? '')));
+            if (in_array($status, ['active', 'valid', 'published'], true)) {
+                $score += 20;
+            } elseif ($status !== '') {
+                $score -= 20;
+            }
+
+            $valid_from = strtotime((string) ($row['validFrom'] ?? $row['notBefore'] ?? $row['from'] ?? ''));
+            $valid_to = strtotime((string) ($row['validTo'] ?? $row['notAfter'] ?? $row['to'] ?? ''));
+            if (is_int($valid_from) && $valid_from > 0 && is_int($valid_to) && $valid_to > 0) {
+                if ($valid_from <= $now && $now <= $valid_to) {
+                    $score += 10;
+                }
+            }
+
+            $valid_to_score = is_int($valid_to) && $valid_to > 0 ? $valid_to : 0;
+            if ($score > $best_score || ($score === $best_score && $valid_to_score > $best_valid_to)) {
+                $best_score = $score;
+                $best_valid_to = $valid_to_score;
+                $best_certificate = $certificate;
+            }
+        }
+
+        return $best_certificate;
     }
 
     /**
