@@ -202,6 +202,10 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     private function request($method, $path, array $headers, $body, $environment)
     {
         $headers['X-Environment'] = $this->normalize_environment($environment);
+        if (empty($headers['Accept'])) {
+            $headers['Accept'] = 'application/json';
+        }
+        $headers['X-Error-Format'] = 'problem-details';
         $response = $this->connector->request($method, $path, $headers, $body);
         if ($response instanceof WP_Error) {
             return $response;
@@ -341,6 +345,13 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         $details = (array) ($json['details'] ?? []);
         if ($details !== []) {
             $error_message .= ' | ' . implode(' | ', array_map('strval', $details));
+        }
+
+        if ($error_message === '' || strpos($error_message, 'KSeF auth request failed with HTTP') === 0) {
+            $raw_body = trim((string) ($response['raw_body'] ?? ''));
+            if ($raw_body !== '') {
+                $error_message .= ' | raw: ' . mb_substr($raw_body, 0, 300);
+            }
         }
 
         return new WP_Error($error_code, $error_message);
