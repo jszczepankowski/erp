@@ -117,7 +117,8 @@ $assertions = 0;
 
 $connector = new ERP_OMD_KSeF_Connector_Fake();
 $connector->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-1']];
-$connector->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-1'], 'referenceNumber' => 'REF-1']];
+$connector->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-1'], 'referenceNumber' => 'REF-1', 'status' => 'completed']];
+$connector->responses['GET /auth/REF-1'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-1'], 'status' => 'completed']];
 $connector->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
     'accessToken' => 'ACCESS-1',
     'refreshToken' => 'REFRESH-1',
@@ -195,10 +196,10 @@ if (! is_array($redeemRequest) || $hasContentType || ! $redeemBodyIsNull || $red
     throw new RuntimeException('Expected redeem request to carry bearer + AuthenticationToken headers and no request body/content-type.');
 }
 
-$authRequestBody = (array) ($connector->requests[1]['body'] ?? []);
+$authRequestBody = (string) ($connector->requests[1]['body'] ?? '');
 $assertions++;
-if (($authRequestBody['contextIdentifier']['type'] ?? '') !== 'Nip' || ($authRequestBody['contextIdentifier']['value'] ?? '') !== '1111111111') {
-    throw new RuntimeException('Expected contextIdentifier payload to be normalized to object format required by KSeF API.');
+if (strpos($authRequestBody, '<ContextIdentifier Type="Nip">1111111111</ContextIdentifier>') === false) {
+    throw new RuntimeException('Expected auth request XML to contain normalized ContextIdentifier for KSeF API.');
 }
 
 $connectorTypeAlias = new ERP_OMD_KSeF_Connector_Fake();
@@ -207,15 +208,15 @@ $connectorTypeAlias->responses['POST /auth/ksef-token'] = ['code' => 400, 'json'
 $storageTypeAlias = new ERP_OMD_KSeF_Auth_Storage();
 $serviceTypeAlias = new ERP_OMD_KSeF_Auth_Service($connectorTypeAlias, $storageTypeAlias, $publicKeyService);
 $serviceTypeAlias->authenticate_with_ksef_token('TEST', 'KSEF-TOKEN-TYPE', 'NIP:1111111111');
-$aliasRequestBody = (array) ($connectorTypeAlias->requests[1]['body'] ?? []);
+$aliasRequestBody = (string) ($connectorTypeAlias->requests[1]['body'] ?? '');
 $assertions++;
-if (($aliasRequestBody['contextIdentifier']['type'] ?? '') !== 'Nip') {
-    throw new RuntimeException('Expected contextIdentifier aliases such as NIP to be normalized to Nip.');
+if (strpos($aliasRequestBody, 'Type="Nip"') === false) {
+    throw new RuntimeException('Expected contextIdentifier aliases such as NIP to be normalized to Nip in auth XML.');
 }
 
 $connectorAsync = new ERP_OMD_KSeF_Connector_Fake();
 $connectorAsync->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-2']];
-$connectorAsync->responses['POST /auth/ksef-token'] = ['code' => 202, 'json' => ['referenceNumber' => 'REF-ASYNC-1']];
+$connectorAsync->responses['POST /auth/ksef-token'] = ['code' => 202, 'json' => ['referenceNumber' => 'REF-ASYNC-1', 'authenticationToken' => ['token' => 'AUTH-ASYNC-1']]];
 $connectorAsync->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
     'accessToken' => 'ACCESS-ASYNC-1',
     'refreshToken' => 'REFRESH-ASYNC-1',
@@ -226,34 +227,40 @@ $connectorAsync->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' =
 $storageAsync = new ERP_OMD_KSeF_Auth_Storage();
 $storageAsync->clear_tokens('TEST');
 $asyncStatusCalls = 0;
+$asyncStatusAuthorizationHeaders = [];
 $pollSleeps = [];
 $connectorAsync->responses['GET /auth/REF-ASYNC-1'] = [
     'code' => 200,
     'json' => [],
 ];
 $serviceAsync = new ERP_OMD_KSeF_Auth_Service(
-    new class($connectorAsync, $asyncStatusCalls) {
+    new class($connectorAsync, $asyncStatusCalls, $asyncStatusAuthorizationHeaders) {
         /** @var ERP_OMD_KSeF_Connector_Fake */
         private $inner;
 
         /** @var int */
         private $status_calls;
 
-        public function __construct($inner, &$status_calls)
+        /** @var array<int,string> */
+        private $status_authorization_headers;
+
+        public function __construct($inner, &$status_calls, &$status_authorization_headers)
         {
             $this->inner = $inner;
             $this->status_calls = &$status_calls;
+            $this->status_authorization_headers = &$status_authorization_headers;
         }
 
         public function request($method, $path, array $headers = [], $body = null)
         {
             if ($method === 'GET' && $path === '/auth/REF-ASYNC-1') {
                 $this->status_calls++;
-                if ($this->status_calls < 3) {
+                $this->status_authorization_headers[] = (string) ($headers['Authorization'] ?? '');
+                if ($this->status_calls < 2) {
                     return ['code' => 200, 'json' => []];
                 }
 
-                return ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-ASYNC-1']]];
+                return ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-ASYNC-1'], 'status' => 'completed']];
             }
 
             return $this->inner->request($method, $path, $headers, $body);
@@ -272,8 +279,12 @@ if ($asyncResult instanceof WP_Error || ($asyncResult['ok'] ?? false) !== true |
     throw new RuntimeException('Expected async auth status fallback to resolve authenticationToken and redeem tokens.');
 }
 $assertions++;
-if ($asyncStatusCalls !== 3) {
+if ($asyncStatusCalls !== 2) {
     throw new RuntimeException('Expected auth status polling backoff flow to retry until token is available.');
+}
+$assertions++;
+if ($asyncStatusAuthorizationHeaders !== ['Bearer AUTH-ASYNC-1', 'Bearer AUTH-ASYNC-1']) {
+    throw new RuntimeException('Expected auth status polling to pass current authenticationToken as Bearer authorization header.');
 }
 $assertions++;
 if ($pollSleeps !== [2, 5]) {
@@ -305,7 +316,7 @@ if (strpos((string) $errorResult->get_error_message(), 'hint: ustaw ContextIdent
 
 $connectorRedeemSingleUse = new ERP_OMD_KSeF_Connector_Redeem_Single_Use_Fake();
 $connectorRedeemSingleUse->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-REDEEM-SINGLE']];
-$connectorRedeemSingleUse->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-SINGLE']]];
+$connectorRedeemSingleUse->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-SINGLE'], 'status' => 'completed']];
 $storageRedeemSingleUse = new ERP_OMD_KSeF_Auth_Storage();
 $storageRedeemSingleUse->clear_tokens('TEST');
 $serviceRedeemSingleUse = new ERP_OMD_KSeF_Auth_Service($connectorRedeemSingleUse, $storageRedeemSingleUse, $publicKeyService);
@@ -321,7 +332,7 @@ if ($connectorRedeemSingleUse->redeem_calls !== 1) {
 
 $connectorObjectTokens = new ERP_OMD_KSeF_Connector_Fake();
 $connectorObjectTokens->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-OBJECT']];
-$connectorObjectTokens->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-OBJECT']]];
+$connectorObjectTokens->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-OBJECT'], 'status' => 'completed']];
 $connectorObjectTokens->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
     'accessToken' => ['token' => 'ACCESS-OBJECT', 'validUntil' => '2030-01-01T12:00:00+00:00'],
     'refreshToken' => ['token' => 'REFRESH-OBJECT', 'validUntil' => '2030-01-02T12:00:00+00:00'],

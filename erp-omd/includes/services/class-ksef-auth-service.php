@@ -72,14 +72,10 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             return $context_payload;
         }
 
-        $payload = [
-            'challenge' => $challenge,
-            'contextIdentifier' => $context_payload,
-            'encryptedToken' => (string) ($encryption['encrypted_token'] ?? ''),
-        ];
+        $payload = $this->build_auth_token_request_xml($challenge, $context_payload, (string) ($encryption['encrypted_token'] ?? ''));
 
         return $this->request('POST', '/auth/ksef-token', [
-            'Content-Type' => 'application/json',
+            'Content-Type' => 'application/xml',
         ], $payload, $environment);
     }
 
@@ -222,33 +218,42 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             return $auth;
         }
 
-        $authentication_token = $this->extract_authentication_token((array) ($auth['json'] ?? []));
-        if ($authentication_token === '') {
-            $reference_number = (string) (($auth['json']['referenceNumber'] ?? $auth['json']['reference_number'] ?? ''));
-            if ($reference_number !== '') {
-                $attempts = count($this->auth_status_poll_delays_seconds) + 1;
-                for ($attempt = 0; $attempt < $attempts; $attempt++) {
-                    $status = $this->get_auth_status($environment, $reference_number, '');
+        $auth_payload = (array) ($auth['json'] ?? []);
+        $authentication_token = $this->extract_authentication_token($auth_payload);
+        $reference_number = (string) (($auth_payload['referenceNumber'] ?? $auth_payload['reference_number'] ?? ''));
+        $status_ready = $this->is_auth_status_ready($auth_payload);
+
+        if ($reference_number !== '') {
+            $attempts = count($this->auth_status_poll_delays_seconds) + 1;
+            for ($attempt = 0; $attempt < $attempts; $attempt++) {
+                $status_payload = $attempt === 0 ? $auth_payload : [];
+                if ($attempt > 0) {
+                    $status = $this->get_auth_status($environment, $reference_number, $authentication_token);
                     if ($status instanceof WP_Error) {
                         break;
                     }
+                    $status_payload = (array) ($status['json'] ?? []);
+                }
 
-                    $authentication_token = $this->extract_authentication_token((array) ($status['json'] ?? []));
-                    if ($authentication_token !== '') {
-                        break;
-                    }
+                $candidate_token = $this->extract_authentication_token($status_payload);
+                if ($candidate_token !== '') {
+                    $authentication_token = $candidate_token;
+                }
 
-                    if ($attempt < $attempts - 1) {
-                        $this->pause_before_next_auth_status_poll($attempt);
-                    }
+                if ($authentication_token !== '' && $this->is_auth_status_ready($status_payload)) {
+                    $status_ready = true;
+                    break;
+                }
+
+                if ($attempt < $attempts - 1) {
+                    $this->pause_before_next_auth_status_poll($attempt);
                 }
             }
         }
 
-        if ($authentication_token === '') {
-            $payload = (array) ($auth['json'] ?? []);
-            $upstream_code = (string) ($payload['code'] ?? $payload['errorCode'] ?? $payload['error_code'] ?? 'erp_omd_ksef_authentication_token_missing');
-            $upstream_message = (string) ($payload['description'] ?? $payload['message'] ?? $payload['title'] ?? __('Brak authenticationToken w odpowiedzi auth.', 'erp-omd'));
+        if ($authentication_token === '' || ! $status_ready) {
+            $upstream_code = (string) ($auth_payload['code'] ?? $auth_payload['errorCode'] ?? $auth_payload['error_code'] ?? 'erp_omd_ksef_authentication_token_missing');
+            $upstream_message = (string) ($auth_payload['description'] ?? $auth_payload['message'] ?? $auth_payload['title'] ?? __('Brak gotowego authenticationToken po zakończeniu auth status.', 'erp-omd'));
             return new WP_Error($upstream_code, $upstream_message);
         }
 
@@ -433,6 +438,20 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     }
 
     /**
+     * @param array<string,mixed> $payload
+     * @return bool
+     */
+    private function is_auth_status_ready(array $payload)
+    {
+        $status = strtolower(trim((string) ($payload['status'] ?? $payload['phase'] ?? $payload['operationStatus'] ?? '')));
+        if ($status === '') {
+            return false;
+        }
+
+        return in_array($status, ['completed', 'finished', 'authorized', 'authenticated', 'success'], true);
+    }
+
+    /**
      * @param string|array<string,mixed> $context_identifier
      * @return array<string,string>|WP_Error
      */
@@ -561,12 +580,29 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 . ', body_present=' . (is_array($body) ? 'yes' : 'no');
         }
 
-        if ($path === '/auth/ksef-token' && is_array($body)) {
-            $context = (array) ($body['contextIdentifier'] ?? []);
-            $context_type = trim((string) ($context['type'] ?? ''));
-            $context_value = trim((string) ($context['value'] ?? ''));
-            $encrypted_token = (string) ($body['encryptedToken'] ?? '');
-            $challenge = (string) ($body['challenge'] ?? '');
+        if ($path === '/auth/ksef-token') {
+            $context_type = '';
+            $context_value = '';
+            $encrypted_token = '';
+            $challenge = '';
+            if (is_array($body)) {
+                $context = (array) ($body['contextIdentifier'] ?? []);
+                $context_type = trim((string) ($context['type'] ?? ''));
+                $context_value = trim((string) ($context['value'] ?? ''));
+                $encrypted_token = (string) ($body['encryptedToken'] ?? '');
+                $challenge = (string) ($body['challenge'] ?? '');
+            } elseif (is_string($body)) {
+                if (preg_match('/<Challenge>([^<]*)<\\/Challenge>/i', $body, $match) === 1) {
+                    $challenge = trim((string) ($match[1] ?? ''));
+                }
+                if (preg_match('/<ContextIdentifier\\s+Type=\"([^\"]+)\"[^>]*>([^<]*)<\\/ContextIdentifier>/i', $body, $match) === 1) {
+                    $context_type = trim((string) ($match[1] ?? ''));
+                    $context_value = trim((string) ($match[2] ?? ''));
+                }
+                if (preg_match('/<EncryptedToken>([^<]*)<\\/EncryptedToken>/i', $body, $match) === 1) {
+                    $encrypted_token = trim((string) ($match[1] ?? ''));
+                }
+            }
             $error_message .= ' | auth_payload:'
                 . ' context_type=' . ($context_type !== '' ? $context_type : 'empty')
                 . ', context_value_len=' . strlen($context_value)
@@ -603,5 +639,26 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             ?? $payload['authentication_token']
             ?? ''
         ));
+    }
+
+    /**
+     * @param string $challenge
+     * @param array<string,string> $context_payload
+     * @param string $encrypted_token
+     * @return string
+     */
+    private function build_auth_token_request_xml($challenge, array $context_payload, $encrypted_token)
+    {
+        $challenge = htmlspecialchars((string) $challenge, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $context_type = htmlspecialchars((string) ($context_payload['type'] ?? ''), ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $context_value = htmlspecialchars((string) ($context_payload['value'] ?? ''), ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $encrypted_token = htmlspecialchars((string) $encrypted_token, ENT_QUOTES | ENT_XML1, 'UTF-8');
+
+        return '<?xml version="1.0" encoding="UTF-8"?>'
+            . '<AuthTokenRequest xmlns="http://ksef.mf.gov.pl/auth/types/2022/01/26/1.0">'
+            . '<Challenge>' . $challenge . '</Challenge>'
+            . '<ContextIdentifier Type="' . $context_type . '">' . $context_value . '</ContextIdentifier>'
+            . '<EncryptedToken>' . $encrypted_token . '</EncryptedToken>'
+            . '</AuthTokenRequest>';
     }
 }
