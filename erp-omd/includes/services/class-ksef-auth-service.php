@@ -96,10 +96,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
     public function redeem_token($environment, $authentication_token)
     {
-        $response = $this->request('POST', '/auth/token/redeem', [
-            'Authorization' => 'Bearer ' . trim((string) $authentication_token),
-            'Content-Type' => 'application/json',
-        ], [], $environment);
+        $response = $this->request_token_exchange('/auth/token/redeem', $authentication_token, $environment);
 
         if ($response instanceof WP_Error) {
             return $response;
@@ -116,10 +113,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
     public function refresh_access_token($environment, $refresh_token)
     {
-        $response = $this->request('POST', '/auth/token/refresh', [
-            'Authorization' => 'Bearer ' . trim((string) $refresh_token),
-            'Content-Type' => 'application/json',
-        ], [], $environment);
+        $response = $this->request_token_exchange('/auth/token/refresh', $refresh_token, $environment);
 
         if ($response instanceof WP_Error) {
             return $response;
@@ -132,6 +126,30 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
         $this->storage->save_tokens($environment, $tokens['data']);
         return $response;
+    }
+
+    /**
+     * @param string $path
+     * @param string $token
+     * @param string $environment
+     * @return array<string,mixed>|WP_Error
+     */
+    private function request_token_exchange($path, $token, $environment)
+    {
+        $bearer = trim((string) $token);
+        $headers = [
+            'Authorization' => 'Bearer ' . $bearer,
+        ];
+
+        // First attempt: no JSON body (some KSeF environments reject empty JSON object on redeem/refresh).
+        $response = $this->request('POST', (string) $path, $headers, null, $environment);
+        if (! ($response instanceof WP_Error) || (string) $response->get_error_code() !== 'ksef_http_400') {
+            return $response;
+        }
+
+        // Compatibility fallback: retry with explicit JSON body if upstream expects it.
+        $headers['Content-Type'] = 'application/json';
+        return $this->request('POST', (string) $path, $headers, [], $environment);
     }
 
     public function ensure_access_token($environment, $ksef_token, $context_identifier)

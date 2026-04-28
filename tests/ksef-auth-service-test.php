@@ -96,6 +96,31 @@ class ERP_OMD_KSeF_Connector_Fake
     }
 }
 
+class ERP_OMD_KSeF_Connector_Redeem_Fallback_Fake extends ERP_OMD_KSeF_Connector_Fake
+{
+    /** @var int */
+    public $redeem_calls = 0;
+
+    public function request($method, $path, array $headers = [], $body = null)
+    {
+        if (strtoupper((string) $method) === 'POST' && $path === '/auth/token/redeem') {
+            $this->redeem_calls++;
+            if ($this->redeem_calls === 1) {
+                return ['code' => 400, 'json' => ['description' => 'Żądanie jest nieprawidłowe.']];
+            }
+
+            return ['code' => 200, 'json' => [
+                'accessToken' => 'ACCESS-FALLBACK',
+                'refreshToken' => 'REFRESH-FALLBACK',
+                'accessTokenExpiresIn' => 120,
+                'refreshTokenExpiresIn' => 3600,
+            ]];
+        }
+
+        return parent::request($method, $path, $headers, $body);
+    }
+}
+
 $GLOBALS['erp_omd_auth_service_options'] = [];
 $assertions = 0;
 
@@ -263,6 +288,22 @@ if (strpos((string) $errorResult->get_error_message(), 'endpoint: POST /auth/kse
 $assertions++;
 if (strpos((string) $errorResult->get_error_message(), 'hint: ustaw ContextIdentifier jako Nip:XXXXXXXXXX') === false) {
     throw new RuntimeException('Expected auth diagnostics hint for likely invalid InternalId context format.');
+}
+
+$connectorRedeemFallback = new ERP_OMD_KSeF_Connector_Redeem_Fallback_Fake();
+$connectorRedeemFallback->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-REDEEM-FALLBACK']];
+$connectorRedeemFallback->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-FALLBACK']]];
+$storageRedeemFallback = new ERP_OMD_KSeF_Auth_Storage();
+$storageRedeemFallback->clear_tokens('TEST');
+$serviceRedeemFallback = new ERP_OMD_KSeF_Auth_Service($connectorRedeemFallback, $storageRedeemFallback, $publicKeyService);
+$fallbackResult = $serviceRedeemFallback->ensure_access_token('TEST', 'KSEF-TOKEN-4', '1111111111');
+$assertions++;
+if ($fallbackResult instanceof WP_Error || ($fallbackResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected redeem flow fallback strategy to recover from initial 400 and obtain tokens.');
+}
+$assertions++;
+if ($connectorRedeemFallback->redeem_calls !== 2) {
+    throw new RuntimeException('Expected redeem flow to retry once with compatibility fallback after HTTP 400.');
 }
 
 echo "OK ({$assertions} assertions)\n";
