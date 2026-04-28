@@ -141,6 +141,8 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         if ($single_use_token) {
             return $this->request('POST', (string) $path, [
                 'Authorization' => 'Bearer ' . $raw_token,
+                // Compatibility hint: some environments/documentation variants refer to AuthenticationToken explicitly.
+                'AuthenticationToken' => $raw_token,
             ], null, $environment);
         }
 
@@ -287,7 +289,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
         $code = (int) ($response['code'] ?? 0);
         if ($code >= 400) {
-            return $this->build_api_error_from_response((array) $response, (string) $method, (string) $path, $body);
+            return $this->build_api_error_from_response((array) $response, (string) $method, (string) $path, $body, $headers);
         }
 
         return $response;
@@ -496,9 +498,10 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
      * @param string $method
      * @param string $path
      * @param array<string,mixed>|null $body
+     * @param array<string,string> $request_headers
      * @return WP_Error
      */
-    private function build_api_error_from_response(array $response, $method = '', $path = '', $body = null)
+    private function build_api_error_from_response(array $response, $method = '', $path = '', $body = null, array $request_headers = [])
     {
         $json = (array) ($response['json'] ?? []);
         $http_code = (int) ($response['code'] ?? 0);
@@ -526,6 +529,36 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         $endpoint = trim(strtoupper(trim((string) $method)) . ' ' . trim((string) $path));
         if ($endpoint !== '') {
             $error_message .= ' | endpoint: ' . $endpoint;
+        }
+
+        $response_headers = (array) ($response['headers'] ?? []);
+        $retry_after = trim((string) ($response_headers['retry-after'] ?? $response_headers['Retry-After'] ?? ''));
+        $www_authenticate = trim((string) ($response_headers['www-authenticate'] ?? $response_headers['WWW-Authenticate'] ?? ''));
+        if ($retry_after !== '' || $www_authenticate !== '') {
+            $parts = [];
+            if ($retry_after !== '') {
+                $parts[] = 'retry_after=' . $retry_after;
+            }
+            if ($www_authenticate !== '') {
+                $parts[] = 'www_authenticate=' . $www_authenticate;
+            }
+            $error_message .= ' | response_headers: ' . implode(', ', $parts);
+        }
+
+        if (strpos($path, '/auth/token/') === 0) {
+            $authorization = trim((string) ($request_headers['Authorization'] ?? ''));
+            $auth_token = '';
+            if (strpos($authorization, 'Bearer ') === 0) {
+                $auth_token = substr($authorization, 7);
+            } else {
+                $auth_token = $authorization;
+            }
+            $explicit_authentication_token = trim((string) ($request_headers['AuthenticationToken'] ?? ''));
+            $error_message .= ' | token_exchange_request:'
+                . ' has_bearer=' . (strpos($authorization, 'Bearer ') === 0 ? 'yes' : 'no')
+                . ', bearer_len=' . strlen((string) $auth_token)
+                . ', auth_token_header_len=' . strlen($explicit_authentication_token)
+                . ', body_present=' . (is_array($body) ? 'yes' : 'no');
         }
 
         if ($path === '/auth/ksef-token' && is_array($body)) {

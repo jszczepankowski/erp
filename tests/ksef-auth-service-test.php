@@ -189,9 +189,10 @@ foreach ($redeemHeaders as $headerName => $headerValue) {
     }
 }
 $redeemBodyIsNull = is_array($redeemRequest) && array_key_exists('body', $redeemRequest) ? $redeemRequest['body'] === null : false;
+$redeemAuthenticationTokenHeader = trim((string) ($redeemHeaders['AuthenticationToken'] ?? ''));
 $assertions++;
-if (! is_array($redeemRequest) || $hasContentType || ! $redeemBodyIsNull) {
-    throw new RuntimeException('Expected redeem request to follow spec: bearer auth with no request body/content-type.');
+if (! is_array($redeemRequest) || $hasContentType || ! $redeemBodyIsNull || $redeemAuthenticationTokenHeader === '') {
+    throw new RuntimeException('Expected redeem request to carry bearer + AuthenticationToken headers and no request body/content-type.');
 }
 
 $authRequestBody = (array) ($connector->requests[1]['body'] ?? []);
