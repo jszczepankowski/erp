@@ -200,5 +200,15 @@ if (count($importFake->batches) !== 2 || (($importFake->batches[0]['documents'][
     throw new RuntimeException('Expected stage-4 bridge to map export documents and forward them to import service.');
 }
 
+$GLOBALS['erp_omd_ksef_sync_options']['erp_omd_ksef_sync_subject_types'] = ['subject1', 'subject2', 'subject3', 'subjectauthorized', 'subject1'];
+$exportFakeLimited = new ERP_OMD_KSeF_Export_Service_Fake();
+$importFakeLimited = new ERP_OMD_KSeF_Import_Service_Fake();
+$serviceWithExportLimit = new ERP_OMD_KSeF_Incremental_Sync_Service(120, [11, 22, 33], $exportFakeLimited, $importFakeLimited);
+$serviceWithExportLimit->run_scheduled_sync('TEST', 1);
+$assertions++;
+if (count($exportFakeLimited->calls) !== 4) {
+    throw new RuntimeException('Expected incremental sync to cap exports per run to 4 subject types (<=20 exports/h with 15-min schedule).');
+}
+
 echo "Assertions: {$assertions}\n";
 echo "KSeF incremental sync stage-3 test passed.\n";

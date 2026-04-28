@@ -57,6 +57,12 @@ class ERP_OMD_Cron_Manager
                 'display' => 'ERP OMD Every 5 Minutes',
             ];
         }
+        if (! isset($schedules['erp_omd_fifteen_minutes'])) {
+            $schedules['erp_omd_fifteen_minutes'] = [
+                'interval' => 15 * MINUTE_IN_SECONDS,
+                'display' => 'ERP OMD Every 15 Minutes',
+            ];
+        }
 
         return $schedules;
     }
@@ -80,7 +86,7 @@ class ERP_OMD_Cron_Manager
             wp_schedule_event(time() + 5 * MINUTE_IN_SECONDS, 'erp_omd_five_minutes', self::KSEF_RETRY_PIPELINE_HOOK);
         }
         if (! wp_next_scheduled(self::KSEF_INCREMENTAL_SYNC_HOOK)) {
-            wp_schedule_event(time() + 5 * MINUTE_IN_SECONDS, 'erp_omd_five_minutes', self::KSEF_INCREMENTAL_SYNC_HOOK);
+            wp_schedule_event(time() + 15 * MINUTE_IN_SECONDS, 'erp_omd_fifteen_minutes', self::KSEF_INCREMENTAL_SYNC_HOOK);
         }
     }
 

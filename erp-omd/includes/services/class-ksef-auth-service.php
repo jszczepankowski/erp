@@ -136,20 +136,47 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
      */
     private function request_token_exchange($path, $token, $environment)
     {
-        $bearer = trim((string) $token);
-        $headers = [
-            'Authorization' => 'Bearer ' . $bearer,
+        $raw_token = trim((string) $token);
+        $authorization_candidates = [
+            'Bearer ' . $raw_token,
         ];
+        if ($raw_token !== '') {
+            $authorization_candidates[] = $raw_token;
+        }
+        $authorization_candidates = array_values(array_unique(array_filter($authorization_candidates, 'strlen')));
 
-        // First attempt: no JSON body (some KSeF environments reject empty JSON object on redeem/refresh).
-        $response = $this->request('POST', (string) $path, $headers, null, $environment);
-        if (! ($response instanceof WP_Error) || (string) $response->get_error_code() !== 'ksef_http_400') {
-            return $response;
+        $attempts = [];
+        $last_error = null;
+        foreach ($authorization_candidates as $authorization_value) {
+            $base_headers = [
+                'Authorization' => (string) $authorization_value,
+            ];
+
+            $attempts[] = 'auth=' . (strpos($authorization_value, 'Bearer ') === 0 ? 'bearer' : 'raw') . ',body=none';
+            $response = $this->request('POST', (string) $path, $base_headers, null, $environment);
+            if (! ($response instanceof WP_Error) || (string) $response->get_error_code() !== 'ksef_http_400') {
+                return $response;
+            }
+            $last_error = $response;
+
+            $json_headers = $base_headers;
+            $json_headers['Content-Type'] = 'application/json';
+            $attempts[] = 'auth=' . (strpos($authorization_value, 'Bearer ') === 0 ? 'bearer' : 'raw') . ',body=json-empty';
+            $response = $this->request('POST', (string) $path, $json_headers, [], $environment);
+            if (! ($response instanceof WP_Error) || (string) $response->get_error_code() !== 'ksef_http_400') {
+                return $response;
+            }
+            $last_error = $response;
         }
 
-        // Compatibility fallback: retry with explicit JSON body if upstream expects it.
-        $headers['Content-Type'] = 'application/json';
-        return $this->request('POST', (string) $path, $headers, [], $environment);
+        if ($last_error instanceof WP_Error) {
+            return new WP_Error(
+                (string) $last_error->get_error_code(),
+                (string) $last_error->get_error_message() . ' | token_exchange_attempts: ' . implode(';', $attempts)
+            );
+        }
+
+        return new WP_Error('erp_omd_ksef_token_exchange_failed', __('Nie udało się wykonać wymiany tokenu KSeF.', 'erp-omd'));
     }
 
     public function ensure_access_token($environment, $ksef_token, $context_identifier)

@@ -3,6 +3,7 @@
 class ERP_OMD_KSeF_Incremental_Sync_Service
 {
     const LOCK_OPTION_PREFIX = 'erp_omd_ksef_sync_lock_';
+    const MAX_EXPORTS_PER_RUN = 4;
 
     /** @var int */
     private $lock_ttl_seconds;
@@ -126,7 +127,7 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
             ];
         }
 
-        $subject_types = $this->resolve_subject_types();
+        $subject_types = array_slice($this->resolve_subject_types(), 0, self::MAX_EXPORTS_PER_RUN);
         $to_hwm = gmdate('Y-m-d\TH:i:s\Z');
         $processed = 0;
 
