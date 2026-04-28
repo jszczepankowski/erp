@@ -235,7 +235,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
         $code = (int) ($response['code'] ?? 0);
         if ($code >= 400) {
-            return $this->build_api_error_from_response((array) $response);
+            return $this->build_api_error_from_response((array) $response, (string) $method, (string) $path, $body);
         }
 
         return $response;
@@ -398,9 +398,12 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
     /**
      * @param array<string,mixed> $response
+     * @param string $method
+     * @param string $path
+     * @param array<string,mixed>|null $body
      * @return WP_Error
      */
-    private function build_api_error_from_response(array $response)
+    private function build_api_error_from_response(array $response, $method = '', $path = '', $body = null)
     {
         $json = (array) ($response['json'] ?? []);
         $http_code = (int) ($response['code'] ?? 0);
@@ -423,6 +426,24 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         $details = (array) ($json['details'] ?? []);
         if ($details !== []) {
             $error_message .= ' | ' . implode(' | ', array_map('strval', $details));
+        }
+
+        $endpoint = trim(strtoupper(trim((string) $method)) . ' ' . trim((string) $path));
+        if ($endpoint !== '') {
+            $error_message .= ' | endpoint: ' . $endpoint;
+        }
+
+        if ($path === '/auth/ksef-token' && is_array($body)) {
+            $context = (array) ($body['contextIdentifier'] ?? []);
+            $context_type = trim((string) ($context['type'] ?? ''));
+            $context_value = trim((string) ($context['value'] ?? ''));
+            $encrypted_token = (string) ($body['encryptedToken'] ?? '');
+            $challenge = (string) ($body['challenge'] ?? '');
+            $error_message .= ' | auth_payload:'
+                . ' context_type=' . ($context_type !== '' ? $context_type : 'empty')
+                . ', context_value_len=' . strlen($context_value)
+                . ', encrypted_token_len=' . strlen($encrypted_token)
+                . ', challenge_len=' . strlen($challenge);
         }
 
         if ($error_message === '' || strpos($error_message, 'KSeF auth request failed with HTTP') === 0) {

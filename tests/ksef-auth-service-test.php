@@ -256,5 +256,9 @@ $assertions++;
 if (! ($errorResult instanceof WP_Error) || (string) $errorResult->get_error_code() !== 'context-type-not-allowed') {
     throw new RuntimeException('Expected auth service to propagate KSeF API error details for non-2xx responses.');
 }
+$assertions++;
+if (strpos((string) $errorResult->get_error_message(), 'endpoint: POST /auth/ksef-token') === false) {
+    throw new RuntimeException('Expected auth error message to include endpoint details for API diagnostics.');
+}
 
 echo "OK ({$assertions} assertions)\n";
