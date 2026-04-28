@@ -112,6 +112,29 @@ class ERP_OMD_KSeF_Connector_Redeem_Single_Use_Fake extends ERP_OMD_KSeF_Connect
     }
 }
 
+class ERP_OMD_KSeF_Connector_Auth_Content_Type_Fallback_Fake extends ERP_OMD_KSeF_Connector_Fake
+{
+    public function request($method, $path, array $headers = [], $body = null)
+    {
+        $this->requests[] = ['method' => strtoupper((string) $method), 'path' => $path, 'headers' => $headers, 'body' => $body];
+
+        if (strtoupper((string) $method) === 'POST' && $path === '/auth/ksef-token') {
+            $content_type = strtolower(trim((string) ($headers['Content-Type'] ?? '')));
+            if ($content_type === 'application/xml') {
+                return ['code' => 415, 'json' => ['description' => 'Unsupported Media Type']];
+            }
+        }
+
+        $method = strtoupper((string) $method);
+        $key = $method . ' ' . $path;
+        if (isset($this->responses[$key])) {
+            return $this->responses[$key];
+        }
+
+        return new WP_Error('missing_response', 'Missing fake response for ' . $key);
+    }
+}
+
 $GLOBALS['erp_omd_auth_service_options'] = [];
 $assertions = 0;
 
@@ -349,6 +372,43 @@ $storedObjectTokens = $storageObjectTokens->get_tokens('TEST');
 $assertions++;
 if (($storedObjectTokens['access_token'] ?? '') !== 'ACCESS-OBJECT' || ($storedObjectTokens['refresh_token'] ?? '') !== 'REFRESH-OBJECT') {
     throw new RuntimeException('Expected object-based token payload to be persisted as plain token strings.');
+}
+
+$connectorContentTypeFallback = new ERP_OMD_KSeF_Connector_Auth_Content_Type_Fallback_Fake();
+$connectorContentTypeFallback->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-415']];
+$connectorContentTypeFallback->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-415'], 'status' => 'completed']];
+$connectorContentTypeFallback->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
+    'accessToken' => 'ACCESS-415',
+    'refreshToken' => 'REFRESH-415',
+    'accessTokenExpiresIn' => 120,
+    'refreshTokenExpiresIn' => 3600,
+]];
+$storageContentTypeFallback = new ERP_OMD_KSeF_Auth_Storage();
+$storageContentTypeFallback->clear_tokens('TEST');
+$serviceContentTypeFallback = new ERP_OMD_KSeF_Auth_Service($connectorContentTypeFallback, $storageContentTypeFallback, $publicKeyService);
+$contentTypeResult = $serviceContentTypeFallback->ensure_access_token('TEST', 'KSEF-TOKEN-415', '1111111111');
+$assertions++;
+if ($contentTypeResult instanceof WP_Error || ($contentTypeResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected auth flow to retry /auth/ksef-token with JSON body after 415 for XML.');
+}
+$authKsefTokenRequests = array_values(array_filter($connectorContentTypeFallback->requests, static function ($request) {
+    return (($request['method'] ?? '') === 'POST') && (($request['path'] ?? '') === '/auth/ksef-token');
+}));
+$assertions++;
+if (count($authKsefTokenRequests) !== 2) {
+    throw new RuntimeException('Expected exactly two /auth/ksef-token attempts for content-type fallback.');
+}
+$firstAttemptContentType = strtolower((string) (($authKsefTokenRequests[0]['headers']['Content-Type'] ?? '')));
+$secondAttemptContentType = strtolower((string) (($authKsefTokenRequests[1]['headers']['Content-Type'] ?? '')));
+$secondAttemptBody = $authKsefTokenRequests[1]['body'] ?? null;
+$assertions++;
+if (
+    $firstAttemptContentType !== 'application/xml'
+    || $secondAttemptContentType !== 'application/json'
+    || ! is_array($secondAttemptBody)
+    || (string) ($secondAttemptBody['contextIdentifier']['type'] ?? '') !== 'Nip'
+) {
+    throw new RuntimeException('Expected /auth/ksef-token fallback sequence: XML first, then JSON payload with contextIdentifier.');
 }
 
 echo "OK ({$assertions} assertions)\n";

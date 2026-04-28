@@ -72,11 +72,51 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             return $context_payload;
         }
 
-        $payload = $this->build_auth_token_request_xml($challenge, $context_payload, (string) ($encryption['encrypted_token'] ?? ''));
+        $encrypted_token = (string) ($encryption['encrypted_token'] ?? '');
+        $xml_payload = $this->build_auth_token_request_xml($challenge, $context_payload, $encrypted_token);
+        $json_payload = [
+            'challenge' => (string) $challenge,
+            'contextIdentifier' => [
+                'type' => (string) ($context_payload['type'] ?? ''),
+                'value' => (string) ($context_payload['value'] ?? ''),
+            ],
+            'encryptedToken' => $encrypted_token,
+        ];
 
-        return $this->request('POST', '/auth/ksef-token', [
-            'Content-Type' => 'application/xml',
-        ], $payload, $environment);
+        $attempts = [
+            [
+                'headers' => ['Content-Type' => 'application/xml'],
+                'body' => $xml_payload,
+                'label' => 'application/xml',
+            ],
+            [
+                'headers' => ['Content-Type' => 'application/json'],
+                'body' => $json_payload,
+                'label' => 'application/json',
+            ],
+        ];
+
+        $last_error = null;
+        foreach ($attempts as $attempt) {
+            $response = $this->request('POST', '/auth/ksef-token', (array) ($attempt['headers'] ?? []), $attempt['body'] ?? null, $environment);
+            if (! ($response instanceof WP_Error)) {
+                return $response;
+            }
+
+            $last_error = $response;
+            if ((string) $response->get_error_code() !== 'ksef_http_415') {
+                return $response;
+            }
+        }
+
+        if ($last_error instanceof WP_Error) {
+            return new WP_Error(
+                (string) $last_error->get_error_code(),
+                (string) $last_error->get_error_message() . ' | auth_content_type_attempts: application/xml,application/json'
+            );
+        }
+
+        return new WP_Error('erp_omd_ksef_auth_ksef_token_request_failed', __('Nie udało się wysłać żądania /auth/ksef-token.', 'erp-omd'));
     }
 
     public function get_auth_status($environment, $reference_number, $authentication_token = '')
