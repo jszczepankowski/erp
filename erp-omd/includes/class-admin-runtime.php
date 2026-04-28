@@ -2559,9 +2559,13 @@ class ERP_OMD_Admin
         $auth_service = new ERP_OMD_KSeF_Auth_Service($connector);
         $token_result = $auth_service->ensure_access_token($environment, $ap_token, $context_identifier);
         if ($token_result instanceof WP_Error || ! (bool) ($token_result['ok'] ?? false)) {
+            $error_code = $token_result instanceof WP_Error ? (string) $token_result->get_error_code() : '';
             $error_message = $token_result instanceof WP_Error
                 ? (string) $token_result->get_error_message()
                 : (string) ($token_result['error_message'] ?? __('Nie udało się pobrać access tokenu KSeF.', 'erp-omd'));
+            if ($error_code !== '' && $error_code !== '0' && strpos($error_message, $error_code . ':') !== 0) {
+                $error_message = $error_code . ': ' . $error_message;
+            }
             $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Dry-run KSeF Sync Hub zakończony błędem autoryzacji: %s', 'erp-omd'), $error_message), ['tab' => 'ksef']);
         }
 

@@ -289,7 +289,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     private function build_context_identifier_payload($context_identifier)
     {
         if (is_array($context_identifier)) {
-            $type = trim((string) ($context_identifier['type'] ?? ''));
+            $type = $this->normalize_context_identifier_type((string) ($context_identifier['type'] ?? ''));
             $value = trim((string) ($context_identifier['value'] ?? ''));
             if ($type !== '' && $value !== '') {
                 return ['type' => $type, 'value' => $value];
@@ -303,7 +303,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
         if (strpos($raw, ':') !== false) {
             [$type_raw, $value_raw] = array_pad(explode(':', $raw, 2), 2, '');
-            $type = trim((string) $type_raw);
+            $type = $this->normalize_context_identifier_type((string) $type_raw);
             $value = trim((string) $value_raw);
             if ($type !== '' && $value !== '') {
                 return ['type' => $type, 'value' => $value];
@@ -316,6 +316,31 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         }
 
         return ['type' => 'InternalId', 'value' => $raw];
+    }
+
+    /**
+     * @param string $type
+     * @return string
+     */
+    private function normalize_context_identifier_type($type)
+    {
+        $raw = trim((string) $type);
+        if ($raw === '') {
+            return '';
+        }
+
+        $key = strtolower(preg_replace('/[^a-z0-9]/i', '', $raw) ?: '');
+        $aliases = [
+            'nip' => 'Nip',
+            'plnip' => 'Nip',
+            'internalid' => 'InternalId',
+        ];
+
+        if (isset($aliases[$key])) {
+            return $aliases[$key];
+        }
+
+        return ucfirst(strtolower($raw));
     }
 
     /**

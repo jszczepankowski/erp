@@ -163,6 +163,18 @@ if (($authRequestBody['contextIdentifier']['type'] ?? '') !== 'Nip' || ($authReq
     throw new RuntimeException('Expected contextIdentifier payload to be normalized to object format required by KSeF API.');
 }
 
+$connectorTypeAlias = new ERP_OMD_KSeF_Connector_Fake();
+$connectorTypeAlias->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-TYPE']];
+$connectorTypeAlias->responses['POST /auth/ksef-token'] = ['code' => 400, 'json' => ['description' => 'invalid request']];
+$storageTypeAlias = new ERP_OMD_KSeF_Auth_Storage();
+$serviceTypeAlias = new ERP_OMD_KSeF_Auth_Service($connectorTypeAlias, $storageTypeAlias, $publicKeyService);
+$serviceTypeAlias->authenticate_with_ksef_token('TEST', 'KSEF-TOKEN-TYPE', 'NIP:1111111111');
+$aliasRequestBody = (array) ($connectorTypeAlias->requests[1]['body'] ?? []);
+$assertions++;
+if (($aliasRequestBody['contextIdentifier']['type'] ?? '') !== 'Nip') {
+    throw new RuntimeException('Expected contextIdentifier aliases such as NIP to be normalized to Nip.');
+}
+
 $connectorAsync = new ERP_OMD_KSeF_Connector_Fake();
 $connectorAsync->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-2']];
 $connectorAsync->responses['POST /auth/ksef-token'] = ['code' => 202, 'json' => ['referenceNumber' => 'REF-ASYNC-1']];
