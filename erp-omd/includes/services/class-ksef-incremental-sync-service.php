@@ -128,7 +128,8 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
         }
 
         $subject_types = array_slice($this->resolve_subject_types(), 0, self::MAX_EXPORTS_PER_RUN);
-        $to_hwm = gmdate('Y-m-d\TH:i:s\Z');
+        $include_to_date = (bool) get_option('erp_omd_ksef_sync_include_to_date', false);
+        $to_hwm = $include_to_date ? gmdate('Y-m-d\TH:i:s\Z') : '';
         $processed = 0;
 
         foreach ($subject_types as $subject_type) {
@@ -169,7 +170,7 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
             'environment' => $environment,
             'status' => 'synced',
             'processed_subject_types' => $processed,
-            'to_hwm' => $to_hwm,
+                'to_hwm' => $to_hwm,
         ];
     }
 

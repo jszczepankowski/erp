@@ -63,17 +63,23 @@ class ERP_OMD_KSeF_Export_Service
         $payload = [
             'subjectType' => (string) $subject_type,
             'from' => (string) $from_hwm,
-            'to' => (string) $to_hwm,
             'restrictToPermanentStorageHwmDate' => true,
         ];
+        $to_hwm = trim((string) $to_hwm);
+        if ($to_hwm !== '') {
+            $payload['to'] = $to_hwm;
+        }
 
         $started = $this->start_export($environment, $payload);
         if ($started instanceof WP_Error) {
+            $error_data = method_exists($started, 'get_error_data') ? (array) $started->get_error_data() : [];
             return [
                 'ok' => false,
                 'status' => 'start_failed',
                 'error_code' => (string) $started->get_error_code(),
                 'error_message' => (string) $started->get_error_message(),
+                'http_code' => (int) ($error_data['http_code'] ?? 0),
+                'retry_after' => (int) ($error_data['retry_after'] ?? 0),
             ];
         }
 
@@ -95,11 +101,14 @@ class ERP_OMD_KSeF_Export_Service
         for ($poll = 0; $poll < $this->max_status_polls; $poll++) {
             $status = $this->get_export_status($environment, $reference);
             if ($status instanceof WP_Error) {
+                $error_data = method_exists($status, 'get_error_data') ? (array) $status->get_error_data() : [];
                 return [
                     'ok' => false,
                     'status' => 'status_failed',
                     'error_code' => (string) $status->get_error_code(),
                     'error_message' => (string) $status->get_error_message(),
+                    'http_code' => (int) ($error_data['http_code'] ?? 0),
+                    'retry_after' => (int) ($error_data['retry_after'] ?? 0),
                 ];
             }
 
@@ -152,10 +161,31 @@ class ERP_OMD_KSeF_Export_Service
     private function request($method, $path, array $headers, $body, $environment)
     {
         $headers['X-Environment'] = $this->normalize_environment($environment);
+        if (empty($headers['Accept'])) {
+            $headers['Accept'] = 'application/json';
+        }
         if ($this->access_token !== '' && empty($headers['Authorization'])) {
             $headers['Authorization'] = 'Bearer ' . $this->access_token;
         }
-        return $this->connector->request($method, $path, $headers, $body);
+        $response = $this->connector->request($method, $path, $headers, $body);
+        if ($response instanceof WP_Error) {
+            return $response;
+        }
+
+        $code = (int) ($response['code'] ?? 0);
+        if ($code >= 400) {
+            $json = (array) ($response['json'] ?? []);
+            $error_code = (string) ($json['code'] ?? $json['errorCode'] ?? $json['error_code'] ?? ('ksef_http_' . $code));
+            $error_message = (string) ($json['description'] ?? $json['detail'] ?? $json['message'] ?? $json['title'] ?? ('KSeF export request failed with HTTP ' . $code));
+            $headers_map = (array) ($response['headers'] ?? []);
+            $retry_after = (int) ($headers_map['retry-after'] ?? $headers_map['Retry-After'] ?? 0);
+            return new WP_Error($error_code, $error_message, [
+                'http_code' => $code,
+                'retry_after' => max(0, $retry_after),
+            ]);
+        }
+
+        return $response;
     }
 
     /**

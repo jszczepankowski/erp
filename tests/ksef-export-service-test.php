@@ -9,11 +9,13 @@ if (! class_exists('WP_Error')) {
     {
         private $code;
         private $message;
+        private $data;
 
-        public function __construct($code = '', $message = '')
+        public function __construct($code = '', $message = '', $data = null)
         {
             $this->code = $code;
             $this->message = $message;
+            $this->data = $data;
         }
 
         public function get_error_code()
@@ -24,6 +26,11 @@ if (! class_exists('WP_Error')) {
         public function get_error_message()
         {
             return $this->message;
+        }
+
+        public function get_error_data()
+        {
+            return $this->data;
         }
     }
 }
@@ -110,6 +117,31 @@ $result3 = $service3->run_incremental_export('TEST', 'subject1', '2026-04-03T09:
 $assertions++;
 if (($result3['ok'] ?? false) !== true) {
     throw new RuntimeException('Expected export to succeed with propagated authorization header.');
+}
+
+$connector4 = new ERP_OMD_KSeF_Connector_Export_Fake();
+$connector4->responses['POST /invoices/exports'] = static function ($headers, $body) {
+    if (array_key_exists('to', (array) $body)) {
+        throw new RuntimeException('Expected run_incremental_export() to omit `to` when open-ended range is requested.');
+    }
+
+    return ['code' => 200, 'json' => ['referenceNumber' => 'REF-4']];
+};
+$connector4->responses['GET /invoices/exports/REF-4'] = ['code' => 200, 'json' => ['status' => 'completed', 'permanentStorageHwmDate' => '2026-04-04T11:00:00Z']];
+$service4 = new ERP_OMD_KSeF_Export_Service($connector4, 1);
+$result4 = $service4->run_incremental_export('TEST', 'subject1', '2026-04-04T09:00:00Z', '');
+$assertions++;
+if (($result4['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected export to support open-ended range without `to` date.');
+}
+
+$connector5 = new ERP_OMD_KSeF_Connector_Export_Fake();
+$connector5->responses['POST /invoices/exports'] = ['code' => 429, 'json' => ['description' => 'Too many requests'], 'headers' => ['retry-after' => '17']];
+$service5 = new ERP_OMD_KSeF_Export_Service($connector5, 1);
+$result5 = $service5->run_incremental_export('TEST', 'subject1', '2026-04-05T09:00:00Z', '2026-04-05T11:00:00Z');
+$assertions++;
+if (($result5['ok'] ?? true) !== false || (int) ($result5['retry_after'] ?? 0) !== 17 || (int) ($result5['http_code'] ?? 0) !== 429) {
+    throw new RuntimeException('Expected export service to propagate HTTP code and Retry-After from API errors.');
 }
 
 echo "Assertions: {$assertions}\n";
