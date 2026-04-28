@@ -444,6 +444,11 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 . ', context_value_len=' . strlen($context_value)
                 . ', encrypted_token_len=' . strlen($encrypted_token)
                 . ', challenge_len=' . strlen($challenge);
+
+            $context_digits = preg_replace('/[^0-9]/', '', $context_value);
+            if ($context_type === 'InternalId' && is_string($context_digits) && strlen($context_digits) > 0 && strlen($context_digits) !== 10) {
+                $error_message .= ' | hint: ustaw ContextIdentifier jako Nip:XXXXXXXXXX (10 cyfr NIP) lub jawnie InternalId:<wartosc> jeżeli wymagane.';
+            }
         }
 
         if ($error_message === '' || strpos($error_message, 'KSeF auth request failed with HTTP') === 0) {

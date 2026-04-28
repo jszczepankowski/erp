@@ -251,7 +251,7 @@ $connectorError->responses['POST /auth/ksef-token'] = ['code' => 403, 'json' => 
 $storageError = new ERP_OMD_KSeF_Auth_Storage();
 $storageError->clear_tokens('TEST');
 $serviceError = new ERP_OMD_KSeF_Auth_Service($connectorError, $storageError, $publicKeyService);
-$errorResult = $serviceError->ensure_access_token('TEST', 'KSEF-TOKEN-3', '1111111111');
+$errorResult = $serviceError->ensure_access_token('TEST', 'KSEF-TOKEN-3', '123456789');
 $assertions++;
 if (! ($errorResult instanceof WP_Error) || (string) $errorResult->get_error_code() !== 'context-type-not-allowed') {
     throw new RuntimeException('Expected auth service to propagate KSeF API error details for non-2xx responses.');
@@ -259,6 +259,10 @@ if (! ($errorResult instanceof WP_Error) || (string) $errorResult->get_error_cod
 $assertions++;
 if (strpos((string) $errorResult->get_error_message(), 'endpoint: POST /auth/ksef-token') === false) {
     throw new RuntimeException('Expected auth error message to include endpoint details for API diagnostics.');
+}
+$assertions++;
+if (strpos((string) $errorResult->get_error_message(), 'hint: ustaw ContextIdentifier jako Nip:XXXXXXXXXX') === false) {
+    throw new RuntimeException('Expected auth diagnostics hint for likely invalid InternalId context format.');
 }
 
 echo "OK ({$assertions} assertions)\n";
