@@ -16,12 +16,27 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
     /** @var mixed|null */
     private $import_service;
 
-    public function __construct($lock_ttl_seconds = null, array $retry_schedule_seconds = null, $export_service = null, $import_service = null)
+    /** @var callable */
+    private $sleep_callback;
+
+    /** @var int */
+    private $max_retry_sleep_seconds;
+
+    public function __construct($lock_ttl_seconds = null, array $retry_schedule_seconds = null, $export_service = null, $import_service = null, $sleep_callback = null, $max_retry_sleep_seconds = null)
     {
         $this->lock_ttl_seconds = is_int($lock_ttl_seconds) && $lock_ttl_seconds > 0 ? $lock_ttl_seconds : 240;
         $this->retry_schedule_seconds = $retry_schedule_seconds ?: [30, 120, 300];
         $this->export_service = $export_service;
         $this->import_service = $import_service;
+        $this->sleep_callback = is_callable($sleep_callback)
+            ? $sleep_callback
+            : static function ($seconds) {
+                $seconds = max(0, (int) $seconds);
+                if ($seconds > 0) {
+                    sleep($seconds);
+                }
+            };
+        $this->max_retry_sleep_seconds = is_int($max_retry_sleep_seconds) && $max_retry_sleep_seconds > 0 ? $max_retry_sleep_seconds : 30;
     }
 
     /**
@@ -85,6 +100,9 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
                     'retry_after' => $retry_after,
                     'error_code' => (string) ($sync_result['error_code'] ?? 'retryable_error'),
                 ];
+                if ($attempt < max(1, (int) $max_attempts)) {
+                    $this->pause_before_retry($retry_after);
+                }
             }
 
             $this->touch_sync_state($environment, $result);
@@ -182,6 +200,20 @@ class ERP_OMD_KSeF_Incremental_Sync_Service
 
         $index = max(0, min(count($this->retry_schedule_seconds) - 1, (int) $attempt - 1));
         return (int) ($this->retry_schedule_seconds[$index] ?? 300);
+    }
+
+    /**
+     * @param int $retry_after
+     * @return void
+     */
+    protected function pause_before_retry($retry_after)
+    {
+        $seconds = max(0, min((int) $retry_after, $this->max_retry_sleep_seconds));
+        if ($seconds <= 0) {
+            return;
+        }
+
+        call_user_func($this->sleep_callback, $seconds);
     }
 
     /**

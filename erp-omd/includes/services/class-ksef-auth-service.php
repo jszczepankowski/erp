@@ -11,16 +11,33 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     /** @var ERP_OMD_KSeF_Public_Key_Service */
     private $public_key_service;
 
+    /** @var array<int,int> */
+    private $auth_status_poll_delays_seconds;
+
+    /** @var callable */
+    private $sleep_callback;
+
     /**
      * @param mixed $connector
      * @param ERP_OMD_KSeF_Auth_Storage|null $storage
      * @param ERP_OMD_KSeF_Public_Key_Service|null $public_key_service
+     * @param array<int,int>|null $auth_status_poll_delays_seconds
+     * @param callable|null $sleep_callback
      */
-    public function __construct($connector, $storage = null, $public_key_service = null)
+    public function __construct($connector, $storage = null, $public_key_service = null, array $auth_status_poll_delays_seconds = null, $sleep_callback = null)
     {
         $this->connector = $connector;
         $this->storage = $storage instanceof ERP_OMD_KSeF_Auth_Storage ? $storage : new ERP_OMD_KSeF_Auth_Storage();
         $this->public_key_service = $public_key_service instanceof ERP_OMD_KSeF_Public_Key_Service ? $public_key_service : new ERP_OMD_KSeF_Public_Key_Service();
+        $this->auth_status_poll_delays_seconds = $this->normalize_poll_delays($auth_status_poll_delays_seconds ?: [1, 2, 4]);
+        $this->sleep_callback = is_callable($sleep_callback)
+            ? $sleep_callback
+            : static function ($seconds) {
+                $seconds = max(0, (int) $seconds);
+                if ($seconds > 0) {
+                    sleep($seconds);
+                }
+            };
     }
 
     public function get_challenge($environment)
@@ -155,7 +172,8 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         if ($authentication_token === '') {
             $reference_number = (string) (($auth['json']['referenceNumber'] ?? $auth['json']['reference_number'] ?? ''));
             if ($reference_number !== '') {
-                for ($attempt = 0; $attempt < 3; $attempt++) {
+                $attempts = count($this->auth_status_poll_delays_seconds) + 1;
+                for ($attempt = 0; $attempt < $attempts; $attempt++) {
                     $status = $this->get_auth_status($environment, $reference_number, '');
                     if ($status instanceof WP_Error) {
                         break;
@@ -164,6 +182,10 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                     $authentication_token = $this->extract_authentication_token((array) ($status['json'] ?? []));
                     if ($authentication_token !== '') {
                         break;
+                    }
+
+                    if ($attempt < $attempts - 1) {
+                        $this->pause_before_next_auth_status_poll($attempt);
                     }
                 }
             }
@@ -280,6 +302,37 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     {
         $env = strtoupper(trim((string) $environment));
         return in_array($env, ['TEST', 'DEMO', 'PRD'], true) ? $env : 'TEST';
+    }
+
+    /**
+     * @param array<int,int> $delays
+     * @return array<int,int>
+     */
+    private function normalize_poll_delays(array $delays)
+    {
+        $normalized = [];
+        foreach ($delays as $delay) {
+            $value = max(0, (int) $delay);
+            if ($value > 0) {
+                $normalized[] = $value;
+            }
+        }
+
+        return $normalized !== [] ? $normalized : [1, 2, 4];
+    }
+
+    /**
+     * @param int $attempt
+     * @return void
+     */
+    private function pause_before_next_auth_status_poll($attempt)
+    {
+        $seconds = (int) ($this->auth_status_poll_delays_seconds[(int) $attempt] ?? 0);
+        if ($seconds <= 0) {
+            return;
+        }
+
+        call_user_func($this->sleep_callback, $seconds);
     }
 
     /**

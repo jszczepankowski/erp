@@ -178,7 +178,6 @@ if (($aliasRequestBody['contextIdentifier']['type'] ?? '') !== 'Nip') {
 $connectorAsync = new ERP_OMD_KSeF_Connector_Fake();
 $connectorAsync->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-2']];
 $connectorAsync->responses['POST /auth/ksef-token'] = ['code' => 202, 'json' => ['referenceNumber' => 'REF-ASYNC-1']];
-$connectorAsync->responses['GET /auth/REF-ASYNC-1'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-ASYNC-1']]];
 $connectorAsync->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
     'accessToken' => 'ACCESS-ASYNC-1',
     'refreshToken' => 'REFRESH-ASYNC-1',
@@ -188,11 +187,59 @@ $connectorAsync->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' =
 
 $storageAsync = new ERP_OMD_KSeF_Auth_Storage();
 $storageAsync->clear_tokens('TEST');
-$serviceAsync = new ERP_OMD_KSeF_Auth_Service($connectorAsync, $storageAsync, $publicKeyService);
+$asyncStatusCalls = 0;
+$pollSleeps = [];
+$connectorAsync->responses['GET /auth/REF-ASYNC-1'] = [
+    'code' => 200,
+    'json' => [],
+];
+$serviceAsync = new ERP_OMD_KSeF_Auth_Service(
+    new class($connectorAsync, $asyncStatusCalls) {
+        /** @var ERP_OMD_KSeF_Connector_Fake */
+        private $inner;
+
+        /** @var int */
+        private $status_calls;
+
+        public function __construct($inner, &$status_calls)
+        {
+            $this->inner = $inner;
+            $this->status_calls = &$status_calls;
+        }
+
+        public function request($method, $path, array $headers = [], $body = null)
+        {
+            if ($method === 'GET' && $path === '/auth/REF-ASYNC-1') {
+                $this->status_calls++;
+                if ($this->status_calls < 3) {
+                    return ['code' => 200, 'json' => []];
+                }
+
+                return ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-ASYNC-1']]];
+            }
+
+            return $this->inner->request($method, $path, $headers, $body);
+        }
+    },
+    $storageAsync,
+    $publicKeyService,
+    [2, 5],
+    static function ($seconds) use (&$pollSleeps) {
+        $pollSleeps[] = (int) $seconds;
+    }
+);
 $asyncResult = $serviceAsync->ensure_access_token('TEST', 'KSEF-TOKEN-2', '1111111111');
 $assertions++;
 if ($asyncResult instanceof WP_Error || ($asyncResult['ok'] ?? false) !== true || ($asyncResult['source'] ?? '') !== 'reauth') {
     throw new RuntimeException('Expected async auth status fallback to resolve authenticationToken and redeem tokens.');
+}
+$assertions++;
+if ($asyncStatusCalls !== 3) {
+    throw new RuntimeException('Expected auth status polling backoff flow to retry until token is available.');
+}
+$assertions++;
+if ($pollSleeps !== [2, 5]) {
+    throw new RuntimeException('Expected auth status polling to use configured backoff delays between attempts.');
 }
 
 $connectorError = new ERP_OMD_KSeF_Connector_Fake();

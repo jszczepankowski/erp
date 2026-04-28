@@ -47,9 +47,9 @@ class ERP_OMD_KSeF_Incremental_Sync_Service_Fake extends ERP_OMD_KSeF_Incrementa
     /** @var int */
     private $idx = 0;
 
-    public function __construct(array $results)
+    public function __construct(array $results, $sleep_callback = null)
     {
-        parent::__construct(120, [11, 22, 33]);
+        parent::__construct(120, [11, 22, 33], null, null, $sleep_callback, 60);
         $this->results = $results;
     }
 
@@ -73,6 +73,19 @@ $run = $service->run_scheduled_sync('TEST', 3);
 $assertions++;
 if (($run['ok'] ?? false) !== true || ($run['status'] ?? '') !== 'synced' || (int) ($run['attempts'] ?? 0) !== 2) {
     throw new RuntimeException('Expected retryable first attempt and success on second attempt.');
+}
+
+$sleepCalls = [];
+$serviceWithSleep = new ERP_OMD_KSeF_Incremental_Sync_Service_Fake([
+    ['ok' => false, 'http_code' => 429, 'retry_after' => 19, 'error_code' => 'rate_limited'],
+    ['ok' => true],
+], static function ($seconds) use (&$sleepCalls) {
+    $sleepCalls[] = (int) $seconds;
+});
+$serviceWithSleep->run_scheduled_sync('TEST', 3);
+$assertions++;
+if ($sleepCalls !== [19]) {
+    throw new RuntimeException('Expected retry flow to pause using retry_after before next incremental sync attempt.');
 }
 
 $lockKey = ERP_OMD_KSeF_Incremental_Sync_Service::LOCK_OPTION_PREFIX . 'test';
