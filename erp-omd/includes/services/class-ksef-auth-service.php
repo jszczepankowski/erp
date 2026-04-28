@@ -141,8 +141,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         if ($single_use_token) {
             return $this->request('POST', (string) $path, [
                 'Authorization' => 'Bearer ' . $raw_token,
-                'Content-Type' => 'application/json',
-            ], [], $environment);
+            ], null, $environment);
         }
 
         $authorization_candidates = [

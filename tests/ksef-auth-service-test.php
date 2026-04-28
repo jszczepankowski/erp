@@ -173,6 +173,27 @@ if (count($connector->requests) < 3) {
     throw new RuntimeException('Expected connector requests to include challenge/auth/redeem/refresh calls.');
 }
 
+$redeemRequest = null;
+foreach ($connector->requests as $request) {
+    if (($request['method'] ?? '') === 'POST' && ($request['path'] ?? '') === '/auth/token/redeem') {
+        $redeemRequest = $request;
+        break;
+    }
+}
+$redeemHeaders = is_array($redeemRequest['headers'] ?? null) ? (array) $redeemRequest['headers'] : [];
+$hasContentType = false;
+foreach ($redeemHeaders as $headerName => $headerValue) {
+    if (strtolower((string) $headerName) === 'content-type') {
+        $hasContentType = true;
+        break;
+    }
+}
+$redeemBodyIsNull = is_array($redeemRequest) && array_key_exists('body', $redeemRequest) ? $redeemRequest['body'] === null : false;
+$assertions++;
+if (! is_array($redeemRequest) || $hasContentType || ! $redeemBodyIsNull) {
+    throw new RuntimeException('Expected redeem request to follow spec: bearer auth with no request body/content-type.');
+}
+
 $authRequestBody = (array) ($connector->requests[1]['body'] ?? []);
 $assertions++;
 if (($authRequestBody['contextIdentifier']['type'] ?? '') !== 'Nip' || ($authRequestBody['contextIdentifier']['value'] ?? '') !== '1111111111') {
