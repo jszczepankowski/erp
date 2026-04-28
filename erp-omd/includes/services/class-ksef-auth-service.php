@@ -260,6 +260,9 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
         $auth_payload = (array) ($auth['json'] ?? []);
         $authentication_token = $this->extract_authentication_token($auth_payload);
+        if ($authentication_token === '') {
+            $authentication_token = $this->extract_authentication_token_from_headers((array) ($auth['headers'] ?? []));
+        }
         $reference_number = (string) (($auth_payload['referenceNumber'] ?? $auth_payload['reference_number'] ?? ''));
         $status_ready = $this->is_auth_status_ready($auth_payload);
 
@@ -273,6 +276,9 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                         break;
                     }
                     $status_payload = (array) ($status['json'] ?? []);
+                    if ($authentication_token === '') {
+                        $authentication_token = $this->extract_authentication_token_from_headers((array) ($status['headers'] ?? []));
+                    }
                 }
 
                 $candidate_token = $this->extract_authentication_token($status_payload);
@@ -673,12 +679,46 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     {
         return trim((string) (
             $payload['authenticationToken']['token']
+            ?? $payload['authenticationToken']['value']
             ?? $payload['authenticationToken']['Token']
             ?? $payload['authenticationToken']
+            ?? $payload['authenticationTokenValue']
+            ?? $payload['authToken']
             ?? $payload['authentication_token']['token']
+            ?? $payload['authentication_token']['value']
             ?? $payload['authentication_token']
+            ?? $payload['authentication_token_value']
+            ?? $payload['token']
             ?? ''
         ));
+    }
+
+    /**
+     * @param array<string,mixed> $headers
+     * @return string
+     */
+    private function extract_authentication_token_from_headers(array $headers)
+    {
+        $candidates = [
+            (string) ($headers['authentication-token'] ?? ''),
+            (string) ($headers['authenticationtoken'] ?? ''),
+            (string) ($headers['x-authentication-token'] ?? ''),
+            (string) ($headers['x-auth-token'] ?? ''),
+        ];
+
+        foreach ($candidates as $candidate) {
+            $value = trim((string) $candidate);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        $authorization = trim((string) ($headers['authorization'] ?? ''));
+        if (strpos($authorization, 'Bearer ') === 0) {
+            return trim((string) substr($authorization, 7));
+        }
+
+        return '';
     }
 
     /**

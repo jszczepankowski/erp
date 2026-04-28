@@ -411,4 +411,34 @@ if (
     throw new RuntimeException('Expected /auth/ksef-token fallback sequence: XML first, then JSON payload with contextIdentifier.');
 }
 
+$connectorHeaderToken = new ERP_OMD_KSeF_Connector_Fake();
+$connectorHeaderToken->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-HEADER-TOKEN']];
+$connectorHeaderToken->responses['POST /auth/ksef-token'] = ['code' => 202, 'json' => ['referenceNumber' => 'REF-HEADER-TOKEN']];
+$connectorHeaderToken->responses['GET /auth/REF-HEADER-TOKEN'] = ['code' => 200, 'json' => ['status' => 'completed'], 'headers' => ['authentication-token' => 'AUTH-HEADER-TOKEN']];
+$connectorHeaderToken->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
+    'accessToken' => 'ACCESS-HEADER-TOKEN',
+    'refreshToken' => 'REFRESH-HEADER-TOKEN',
+    'accessTokenExpiresIn' => 120,
+    'refreshTokenExpiresIn' => 3600,
+]];
+$storageHeaderToken = new ERP_OMD_KSeF_Auth_Storage();
+$storageHeaderToken->clear_tokens('TEST');
+$serviceHeaderToken = new ERP_OMD_KSeF_Auth_Service($connectorHeaderToken, $storageHeaderToken, $publicKeyService);
+$headerTokenResult = $serviceHeaderToken->ensure_access_token('TEST', 'KSEF-TOKEN-HEADER', '1111111111');
+$assertions++;
+if ($headerTokenResult instanceof WP_Error || ($headerTokenResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected auth flow to use authentication token from response headers when JSON payload does not include token.');
+}
+$redeemRequestHeaderToken = null;
+foreach ($connectorHeaderToken->requests as $request) {
+    if (($request['method'] ?? '') === 'POST' && ($request['path'] ?? '') === '/auth/token/redeem') {
+        $redeemRequestHeaderToken = $request;
+        break;
+    }
+}
+$assertions++;
+if (! is_array($redeemRequestHeaderToken) || (string) (($redeemRequestHeaderToken['headers']['Authorization'] ?? '')) !== 'Bearer AUTH-HEADER-TOKEN') {
+    throw new RuntimeException('Expected redeem request to use authentication token recovered from response headers.');
+}
+
 echo "OK ({$assertions} assertions)\n";
