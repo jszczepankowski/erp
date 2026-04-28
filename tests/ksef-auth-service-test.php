@@ -314,6 +314,19 @@ if ($pollSleeps !== [2, 5]) {
     throw new RuntimeException('Expected auth status polling to use configured backoff delays between attempts.');
 }
 
+$connectorStatusError = new ERP_OMD_KSeF_Connector_Fake();
+$connectorStatusError->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-STATUS-ERR']];
+$connectorStatusError->responses['POST /auth/ksef-token'] = ['code' => 202, 'json' => ['referenceNumber' => 'REF-STATUS-ERR']];
+$connectorStatusError->responses['GET /auth/REF-STATUS-ERR'] = ['code' => 503, 'json' => ['code' => 'ksef_status_unavailable', 'description' => 'Status endpoint unavailable']];
+$storageStatusError = new ERP_OMD_KSeF_Auth_Storage();
+$storageStatusError->clear_tokens('TEST');
+$serviceStatusError = new ERP_OMD_KSeF_Auth_Service($connectorStatusError, $storageStatusError, $publicKeyService);
+$statusErrorResult = $serviceStatusError->ensure_access_token('TEST', 'KSEF-TOKEN-STATUS-ERR', '1111111111');
+$assertions++;
+if (! ($statusErrorResult instanceof WP_Error) || (string) $statusErrorResult->get_error_code() !== 'ksef_status_unavailable') {
+    throw new RuntimeException('Expected auth status endpoint errors to be propagated instead of generic authentication_token_missing error.');
+}
+
 $connectorError = new ERP_OMD_KSeF_Connector_Fake();
 $connectorError->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-ERR']];
 $connectorError->responses['POST /auth/ksef-token'] = ['code' => 403, 'json' => [

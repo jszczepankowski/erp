@@ -273,7 +273,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 if ($attempt > 0) {
                     $status = $this->get_auth_status($environment, $reference_number, $authentication_token);
                     if ($status instanceof WP_Error) {
-                        break;
+                        return $status;
                     }
                     $status_payload = (array) ($status['json'] ?? []);
                     if ($authentication_token === '') {
