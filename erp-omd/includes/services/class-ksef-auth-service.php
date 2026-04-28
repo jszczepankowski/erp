@@ -489,12 +489,64 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
      */
     private function is_auth_status_ready(array $payload)
     {
-        $status = strtolower(trim((string) ($payload['status'] ?? $payload['phase'] ?? $payload['operationStatus'] ?? '')));
+        $status = $this->extract_auth_status_value($payload);
         if ($status === '') {
             return false;
         }
 
         return in_array($status, ['completed', 'finished', 'authorized', 'authenticated', 'success'], true);
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @return string
+     */
+    private function extract_auth_status_value(array $payload)
+    {
+        $candidates = [
+            $payload['status'] ?? null,
+            $payload['phase'] ?? null,
+            $payload['operationStatus'] ?? null,
+            $payload['authStatus'] ?? null,
+        ];
+
+        foreach ($candidates as $candidate) {
+            $normalized = $this->normalize_status_candidate($candidate);
+            if ($normalized !== '') {
+                return $normalized;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @param mixed $candidate
+     * @return string
+     */
+    private function normalize_status_candidate($candidate)
+    {
+        if (is_string($candidate) || is_numeric($candidate)) {
+            return strtolower(trim((string) $candidate));
+        }
+
+        if (! is_array($candidate)) {
+            return '';
+        }
+
+        $keys = ['status', 'phase', 'operationStatus', 'code', 'name', 'value', 'state'];
+        foreach ($keys as $key) {
+            if (! array_key_exists($key, $candidate)) {
+                continue;
+            }
+
+            $value = $this->normalize_status_candidate($candidate[$key]);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
     }
 
     /**

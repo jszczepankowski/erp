@@ -414,7 +414,7 @@ if (
 $connectorHeaderToken = new ERP_OMD_KSeF_Connector_Fake();
 $connectorHeaderToken->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-HEADER-TOKEN']];
 $connectorHeaderToken->responses['POST /auth/ksef-token'] = ['code' => 202, 'json' => ['referenceNumber' => 'REF-HEADER-TOKEN']];
-$connectorHeaderToken->responses['GET /auth/REF-HEADER-TOKEN'] = ['code' => 200, 'json' => ['status' => 'completed'], 'headers' => ['authentication-token' => 'AUTH-HEADER-TOKEN']];
+$connectorHeaderToken->responses['GET /auth/REF-HEADER-TOKEN'] = ['code' => 200, 'json' => ['status' => ['value' => 'completed']], 'headers' => ['authentication-token' => 'AUTH-HEADER-TOKEN']];
 $connectorHeaderToken->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
     'accessToken' => 'ACCESS-HEADER-TOKEN',
     'refreshToken' => 'REFRESH-HEADER-TOKEN',
@@ -424,10 +424,20 @@ $connectorHeaderToken->responses['POST /auth/token/redeem'] = ['code' => 200, 'j
 $storageHeaderToken = new ERP_OMD_KSeF_Auth_Storage();
 $storageHeaderToken->clear_tokens('TEST');
 $serviceHeaderToken = new ERP_OMD_KSeF_Auth_Service($connectorHeaderToken, $storageHeaderToken, $publicKeyService);
+$warningMessages = [];
+set_error_handler(static function ($severity, $message) use (&$warningMessages) {
+    $warningMessages[] = (string) $message;
+    return true;
+});
 $headerTokenResult = $serviceHeaderToken->ensure_access_token('TEST', 'KSEF-TOKEN-HEADER', '1111111111');
+restore_error_handler();
 $assertions++;
 if ($headerTokenResult instanceof WP_Error || ($headerTokenResult['ok'] ?? false) !== true) {
     throw new RuntimeException('Expected auth flow to use authentication token from response headers when JSON payload does not include token.');
+}
+$assertions++;
+if ($warningMessages !== []) {
+    throw new RuntimeException('Expected auth flow with array-based status payload to avoid PHP warnings.');
 }
 $redeemRequestHeaderToken = null;
 foreach ($connectorHeaderToken->requests as $request) {
