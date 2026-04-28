@@ -265,6 +265,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         }
         $reference_number = (string) (($auth_payload['referenceNumber'] ?? $auth_payload['reference_number'] ?? ''));
         $status_ready = $this->is_auth_status_ready($auth_payload);
+        $last_status_value = $this->extract_auth_status_value($auth_payload);
 
         if ($reference_number !== '') {
             $attempts = count($this->auth_status_poll_delays_seconds) + 1;
@@ -279,6 +280,10 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                     if ($authentication_token === '') {
                         $authentication_token = $this->extract_authentication_token_from_headers((array) ($status['headers'] ?? []));
                     }
+                }
+                $status_value = $this->extract_auth_status_value($status_payload);
+                if ($status_value !== '') {
+                    $last_status_value = $status_value;
                 }
 
                 $candidate_token = $this->extract_authentication_token($status_payload);
@@ -297,26 +302,39 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             }
         }
 
+        $redeem_error = null;
+        if ($authentication_token !== '') {
+            $redeem = $this->redeem_token($environment, $authentication_token);
+            if (! ($redeem instanceof WP_Error)) {
+                $stored = $this->storage->get_tokens($environment);
+                return [
+                    'ok' => true,
+                    'source' => 'reauth',
+                    'access_token' => (string) ($stored['access_token'] ?? ''),
+                    'refresh_token' => (string) ($stored['refresh_token'] ?? ''),
+                ];
+            }
+            $redeem_error = $redeem;
+        }
+
         if ($authentication_token === '' || ! $status_ready) {
             $upstream_code = (string) ($auth_payload['code'] ?? $auth_payload['errorCode'] ?? $auth_payload['error_code'] ?? 'erp_omd_ksef_authentication_token_missing');
             $upstream_message = (string) ($auth_payload['description'] ?? $auth_payload['message'] ?? $auth_payload['title'] ?? __('Brak gotowego authenticationToken po zakończeniu auth status.', 'erp-omd'));
             $upstream_message .= ' ' . __('Sprawdź, czy status uwierzytelniania nie jest nadal w toku i ponów po dłuższym czasie (weryfikacja OCSP/CRL może trwać).', 'erp-omd');
+            if ($last_status_value !== '') {
+                $upstream_message .= ' | auth_status=' . $last_status_value;
+            }
+            if ($redeem_error instanceof WP_Error) {
+                return $redeem_error;
+            }
             return new WP_Error($upstream_code, $upstream_message);
         }
 
-        $redeem = $this->redeem_token($environment, $authentication_token);
-        if ($redeem instanceof WP_Error) {
-            return $redeem;
+        if ($redeem_error instanceof WP_Error) {
+            return $redeem_error;
         }
 
-        $stored = $this->storage->get_tokens($environment);
-
-        return [
-            'ok' => true,
-            'source' => 'reauth',
-            'access_token' => (string) ($stored['access_token'] ?? ''),
-            'refresh_token' => (string) ($stored['refresh_token'] ?? ''),
-        ];
+        return new WP_Error('erp_omd_ksef_redeem_failed', __('Nie udało się wymienić authenticationToken na JWT.', 'erp-omd'));
     }
 
     /**

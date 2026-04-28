@@ -464,4 +464,23 @@ if (! is_array($redeemRequestHeaderToken) || (string) (($redeemRequestHeaderToke
     throw new RuntimeException('Expected redeem request to use authentication token recovered from response headers.');
 }
 
+$connectorTokenBeforeReady = new ERP_OMD_KSeF_Connector_Fake();
+$connectorTokenBeforeReady->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-TOKEN-BEFORE-READY']];
+$connectorTokenBeforeReady->responses['POST /auth/ksef-token'] = ['code' => 202, 'json' => ['referenceNumber' => 'REF-TOKEN-BEFORE-READY', 'authenticationToken' => ['token' => 'AUTH-TOKEN-BEFORE-READY'], 'status' => 'in_progress']];
+$connectorTokenBeforeReady->responses['GET /auth/REF-TOKEN-BEFORE-READY'] = ['code' => 200, 'json' => ['status' => 'processing']];
+$connectorTokenBeforeReady->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
+    'accessToken' => 'ACCESS-TOKEN-BEFORE-READY',
+    'refreshToken' => 'REFRESH-TOKEN-BEFORE-READY',
+    'accessTokenExpiresIn' => 120,
+    'refreshTokenExpiresIn' => 3600,
+]];
+$storageTokenBeforeReady = new ERP_OMD_KSeF_Auth_Storage();
+$storageTokenBeforeReady->clear_tokens('TEST');
+$serviceTokenBeforeReady = new ERP_OMD_KSeF_Auth_Service($connectorTokenBeforeReady, $storageTokenBeforeReady, $publicKeyService, [1]);
+$tokenBeforeReadyResult = $serviceTokenBeforeReady->ensure_access_token('TEST', 'KSEF-TOKEN-BEFORE-READY', '1111111111');
+$assertions++;
+if ($tokenBeforeReadyResult instanceof WP_Error || ($tokenBeforeReadyResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected auth flow to redeem JWT when authenticationToken exists even if status label is not explicitly recognized as success.');
+}
+
 echo "OK ({$assertions} assertions)\n";
