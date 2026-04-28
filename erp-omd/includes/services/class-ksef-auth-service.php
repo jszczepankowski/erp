@@ -29,7 +29,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         $this->connector = $connector;
         $this->storage = $storage instanceof ERP_OMD_KSeF_Auth_Storage ? $storage : new ERP_OMD_KSeF_Auth_Storage();
         $this->public_key_service = $public_key_service instanceof ERP_OMD_KSeF_Public_Key_Service ? $public_key_service : new ERP_OMD_KSeF_Public_Key_Service();
-        $this->auth_status_poll_delays_seconds = $this->normalize_poll_delays($auth_status_poll_delays_seconds ?: [1, 2, 4]);
+        $this->auth_status_poll_delays_seconds = $this->normalize_poll_delays($auth_status_poll_delays_seconds ?: [1, 2, 4, 8, 16, 30]);
         $this->sleep_callback = is_callable($sleep_callback)
             ? $sleep_callback
             : static function ($seconds) {
@@ -300,6 +300,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         if ($authentication_token === '' || ! $status_ready) {
             $upstream_code = (string) ($auth_payload['code'] ?? $auth_payload['errorCode'] ?? $auth_payload['error_code'] ?? 'erp_omd_ksef_authentication_token_missing');
             $upstream_message = (string) ($auth_payload['description'] ?? $auth_payload['message'] ?? $auth_payload['title'] ?? __('Brak gotowego authenticationToken po zakończeniu auth status.', 'erp-omd'));
+            $upstream_message .= ' ' . __('Sprawdź, czy status uwierzytelniania nie jest nadal w toku i ponów po dłuższym czasie (weryfikacja OCSP/CRL może trwać).', 'erp-omd');
             return new WP_Error($upstream_code, $upstream_message);
         }
 
@@ -466,7 +467,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             }
         }
 
-        return $normalized !== [] ? $normalized : [1, 2, 4];
+        return $normalized !== [] ? $normalized : [1, 2, 4, 8, 16, 30];
     }
 
     /**
