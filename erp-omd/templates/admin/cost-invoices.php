@@ -379,6 +379,36 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                 </select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
+            <?php
+            $invoice_status_labels = [
+                '' => __('Wszystkie', 'erp-omd'),
+                'zaimportowana' => __('Zaimportowana', 'erp-omd'),
+                'weryfikacja' => __('Weryfikacja', 'erp-omd'),
+                'zatwierdzona' => __('Zatwierdzona', 'erp-omd'),
+                'przypisana' => __('Przypisana', 'erp-omd'),
+                'nieistotne' => __('Nieistotne', 'erp-omd'),
+            ];
+            ?>
+            <div class="erp-omd-filter-form" style="margin-bottom:12px;">
+                <?php foreach ($invoice_status_labels as $status_key => $status_label) : ?>
+                    <?php
+                    $status_filter_url = add_query_arg(
+                        [
+                            'page' => 'erp-omd-cost-invoices',
+                            'tab' => 'invoices',
+                            'invoice_id' => $selected_invoice_id,
+                            'invoice_supplier_id' => (int) ($invoice_list_filters['supplier_id'] ?? 0),
+                            'invoice_project_id' => (int) ($invoice_list_filters['project_id'] ?? 0),
+                            'invoice_status' => $status_key,
+                        ],
+                        admin_url('admin.php')
+                    );
+                    ?>
+                    <a class="button <?php echo (string) ($invoice_list_filters['status'] ?? '') === (string) $status_key ? 'button-primary' : ''; ?>" href="<?php echo esc_url($status_filter_url); ?>">
+                        <?php echo esc_html($status_label); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
             <form method="post">
                 <?php wp_nonce_field('erp_omd_bulk_cost_invoices'); ?>
                 <input type="hidden" name="erp_omd_action" value="bulk_cost_invoices" />
@@ -517,17 +547,19 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         </form>
 
         <table class="widefat striped">
-            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
             <tbody>
             <?php if (empty($ksef_sales_inbox)) : ?>
-                <tr><td colspan="8"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="9"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
             <?php else : ?>
                 <?php foreach ((array) $ksef_sales_inbox as $sales_row) : ?>
                     <tr>
+                        <?php $sales_client_id = (int) ($sales_row['client_id'] ?? 0); ?>
                         <td><?php echo esc_html((string) ((int) ($sales_row['id'] ?? 0))); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['invoice_number'] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ($client_name_by_id[$sales_client_id] ?? '—')); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['buyer_nip'] ?? '')); ?></td>
-                        <td><?php echo esc_html((string) ((int) ($sales_row['client_id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) $sales_client_id); ?></td>
                         <td><?php echo esc_html((string) ($project_name_by_id[(int) ($sales_row['project_id'] ?? 0)] ?? ('#' . (int) ($sales_row['project_id'] ?? 0)))); ?></td>
                         <td><?php echo ((int) ($sales_row['is_final'] ?? 0) === 1) ? esc_html__('Tak', 'erp-omd') : esc_html__('Nie', 'erp-omd'); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['status'] ?? '')); ?></td>
