@@ -56,6 +56,7 @@
                                 <th><?php esc_html_e('Pozycja', 'erp-omd'); ?></th>
                                 <th><?php esc_html_e('Ilość', 'erp-omd'); ?></th>
                                 <th><?php esc_html_e('Cena', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Uwagi', 'erp-omd'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -64,6 +65,7 @@
                                     <td><?php echo esc_html((string) ($item_row['name'] ?? '—')); ?></td>
                                     <td><?php echo esc_html(number_format_i18n((float) ($item_row['qty'] ?? 0), 2)); ?></td>
                                     <td><?php echo esc_html(number_format_i18n((float) ($item_row['price'] ?? 0), 2)); ?></td>
+                                    <td><?php echo esc_html(trim((string) ($item_row['comment'] ?? '')) !== '' ? (string) $item_row['comment'] : '—'); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
