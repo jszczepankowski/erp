@@ -112,6 +112,40 @@ class ERP_OMD_KSeF_Connector_Redeem_Single_Use_Fake extends ERP_OMD_KSeF_Connect
     }
 }
 
+class ERP_OMD_KSeF_Connector_Redeem_400_Fallback_Fake extends ERP_OMD_KSeF_Connector_Fake
+{
+    /** @var int */
+    public $redeem_calls = 0;
+
+    public function request($method, $path, array $headers = [], $body = null)
+    {
+        $method = strtoupper((string) $method);
+        $this->requests[] = ['method' => $method, 'path' => $path, 'headers' => $headers, 'body' => $body];
+
+        if ($method === 'POST' && $path === '/auth/token/redeem') {
+            $this->redeem_calls++;
+            $has_authentication_token_header = trim((string) ($headers['AuthenticationToken'] ?? '')) !== '';
+            if ($has_authentication_token_header) {
+                return ['code' => 400, 'json' => ['description' => 'Żądanie jest nieprawidłowe.']];
+            }
+
+            return ['code' => 200, 'json' => [
+                'accessToken' => 'ACCESS-REDEEM-FALLBACK',
+                'refreshToken' => 'REFRESH-REDEEM-FALLBACK',
+                'accessTokenExpiresIn' => 120,
+                'refreshTokenExpiresIn' => 3600,
+            ]];
+        }
+
+        $key = $method . ' ' . $path;
+        if (isset($this->responses[$key])) {
+            return $this->responses[$key];
+        }
+
+        return new WP_Error('missing_response', 'Missing fake response for ' . $key);
+    }
+}
+
 class ERP_OMD_KSeF_Connector_Auth_Content_Type_Fallback_Fake extends ERP_OMD_KSeF_Connector_Fake
 {
     public function request($method, $path, array $headers = [], $body = null)
@@ -213,10 +247,10 @@ foreach ($redeemHeaders as $headerName => $headerValue) {
     }
 }
 $redeemBodyIsNull = is_array($redeemRequest) && array_key_exists('body', $redeemRequest) ? $redeemRequest['body'] === null : false;
-$redeemAuthenticationTokenHeader = trim((string) ($redeemHeaders['AuthenticationToken'] ?? ''));
+$redeemAuthorizationHeader = trim((string) ($redeemHeaders['Authorization'] ?? ''));
 $assertions++;
-if (! is_array($redeemRequest) || $hasContentType || ! $redeemBodyIsNull || $redeemAuthenticationTokenHeader === '') {
-    throw new RuntimeException('Expected redeem request to carry bearer + AuthenticationToken headers and no request body/content-type.');
+if (! is_array($redeemRequest) || $hasContentType || ! $redeemBodyIsNull || strpos($redeemAuthorizationHeader, 'Bearer ') !== 0) {
+    throw new RuntimeException('Expected redeem request to carry bearer Authorization header and no request body/content-type.');
 }
 
 $authRequestBody = (string) ($connector->requests[1]['body'] ?? '');
@@ -364,6 +398,22 @@ if (! ($singleUseResult instanceof WP_Error) || (string) $singleUseResult->get_e
 $assertions++;
 if ($connectorRedeemSingleUse->redeem_calls !== 1) {
     throw new RuntimeException('Expected redeem endpoint to be called exactly once (single-use token).');
+}
+
+$connectorRedeem400Fallback = new ERP_OMD_KSeF_Connector_Redeem_400_Fallback_Fake();
+$connectorRedeem400Fallback->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-REDEEM-400-FALLBACK']];
+$connectorRedeem400Fallback->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-400-FALLBACK'], 'status' => 'completed']];
+$storageRedeem400Fallback = new ERP_OMD_KSeF_Auth_Storage();
+$storageRedeem400Fallback->clear_tokens('TEST');
+$serviceRedeem400Fallback = new ERP_OMD_KSeF_Auth_Service($connectorRedeem400Fallback, $storageRedeem400Fallback, $publicKeyService);
+$redeem400FallbackResult = $serviceRedeem400Fallback->ensure_access_token('TEST', 'KSEF-TOKEN-REDEEM-400-FALLBACK', '1111111111');
+$assertions++;
+if ($redeem400FallbackResult instanceof WP_Error || ($redeem400FallbackResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected redeem single-use flow to fallback to bearer-only request when server rejects AuthenticationToken header with HTTP 400.');
+}
+$assertions++;
+if ($connectorRedeem400Fallback->redeem_calls !== 1) {
+    throw new RuntimeException('Expected bearer-only redeem attempt to succeed without extra retries.');
 }
 
 $connectorObjectTokens = new ERP_OMD_KSeF_Connector_Fake();
