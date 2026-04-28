@@ -202,7 +202,17 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     private function request($method, $path, array $headers, $body, $environment)
     {
         $headers['X-Environment'] = $this->normalize_environment($environment);
-        return $this->connector->request($method, $path, $headers, $body);
+        $response = $this->connector->request($method, $path, $headers, $body);
+        if ($response instanceof WP_Error) {
+            return $response;
+        }
+
+        $code = (int) ($response['code'] ?? 0);
+        if ($code >= 400) {
+            return $this->build_api_error_from_response((array) $response);
+        }
+
+        return $response;
     }
 
     /**
@@ -302,6 +312,38 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         }
 
         return ['type' => 'InternalId', 'value' => $raw];
+    }
+
+    /**
+     * @param array<string,mixed> $response
+     * @return WP_Error
+     */
+    private function build_api_error_from_response(array $response)
+    {
+        $json = (array) ($response['json'] ?? []);
+        $http_code = (int) ($response['code'] ?? 0);
+
+        $error_code = (string) (
+            $json['code']
+            ?? $json['errorCode']
+            ?? $json['error_code']
+            ?? $json['reasonCode']
+            ?? ('ksef_http_' . ($http_code > 0 ? $http_code : 'error'))
+        );
+        $error_message = (string) (
+            $json['description']
+            ?? $json['detail']
+            ?? $json['message']
+            ?? $json['title']
+            ?? ('KSeF auth request failed with HTTP ' . ($http_code > 0 ? $http_code : 0))
+        );
+
+        $details = (array) ($json['details'] ?? []);
+        if ($details !== []) {
+            $error_message .= ' | ' . implode(' | ', array_map('strval', $details));
+        }
+
+        return new WP_Error($error_code, $error_message);
     }
 
     /**

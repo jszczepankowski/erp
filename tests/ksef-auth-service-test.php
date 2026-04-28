@@ -183,4 +183,19 @@ if ($asyncResult instanceof WP_Error || ($asyncResult['ok'] ?? false) !== true |
     throw new RuntimeException('Expected async auth status fallback to resolve authenticationToken and redeem tokens.');
 }
 
+$connectorError = new ERP_OMD_KSeF_Connector_Fake();
+$connectorError->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-ERR']];
+$connectorError->responses['POST /auth/ksef-token'] = ['code' => 403, 'json' => [
+    'reasonCode' => 'context-type-not-allowed',
+    'detail' => 'Operacja nie jest dostępna dla uwierzytelnionego typu kontekstu.',
+]];
+$storageError = new ERP_OMD_KSeF_Auth_Storage();
+$storageError->clear_tokens('TEST');
+$serviceError = new ERP_OMD_KSeF_Auth_Service($connectorError, $storageError, $publicKeyService);
+$errorResult = $serviceError->ensure_access_token('TEST', 'KSEF-TOKEN-3', '1111111111');
+$assertions++;
+if (! ($errorResult instanceof WP_Error) || (string) $errorResult->get_error_code() !== 'context-type-not-allowed') {
+    throw new RuntimeException('Expected auth service to propagate KSeF API error details for non-2xx responses.');
+}
+
 echo "OK ({$assertions} assertions)\n";
