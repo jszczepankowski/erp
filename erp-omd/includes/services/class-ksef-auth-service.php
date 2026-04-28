@@ -141,7 +141,8 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         if ($single_use_token) {
             return $this->request('POST', (string) $path, [
                 'Authorization' => 'Bearer ' . $raw_token,
-            ], null, $environment);
+                'Content-Type' => 'application/json',
+            ], [], $environment);
         }
 
         $authorization_candidates = [
@@ -299,11 +300,18 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
      */
     private function extract_tokens(array $json)
     {
-        $access = (string) ($json['accessToken'] ?? $json['access_token'] ?? '');
-        $refresh = (string) ($json['refreshToken'] ?? $json['refresh_token'] ?? '');
+        $access_token_payload = $json['accessToken'] ?? $json['access_token'] ?? '';
+        $refresh_token_payload = $json['refreshToken'] ?? $json['refresh_token'] ?? '';
+        $access = $this->extract_token_value($access_token_payload);
+        $refresh = $this->extract_token_value($refresh_token_payload);
         if ($access === '' || $refresh === '') {
             return ['ok' => false, 'data' => []];
         }
+
+        $access_valid_until = $this->extract_token_valid_until($access_token_payload);
+        $refresh_valid_until = $this->extract_token_valid_until($refresh_token_payload);
+        $access_expires_at = $access_valid_until !== '' ? $access_valid_until : $this->build_expiration((int) ($json['accessTokenExpiresIn'] ?? $json['access_token_expires_in'] ?? 3600));
+        $refresh_expires_at = $refresh_valid_until !== '' ? $refresh_valid_until : $this->build_expiration((int) ($json['refreshTokenExpiresIn'] ?? $json['refresh_token_expires_in'] ?? 86400));
 
         return [
             'ok' => true,
@@ -311,10 +319,46 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 'token_type' => (string) ($json['tokenType'] ?? $json['token_type'] ?? 'Bearer'),
                 'access_token' => $access,
                 'refresh_token' => $refresh,
-                'access_expires_at' => $this->build_expiration((int) ($json['accessTokenExpiresIn'] ?? $json['access_token_expires_in'] ?? 3600)),
-                'refresh_expires_at' => $this->build_expiration((int) ($json['refreshTokenExpiresIn'] ?? $json['refresh_token_expires_in'] ?? 86400)),
+                'access_expires_at' => $access_expires_at,
+                'refresh_expires_at' => $refresh_expires_at,
             ],
         ];
+    }
+
+    /**
+     * @param mixed $payload
+     * @return string
+     */
+    private function extract_token_value($payload)
+    {
+        if (is_array($payload)) {
+            return trim((string) ($payload['token'] ?? $payload['Token'] ?? ''));
+        }
+
+        return trim((string) $payload);
+    }
+
+    /**
+     * @param mixed $payload
+     * @return string
+     */
+    private function extract_token_valid_until($payload)
+    {
+        if (! is_array($payload)) {
+            return '';
+        }
+
+        $value = trim((string) ($payload['validUntil'] ?? $payload['valid_until'] ?? ''));
+        if ($value === '') {
+            return '';
+        }
+
+        $timestamp = strtotime($value);
+        if (! is_int($timestamp) || $timestamp <= 0) {
+            return '';
+        }
+
+        return gmdate('Y-m-d H:i:s', $timestamp);
     }
 
     /**

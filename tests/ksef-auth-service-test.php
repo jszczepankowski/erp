@@ -297,4 +297,25 @@ if ($connectorRedeemSingleUse->redeem_calls !== 1) {
     throw new RuntimeException('Expected redeem endpoint to be called exactly once (single-use token).');
 }
 
+$connectorObjectTokens = new ERP_OMD_KSeF_Connector_Fake();
+$connectorObjectTokens->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-OBJECT']];
+$connectorObjectTokens->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-OBJECT']]];
+$connectorObjectTokens->responses['POST /auth/token/redeem'] = ['code' => 200, 'json' => [
+    'accessToken' => ['token' => 'ACCESS-OBJECT', 'validUntil' => '2030-01-01T12:00:00+00:00'],
+    'refreshToken' => ['token' => 'REFRESH-OBJECT', 'validUntil' => '2030-01-02T12:00:00+00:00'],
+]];
+$storageObjectTokens = new ERP_OMD_KSeF_Auth_Storage();
+$storageObjectTokens->clear_tokens('TEST');
+$serviceObjectTokens = new ERP_OMD_KSeF_Auth_Service($connectorObjectTokens, $storageObjectTokens, $publicKeyService);
+$objectResult = $serviceObjectTokens->ensure_access_token('TEST', 'KSEF-TOKEN-OBJECT', '1111111111');
+$assertions++;
+if ($objectResult instanceof WP_Error || ($objectResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected auth service to accept object-based access/refresh token payloads from redeem response.');
+}
+$storedObjectTokens = $storageObjectTokens->get_tokens('TEST');
+$assertions++;
+if (($storedObjectTokens['access_token'] ?? '') !== 'ACCESS-OBJECT' || ($storedObjectTokens['refresh_token'] ?? '') !== 'REFRESH-OBJECT') {
+    throw new RuntimeException('Expected object-based token payload to be persisted as plain token strings.');
+}
+
 echo "OK ({$assertions} assertions)\n";
