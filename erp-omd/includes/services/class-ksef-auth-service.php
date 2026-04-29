@@ -186,19 +186,19 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $raw_token,
+                        'Content-Type' => 'application/json',
+                    ],
+                    'body' => [],
+                    'label' => 'bearer-json-empty',
+                ],
+                [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $raw_token,
                         // Compatibility hint: some environments/documentation variants refer to AuthenticationToken explicitly.
                         'AuthenticationToken' => $raw_token,
                     ],
                     'body' => null,
                     'label' => 'bearer-authentication-token-header',
-                ],
-                [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $raw_token,
-                        'Content-Type' => 'application/json',
-                    ],
-                    'body' => [],
-                    'label' => 'bearer-json-empty',
                 ],
             ];
 
@@ -207,7 +207,8 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             foreach ($attempts as $attempt) {
                 $single_use_attempt_log[] = (string) ($attempt['label'] ?? 'unknown');
                 $response = $this->request('POST', (string) $path, (array) ($attempt['headers'] ?? []), $attempt['body'] ?? null, $environment);
-                if (! ($response instanceof WP_Error) || (string) $response->get_error_code() !== 'ksef_http_400') {
+                $code = (string) ($response instanceof WP_Error ? $response->get_error_code() : '');
+                if (! ($response instanceof WP_Error) || ! in_array($code, ['ksef_http_400', 'ksef_http_415', 'ksef_http_422'], true)) {
                     return $response;
                 }
                 $last_error = $response;

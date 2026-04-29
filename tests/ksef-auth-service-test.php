@@ -146,6 +146,40 @@ class ERP_OMD_KSeF_Connector_Redeem_400_Fallback_Fake extends ERP_OMD_KSeF_Conne
     }
 }
 
+class ERP_OMD_KSeF_Connector_Redeem_Json_Body_Required_Fake extends ERP_OMD_KSeF_Connector_Fake
+{
+    /** @var int */
+    public $redeem_calls = 0;
+
+    public function request($method, $path, array $headers = [], $body = null)
+    {
+        $method = strtoupper((string) $method);
+        $this->requests[] = ['method' => $method, 'path' => $path, 'headers' => $headers, 'body' => $body];
+
+        if ($method === 'POST' && $path === '/auth/token/redeem') {
+            $this->redeem_calls++;
+            $content_type = strtolower(trim((string) ($headers['Content-Type'] ?? '')));
+            if ($content_type === 'application/json' && is_array($body)) {
+                return ['code' => 200, 'json' => [
+                    'accessToken' => 'ACCESS-REDEEM-JSON-BODY',
+                    'refreshToken' => 'REFRESH-REDEEM-JSON-BODY',
+                    'accessTokenExpiresIn' => 120,
+                    'refreshTokenExpiresIn' => 3600,
+                ]];
+            }
+
+            return ['code' => 422, 'json' => ['description' => 'Redeem requires application/json body.']];
+        }
+
+        $key = $method . ' ' . $path;
+        if (isset($this->responses[$key])) {
+            return $this->responses[$key];
+        }
+
+        return new WP_Error('missing_response', 'Missing fake response for ' . $key);
+    }
+}
+
 class ERP_OMD_KSeF_Connector_Auth_Content_Type_Fallback_Fake extends ERP_OMD_KSeF_Connector_Fake
 {
     public function request($method, $path, array $headers = [], $body = null)
@@ -414,6 +448,22 @@ if ($redeem400FallbackResult instanceof WP_Error || ($redeem400FallbackResult['o
 $assertions++;
 if ($connectorRedeem400Fallback->redeem_calls !== 1) {
     throw new RuntimeException('Expected bearer-only redeem attempt to succeed without extra retries.');
+}
+
+$connectorRedeemJsonBodyRequired = new ERP_OMD_KSeF_Connector_Redeem_Json_Body_Required_Fake();
+$connectorRedeemJsonBodyRequired->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-REDEEM-JSON-BODY']];
+$connectorRedeemJsonBodyRequired->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-JSON-BODY'], 'status' => 'completed']];
+$storageRedeemJsonBodyRequired = new ERP_OMD_KSeF_Auth_Storage();
+$storageRedeemJsonBodyRequired->clear_tokens('TEST');
+$serviceRedeemJsonBodyRequired = new ERP_OMD_KSeF_Auth_Service($connectorRedeemJsonBodyRequired, $storageRedeemJsonBodyRequired, $publicKeyService);
+$redeemJsonBodyResult = $serviceRedeemJsonBodyRequired->ensure_access_token('TEST', 'KSEF-TOKEN-REDEEM-JSON-BODY', '1111111111');
+$assertions++;
+if ($redeemJsonBodyResult instanceof WP_Error || ($redeemJsonBodyResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected redeem flow to fallback to application/json empty body when server requires JSON payload.');
+}
+$assertions++;
+if ($connectorRedeemJsonBodyRequired->redeem_calls !== 2) {
+    throw new RuntimeException('Expected redeem flow to retry and succeed on second attempt with JSON body.');
 }
 
 $connectorObjectTokens = new ERP_OMD_KSeF_Connector_Fake();
