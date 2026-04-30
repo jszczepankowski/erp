@@ -180,6 +180,41 @@ class ERP_OMD_KSeF_Connector_Redeem_Json_Body_Required_Fake extends ERP_OMD_KSeF
     }
 }
 
+class ERP_OMD_KSeF_Connector_Redeem_Raw_Authorization_Required_Fake extends ERP_OMD_KSeF_Connector_Fake
+{
+    /** @var int */
+    public $redeem_calls = 0;
+
+    public function request($method, $path, array $headers = [], $body = null)
+    {
+        $method = strtoupper((string) $method);
+        $this->requests[] = ['method' => $method, 'path' => $path, 'headers' => $headers, 'body' => $body];
+
+        if ($method === 'POST' && $path === '/auth/token/redeem') {
+            $this->redeem_calls++;
+            $authorization = trim((string) ($headers['Authorization'] ?? ''));
+            $is_raw = $authorization !== '' && strpos($authorization, 'Bearer ') !== 0;
+            if ($is_raw) {
+                return ['code' => 200, 'json' => [
+                    'accessToken' => 'ACCESS-REDEEM-RAW-AUTH',
+                    'refreshToken' => 'REFRESH-REDEEM-RAW-AUTH',
+                    'accessTokenExpiresIn' => 120,
+                    'refreshTokenExpiresIn' => 3600,
+                ]];
+            }
+
+            return ['code' => 400, 'json' => ['description' => 'Redeem requires raw Authorization token.']];
+        }
+
+        $key = $method . ' ' . $path;
+        if (isset($this->responses[$key])) {
+            return $this->responses[$key];
+        }
+
+        return new WP_Error('missing_response', 'Missing fake response for ' . $key);
+    }
+}
+
 class ERP_OMD_KSeF_Connector_Auth_Content_Type_Fallback_Fake extends ERP_OMD_KSeF_Connector_Fake
 {
     public function request($method, $path, array $headers = [], $body = null)
@@ -464,6 +499,22 @@ if ($redeemJsonBodyResult instanceof WP_Error || ($redeemJsonBodyResult['ok'] ??
 $assertions++;
 if ($connectorRedeemJsonBodyRequired->redeem_calls !== 2) {
     throw new RuntimeException('Expected redeem flow to retry and succeed on second attempt with JSON body.');
+}
+
+$connectorRedeemRawAuthorizationRequired = new ERP_OMD_KSeF_Connector_Redeem_Raw_Authorization_Required_Fake();
+$connectorRedeemRawAuthorizationRequired->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-REDEEM-RAW-AUTH']];
+$connectorRedeemRawAuthorizationRequired->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-RAW-AUTH'], 'status' => 'completed']];
+$storageRedeemRawAuthorizationRequired = new ERP_OMD_KSeF_Auth_Storage();
+$storageRedeemRawAuthorizationRequired->clear_tokens('TEST');
+$serviceRedeemRawAuthorizationRequired = new ERP_OMD_KSeF_Auth_Service($connectorRedeemRawAuthorizationRequired, $storageRedeemRawAuthorizationRequired, $publicKeyService);
+$redeemRawAuthorizationResult = $serviceRedeemRawAuthorizationRequired->ensure_access_token('TEST', 'KSEF-TOKEN-REDEEM-RAW-AUTH', '1111111111');
+$assertions++;
+if ($redeemRawAuthorizationResult instanceof WP_Error || ($redeemRawAuthorizationResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected redeem flow to fallback to raw Authorization token when Bearer variants are rejected.');
+}
+$assertions++;
+if ($connectorRedeemRawAuthorizationRequired->redeem_calls !== 4) {
+    throw new RuntimeException('Expected redeem flow to succeed on raw Authorization fallback after Bearer variants.');
 }
 
 $connectorObjectTokens = new ERP_OMD_KSeF_Connector_Fake();
