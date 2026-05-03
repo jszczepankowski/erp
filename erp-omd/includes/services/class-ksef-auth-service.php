@@ -42,7 +42,9 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
     public function get_challenge($environment)
     {
-        return $this->request('POST', '/auth/challenge', [], null, $environment);
+        return $this->request('POST', '/auth/challenge', [
+            'Content-Type' => 'application/json',
+        ], [], $environment);
     }
 
     public function authenticate_with_ksef_token($environment, $ksef_token, $context_identifier)
@@ -674,8 +676,8 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
         $key = strtolower(preg_replace('/[^a-z0-9]/i', '', $raw) ?: '');
         $aliases = [
-            'nip' => 'Nip',
-            'plnip' => 'Nip',
+            'nip' => 'NIP',
+            'plnip' => 'NIP',
             'internalid' => 'InternalId',
         ];
 
@@ -683,7 +685,12 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             return $aliases[$key];
         }
 
-        return ucfirst(strtolower($raw));
+        $normalized = ucfirst(strtolower($raw));
+        if ($normalized === 'Nip') {
+            return 'NIP';
+        }
+
+        return $normalized;
     }
 
     /**
@@ -785,7 +792,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
             $context_digits = preg_replace('/[^0-9]/', '', $context_value);
             if ($context_type === 'InternalId' && is_string($context_digits) && strlen($context_digits) > 0 && strlen($context_digits) !== 10) {
-                $error_message .= ' | hint: ustaw ContextIdentifier jako Nip:XXXXXXXXXX (10 cyfr NIP) lub jawnie InternalId:<wartosc> jeżeli wymagane.';
+                $error_message .= ' | hint: ustaw ContextIdentifier jako NIP:XXXXXXXXXX (10 cyfr NIP) lub jawnie InternalId:<wartosc> jeżeli wymagane.';
             }
         }
 
@@ -858,7 +865,11 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     private function build_auth_token_request_xml($challenge, array $context_payload, $encrypted_token)
     {
         $challenge = htmlspecialchars((string) $challenge, ENT_QUOTES | ENT_XML1, 'UTF-8');
-        $context_type = htmlspecialchars((string) ($context_payload['type'] ?? ''), ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $context_type_raw = (string) ($context_payload['type'] ?? '');
+        if (strtolower($context_type_raw) === 'nip') {
+            $context_type_raw = 'NIP';
+        }
+        $context_type = htmlspecialchars($context_type_raw, ENT_QUOTES | ENT_XML1, 'UTF-8');
         $context_value = htmlspecialchars((string) ($context_payload['value'] ?? ''), ENT_QUOTES | ENT_XML1, 'UTF-8');
         $encrypted_token = htmlspecialchars((string) $encrypted_token, ENT_QUOTES | ENT_XML1, 'UTF-8');
 

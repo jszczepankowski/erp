@@ -324,7 +324,7 @@ if (! is_array($redeemRequest) || $hasContentType || ! $redeemBodyIsNull || strp
 
 $authRequestBody = (string) ($connector->requests[1]['body'] ?? '');
 $assertions++;
-if (strpos($authRequestBody, '<ContextIdentifier Type="Nip">1111111111</ContextIdentifier>') === false) {
+if (strpos($authRequestBody, '<ContextIdentifier Type="NIP">1111111111</ContextIdentifier>') === false) {
     throw new RuntimeException('Expected auth request XML to contain normalized ContextIdentifier for KSeF API.');
 }
 
@@ -336,8 +336,8 @@ $serviceTypeAlias = new ERP_OMD_KSeF_Auth_Service($connectorTypeAlias, $storageT
 $serviceTypeAlias->authenticate_with_ksef_token('TEST', 'KSEF-TOKEN-TYPE', 'NIP:1111111111');
 $aliasRequestBody = (string) ($connectorTypeAlias->requests[1]['body'] ?? '');
 $assertions++;
-if (strpos($aliasRequestBody, 'Type="Nip"') === false) {
-    throw new RuntimeException('Expected contextIdentifier aliases such as NIP to be normalized to Nip in auth XML.');
+if (strpos($aliasRequestBody, 'Type="NIP"') === false) {
+    throw new RuntimeException('Expected contextIdentifier aliases such as NIP to be normalized to NIP in auth XML.');
 }
 
 $connectorAsync = new ERP_OMD_KSeF_Connector_Fake();
@@ -449,7 +449,7 @@ if (strpos((string) $errorResult->get_error_message(), 'endpoint: POST /auth/kse
     throw new RuntimeException('Expected auth error message to include endpoint details for API diagnostics.');
 }
 $assertions++;
-if (strpos((string) $errorResult->get_error_message(), 'hint: ustaw ContextIdentifier jako Nip:XXXXXXXXXX') === false) {
+if (strpos((string) $errorResult->get_error_message(), 'hint: ustaw ContextIdentifier jako NIP:XXXXXXXXXX') === false) {
     throw new RuntimeException('Expected auth diagnostics hint for likely invalid InternalId context format.');
 }
 
@@ -565,12 +565,20 @@ if (count($authKsefTokenRequests) !== 2) {
 $firstAttemptContentType = strtolower((string) (($authKsefTokenRequests[0]['headers']['Content-Type'] ?? '')));
 $secondAttemptContentType = strtolower((string) (($authKsefTokenRequests[1]['headers']['Content-Type'] ?? '')));
 $secondAttemptBody = $authKsefTokenRequests[1]['body'] ?? null;
+$secondAttemptContextType = '';
+if (is_array($secondAttemptBody)) {
+    $secondAttemptContextType = (string) ($secondAttemptBody['contextIdentifier']['type'] ?? '');
+} elseif (is_string($secondAttemptBody)) {
+    $decodedSecondAttemptBody = json_decode($secondAttemptBody, true);
+    if (is_array($decodedSecondAttemptBody)) {
+        $secondAttemptContextType = (string) ($decodedSecondAttemptBody['contextIdentifier']['type'] ?? '');
+    }
+}
 $assertions++;
 if (
     $firstAttemptContentType !== 'application/xml'
     || $secondAttemptContentType !== 'application/json'
-    || ! is_array($secondAttemptBody)
-    || (string) ($secondAttemptBody['contextIdentifier']['type'] ?? '') !== 'Nip'
+    || ! in_array($secondAttemptContextType, ['NIP', 'Nip'], true)
 ) {
     throw new RuntimeException('Expected /auth/ksef-token fallback sequence: XML first, then JSON payload with contextIdentifier.');
 }
