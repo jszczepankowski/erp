@@ -2595,6 +2595,7 @@ class ERP_OMD_Admin
         $error_code = (string) ($result['error_code'] ?? 'unknown_error');
         $error_message = trim((string) ($result['error_message'] ?? ''));
         $label = $error_message !== '' ? $error_code . ' (' . $error_message . ')' : $error_code;
+        $label = $this->append_ksef_export_stage_hint($label, (string) ($result['status'] ?? ''));
         $this->redirect_with_notice('erp-omd-settings', 'error', sprintf(__('Dry-run KSeF Sync Hub zakończony błędem: %s', 'erp-omd'), $label), ['tab' => 'ksef']);
     }
 
@@ -2808,19 +2809,48 @@ class ERP_OMD_Admin
         }
 
         $hints = [
-            'auth.challenge' => __('Etap challenge: sprawdź base URL środowiska KSeF, dostępność endpointu /auth/challenge i czy request idzie jako application/json.', 'erp-omd'),
-            'auth.public_key' => __('Etap public key: sprawdź, czy zapisano poprawny certyfikat MF (PEM) dla wybranego środowiska oraz czy nie wygasł.', 'erp-omd'),
-            'auth.encrypt_token' => __('Etap szyfrowania tokenu: sprawdź format Token AP i zgodność klucza publicznego z aktualnym środowiskiem.', 'erp-omd'),
-            'auth.ksef_token' => __('Etap /auth/ksef-token: sprawdź ContextIdentifier (np. NIP), format payloadu XML/JSON oraz czy challenge nie wygasł.', 'erp-omd'),
-            'auth.status_poll' => __('Etap polling statusu: sprawdź referenceNumber, opóźnienia/OCSP/CRL oraz czy status nie wymaga dłuższego oczekiwania.', 'erp-omd'),
-            'auth.redeem' => __('Etap redeem: sprawdź format Authorization (Bearer), jednorazowość authenticationToken oraz wymagany body/Content-Type.', 'erp-omd'),
+            'auth.challenge' => __('[1/6 challenge] sprawdź base URL środowiska KSeF, dostępność endpointu /auth/challenge i czy request idzie jako application/json.', 'erp-omd'),
+            'auth.public_key' => __('[2/6 public key] sprawdź, czy zapisano poprawny certyfikat MF (PEM) dla wybranego środowiska oraz czy nie wygasł.', 'erp-omd'),
+            'auth.encrypt_token' => __('[3/6 encrypt token] sprawdź format Token AP i zgodność klucza publicznego z aktualnym środowiskiem.', 'erp-omd'),
+            'auth.ksef_token' => __('[4/6 auth request] sprawdź ContextIdentifier (np. NIP), format payloadu XML/JSON oraz czy challenge nie wygasł.', 'erp-omd'),
+            'auth.status_poll' => __('[5/6 status polling] sprawdź referenceNumber, opóźnienia/OCSP/CRL oraz czy status nie wymaga dłuższego oczekiwania.', 'erp-omd'),
+            'auth.redeem' => __('[6/6 redeem JWT] sprawdź format Authorization (Bearer), jednorazowość authenticationToken oraz wymagany body/Content-Type.', 'erp-omd'),
         ];
 
         if (! isset($hints[$stage])) {
             return $message;
         }
 
-        return $message . ' | hint_stage: ' . $hints[$stage];
+        $flow_map = __('flow_auth=1.challenge -> 2.public_key -> 3.encrypt_token -> 4.auth_ksef_token -> 5.status_polling -> 6.redeem_jwt', 'erp-omd');
+
+        return $message . ' | hint_stage: ' . $hints[$stage] . ' | ' . $flow_map;
+    }
+
+    /**
+     * @param string $label
+     * @param string $status
+     * @return string
+     */
+    private function append_ksef_export_stage_hint($label, $status)
+    {
+        $message = trim((string) $label);
+        $status = trim((string) $status);
+        if ($message === '') {
+            return '';
+        }
+
+        $hints = [
+            'start_failed' => __('[export 1/3 start] sprawdź payload /invoices/exports (subjectType, from/to) i uprawnienia tokenu JWT.', 'erp-omd'),
+            'pending_timeout' => __('[export 2/3 polling] eksport uruchomiony, ale status nie przeszedł na completed w czasie dry-run.', 'erp-omd'),
+            'download_failed' => __('[export 3/3 download] sprawdź pobieranie części exportu oraz dostępność paczki po referenceNumber.', 'erp-omd'),
+        ];
+
+        $flow_map = __('flow_export=1.start_export -> 2.poll_status -> 3.download_parts', 'erp-omd');
+        if ($status !== '' && isset($hints[$status])) {
+            return $message . ' | hint_stage: ' . $hints[$status] . ' | ' . $flow_map;
+        }
+
+        return $message . ' | ' . $flow_map;
     }
 
     private function handle_ksef_queue_moderation_action()
