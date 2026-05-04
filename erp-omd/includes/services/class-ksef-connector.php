@@ -63,12 +63,35 @@ class ERP_OMD_KSeF_Connector
             $this->resolved_prefix = $prefix;
             $raw_body = (string) wp_remote_retrieve_body($response);
             $json = json_decode($raw_body, true);
+            $raw_headers = wp_remote_retrieve_headers($response);
+            $headers_array = [];
+            if (is_array($raw_headers)) {
+                $headers_array = $raw_headers;
+            } elseif (is_object($raw_headers) && method_exists($raw_headers, 'getAll')) {
+                $headers_array = (array) $raw_headers->getAll();
+            } elseif (is_object($raw_headers) && method_exists($raw_headers, 'getallheaders')) {
+                $headers_array = (array) $raw_headers->getallheaders();
+            }
+
+            $normalized_headers = [];
+            foreach ($headers_array as $header_name => $header_value) {
+                $key = strtolower((string) $header_name);
+                if ($key === '') {
+                    continue;
+                }
+                if (is_array($header_value)) {
+                    $normalized_headers[$key] = implode(', ', array_map('strval', $header_value));
+                } else {
+                    $normalized_headers[$key] = (string) $header_value;
+                }
+            }
 
             return [
                 'code' => $code,
                 'raw_body' => $raw_body,
                 'json' => is_array($json) ? $json : null,
                 'url' => $url,
+                'headers' => $normalized_headers,
             ];
         }
 
