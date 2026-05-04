@@ -1116,7 +1116,13 @@ class ERP_OMD_Admin
                 $this->acknowledge_project_kolko_notification($project, $project_notes);
                 $project_rates = $this->project_rates->for_project((int) $project['id']);
                 $project_cost_rows = $this->project_costs->for_project((int) $project['id']);
-                $project_cost_invoice_rows = (new ERP_OMD_Cost_Invoice_Repository())->list(['project_id' => (int) $project['id']]);
+                $project_cost_invoice_rows = array_values(array_filter(
+                    (new ERP_OMD_Cost_Invoice_Repository())->list(['status' => 'zatwierdzona']),
+                    static function ($invoice_row) use ($project) {
+                        $invoice_project_id = (int) ($invoice_row['project_id'] ?? 0);
+                        return $invoice_project_id === 0 || $invoice_project_id === (int) ($project['id'] ?? 0);
+                    }
+                ));
                 $project_revenue_rows = $this->project_revenues->for_project((int) $project['id']);
                 $edit_project_cost_id = (int) ($_GET['edit_project_cost_id'] ?? 0);
                 if ($edit_project_cost_id > 0) {
@@ -3952,8 +3958,19 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono faktury kosztowej.', 'erp-omd'), ['id' => $project_id]);
         }
 
-        if ((int) ($invoice['project_id'] ?? 0) !== $project_id) {
-            $this->redirect_with_notice('erp-omd-projects', 'error', __('Ta faktura kosztowa nie jest przypięta do wybranego projektu.', 'erp-omd'), ['id' => $project_id]);
+        $invoice_project_id = (int) ($invoice['project_id'] ?? 0);
+        if ($invoice_project_id > 0 && $invoice_project_id !== $project_id) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Ta faktura kosztowa jest przypięta do innego projektu.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        if ((string) ($invoice['status'] ?? '') !== 'zatwierdzona' && (string) ($invoice['status'] ?? '') !== 'przypisana') {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Do podłączenia kosztu wybierz fakturę o statusie "zatwierdzona".', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        if ($invoice_project_id === 0) {
+            $invoice['project_id'] = $project_id;
+            $invoice['status'] = 'przypisana';
+            $invoice_repository->update($invoice_id, $invoice);
         }
 
         $description = $this->build_project_cost_description_for_invoice($invoice_id, $invoice);

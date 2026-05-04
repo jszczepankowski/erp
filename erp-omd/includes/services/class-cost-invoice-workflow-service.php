@@ -52,19 +52,8 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
             return false;
         }
 
-        if ($current_status === $next_status) {
-            return true;
-        }
-
-        $transitions = [
-            'zaimportowana' => ['weryfikacja', 'nieistotne'],
-            'weryfikacja' => ['zaimportowana', 'zatwierdzona', 'nieistotne'],
-            'zatwierdzona' => ['weryfikacja', 'przypisana', 'nieistotne'],
-            'przypisana' => ['zatwierdzona'],
-            'nieistotne' => ['zaimportowana', 'weryfikacja'],
-        ];
-
-        return in_array($next_status, $transitions[$current_status] ?? [], true);
+        return in_array($current_status, $this->allowed_statuses(), true)
+            && in_array($next_status, $this->allowed_statuses(), true);
     }
 
     /**

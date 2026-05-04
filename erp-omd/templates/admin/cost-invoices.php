@@ -567,6 +567,17 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             </p>
             <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML sprzedażowy', 'erp-omd'); ?></button></p>
         </form>
+        <div class="erp-omd-table-tools" style="margin: 8px 0 14px;">
+            <?php
+            $sales_filter_all_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'all'], admin_url('admin.php'));
+            $sales_filter_assigned_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'assigned'], admin_url('admin.php'));
+            $sales_filter_unassigned_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'unassigned'], admin_url('admin.php'));
+            ?>
+            <strong><?php esc_html_e('Filtr przypisania:', 'erp-omd'); ?></strong>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'assigned' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_assigned_url); ?>"><?php esc_html_e('Przypisane', 'erp-omd'); ?></a>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'unassigned' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_unassigned_url); ?>"><?php esc_html_e('Nie przypisane', 'erp-omd'); ?></a>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'all' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_all_url); ?>"><?php esc_html_e('Wszystkie', 'erp-omd'); ?></a>
+        </div>
 
         <table class="widefat striped">
             <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>

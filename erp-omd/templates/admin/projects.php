@@ -361,7 +361,7 @@
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label for="attach-cost-invoice-id"><?php esc_html_e('Dodaj koszt z faktury kosztowej (netto)', 'erp-omd'); ?></label>
                                         <select id="attach-cost-invoice-id" name="cost_invoice_id">
-                                            <option value=""><?php esc_html_e('Wybierz fakturę przypisaną do tego projektu', 'erp-omd'); ?></option>
+                                            <option value=""><?php esc_html_e('Wybierz fakturę o statusie „zatwierdzona”', 'erp-omd'); ?></option>
                                             <?php foreach ((array) ($project_cost_invoice_rows ?? []) as $project_cost_invoice_row) : ?>
                                                 <option value="<?php echo esc_attr((string) ((int) ($project_cost_invoice_row['id'] ?? 0))); ?>">
                                                     <?php
