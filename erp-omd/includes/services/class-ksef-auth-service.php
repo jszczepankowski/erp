@@ -179,13 +179,18 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         if ($single_use_token) {
             $headers = [
                 'Authorization' => 'Bearer ' . $raw_token,
+                'AuthenticationToken' => $raw_token,
+                'Content-Type' => 'application/json',
+            ];
+            $body = [
+                'authenticationToken' => $raw_token,
             ];
 
-            $response = $this->request('POST', (string) $path, $headers, null, $environment);
+            $response = $this->request('POST', (string) $path, $headers, $body, $environment);
             if ($response instanceof WP_Error) {
                 return new WP_Error(
                     (string) $response->get_error_code(),
-                    (string) $response->get_error_message() . ' | single_use_token_exchange_attempts: bearer-no-body'
+                    (string) $response->get_error_message() . ' | single_use_token_exchange_attempts: bearer+auth-header+json-body'
                 );
             }
 
