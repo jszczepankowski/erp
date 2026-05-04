@@ -193,46 +193,6 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                     'body' => [],
                     'label' => 'bearer-json-empty',
                 ],
-                [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $raw_token,
-                        // Compatibility hint: some environments/documentation variants refer to AuthenticationToken explicitly.
-                        'AuthenticationToken' => $raw_token,
-                    ],
-                    'body' => null,
-                    'label' => 'bearer-authentication-token-header',
-                ],
-                [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $raw_token,
-                        'Content-Type' => 'application/json',
-                    ],
-                    'body' => ['token' => $raw_token],
-                    'label' => 'bearer-json-token-field',
-                ],
-                [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $raw_token,
-                        'Content-Type' => 'application/json',
-                    ],
-                    'body' => ['authenticationToken' => $raw_token],
-                    'label' => 'bearer-json-authentication-token-field',
-                ],
-                [
-                    'headers' => [
-                        'AuthenticationToken' => $raw_token,
-                        'Content-Type' => 'application/json',
-                    ],
-                    'body' => [],
-                    'label' => 'authentication-token-header-json-empty',
-                ],
-                [
-                    'headers' => [
-                        'AuthenticationToken' => $raw_token,
-                    ],
-                    'body' => null,
-                    'label' => 'authentication-token-header-only',
-                ],
             ];
 
             $single_use_attempt_log = [];
@@ -241,11 +201,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 $single_use_attempt_log[] = (string) ($attempt['label'] ?? 'unknown');
                 $response = $this->request('POST', (string) $path, (array) ($attempt['headers'] ?? []), $attempt['body'] ?? null, $environment);
                 $code = (string) ($response instanceof WP_Error ? $response->get_error_code() : '');
-                $is_auth_token_header_variant = strpos((string) ($attempt['label'] ?? ''), 'authentication-token-header') === 0;
                 $retryable_codes = ['ksef_http_400', 'ksef_http_415', 'ksef_http_422'];
-                if ($is_auth_token_header_variant) {
-                    $retryable_codes[] = 'ksef_http_401';
-                }
                 if (! ($response instanceof WP_Error) || ! in_array($code, $retryable_codes, true)) {
                     return $response;
                 }
