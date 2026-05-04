@@ -590,12 +590,12 @@ $storageRedeemTokenBodyRequired->clear_tokens('TEST');
 $serviceRedeemTokenBodyRequired = new ERP_OMD_KSeF_Auth_Service($connectorRedeemTokenBodyRequired, $storageRedeemTokenBodyRequired, $publicKeyService);
 $redeemTokenBodyResult = $serviceRedeemTokenBodyRequired->ensure_access_token('TEST', 'KSEF-TOKEN-REDEEM-TOKEN-BODY', '1111111111');
 $assertions++;
-if (! ($redeemTokenBodyResult instanceof WP_Error) || (string) $redeemTokenBodyResult->get_error_code() !== 'ksef_http_400') {
-    throw new RuntimeException('Expected redeem flow to stop after canonical bearer variants when endpoint requires non-canonical token body.');
+if ($redeemTokenBodyResult instanceof WP_Error || ($redeemTokenBodyResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected redeem flow to fallback to JSON payload containing authenticationToken when endpoint requires explicit token body.');
 }
 $assertions++;
-if ($connectorRedeemTokenBodyRequired->redeem_calls !== 2) {
-    throw new RuntimeException('Expected redeem token-body scenario to perform exactly two canonical bearer attempts.');
+if ($connectorRedeemTokenBodyRequired->redeem_calls !== 3) {
+    throw new RuntimeException('Expected redeem token-body scenario to perform exactly three bearer-based attempts.');
 }
 
 $connectorRedeemAuthenticationTokenHeaderRequired = new ERP_OMD_KSeF_Connector_Redeem_AuthenticationToken_Header_Required_Fake();
@@ -610,8 +610,8 @@ if (! ($redeemAuthenticationTokenHeaderResult instanceof WP_Error) || (string) $
     throw new RuntimeException('Expected redeem flow to stop after canonical bearer variants when endpoint requires AuthenticationToken-only format.');
 }
 $assertions++;
-if ($connectorRedeemAuthenticationTokenHeaderRequired->redeem_calls !== 2) {
-    throw new RuntimeException('Expected redeem AuthenticationToken-only scenario to perform exactly two canonical bearer attempts.');
+if ($connectorRedeemAuthenticationTokenHeaderRequired->redeem_calls !== 3) {
+    throw new RuntimeException('Expected redeem AuthenticationToken-only scenario to perform exactly three bearer-based attempts.');
 }
 
 $connectorRedeemAuthenticationTokenHeaderJsonRequired = new ERP_OMD_KSeF_Connector_Redeem_AuthenticationToken_Header_Json_Required_Fake();
@@ -629,8 +629,8 @@ if (
     throw new RuntimeException('Expected redeem flow to propagate the final HTTP auth/payload error when endpoint rejects canonical bearer variants.');
 }
 $assertions++;
-if ($connectorRedeemAuthenticationTokenHeaderJsonRequired->redeem_calls !== 2) {
-    throw new RuntimeException('Expected redeem AuthenticationToken-json scenario to perform exactly two canonical bearer attempts.');
+if ($connectorRedeemAuthenticationTokenHeaderJsonRequired->redeem_calls !== 3) {
+    throw new RuntimeException('Expected redeem AuthenticationToken-json scenario to perform exactly three bearer-based attempts.');
 }
 
 $connectorObjectTokens = new ERP_OMD_KSeF_Connector_Fake();

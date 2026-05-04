@@ -193,6 +193,14 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                     'body' => [],
                     'label' => 'bearer-json-empty',
                 ],
+                [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $raw_token,
+                        'Content-Type' => 'application/json',
+                    ],
+                    'body' => ['authenticationToken' => $raw_token],
+                    'label' => 'bearer-json-authentication-token-field',
+                ],
             ];
 
             $single_use_attempt_log = [];
