@@ -45,6 +45,7 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                             $estimates->save_client_decision_note($estimate_id, $note);
                             self::append_accept_note_to_project_history($estimate_id, $note, $result);
                             self::send_thank_you_mail($estimate_id, $estimates, $estimate_items, $estimate_service);
+                            self::send_acceptance_notification_to_agency($estimate_id, $estimates, $estimate_items, $estimate_service, (array) $result);
                             $notice_type = 'success';
                             $notice_message = __('Dziękujemy. Kosztorys został zaakceptowany.', 'erp-omd');
                             $decision_done = true;
@@ -131,8 +132,72 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
 
             $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
             $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
-            $body .= self::build_summary_table_html($items, $totals);
+            $body .= self::build_summary_table_html($items, $totals, true);
             wp_mail($client_email, $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);
+        }
+
+        private static function send_acceptance_notification_to_agency($estimate_id, ERP_OMD_Estimate_Repository $estimates, ERP_OMD_Estimate_Item_Repository $estimate_items, ERP_OMD_Estimate_Service $estimate_service, array $accept_result = [])
+        {
+            $estimate = (array) $estimates->find((int) $estimate_id);
+            if ($estimate === []) {
+                return;
+            }
+
+            $project = (array) ($accept_result['project'] ?? []);
+            $project_manager_ids = [];
+            $project_manager_ids[] = (int) ($project['manager_id'] ?? 0);
+            foreach ((array) ($project['manager_ids'] ?? []) as $manager_id) {
+                $project_manager_ids[] = (int) $manager_id;
+            }
+            $project_manager_ids = array_values(array_unique(array_filter($project_manager_ids)));
+
+            $recipients = [];
+            if (function_exists('get_users')) {
+                $admins = get_users([
+                    'role' => 'administrator',
+                    'fields' => ['user_email'],
+                ]);
+                foreach ((array) $admins as $admin_user) {
+                    $admin_email = sanitize_email((string) ($admin_user->user_email ?? ''));
+                    if (is_email($admin_email)) {
+                        $recipients[$admin_email] = $admin_email;
+                    }
+                }
+            }
+
+            foreach ($project_manager_ids as $manager_user_id) {
+                $manager_email = sanitize_email((string) get_the_author_meta('user_email', $manager_user_id));
+                if (is_email($manager_email)) {
+                    $recipients[$manager_email] = $manager_email;
+                }
+            }
+
+            if ($recipients === []) {
+                return;
+            }
+
+            $items = (array) $estimate_items->for_estimate((int) $estimate_id);
+            $totals = $estimate_service->calculate_totals((array) $items);
+            $estimate_name = (string) ($estimate['name'] ?? ('#' . (int) $estimate_id));
+            $client_note = trim((string) ($estimate['client_decision_note'] ?? ''));
+            $project_name = trim((string) ($project['name'] ?? ''));
+
+            $mail_defaults = [
+                'subject' => __('[ERP OMD] Klient zaakceptował kosztorys: {estimate_name}', 'erp-omd'),
+                'body' => __('Klient zaakceptował kosztorys <strong>{estimate_name}</strong>.<br><br>Projekt: <strong>{project_name}</strong><br>Kwota brutto: <strong>{final_gross}</strong><br>Uwagi klienta: {client_note}', 'erp-omd'),
+            ];
+            $mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_internal_accept_mail_settings', []), $mail_defaults);
+            $tokens = [
+                '{estimate_name}' => $estimate_name,
+                '{project_name}' => ($project_name !== '' ? $project_name : '—'),
+                '{final_gross}' => number_format_i18n((float) ($totals['gross'] ?? 0), 2),
+                '{client_note}' => ($client_note !== '' ? $client_note : '—'),
+            ];
+            $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
+            $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
+            $body .= self::build_summary_table_html((array) $items, $totals, true);
+
+            wp_mail(array_values($recipients), $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);
         }
 
         private static function append_accept_note_to_project_history($estimate_id, $note, array $accept_result = [])
@@ -193,14 +258,18 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             return (int) $admins[0]->ID;
         }
 
-        private static function build_summary_table_html(array $items, array $totals)
+        private static function build_summary_table_html(array $items, array $totals, $include_comment_column = false)
         {
             if (empty($items)) {
                 return '';
             }
 
             $html = '<br><table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">';
-            $html .= '<thead><tr><th>' . esc_html__('Pozycja', 'erp-omd') . '</th><th>' . esc_html__('Ilość', 'erp-omd') . '</th><th>' . esc_html__('Cena', 'erp-omd') . '</th><th>' . esc_html__('Wartość', 'erp-omd') . '</th></tr></thead><tbody>';
+            $html .= '<thead><tr><th>' . esc_html__('Pozycja', 'erp-omd') . '</th><th>' . esc_html__('Ilość', 'erp-omd') . '</th><th>' . esc_html__('Cena', 'erp-omd') . '</th><th>' . esc_html__('Wartość', 'erp-omd') . '</th>';
+            if ($include_comment_column) {
+                $html .= '<th>' . esc_html__('Uwagi', 'erp-omd') . '</th>';
+            }
+            $html .= '</tr></thead><tbody>';
             foreach ($items as $item_row) {
                 $qty = (float) ($item_row['qty'] ?? 0);
                 $price = (float) ($item_row['price'] ?? 0);
@@ -210,11 +279,16 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 $html .= '<td>' . esc_html(number_format_i18n($qty, 2)) . '</td>';
                 $html .= '<td>' . esc_html(number_format_i18n($price, 2)) . '</td>';
                 $html .= '<td>' . esc_html(number_format_i18n($line_total, 2)) . '</td>';
+                if ($include_comment_column) {
+                    $comment = trim((string) ($item_row['comment'] ?? ''));
+                    $html .= '<td>' . esc_html($comment !== '' ? $comment : '—') . '</td>';
+                }
                 $html .= '</tr>';
             }
+            $totals_colspan = $include_comment_column ? 4 : 3;
             $html .= '</tbody><tfoot>';
-            $html .= '<tr><th colspan="3" style="text-align:right;">' . esc_html__('Suma netto', 'erp-omd') . '</th><th>' . esc_html(number_format_i18n((float) ($totals['net'] ?? 0), 2)) . '</th></tr>';
-            $html .= '<tr><th colspan="3" style="text-align:right;">' . esc_html__('Suma brutto', 'erp-omd') . '</th><th>' . esc_html(number_format_i18n((float) ($totals['gross'] ?? 0), 2)) . '</th></tr>';
+            $html .= '<tr><th colspan="' . (int) $totals_colspan . '" style="text-align:right;">' . esc_html__('Suma netto', 'erp-omd') . '</th><th>' . esc_html(number_format_i18n((float) ($totals['net'] ?? 0), 2)) . '</th></tr>';
+            $html .= '<tr><th colspan="' . (int) $totals_colspan . '" style="text-align:right;">' . esc_html__('Suma brutto', 'erp-omd') . '</th><th>' . esc_html(number_format_i18n((float) ($totals['gross'] ?? 0), 2)) . '</th></tr>';
             $html .= '</tfoot></table>';
 
             return $html;

@@ -379,6 +379,36 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                 </select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
             </form>
+            <?php
+            $invoice_status_labels = [
+                '' => __('Wszystkie', 'erp-omd'),
+                'zaimportowana' => __('Zaimportowana', 'erp-omd'),
+                'weryfikacja' => __('Weryfikacja', 'erp-omd'),
+                'zatwierdzona' => __('Zatwierdzona', 'erp-omd'),
+                'przypisana' => __('Przypisana', 'erp-omd'),
+                'nieistotne' => __('Nieistotne', 'erp-omd'),
+            ];
+            ?>
+            <div class="erp-omd-filter-form" style="margin-bottom:12px;">
+                <?php foreach ($invoice_status_labels as $status_key => $status_label) : ?>
+                    <?php
+                    $status_filter_url = add_query_arg(
+                        [
+                            'page' => 'erp-omd-cost-invoices',
+                            'tab' => 'invoices',
+                            'invoice_id' => $selected_invoice_id,
+                            'invoice_supplier_id' => (int) ($invoice_list_filters['supplier_id'] ?? 0),
+                            'invoice_project_id' => (int) ($invoice_list_filters['project_id'] ?? 0),
+                            'invoice_status' => $status_key,
+                        ],
+                        admin_url('admin.php')
+                    );
+                    ?>
+                    <a class="button <?php echo (string) ($invoice_list_filters['status'] ?? '') === (string) $status_key ? 'button-primary' : ''; ?>" href="<?php echo esc_url($status_filter_url); ?>">
+                        <?php echo esc_html($status_label); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
             <form method="post">
                 <?php wp_nonce_field('erp_omd_bulk_cost_invoices'); ?>
                 <input type="hidden" name="erp_omd_action" value="bulk_cost_invoices" />
@@ -496,8 +526,30 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
 
 
     <?php if ($active_tab === 'ksef-sales') : ?>
+    <?php
+    $final_invoice_project_ids = [];
+    foreach ((array) $ksef_sales_inbox as $sales_invoice_row) {
+        if ((int) ($sales_invoice_row['is_final'] ?? 0) === 1) {
+            $final_project_id = (int) ($sales_invoice_row['project_id'] ?? 0);
+            if ($final_project_id > 0) {
+                $final_invoice_project_ids[$final_project_id] = true;
+            }
+        }
+    }
+    ?>
     <section class="erp-omd-card">
         <h2><?php esc_html_e('KSeF — faktury sprzedażowe', 'erp-omd'); ?></h2>
+        <div class="erp-omd-table-tools" style="margin: 8px 0 14px;">
+            <?php
+            $sales_filter_all_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'all'], admin_url('admin.php'));
+            $sales_filter_assigned_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'assigned'], admin_url('admin.php'));
+            $sales_filter_unassigned_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'unassigned'], admin_url('admin.php'));
+            ?>
+            <strong><?php esc_html_e('Filtr przypisania:', 'erp-omd'); ?></strong>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'assigned' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_assigned_url); ?>"><?php esc_html_e('Przypisane', 'erp-omd'); ?></a>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'unassigned' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_unassigned_url); ?>"><?php esc_html_e('Nie przypisane', 'erp-omd'); ?></a>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'all' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_all_url); ?>"><?php esc_html_e('Wszystkie', 'erp-omd'); ?></a>
+        </div>
         <form method="post" enctype="multipart/form-data" style="margin-bottom:14px;">
             <?php wp_nonce_field('erp_omd_import_ksef_sales_xml'); ?>
             <input type="hidden" name="erp_omd_action" value="import_ksef_sales_xml" />
@@ -515,19 +567,32 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             </p>
             <p><button type="submit" class="button button-primary"><?php esc_html_e('Importuj XML sprzedażowy', 'erp-omd'); ?></button></p>
         </form>
+        <div class="erp-omd-table-tools" style="margin: 8px 0 14px;">
+            <?php
+            $sales_filter_all_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'all'], admin_url('admin.php'));
+            $sales_filter_assigned_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'assigned'], admin_url('admin.php'));
+            $sales_filter_unassigned_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'unassigned'], admin_url('admin.php'));
+            ?>
+            <strong><?php esc_html_e('Filtr przypisania:', 'erp-omd'); ?></strong>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'assigned' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_assigned_url); ?>"><?php esc_html_e('Przypisane', 'erp-omd'); ?></a>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'unassigned' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_unassigned_url); ?>"><?php esc_html_e('Nie przypisane', 'erp-omd'); ?></a>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'all' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_all_url); ?>"><?php esc_html_e('Wszystkie', 'erp-omd'); ?></a>
+        </div>
 
         <table class="widefat striped">
-            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
             <tbody>
             <?php if (empty($ksef_sales_inbox)) : ?>
-                <tr><td colspan="8"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="9"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
             <?php else : ?>
                 <?php foreach ((array) $ksef_sales_inbox as $sales_row) : ?>
                     <tr>
+                        <?php $sales_client_id = (int) ($sales_row['client_id'] ?? 0); ?>
                         <td><?php echo esc_html((string) ((int) ($sales_row['id'] ?? 0))); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['invoice_number'] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ($client_name_by_id[$sales_client_id] ?? '—')); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['buyer_nip'] ?? '')); ?></td>
-                        <td><?php echo esc_html((string) ((int) ($sales_row['client_id'] ?? 0))); ?></td>
+                        <td><?php echo esc_html((string) $sales_client_id); ?></td>
                         <td><?php echo esc_html((string) ($project_name_by_id[(int) ($sales_row['project_id'] ?? 0)] ?? ('#' . (int) ($sales_row['project_id'] ?? 0)))); ?></td>
                         <td><?php echo ((int) ($sales_row['is_final'] ?? 0) === 1) ? esc_html__('Tak', 'erp-omd') : esc_html__('Nie', 'erp-omd'); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['status'] ?? '')); ?></td>
@@ -540,6 +605,9 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                     <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
                                     <?php foreach ($projects as $project) : ?>
                                         <?php $project_id = (int) ($project['id'] ?? 0); ?>
+                                        <?php $project_status = (string) ($project['status'] ?? ''); ?>
+                                        <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
+                                        <?php if (! empty($final_invoice_project_ids[$project_id]) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
                                         <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($sales_row['project_id'] ?? 0), $project_id); ?>>
                                             <?php echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '')); ?>
