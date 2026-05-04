@@ -595,7 +595,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                     <?php foreach ($projects as $project) : ?>
                                         <?php $project_id = (int) ($project['id'] ?? 0); ?>
                                         <?php $project_status = (string) ($project['status'] ?? ''); ?>
-                                        <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true)) { continue; } ?>
+                                        <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php if (! empty($final_invoice_project_ids[$project_id]) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
                                         <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($sales_row['project_id'] ?? 0), $project_id); ?>>

@@ -1226,9 +1226,8 @@ class ERP_OMD_Admin
         }));
         $project_attachments = $project ? $this->attachments->for_entity('project', (int) $project['id']) : [];
         $project_final_sales_invoice_info = null;
-        if ($project && class_exists('ERP_OMD_KSeF_Import_Service')) {
-            $ksef_service = new ERP_OMD_KSeF_Import_Service();
-            foreach ((array) $ksef_service->list_sales_inbox() as $sales_row) {
+        if ($project) {
+            foreach ((array) get_option('erp_omd_ksef_sales_inbox', []) as $sales_row) {
                 if ((int) ($sales_row['project_id'] ?? 0) !== (int) ($project['id'] ?? 0) || (int) ($sales_row['is_final'] ?? 0) !== 1) {
                     continue;
                 }
@@ -2512,6 +2511,7 @@ class ERP_OMD_Admin
                 }
             }
             $this->redirect_cost_invoice_page(['tab' => $tab, 'message' => 'cost_invoice_bulk_deleted']);
+            return;
         }
 
         $status_map = [
@@ -2537,6 +2537,7 @@ class ERP_OMD_Admin
                 $invoice_repository->update($invoice_id, $invoice);
             }
             $this->redirect_cost_invoice_page(['tab' => $tab, 'message' => 'cost_invoice_bulk_status_updated']);
+            return;
         }
         $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
             new ERP_OMD_Cost_Invoice_Repository(),
