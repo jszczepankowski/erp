@@ -1898,6 +1898,20 @@ class ERP_OMD_Admin
         $ksef_moderation_filter_status = sanitize_key((string) ($_GET['ksef_status'] ?? ''));
         $ksef_moderation_queue = $ksef_service->list_moderation_queue(['status' => $ksef_moderation_filter_status]);
         $ksef_sales_inbox = $ksef_service->list_sales_inbox();
+        $ksef_sales_assignment_filter = sanitize_key((string) ($_GET['ksef_sales_assignment'] ?? 'all'));
+        if (! in_array($ksef_sales_assignment_filter, ['all', 'assigned', 'unassigned'], true)) {
+            $ksef_sales_assignment_filter = 'all';
+        }
+        if ($ksef_sales_assignment_filter !== 'all') {
+            $ksef_sales_inbox = array_values(array_filter((array) $ksef_sales_inbox, static function ($sales_row) use ($ksef_sales_assignment_filter) {
+                $is_assigned = (int) ($sales_row['project_id'] ?? 0) > 0;
+                if ($ksef_sales_assignment_filter === 'assigned') {
+                    return $is_assigned;
+                }
+
+                return ! $is_assigned;
+            }));
+        }
         usort($ksef_sales_inbox, static function ($left, $right) {
             return strnatcasecmp((string) ($left['invoice_number'] ?? ''), (string) ($right['invoice_number'] ?? ''));
         });

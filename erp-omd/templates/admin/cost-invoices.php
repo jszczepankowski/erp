@@ -539,6 +539,17 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
     ?>
     <section class="erp-omd-card">
         <h2><?php esc_html_e('KSeF — faktury sprzedażowe', 'erp-omd'); ?></h2>
+        <p style="margin: 8px 0 14px;">
+            <?php
+            $sales_filter_all_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'all'], admin_url('admin.php'));
+            $sales_filter_assigned_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'assigned'], admin_url('admin.php'));
+            $sales_filter_unassigned_url = add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'ksef-sales', 'ksef_sales_assignment' => 'unassigned'], admin_url('admin.php'));
+            ?>
+            <strong><?php esc_html_e('Filtr przypisania:', 'erp-omd'); ?></strong>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'assigned' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_assigned_url); ?>"><?php esc_html_e('Przypisane', 'erp-omd'); ?></a>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'unassigned' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_unassigned_url); ?>"><?php esc_html_e('Nie przypisane', 'erp-omd'); ?></a>
+            <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'all' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_all_url); ?>"><?php esc_html_e('Wszystkie', 'erp-omd'); ?></a>
+        </p>
         <form method="post" enctype="multipart/form-data" style="margin-bottom:14px;">
             <?php wp_nonce_field('erp_omd_import_ksef_sales_xml'); ?>
             <input type="hidden" name="erp_omd_action" value="import_ksef_sales_xml" />
