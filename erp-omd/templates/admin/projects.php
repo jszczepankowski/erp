@@ -526,6 +526,18 @@
                             <div>
                                 <h3><?php esc_html_e('Załączniki', 'erp-omd'); ?></h3>
                                 <p class="description"><?php esc_html_e('Dodaj plik z biblioteki mediów WordPress do projektu.', 'erp-omd'); ?></p>
+                                <p class="description">
+                                    <?php
+                                    if (! empty($project_final_sales_invoice_info)) {
+                                        echo esc_html(sprintf(
+                                            __('Faktura końcowa podpięta: %s', 'erp-omd'),
+                                            (string) ($project_final_sales_invoice_info['invoice_number'] ?? ('#' . (int) ($project_final_sales_invoice_info['id'] ?? 0)))
+                                        ));
+                                    } else {
+                                        esc_html_e('Brak podpiętej faktury końcowej.', 'erp-omd');
+                                    }
+                                    ?>
+                                </p>
                             </div>
                         </div>
                         <form method="post" class="erp-omd-attachment-form">
