@@ -182,14 +182,19 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             $client_note = trim((string) ($estimate['client_decision_note'] ?? ''));
             $project_name = trim((string) ($project['name'] ?? ''));
 
-            $subject = sprintf(__('[ERP OMD] Klient zaakceptował kosztorys: %s', 'erp-omd'), $estimate_name);
-            $body = sprintf(
-                __('Klient zaakceptował kosztorys <strong>%1$s</strong>.<br><br>Projekt: <strong>%2$s</strong><br>Kwota brutto: <strong>%3$s</strong><br>Uwagi klienta: %4$s', 'erp-omd'),
-                esc_html($estimate_name),
-                esc_html($project_name !== '' ? $project_name : '—'),
-                esc_html(number_format_i18n((float) ($totals['gross'] ?? 0), 2)),
-                esc_html($client_note !== '' ? $client_note : '—')
-            );
+            $mail_defaults = [
+                'subject' => __('[ERP OMD] Klient zaakceptował kosztorys: {estimate_name}', 'erp-omd'),
+                'body' => __('Klient zaakceptował kosztorys <strong>{estimate_name}</strong>.<br><br>Projekt: <strong>{project_name}</strong><br>Kwota brutto: <strong>{final_gross}</strong><br>Uwagi klienta: {client_note}', 'erp-omd'),
+            ];
+            $mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_internal_accept_mail_settings', []), $mail_defaults);
+            $tokens = [
+                '{estimate_name}' => $estimate_name,
+                '{project_name}' => ($project_name !== '' ? $project_name : '—'),
+                '{final_gross}' => number_format_i18n((float) ($totals['gross'] ?? 0), 2),
+                '{client_note}' => ($client_note !== '' ? $client_note : '—'),
+            ];
+            $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
+            $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
             $body .= self::build_summary_table_html((array) $items, $totals, true);
 
             wp_mail(array_values($recipients), $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);

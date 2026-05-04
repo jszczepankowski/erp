@@ -52,19 +52,8 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
             return false;
         }
 
-        if ($current_status === $next_status) {
-            return true;
-        }
-
-        $transitions = [
-            'zaimportowana' => ['weryfikacja', 'nieistotne'],
-            'weryfikacja' => ['zaimportowana', 'zatwierdzona', 'nieistotne'],
-            'zatwierdzona' => ['weryfikacja', 'przypisana', 'nieistotne'],
-            'przypisana' => ['zatwierdzona'],
-            'nieistotne' => ['zaimportowana', 'weryfikacja'],
-        ];
-
-        return in_array($next_status, $transitions[$current_status] ?? [], true);
+        return in_array($current_status, $this->allowed_statuses(), true)
+            && in_array($next_status, $this->allowed_statuses(), true);
     }
 
     /**
@@ -94,10 +83,9 @@ class ERP_OMD_Cost_Invoice_Workflow_Service
             $errors[] = __('Wybrany dostawca nie istnieje.', 'erp-omd');
         }
 
-        $is_ksef_source = mb_strtolower($source) === 'ksef';
-        $is_irrelevant_status = $status === 'nieistotne';
-        if ($project_id <= 0 && ! $is_ksef_source && ! $is_irrelevant_status) {
-            $errors[] = __('Wybierz projekt dla faktury kosztowej.', 'erp-omd');
+        $requires_project_assignment = $status === 'przypisana';
+        if ($requires_project_assignment && $project_id <= 0) {
+            $errors[] = __('Aby ustawić status "przypisana", wybierz projekt dla faktury kosztowej.', 'erp-omd');
         } elseif ($project_id > 0 && ! $this->project_exists($project_id)) {
             $errors[] = __('Wybrany projekt nie istnieje.', 'erp-omd');
         }
