@@ -1134,6 +1134,7 @@ class ERP_OMD_KSeF_Import_Service
             'gross_amount' => (float) ($document['gross_amount'] ?? 0),
             'items' => (array) ($document['items'] ?? []),
             'source' => 'ksef',
+            'api_sync_source' => (string) ($document['api_sync_source'] ?? ''),
             'ksef_reference_number' => (string) ($document['ksef_reference_number'] ?? ''),
             'document_kind' => $kind,
             'created_by_user_id' => (int) $user_id,
