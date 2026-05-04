@@ -270,6 +270,20 @@
                             ]); ?>
                             <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {client_name}, {final_gross}, {final_net}, {client_note}. Tabela pozycji jest dodawana automatycznie pod treścią.', 'erp-omd'); ?></p>
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-estimate-internal-accept-mail-subject"><?php esc_html_e('E-mail do admina/managera po akceptacji — temat', 'erp-omd'); ?></label>
+                            <input id="erp-omd-estimate-internal-accept-mail-subject" type="text" name="estimate_internal_accept_mail_subject" value="<?php echo esc_attr((string) ($estimate_internal_accept_mail_settings['subject'] ?? '')); ?>" />
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-estimate-internal-accept-mail-body"><?php esc_html_e('E-mail do admina/managera po akceptacji — treść', 'erp-omd'); ?></label>
+                            <?php wp_editor((string) ($estimate_internal_accept_mail_settings['body'] ?? ''), 'erp-omd-estimate-internal-accept-mail-body-editor', [
+                                'textarea_name' => 'estimate_internal_accept_mail_body',
+                                'textarea_rows' => 8,
+                                'media_buttons' => false,
+                                'teeny' => false,
+                            ]); ?>
+                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {project_name}, {final_gross}, {client_note}.', 'erp-omd'); ?></p>
+                        </div>
                     </div>
                 </section>
                 <?php elseif ($settings_tab === 'front_login') : ?>
