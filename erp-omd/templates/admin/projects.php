@@ -361,7 +361,7 @@
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label for="attach-cost-invoice-id"><?php esc_html_e('Dodaj koszt z faktury kosztowej (netto)', 'erp-omd'); ?></label>
                                         <select id="attach-cost-invoice-id" name="cost_invoice_id">
-                                            <option value=""><?php esc_html_e('Wybierz fakturę przypisaną do tego projektu', 'erp-omd'); ?></option>
+                                            <option value=""><?php esc_html_e('Wybierz fakturę o statusie „zatwierdzona”', 'erp-omd'); ?></option>
                                             <?php foreach ((array) ($project_cost_invoice_rows ?? []) as $project_cost_invoice_row) : ?>
                                                 <option value="<?php echo esc_attr((string) ((int) ($project_cost_invoice_row['id'] ?? 0))); ?>">
                                                     <?php
@@ -526,6 +526,18 @@
                             <div>
                                 <h3><?php esc_html_e('Załączniki', 'erp-omd'); ?></h3>
                                 <p class="description"><?php esc_html_e('Dodaj plik z biblioteki mediów WordPress do projektu.', 'erp-omd'); ?></p>
+                                <div class="erp-omd-detail-item" style="margin-top:10px;">
+                                    <strong><?php esc_html_e('Faktura końcowa podpięta', 'erp-omd'); ?></strong>
+                                    <span>
+                                        <?php
+                                        if (! empty($project_final_sales_invoice_info)) {
+                                            echo esc_html((string) ($project_final_sales_invoice_info['invoice_number'] ?? ('#' . (int) ($project_final_sales_invoice_info['id'] ?? 0))));
+                                        } else {
+                                            esc_html_e('Brak', 'erp-omd');
+                                        }
+                                        ?>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <form method="post" class="erp-omd-attachment-form">
