@@ -253,6 +253,45 @@ class ERP_OMD_KSeF_Connector_Redeem_AuthenticationToken_Header_Required_Fake ext
     }
 }
 
+class ERP_OMD_KSeF_Connector_Redeem_AuthenticationToken_Header_Json_Required_Fake extends ERP_OMD_KSeF_Connector_Fake
+{
+    /** @var int */
+    public $redeem_calls = 0;
+
+    public function request($method, $path, array $headers = [], $body = null)
+    {
+        $method = strtoupper((string) $method);
+        $this->requests[] = ['method' => $method, 'path' => $path, 'headers' => $headers, 'body' => $body];
+
+        if ($method === 'POST' && $path === '/auth/token/redeem') {
+            $this->redeem_calls++;
+            $has_authentication_token_header = trim((string) ($headers['AuthenticationToken'] ?? '')) !== '';
+            $has_authorization = trim((string) ($headers['Authorization'] ?? '')) !== '';
+            $content_type = strtolower(trim((string) ($headers['Content-Type'] ?? '')));
+            if ($has_authentication_token_header && ! $has_authorization && $content_type === 'application/json' && is_array($body)) {
+                return ['code' => 200, 'json' => [
+                    'accessToken' => 'ACCESS-REDEEM-AUTH-HEADER-JSON',
+                    'refreshToken' => 'REFRESH-REDEEM-AUTH-HEADER-JSON',
+                    'accessTokenExpiresIn' => 120,
+                    'refreshTokenExpiresIn' => 3600,
+                ]];
+            }
+            if ($has_authentication_token_header && ! $has_authorization) {
+                return ['code' => 401, 'json' => ['description' => 'Authentication header requires JSON body.']];
+            }
+
+            return ['code' => 400, 'json' => ['description' => 'Redeem requires AuthenticationToken header without Authorization and JSON body.']];
+        }
+
+        $key = $method . ' ' . $path;
+        if (isset($this->responses[$key])) {
+            return $this->responses[$key];
+        }
+
+        return new WP_Error('missing_response', 'Missing fake response for ' . $key);
+    }
+}
+
 class ERP_OMD_KSeF_Connector_Auth_Content_Type_Fallback_Fake extends ERP_OMD_KSeF_Connector_Fake
 {
     public function request($method, $path, array $headers = [], $body = null)
@@ -573,6 +612,22 @@ if ($redeemAuthenticationTokenHeaderResult instanceof WP_Error || ($redeemAuthen
 $assertions++;
 if ($connectorRedeemAuthenticationTokenHeaderRequired->redeem_calls < 6) {
     throw new RuntimeException('Expected redeem AuthenticationToken-header fallback to be attempted after Bearer and token-body variants.');
+}
+
+$connectorRedeemAuthenticationTokenHeaderJsonRequired = new ERP_OMD_KSeF_Connector_Redeem_AuthenticationToken_Header_Json_Required_Fake();
+$connectorRedeemAuthenticationTokenHeaderJsonRequired->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-REDEEM-AUTH-HEADER-JSON']];
+$connectorRedeemAuthenticationTokenHeaderJsonRequired->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-AUTH-HEADER-JSON'], 'status' => 'completed']];
+$storageRedeemAuthenticationTokenHeaderJsonRequired = new ERP_OMD_KSeF_Auth_Storage();
+$storageRedeemAuthenticationTokenHeaderJsonRequired->clear_tokens('TEST');
+$serviceRedeemAuthenticationTokenHeaderJsonRequired = new ERP_OMD_KSeF_Auth_Service($connectorRedeemAuthenticationTokenHeaderJsonRequired, $storageRedeemAuthenticationTokenHeaderJsonRequired, $publicKeyService);
+$redeemAuthenticationTokenHeaderJsonResult = $serviceRedeemAuthenticationTokenHeaderJsonRequired->ensure_access_token('TEST', 'KSEF-TOKEN-REDEEM-AUTH-HEADER-JSON', '1111111111');
+$assertions++;
+if ($redeemAuthenticationTokenHeaderJsonResult instanceof WP_Error || ($redeemAuthenticationTokenHeaderJsonResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected redeem flow to continue after 401 on AuthenticationToken-header-only and succeed on AuthenticationToken-header-json-empty variant.');
+}
+$assertions++;
+if ($connectorRedeemAuthenticationTokenHeaderJsonRequired->redeem_calls < 6) {
+    throw new RuntimeException('Expected AuthenticationToken-header-json-empty attempt to be executed before header-only fallback.');
 }
 
 $connectorObjectTokens = new ERP_OMD_KSeF_Connector_Fake();
