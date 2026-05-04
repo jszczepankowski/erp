@@ -2563,6 +2563,7 @@ class ERP_OMD_Admin
             $error_message = $token_result instanceof WP_Error
                 ? (string) $token_result->get_error_message()
                 : (string) ($token_result['error_message'] ?? __('Nie udało się pobrać access tokenu KSeF.', 'erp-omd'));
+            $error_message = $this->append_ksef_auth_stage_hint($error_message);
             if ($error_code !== '' && $error_code !== '0' && strpos($error_message, $error_code . ':') !== 0) {
                 $error_message = $error_code . ': ' . $error_message;
             }
@@ -2784,6 +2785,42 @@ class ERP_OMD_Admin
         ];
 
         return $map[$value] ?? '';
+    }
+
+    /**
+     * @param string $error_message
+     * @return string
+     */
+    private function append_ksef_auth_stage_hint($error_message)
+    {
+        $message = trim((string) $error_message);
+        if ($message === '') {
+            return '';
+        }
+
+        if (preg_match('/\[stage:([a-z0-9._-]+)\]/i', $message, $matches) !== 1) {
+            return $message;
+        }
+
+        $stage = strtolower(trim((string) ($matches[1] ?? '')));
+        if ($stage === '') {
+            return $message;
+        }
+
+        $hints = [
+            'auth.challenge' => __('Etap challenge: sprawdź base URL środowiska KSeF, dostępność endpointu /auth/challenge i czy request idzie jako application/json.', 'erp-omd'),
+            'auth.public_key' => __('Etap public key: sprawdź, czy zapisano poprawny certyfikat MF (PEM) dla wybranego środowiska oraz czy nie wygasł.', 'erp-omd'),
+            'auth.encrypt_token' => __('Etap szyfrowania tokenu: sprawdź format Token AP i zgodność klucza publicznego z aktualnym środowiskiem.', 'erp-omd'),
+            'auth.ksef_token' => __('Etap /auth/ksef-token: sprawdź ContextIdentifier (np. NIP), format payloadu XML/JSON oraz czy challenge nie wygasł.', 'erp-omd'),
+            'auth.status_poll' => __('Etap polling statusu: sprawdź referenceNumber, opóźnienia/OCSP/CRL oraz czy status nie wymaga dłuższego oczekiwania.', 'erp-omd'),
+            'auth.redeem' => __('Etap redeem: sprawdź format Authorization (Bearer), jednorazowość authenticationToken oraz wymagany body/Content-Type.', 'erp-omd'),
+        ];
+
+        if (! isset($hints[$stage])) {
+            return $message;
+        }
+
+        return $message . ' | hint_stage: ' . $hints[$stage];
     }
 
     private function handle_ksef_queue_moderation_action()

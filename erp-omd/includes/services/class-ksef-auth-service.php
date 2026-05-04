@@ -51,7 +51,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     {
         $challenge_response = $this->get_challenge($environment);
         if ($challenge_response instanceof WP_Error) {
-            return $challenge_response;
+            return $this->with_stage_error($challenge_response, 'auth.challenge');
         }
 
         $challenge = (string) ($challenge_response['json']['challenge'] ?? '');
@@ -61,12 +61,12 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
         $public_key = $this->public_key_service->get_encryption_public_key($environment);
         if ($public_key instanceof WP_Error) {
-            return $public_key;
+            return $this->with_stage_error($public_key, 'auth.public_key');
         }
 
         $encryption = $this->public_key_service->encrypt_ksef_token_payload((string) $ksef_token, $public_key);
         if ($encryption instanceof WP_Error) {
-            return $encryption;
+            return $this->with_stage_error($encryption, 'auth.encrypt_token');
         }
 
         $context_payload = $this->build_context_identifier_payload($context_identifier);
@@ -107,18 +107,18 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
             $last_error = $response;
             if ((string) $response->get_error_code() !== 'ksef_http_415') {
-                return $response;
+                return $this->with_stage_error($response, 'auth.ksef_token');
             }
         }
 
         if ($last_error instanceof WP_Error) {
-            return new WP_Error(
+            return $this->with_stage_error(new WP_Error(
                 (string) $last_error->get_error_code(),
                 (string) $last_error->get_error_message() . ' | auth_content_type_attempts: application/xml,application/json'
-            );
+            ), 'auth.ksef_token');
         }
 
-        return new WP_Error('erp_omd_ksef_auth_ksef_token_request_failed', __('Nie udało się wysłać żądania /auth/ksef-token.', 'erp-omd'));
+        return new WP_Error('erp_omd_ksef_auth_ksef_token_request_failed', __('[stage:auth.ksef_token] Nie udało się wysłać żądania /auth/ksef-token.', 'erp-omd'));
     }
 
     public function get_auth_status($environment, $reference_number, $authentication_token = '')
@@ -318,7 +318,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 if ($attempt > 0) {
                     $status = $this->get_auth_status($environment, $reference_number, $authentication_token);
                     if ($status instanceof WP_Error) {
-                        return $status;
+                        return $this->with_stage_error($status, 'auth.status_poll');
                     }
                     $status_payload = (array) ($status['json'] ?? []);
                     if ($authentication_token === '') {
@@ -369,13 +369,13 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 $upstream_message .= ' | auth_status=' . $last_status_value;
             }
             if ($redeem_error instanceof WP_Error) {
-                return $redeem_error;
+                return $this->with_stage_error($redeem_error, 'auth.redeem');
             }
-            return new WP_Error($upstream_code, $upstream_message);
+            return new WP_Error($upstream_code, '[stage:auth.status_poll] ' . $upstream_message);
         }
 
         if ($redeem_error instanceof WP_Error) {
-            return $redeem_error;
+            return $this->with_stage_error($redeem_error, 'auth.redeem');
         }
 
         return new WP_Error('erp_omd_ksef_redeem_failed', __('Nie udało się wymienić authenticationToken na JWT.', 'erp-omd'));
@@ -839,6 +839,26 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         }
 
         return '';
+    }
+
+    /**
+     * @param WP_Error $error
+     * @param string $stage
+     * @return WP_Error
+     */
+    private function with_stage_error($error, $stage)
+    {
+        if (! ($error instanceof WP_Error)) {
+            return $error;
+        }
+
+        $message = (string) $error->get_error_message();
+        $prefix = '[stage:' . trim((string) $stage) . '] ';
+        if (strpos($message, $prefix) === 0) {
+            return $error;
+        }
+
+        return new WP_Error((string) $error->get_error_code(), $prefix . $message);
     }
 
     /**

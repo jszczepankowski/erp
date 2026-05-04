@@ -414,6 +414,10 @@ if (strpos((string) $errorResult->get_error_message(), 'endpoint: POST /auth/kse
     throw new RuntimeException('Expected auth error message to include endpoint details for API diagnostics.');
 }
 $assertions++;
+if (strpos((string) $errorResult->get_error_message(), '[stage:auth.ksef_token]') === false) {
+    throw new RuntimeException('Expected auth error message to include stage marker for troubleshooting.');
+}
+$assertions++;
 if (strpos((string) $errorResult->get_error_message(), 'hint: ustaw ContextIdentifier jako NIP:XXXXXXXXXX') === false) {
     throw new RuntimeException('Expected auth diagnostics hint for likely invalid InternalId context format.');
 }
