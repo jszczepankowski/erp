@@ -218,6 +218,41 @@ class ERP_OMD_KSeF_Connector_Redeem_Token_Body_Required_Fake extends ERP_OMD_KSe
     }
 }
 
+class ERP_OMD_KSeF_Connector_Redeem_AuthenticationToken_Header_Required_Fake extends ERP_OMD_KSeF_Connector_Fake
+{
+    /** @var int */
+    public $redeem_calls = 0;
+
+    public function request($method, $path, array $headers = [], $body = null)
+    {
+        $method = strtoupper((string) $method);
+        $this->requests[] = ['method' => $method, 'path' => $path, 'headers' => $headers, 'body' => $body];
+
+        if ($method === 'POST' && $path === '/auth/token/redeem') {
+            $this->redeem_calls++;
+            $has_authentication_token_header = trim((string) ($headers['AuthenticationToken'] ?? '')) !== '';
+            $has_authorization = trim((string) ($headers['Authorization'] ?? '')) !== '';
+            if ($has_authentication_token_header && ! $has_authorization) {
+                return ['code' => 200, 'json' => [
+                    'accessToken' => 'ACCESS-REDEEM-AUTH-HEADER',
+                    'refreshToken' => 'REFRESH-REDEEM-AUTH-HEADER',
+                    'accessTokenExpiresIn' => 120,
+                    'refreshTokenExpiresIn' => 3600,
+                ]];
+            }
+
+            return ['code' => 400, 'json' => ['description' => 'Redeem requires AuthenticationToken header without Authorization.']];
+        }
+
+        $key = $method . ' ' . $path;
+        if (isset($this->responses[$key])) {
+            return $this->responses[$key];
+        }
+
+        return new WP_Error('missing_response', 'Missing fake response for ' . $key);
+    }
+}
+
 class ERP_OMD_KSeF_Connector_Auth_Content_Type_Fallback_Fake extends ERP_OMD_KSeF_Connector_Fake
 {
     public function request($method, $path, array $headers = [], $body = null)
@@ -522,6 +557,22 @@ if ($redeemTokenBodyResult instanceof WP_Error || ($redeemTokenBodyResult['ok'] 
 $assertions++;
 if ($connectorRedeemTokenBodyRequired->redeem_calls < 4) {
     throw new RuntimeException('Expected redeem token-body fallback to be attempted after base Bearer variants.');
+}
+
+$connectorRedeemAuthenticationTokenHeaderRequired = new ERP_OMD_KSeF_Connector_Redeem_AuthenticationToken_Header_Required_Fake();
+$connectorRedeemAuthenticationTokenHeaderRequired->responses['POST /auth/challenge'] = ['code' => 200, 'json' => ['challenge' => 'CHALLENGE-REDEEM-AUTH-HEADER']];
+$connectorRedeemAuthenticationTokenHeaderRequired->responses['POST /auth/ksef-token'] = ['code' => 200, 'json' => ['authenticationToken' => ['token' => 'AUTH-REDEEM-AUTH-HEADER'], 'status' => 'completed']];
+$storageRedeemAuthenticationTokenHeaderRequired = new ERP_OMD_KSeF_Auth_Storage();
+$storageRedeemAuthenticationTokenHeaderRequired->clear_tokens('TEST');
+$serviceRedeemAuthenticationTokenHeaderRequired = new ERP_OMD_KSeF_Auth_Service($connectorRedeemAuthenticationTokenHeaderRequired, $storageRedeemAuthenticationTokenHeaderRequired, $publicKeyService);
+$redeemAuthenticationTokenHeaderResult = $serviceRedeemAuthenticationTokenHeaderRequired->ensure_access_token('TEST', 'KSEF-TOKEN-REDEEM-AUTH-HEADER', '1111111111');
+$assertions++;
+if ($redeemAuthenticationTokenHeaderResult instanceof WP_Error || ($redeemAuthenticationTokenHeaderResult['ok'] ?? false) !== true) {
+    throw new RuntimeException('Expected redeem flow to fallback to AuthenticationToken-header-only request when endpoint requires that format.');
+}
+$assertions++;
+if ($connectorRedeemAuthenticationTokenHeaderRequired->redeem_calls < 6) {
+    throw new RuntimeException('Expected redeem AuthenticationToken-header fallback to be attempted after Bearer and token-body variants.');
 }
 
 $connectorObjectTokens = new ERP_OMD_KSeF_Connector_Fake();
