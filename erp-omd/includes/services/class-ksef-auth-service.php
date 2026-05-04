@@ -202,6 +202,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                     'body' => null,
                     'label' => 'bearer-authentication-token-header',
                 ],
+<<<<<<< codex/add-ksef-api-integration-steps-hq0gfy
                 [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $raw_token,
@@ -218,6 +219,8 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                     'body' => ['authenticationToken' => $raw_token],
                     'label' => 'bearer-json-authentication-token-field',
                 ],
+=======
+>>>>>>> main
             ];
 
             $single_use_attempt_log = [];
