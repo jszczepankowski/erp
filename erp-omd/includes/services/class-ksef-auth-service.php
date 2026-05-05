@@ -212,6 +212,10 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
     public function ensure_access_token($environment, $ksef_token, $context_identifier)
     {
+        if ($this->is_strict_connector_mode_enabled()) {
+            return $this->ensure_access_token_strict_mode($environment, $ksef_token, $context_identifier);
+        }
+
         $saved = $this->storage->get_tokens($environment);
         $access_token = trim((string) ($saved['access_token'] ?? ''));
         if ($access_token !== '' && ! $this->is_expired((string) ($saved['access_expires_at'] ?? ''))) {
@@ -324,6 +328,82 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         }
 
         return new WP_Error('erp_omd_ksef_redeem_failed', __('Nie udało się wymienić authenticationToken na JWT.', 'erp-omd'));
+    }
+
+    /**
+     * @param string $environment
+     * @param string $ksef_token
+     * @param string|array<string,mixed> $context_identifier
+     * @return array<string,mixed>|WP_Error
+     */
+    private function ensure_access_token_strict_mode($environment, $ksef_token, $context_identifier)
+    {
+        $auth = $this->authenticate_with_ksef_token($environment, $ksef_token, $context_identifier);
+        if ($auth instanceof WP_Error) {
+            return $auth;
+        }
+
+        $auth_payload = (array) ($auth['json'] ?? []);
+        $authentication_token = $this->extract_authentication_token($auth_payload);
+        $reference_number = (string) ($auth_payload['referenceNumber'] ?? $auth_payload['reference_number'] ?? '');
+        $processing_code = (int) ($auth_payload['processingCode'] ?? $auth_payload['processing_code'] ?? 0);
+
+        if ($authentication_token === '' && $reference_number !== '') {
+            $attempts = count($this->auth_status_poll_delays_seconds) + 1;
+            for ($attempt = 0; $attempt < $attempts; $attempt++) {
+                $status = $this->get_auth_status($environment, $reference_number, $authentication_token);
+                if ($status instanceof WP_Error && (string) $status->get_error_code() === 'ksef_http_401') {
+                    $status = $this->get_auth_status($environment, $reference_number, '');
+                }
+                if ($status instanceof WP_Error) {
+                    return $this->with_stage_error($status, 'auth.status_poll');
+                }
+
+                $status_payload = (array) ($status['json'] ?? []);
+                $processing_code = (int) ($status_payload['processingCode'] ?? $status_payload['processing_code'] ?? 0);
+                $candidate = $this->extract_authentication_token($status_payload);
+                if ($candidate !== '') {
+                    $authentication_token = $candidate;
+                }
+
+                if ($processing_code === 200 && $authentication_token !== '') {
+                    break;
+                }
+
+                if ($attempt < $attempts - 1) {
+                    $this->pause_before_next_auth_status_poll($attempt);
+                }
+            }
+        }
+
+        if ($authentication_token === '' || $processing_code !== 200) {
+            return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken (processingCode!=200).', 'erp-omd'));
+        }
+
+        $redeem = $this->redeem_token($environment, $authentication_token);
+        if ($redeem instanceof WP_Error) {
+            return $this->with_stage_error($redeem, 'auth.redeem');
+        }
+
+        $stored = $this->storage->get_tokens($environment);
+        return [
+            'ok' => true,
+            'source' => 'strict_mode',
+            'access_token' => (string) ($stored['access_token'] ?? ''),
+            'refresh_token' => (string) ($stored['refresh_token'] ?? ''),
+        ];
+    }
+
+    /**
+     * @return bool
+     */
+    private function is_strict_connector_mode_enabled()
+    {
+        if (defined('ERP_OMD_KSEF_STRICT_CONNECTOR_MODE')) {
+            return (bool) ERP_OMD_KSEF_STRICT_CONNECTOR_MODE;
+        }
+
+        return (bool) get_option('erp_omd_ksef_strict_connector_mode', false);
     }
 
     /**
