@@ -249,7 +249,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         if ($authentication_token === '') {
             $authentication_token = $this->extract_authentication_token_from_headers((array) ($auth['headers'] ?? []));
         }
-        if ($this->looks_like_jwt($authentication_token)) {
+        if ($this->is_jwt_like_token($authentication_token)) {
             $authentication_token = '';
         }
         $reference_number = (string) (($auth_payload['referenceNumber'] ?? $auth_payload['reference_number'] ?? ''));
@@ -276,7 +276,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 }
 
                 $candidate_token = $this->extract_authentication_token($status_payload);
-                if ($candidate_token !== '' && ! $this->looks_like_jwt($candidate_token)) {
+                if ($candidate_token !== '' && ! $this->is_jwt_like_token($candidate_token)) {
                     $authentication_token = $candidate_token;
                 }
 
@@ -789,21 +789,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
      * @param string $token
      * @return bool
      */
-    private function looks_like_jwt($token)
-    {
-        $token = trim((string) $token);
-        if ($token === '') {
-            return false;
-        }
-
-        return preg_match('/^[A-Za-z0-9\\-_]+=*\\.[A-Za-z0-9\\-_]+=*\\.[A-Za-z0-9\\-_\\/+]+=*$/', $token) === 1;
-    }
-
-    /**
-     * @param string $token
-     * @return bool
-     */
-    private function looks_like_jwt($token)
+    private function is_jwt_like_token($token)
     {
         $token = trim((string) $token);
         if ($token === '') {
