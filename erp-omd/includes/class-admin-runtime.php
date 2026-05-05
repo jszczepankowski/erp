@@ -1363,6 +1363,8 @@ class ERP_OMD_Admin
         $estimate_thank_you_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_client_thank_you_mail_settings', []), $estimate_thank_you_mail_settings);
         $estimate_internal_accept_mail_settings = $this->estimate_internal_accept_mail_defaults();
         $estimate_internal_accept_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_internal_accept_mail_settings', []), $estimate_internal_accept_mail_settings);
+        $estimate_mail_sender_name = sanitize_text_field((string) get_option('erp_omd_estimate_mail_sender_name', ''));
+        $estimate_mail_sender_email = sanitize_email((string) get_option('erp_omd_estimate_mail_sender_email', ''));
 
         $notification_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
         $employees = $this->employees->all();
@@ -3502,7 +3504,13 @@ class ERP_OMD_Admin
         $estimate_items = (array) $this->estimate_items->for_estimate($estimate_id);
         $estimate_totals = $this->estimate_service->calculate_totals($estimate_items);
         $body .= $this->build_estimate_summary_table_html($estimate_items, $estimate_totals, true);
-        $sent = wp_mail($client_email, $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        $sender_name = sanitize_text_field((string) get_option('erp_omd_estimate_mail_sender_name', ''));
+        $sender_email = sanitize_email((string) get_option('erp_omd_estimate_mail_sender_email', ''));
+        if ($sender_email !== '' && is_email($sender_email)) {
+            $headers[] = 'From: ' . ($sender_name !== '' ? $sender_name : 'WordPress') . ' <' . $sender_email . '>';
+        }
+        $sent = wp_mail($client_email, $subject, wpautop($body), $headers);
         if (! $sent) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie udało się wysłać e-maila do klienta.', 'erp-omd'), ['id' => $estimate_id]);
         }
@@ -4580,9 +4588,16 @@ class ERP_OMD_Admin
                 'subject' => sanitize_text_field(wp_unslash($_POST['estimate_internal_accept_mail_subject'] ?? $estimate_internal_accept_defaults['subject'])),
                 'body' => wp_kses_post(wp_unslash($_POST['estimate_internal_accept_mail_body'] ?? $estimate_internal_accept_defaults['body'])),
             ];
+            $estimate_mail_sender_name = sanitize_text_field(wp_unslash($_POST['estimate_mail_sender_name'] ?? ''));
+            $estimate_mail_sender_email = sanitize_email(wp_unslash($_POST['estimate_mail_sender_email'] ?? ''));
+            if ($estimate_mail_sender_email !== '' && ! is_email($estimate_mail_sender_email)) {
+                $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres e-mail nadawcy kosztorysów jest niepoprawny.', 'erp-omd'), ['tab' => $settings_tab]);
+            }
             update_option('erp_omd_estimate_client_mail_settings', $estimate_mail_settings);
             update_option('erp_omd_estimate_client_thank_you_mail_settings', $estimate_thank_you_mail_settings);
             update_option('erp_omd_estimate_internal_accept_mail_settings', $estimate_internal_accept_settings);
+            update_option('erp_omd_estimate_mail_sender_name', $estimate_mail_sender_name);
+            update_option('erp_omd_estimate_mail_sender_email', $estimate_mail_sender_email);
         } elseif ($settings_tab === 'front_login') {
             $front_login_logo_id = max(0, (int) ($_POST['front_login_logo_id'] ?? 0));
             $front_login_cover_id = max(0, (int) ($_POST['front_login_cover_id'] ?? 0));
