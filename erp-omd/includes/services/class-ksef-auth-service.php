@@ -382,7 +382,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         $ready = $this->is_auth_status_ready($payload);
         $this->record_auth_stage('auth.status.initial', ['ready' => $ready ? 'yes' : 'no', 'has_reference' => $reference !== '' ? 'yes' : 'no', 'has_token' => $auth_token !== '' ? 'yes' : 'no']);
         if ($reference !== '' && (! $ready || $auth_token === '')) {
-            $attempts = count($this->auth_status_poll_delays_seconds) + 1;
+            $attempts = 30;
             for ($attempt = 0; $attempt < $attempts; $attempt++) {
                 $this->record_auth_stage('auth.status.poll_attempt', ['attempt' => (string) ($attempt + 1), 'attempts' => (string) $attempts, 'has_token' => $auth_token !== '' ? 'yes' : 'no']);
                 $status = $this->get_auth_status($environment, $reference, $auth_token);
@@ -408,14 +408,15 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                     break;
                 }
                 if ($attempt < $attempts - 1) {
-                    $this->pause_before_next_auth_status_poll($attempt);
+                    $this->pause_before_next_auth_status_poll_fixed();
                 }
             }
         }
 
         if ($auth_token === '' || ! $ready) {
             $this->record_auth_stage('auth.status.incomplete', ['ready' => $ready ? 'yes' : 'no', 'has_token' => $auth_token !== '' ? 'yes' : 'no']);
-            return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken lub status auth nie jest gotowy.', 'erp-omd'));
+            $last_stage = $this->latest_auth_stage_label();
+            return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken lub status auth nie jest gotowy.', 'erp-omd') . ($last_stage !== '' ? ' | last_stage=' . $last_stage : ''));
         }
 
         $this->record_auth_stage('auth.redeem.request', ['token_len' => strlen($auth_token)]);
@@ -448,6 +449,31 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             $trace = array_slice($trace, -120);
         }
         update_option('erp_omd_ksef_auth_flow_trace', $trace, false);
+    }
+
+    /**
+     * @return void
+     */
+    private function pause_before_next_auth_status_poll_fixed()
+    {
+        if (is_callable($this->sleep_callback)) {
+            call_user_func($this->sleep_callback, 2);
+            return;
+        }
+        sleep(2);
+    }
+
+    /**
+     * @return string
+     */
+    private function latest_auth_stage_label()
+    {
+        $trace = (array) get_option('erp_omd_ksef_auth_flow_trace', []);
+        $last = end($trace);
+        if (! is_array($last)) {
+            return '';
+        }
+        return trim((string) ($last['stage'] ?? ''));
     }
 
     /**
