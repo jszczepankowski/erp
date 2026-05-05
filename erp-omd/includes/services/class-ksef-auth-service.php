@@ -345,6 +345,9 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
         $auth_payload = (array) ($auth['json'] ?? []);
         $authentication_token = $this->extract_authentication_token($auth_payload);
+        if ($authentication_token === '') {
+            $authentication_token = $this->extract_authentication_token_from_headers_strict_mode((array) ($auth['headers'] ?? []));
+        }
         $reference_number = (string) ($auth_payload['referenceNumber'] ?? $auth_payload['reference_number'] ?? '');
         $processing_code = (int) ($auth_payload['processingCode'] ?? $auth_payload['processing_code'] ?? 0);
         $status_ready = $processing_code === 200 || $this->is_auth_status_ready($auth_payload);
@@ -379,6 +382,9 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 $processing_code = (int) ($status_payload['processingCode'] ?? $status_payload['processing_code'] ?? 0);
                 $status_ready = $processing_code === 200 || $this->is_auth_status_ready($status_payload);
                 $candidate = $this->extract_authentication_token($status_payload);
+                if ($candidate === '') {
+                    $candidate = $this->extract_authentication_token_from_headers_strict_mode((array) ($status['headers'] ?? []));
+                }
                 if ($candidate !== '') {
                     $authentication_token = $candidate;
                 }
@@ -394,7 +400,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         }
 
         if ($authentication_token === '' || ! $status_ready) {
-            return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken (processingCode!=200).', 'erp-omd'));
+            return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken lub status auth nie jest gotowy.', 'erp-omd'));
         }
 
         $redeem = $this->redeem_token($environment, $authentication_token);
@@ -421,6 +427,27 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         }
 
         return (bool) get_option('erp_omd_ksef_strict_connector_mode', false);
+    }
+
+    /**
+     * Strict mode preserves reference-like fallback to Authorization bearer token.
+     *
+     * @param array<string,mixed> $headers
+     * @return string
+     */
+    private function extract_authentication_token_from_headers_strict_mode(array $headers)
+    {
+        $token = $this->extract_authentication_token_from_headers($headers);
+        if ($token !== '') {
+            return $token;
+        }
+
+        $authorization = trim((string) ($headers['authorization'] ?? $headers['Authorization'] ?? ''));
+        if (stripos($authorization, 'Bearer ') === 0) {
+            return trim((string) substr($authorization, 7));
+        }
+
+        return '';
     }
 
     /**
