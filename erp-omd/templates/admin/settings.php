@@ -26,15 +26,6 @@
                     </div>
                     <div class="erp-omd-form-grid">
 
-                        <div class="erp-omd-form-field">
-                            <label for="erp-omd-estimate-mail-sender-name"><?php esc_html_e('Nadawca kosztorysów — nazwa', 'erp-omd'); ?></label>
-                            <input id="erp-omd-estimate-mail-sender-name" type="text" name="estimate_mail_sender_name" value="<?php echo esc_attr((string) ($estimate_mail_sender_name ?? '')); ?>" placeholder="O My Deer" />
-                        </div>
-                        <div class="erp-omd-form-field">
-                            <label for="erp-omd-estimate-mail-sender-email"><?php esc_html_e('Nadawca kosztorysów — e-mail', 'erp-omd'); ?></label>
-                            <input id="erp-omd-estimate-mail-sender-email" type="email" name="estimate_mail_sender_email" value="<?php echo esc_attr((string) ($estimate_mail_sender_email ?? '')); ?>" placeholder="hello@omydeer.pl" />
-                        </div>
-
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-alert-margin-threshold"><?php esc_html_e('Próg alertu niskiej marży (%)', 'erp-omd'); ?></label>
                             <input id="erp-omd-alert-margin-threshold" type="number" min="0" step="0.01" name="alert_margin_threshold" value="<?php echo esc_attr($margin_threshold); ?>" />
@@ -252,6 +243,14 @@
                         <p><?php esc_html_e('Edytuj wiadomości wysyłane do klienta przy przekazaniu kosztorysu do akceptacji oraz po jego akceptacji.', 'erp-omd'); ?></p>
                     </div>
                     <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-field">
+                            <label for="erp-omd-estimate-mail-sender-name"><?php esc_html_e('Nadawca kosztorysów — nazwa', 'erp-omd'); ?></label>
+                            <input id="erp-omd-estimate-mail-sender-name" type="text" name="estimate_mail_sender_name" value="<?php echo esc_attr((string) ($estimate_mail_sender_name ?? '')); ?>" placeholder="O My Deer" />
+                        </div>
+                        <div class="erp-omd-form-field">
+                            <label for="erp-omd-estimate-mail-sender-email"><?php esc_html_e('Nadawca kosztorysów — e-mail', 'erp-omd'); ?></label>
+                            <input id="erp-omd-estimate-mail-sender-email" type="email" name="estimate_mail_sender_email" value="<?php echo esc_attr((string) ($estimate_mail_sender_email ?? '')); ?>" placeholder="hello@omydeer.pl" />
+                        </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-estimate-client-mail-subject"><?php esc_html_e('E-mail z kosztorysem do klienta (link akceptacji) — temat maila do klienta', 'erp-omd'); ?></label>
                             <input id="erp-omd-estimate-client-mail-subject" type="text" name="estimate_client_mail_subject" value="<?php echo esc_attr((string) ($estimate_mail_settings['subject'] ?? '')); ?>" />
