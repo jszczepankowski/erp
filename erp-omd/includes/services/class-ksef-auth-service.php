@@ -373,7 +373,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         $this->record_auth_stage('auth.ksef_token.success');
         $payload = (array) ($auth['json'] ?? []);
         $reference = (string) ($payload['referenceNumber'] ?? $payload['reference_number'] ?? '');
-        $auth_token = $this->extract_authentication_token($payload);
+        $auth_token = $this->extract_single_use_authentication_token($payload);
 
         if ($auth_token !== '') {
             $this->record_auth_stage('auth.status.ready', ['source' => 'auth_ksef_token_response']);
@@ -400,7 +400,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 }
 
                 if ($processing_code === 200) {
-                    $auth_token = $this->extract_authentication_token($status_payload);
+                    $auth_token = $this->extract_single_use_authentication_token($status_payload);
                     if ($auth_token !== '') {
                         $this->record_auth_stage('auth.status.ready', ['attempt' => (string) ($attempt + 1)]);
                         break;
@@ -1024,6 +1024,26 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             ?? $payload['authenticationToken']
             ?? $payload['authenticationTokenValue']
             ?? $payload['authToken']
+            ?? $payload['authentication_token']['token']
+            ?? $payload['authentication_token']['value']
+            ?? $payload['authentication_token']
+            ?? $payload['authentication_token_value']
+            ?? ''
+        ));
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @return string
+     */
+    private function extract_single_use_authentication_token(array $payload)
+    {
+        return trim((string) (
+            $payload['authenticationToken']['token']
+            ?? $payload['authenticationToken']['value']
+            ?? $payload['authenticationToken']['Token']
+            ?? $payload['authenticationToken']
+            ?? $payload['authenticationTokenValue']
             ?? $payload['authentication_token']['token']
             ?? $payload['authentication_token']['value']
             ?? $payload['authentication_token']
