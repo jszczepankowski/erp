@@ -371,62 +371,52 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             return $auth;
         }
         $this->record_auth_stage('auth.ksef_token.success');
-
         $payload = (array) ($auth['json'] ?? []);
         $reference = (string) ($payload['referenceNumber'] ?? $payload['reference_number'] ?? '');
         $auth_token = $this->extract_authentication_token($payload);
-        if ($auth_token === '') {
-            $auth_token = $this->extract_authentication_token_from_headers_strict_mode((array) ($auth['headers'] ?? []));
-        }
 
-        $ready = $this->is_auth_status_ready($payload);
-        $this->record_auth_stage('auth.status.initial', ['ready' => $ready ? 'yes' : 'no', 'has_reference' => $reference !== '' ? 'yes' : 'no', 'has_token' => $auth_token !== '' ? 'yes' : 'no']);
-        if ($reference !== '' && (! $ready || $auth_token === '')) {
+        if ($auth_token !== '') {
+            $this->record_auth_stage('auth.status.ready', ['source' => 'auth_ksef_token_response']);
+        } else {
+            if ($reference === '') {
+                $this->record_auth_stage('auth.status.error', ['error' => 'missing_reference_number']);
+                return new WP_Error('erp_omd_ksef_auth_reference_missing', __('[stage:auth.status_poll] Brak referenceNumber po /auth/ksef-token.', 'erp-omd'));
+            }
+
             $attempts = 30;
             for ($attempt = 0; $attempt < $attempts; $attempt++) {
-                $this->record_auth_stage('auth.status.poll_attempt', ['attempt' => (string) ($attempt + 1), 'attempts' => (string) $attempts, 'has_token' => $auth_token !== '' ? 'yes' : 'no']);
-                $status = $this->get_auth_status($environment, $reference, $auth_token);
-                if ($status instanceof WP_Error && (string) $status->get_error_code() === 'ksef_http_401') {
-                    $this->record_auth_stage('auth.status.poll_401_retry_no_bearer');
-                    $status = $this->get_auth_status($environment, $reference, '');
-                }
+                $this->record_auth_stage('auth.status.poll_attempt', ['attempt' => (string) ($attempt + 1), 'attempts' => (string) $attempts]);
+                $status = $this->get_auth_status($environment, $reference, '');
                 if ($status instanceof WP_Error) {
                     $this->record_auth_stage('auth.status.error', ['error' => (string) $status->get_error_message()]);
                     return $this->with_stage_error($status, 'auth.status_poll');
                 }
+
                 $status_payload = (array) ($status['json'] ?? []);
-                $candidate = $this->extract_authentication_token($status_payload);
-                if ($candidate === '') {
-                    $candidate = $this->extract_authentication_token_from_headers_strict_mode((array) ($status['headers'] ?? []));
+                $processing_code = (int) ($status_payload['processingCode'] ?? $status_payload['processing_code'] ?? 0);
+                if ($processing_code >= 400) {
+                    $this->record_auth_stage('auth.status.error', ['processing_code' => (string) $processing_code]);
+                    return new WP_Error('erp_omd_ksef_auth_status_failed', __('[stage:auth.status_poll] KSeF zwrócił błąd statusu uwierzytelniania.', 'erp-omd'));
                 }
-                if ($candidate !== '') {
-                    $auth_token = $candidate;
+
+                if ($processing_code === 200) {
+                    $auth_token = $this->extract_authentication_token($status_payload);
+                    if ($auth_token !== '') {
+                        $this->record_auth_stage('auth.status.ready', ['attempt' => (string) ($attempt + 1)]);
+                        break;
+                    }
                 }
-                $ready = $this->is_auth_status_ready($status_payload);
-                if ($ready && $auth_token !== '') {
-                    $this->record_auth_stage('auth.status.ready', ['attempt' => (string) ($attempt + 1)]);
-                    break;
-                }
+
                 if ($attempt < $attempts - 1) {
                     $this->pause_before_next_auth_status_poll_fixed();
                 }
             }
-        }
 
-        if ($auth_token === '' || ! $ready) {
-            if ($auth_token !== '') {
-                $this->record_auth_stage('auth.redeem.fallback_without_ready', ['token_len' => strlen($auth_token)]);
-                $fallback_redeem = $this->redeem_token($environment, $auth_token);
-                if (! ($fallback_redeem instanceof WP_Error)) {
-                    $stored = $this->storage->get_tokens($environment);
-                    $this->record_auth_stage('auth.redeem.fallback_success');
-                    return ['ok' => true, 'source' => 'adapter_mode_redeem_fallback', 'access_token' => (string) ($stored['access_token'] ?? ''), 'refresh_token' => (string) ($stored['refresh_token'] ?? '')];
-                }
-                $this->record_auth_stage('auth.redeem.fallback_error', ['error' => (string) $fallback_redeem->get_error_message()]);
+            if ($auth_token === '') {
+                $this->record_auth_stage('auth.status.incomplete', ['has_token' => 'no']);
+                $last_stage = $this->latest_auth_stage_label();
+                return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken.', 'erp-omd') . ($last_stage !== '' ? ' | last_stage=' . $last_stage : ''));
             }
-            $this->record_auth_stage('auth.status.incomplete', ['ready' => $ready ? 'yes' : 'no', 'has_token' => $auth_token !== '' ? 'yes' : 'no']);
-            $last_stage = $this->latest_auth_stage_label();
-            return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken lub status auth nie jest gotowy.', 'erp-omd') . ($last_stage !== '' ? ' | last_stage=' . $last_stage : ''));
         }
 
         $this->record_auth_stage('auth.redeem.request', ['token_len' => strlen($auth_token)]);
