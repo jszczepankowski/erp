@@ -328,6 +328,10 @@
                                 <input type="checkbox" name="ksef_sync_hub_enabled" value="1" <?php checked(! empty($ksef_sync_hub_enabled)); ?> />
                                 <?php esc_html_e('Włącz KSeF Sync Hub (cron incremental sync)', 'erp-omd'); ?>
                             </label>
+                            <label class="erp-omd-form-label" style="margin-top:8px;">
+                                <input type="checkbox" name="ksef_strict_connector_mode" value="1" <?php checked(! empty($ksef_strict_connector_mode)); ?> />
+                                <?php esc_html_e('Włącz Strict Connector Mode (zalecane do diagnostyki auth/redeem)', 'erp-omd'); ?>
+                            </label>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-ksef-sync-hub-env"><?php esc_html_e('Środowisko', 'erp-omd'); ?></label>
