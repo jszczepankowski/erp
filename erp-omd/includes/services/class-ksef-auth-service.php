@@ -414,6 +414,16 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         }
 
         if ($auth_token === '' || ! $ready) {
+            if ($auth_token !== '') {
+                $this->record_auth_stage('auth.redeem.fallback_without_ready', ['token_len' => strlen($auth_token)]);
+                $fallback_redeem = $this->redeem_token($environment, $auth_token);
+                if (! ($fallback_redeem instanceof WP_Error)) {
+                    $stored = $this->storage->get_tokens($environment);
+                    $this->record_auth_stage('auth.redeem.fallback_success');
+                    return ['ok' => true, 'source' => 'adapter_mode_redeem_fallback', 'access_token' => (string) ($stored['access_token'] ?? ''), 'refresh_token' => (string) ($stored['refresh_token'] ?? '')];
+                }
+                $this->record_auth_stage('auth.redeem.fallback_error', ['error' => (string) $fallback_redeem->get_error_message()]);
+            }
             $this->record_auth_stage('auth.status.incomplete', ['ready' => $ready ? 'yes' : 'no', 'has_token' => $auth_token !== '' ? 'yes' : 'no']);
             $last_stage = $this->latest_auth_stage_label();
             return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken lub status auth nie jest gotowy.', 'erp-omd') . ($last_stage !== '' ? ' | last_stage=' . $last_stage : ''));
