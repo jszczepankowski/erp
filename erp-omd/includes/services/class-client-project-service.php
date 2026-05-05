@@ -319,21 +319,9 @@ class ERP_OMD_Client_Project_Service
             return $errors;
         }
 
-        $allowed_transitions = [
-            'do_rozpoczecia' => ['w_realizacji', 'archiwum'],
-            'w_realizacji' => ['w_akceptacji', 'do_faktury', 'archiwum'],
-            'w_akceptacji' => ['w_realizacji', 'do_faktury', 'archiwum'],
-            'do_faktury' => ['zakonczony', 'w_realizacji', 'archiwum'],
-            'zakonczony' => ['archiwum'],
-            'archiwum' => ['do_rozpoczecia'],
-        ];
+                // Etapowa ścieżka statusów została wyłączona: admin może zmieniać status bez sekwencji przejść.
 
-        if (! in_array($target_status, $allowed_transitions[$current_status] ?? [], true)) {
-            $errors[] = __('Niedozwolona zmiana statusu projektu.', 'erp-omd');
-            return $errors;
-        }
-
-        if ($target_status === 'do_faktury') {
+if ($target_status === 'do_faktury') {
             $project_id = (int) ($existing_project['id'] ?? 0);
             if ($project_id > 0 && $this->time_entries && $this->time_entries->count_for_project_by_statuses($project_id, ['submitted', 'rejected']) > 0) {
                 $errors[] = __('Projekt nie może przejść do do_faktury, jeśli ma niezatwierdzone wpisy czasu.', 'erp-omd');

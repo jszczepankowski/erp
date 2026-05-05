@@ -4,11 +4,10 @@
     <nav class="nav-tab-wrapper erp-omd-nav-tabs">
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'reports' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Raporty', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'calendar'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'calendar' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kalendarz', 'erp-omd'); ?></a>
-        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'monitoring'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'monitoring' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Monitoring techniczny', 'erp-omd'); ?></a>
     </nav>
 
-    <div class="erp-omd-page-sections <?php echo $report_filters['tab'] === 'monitoring' ? 'erp-omd-monitoring-layout' : ''; ?>">
-        <?php if ($report_filters['tab'] !== 'monitoring') : ?>
+    <div class="erp-omd-page-sections <?php echo false ? 'erp-omd-monitoring-layout' : ''; ?>">
+        <?php if (true) : ?>
         <section class="erp-omd-card">
             <div class="erp-omd-section-header">
                 <div>
@@ -132,7 +131,7 @@
             </form>
         </section>
         <?php endif; ?>
-        <?php if ($report_filters['tab'] === 'monitoring') : ?>
+        <?php if (false) : ?>
         <section class="erp-omd-card erp-omd-monitoring-reports-box" hidden>
             <div class="erp-omd-monitoring-reports-grid">
                 <div>
