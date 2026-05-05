@@ -253,6 +253,9 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         if ($authentication_token === '') {
             $authentication_token = $this->extract_authentication_token_from_headers((array) ($auth['headers'] ?? []));
         }
+        if ($this->is_jwt_like_token($authentication_token)) {
+            $authentication_token = '';
+        }
         $reference_number = (string) (($auth_payload['referenceNumber'] ?? $auth_payload['reference_number'] ?? ''));
         $status_ready = $this->is_auth_status_ready($auth_payload);
         $last_status_value = $this->extract_auth_status_value($auth_payload);
@@ -277,7 +280,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
                 }
 
                 $candidate_token = $this->extract_authentication_token($status_payload);
-                if ($candidate_token !== '') {
+                if ($candidate_token !== '' && ! $this->is_jwt_like_token($candidate_token)) {
                     $authentication_token = $candidate_token;
                 }
 
