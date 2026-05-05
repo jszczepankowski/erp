@@ -786,20 +786,6 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
     }
 
     /**
-     * @param string $token
-     * @return bool
-     */
-    private function is_jwt_like_token($token)
-    {
-        $token = trim((string) $token);
-        if ($token === '') {
-            return false;
-        }
-
-        return preg_match('/^[A-Za-z0-9\\-_]+=*\\.[A-Za-z0-9\\-_]+=*\\.[A-Za-z0-9\\-_\\/+]+=*$/', $token) === 1;
-    }
-
-    /**
      * @param WP_Error $error
      * @param string $stage
      * @return WP_Error
