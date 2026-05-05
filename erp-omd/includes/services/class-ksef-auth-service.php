@@ -373,50 +373,45 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         $this->record_auth_stage('auth.ksef_token.success');
         $payload = (array) ($auth['json'] ?? []);
         $reference = (string) ($payload['referenceNumber'] ?? $payload['reference_number'] ?? '');
-        $auth_token = $this->extract_single_use_authentication_token($payload);
+        $auth_token = '';
+        if ($reference === '') {
+            $this->record_auth_stage('auth.status.error', ['error' => 'missing_reference_number']);
+            return new WP_Error('erp_omd_ksef_auth_reference_missing', __('[stage:auth.status_poll] Brak referenceNumber po /auth/ksef-token.', 'erp-omd'));
+        }
 
-        if ($auth_token !== '') {
-            $this->record_auth_stage('auth.status.ready', ['source' => 'auth_ksef_token_response']);
-        } else {
-            if ($reference === '') {
-                $this->record_auth_stage('auth.status.error', ['error' => 'missing_reference_number']);
-                return new WP_Error('erp_omd_ksef_auth_reference_missing', __('[stage:auth.status_poll] Brak referenceNumber po /auth/ksef-token.', 'erp-omd'));
+        $attempts = 30;
+        for ($attempt = 0; $attempt < $attempts; $attempt++) {
+            $this->record_auth_stage('auth.status.poll_attempt', ['attempt' => (string) ($attempt + 1), 'attempts' => (string) $attempts]);
+            $status = $this->get_auth_status($environment, $reference, '');
+            if ($status instanceof WP_Error) {
+                $this->record_auth_stage('auth.status.error', ['error' => (string) $status->get_error_message()]);
+                return $this->with_stage_error($status, 'auth.status_poll');
             }
 
-            $attempts = 30;
-            for ($attempt = 0; $attempt < $attempts; $attempt++) {
-                $this->record_auth_stage('auth.status.poll_attempt', ['attempt' => (string) ($attempt + 1), 'attempts' => (string) $attempts]);
-                $status = $this->get_auth_status($environment, $reference, '');
-                if ($status instanceof WP_Error) {
-                    $this->record_auth_stage('auth.status.error', ['error' => (string) $status->get_error_message()]);
-                    return $this->with_stage_error($status, 'auth.status_poll');
-                }
+            $status_payload = (array) ($status['json'] ?? []);
+            $processing_code = (int) ($status_payload['processingCode'] ?? $status_payload['processing_code'] ?? 0);
+            if ($processing_code >= 400) {
+                $this->record_auth_stage('auth.status.error', ['processing_code' => (string) $processing_code]);
+                return new WP_Error('erp_omd_ksef_auth_status_failed', __('[stage:auth.status_poll] KSeF zwrócił błąd statusu uwierzytelniania.', 'erp-omd'));
+            }
 
-                $status_payload = (array) ($status['json'] ?? []);
-                $processing_code = (int) ($status_payload['processingCode'] ?? $status_payload['processing_code'] ?? 0);
-                if ($processing_code >= 400) {
-                    $this->record_auth_stage('auth.status.error', ['processing_code' => (string) $processing_code]);
-                    return new WP_Error('erp_omd_ksef_auth_status_failed', __('[stage:auth.status_poll] KSeF zwrócił błąd statusu uwierzytelniania.', 'erp-omd'));
-                }
-
-                if ($processing_code === 200) {
-                    $auth_token = $this->extract_single_use_authentication_token($status_payload);
-                    if ($auth_token !== '') {
-                        $this->record_auth_stage('auth.status.ready', ['attempt' => (string) ($attempt + 1)]);
-                        break;
-                    }
-                }
-
-                if ($attempt < $attempts - 1) {
-                    $this->pause_before_next_auth_status_poll_fixed();
+            if ($processing_code === 200) {
+                $auth_token = $this->extract_single_use_authentication_token($status_payload);
+                if ($auth_token !== '') {
+                    $this->record_auth_stage('auth.status.ready', ['attempt' => (string) ($attempt + 1)]);
+                    break;
                 }
             }
 
-            if ($auth_token === '') {
-                $this->record_auth_stage('auth.status.incomplete', ['has_token' => 'no']);
-                $last_stage = $this->latest_auth_stage_label();
-                return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken.', 'erp-omd') . ($last_stage !== '' ? ' | last_stage=' . $last_stage : ''));
+            if ($attempt < $attempts - 1) {
+                $this->pause_before_next_auth_status_poll_fixed();
             }
+        }
+
+        if ($auth_token === '') {
+            $this->record_auth_stage('auth.status.incomplete', ['has_token' => 'no']);
+            $last_stage = $this->latest_auth_stage_label();
+            return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken.', 'erp-omd') . ($last_stage !== '' ? ' | last_stage=' . $last_stage : ''));
         }
 
         $this->record_auth_stage('auth.redeem.request', ['token_len' => strlen($auth_token)]);
