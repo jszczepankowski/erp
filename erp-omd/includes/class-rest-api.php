@@ -1948,20 +1948,12 @@ class ERP_OMD_REST_API
 
     private function is_month_locked_for_current_user($month)
     {
-        if (current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
+        return false;
     }
 
     private function is_month_locked_for_admin($month)
     {
-        if (! current_user_can('administrator')) {
-            return false;
-        }
-
-        return $this->period_service->is_month_locked_for_regular_user($this->period_service->resolve_month_status($month));
+        return false;
     }
 
     private function readiness_signals_for_month($month)
@@ -2152,18 +2144,7 @@ class ERP_OMD_REST_API
 
     private function log_adjustment_audit($month, $entity_type, $entity_id, $old_value, $new_value, $reason)
     {
-        $this->adjustment_audit->create([
-            'month' => $month,
-            'entity_type' => $entity_type,
-            'entity_id' => (int) $entity_id,
-            'field_name' => 'payload',
-            'old_value' => $old_value !== null ? wp_json_encode($old_value) : null,
-            'new_value' => $new_value !== null ? wp_json_encode($new_value) : null,
-            'reason' => $reason,
-            'adjustment_type' => $this->resolve_adjustment_type($month),
-            'changed_by' => (int) get_current_user_id(),
-            'changed_at' => current_time('mysql'),
-        ]);
+        // Audit korekt został wyłączony celowo.
     }
 
     private function sync_wp_role($user_id, $account_type)
