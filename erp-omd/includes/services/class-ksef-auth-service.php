@@ -179,65 +179,36 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         if ($single_use_token) {
             $headers = [
                 'Authorization' => 'Bearer ' . $raw_token,
-                'AuthenticationToken' => $raw_token,
                 'Content-Type' => 'application/json',
             ];
-            $body = [
-                'authenticationToken' => $raw_token,
-            ];
 
-            $response = $this->request('POST', (string) $path, $headers, $body, $environment);
+            $response = $this->request('POST', (string) $path, $headers, [], $environment);
             if ($response instanceof WP_Error) {
                 return new WP_Error(
                     (string) $response->get_error_code(),
-                    (string) $response->get_error_message() . ' | single_use_token_exchange_attempts: bearer+auth-header+json-body'
+                    (string) $response->get_error_message() . ' | single_use_token_exchange_attempts: bearer-json-empty'
                 );
             }
 
             return $response;
         }
 
-        $authorization_candidates = [
-            'Bearer ' . $raw_token,
+        $headers = [
+            'Authorization' => 'Bearer ' . $raw_token,
+            'Content-Type' => 'application/json',
         ];
-        if ($raw_token !== '') {
-            $authorization_candidates[] = $raw_token;
-        }
-        $authorization_candidates = array_values(array_unique(array_filter($authorization_candidates, 'strlen')));
 
-        $attempts = [];
-        $last_error = null;
-        foreach ($authorization_candidates as $authorization_value) {
-            $base_headers = [
-                'Authorization' => (string) $authorization_value,
-            ];
-
-            $attempts[] = 'auth=' . (strpos($authorization_value, 'Bearer ') === 0 ? 'bearer' : 'raw') . ',body=none';
-            $response = $this->request('POST', (string) $path, $base_headers, null, $environment);
-            if (! ($response instanceof WP_Error) || (string) $response->get_error_code() !== 'ksef_http_400') {
-                return $response;
-            }
-            $last_error = $response;
-
-            $json_headers = $base_headers;
-            $json_headers['Content-Type'] = 'application/json';
-            $attempts[] = 'auth=' . (strpos($authorization_value, 'Bearer ') === 0 ? 'bearer' : 'raw') . ',body=json-empty';
-            $response = $this->request('POST', (string) $path, $json_headers, [], $environment);
-            if (! ($response instanceof WP_Error) || (string) $response->get_error_code() !== 'ksef_http_400') {
-                return $response;
-            }
-            $last_error = $response;
-        }
-
-        if ($last_error instanceof WP_Error) {
+        $response = $this->request('POST', (string) $path, $headers, [], $environment);
+        if ($response instanceof WP_Error) {
             return new WP_Error(
-                (string) $last_error->get_error_code(),
-                (string) $last_error->get_error_message() . ' | token_exchange_attempts: ' . implode(';', $attempts)
+                (string) $response->get_error_code(),
+                (string) $response->get_error_message() . ' | token_exchange_attempts: auth=bearer,body=json-empty'
             );
         }
 
-        return new WP_Error('erp_omd_ksef_token_exchange_failed', __('Nie udało się wykonać wymiany tokenu KSeF.', 'erp-omd'));
+        return $response;
     }
+
 
     public function ensure_access_token($environment, $ksef_token, $context_identifier)
     {
@@ -523,6 +494,11 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
      */
     private function is_auth_status_ready(array $payload)
     {
+        $processing_code = (int) ($payload['processingCode'] ?? $payload['processing_code'] ?? 0);
+        if ($processing_code === 200) {
+            return true;
+        }
+
         $status = $this->extract_auth_status_value($payload);
         if ($status === '') {
             return false;
