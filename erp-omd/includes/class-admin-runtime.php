@@ -3507,10 +3507,22 @@ class ERP_OMD_Admin
         $headers = ['Content-Type: text/html; charset=UTF-8'];
         $sender_name = sanitize_text_field((string) get_option('erp_omd_estimate_mail_sender_name', ''));
         $sender_email = sanitize_email((string) get_option('erp_omd_estimate_mail_sender_email', ''));
+        $sent = false;
         if ($sender_email !== '' && is_email($sender_email)) {
-            $headers[] = 'From: ' . ($sender_name !== '' ? $sender_name : 'WordPress') . ' <' . $sender_email . '>';
+            $from_email_filter = static function () use ($sender_email) {
+                return $sender_email;
+            };
+            $from_name_filter = static function () use ($sender_name) {
+                return $sender_name !== '' ? $sender_name : 'WordPress';
+            };
+            add_filter('wp_mail_from', $from_email_filter);
+            add_filter('wp_mail_from_name', $from_name_filter);
+            $sent = wp_mail($client_email, $subject, wpautop($body), $headers);
+            remove_filter('wp_mail_from', $from_email_filter);
+            remove_filter('wp_mail_from_name', $from_name_filter);
+        } else {
+            $sent = wp_mail($client_email, $subject, wpautop($body), $headers);
         }
-        $sent = wp_mail($client_email, $subject, wpautop($body), $headers);
         if (! $sent) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie udało się wysłać e-maila do klienta.', 'erp-omd'), ['id' => $estimate_id]);
         }

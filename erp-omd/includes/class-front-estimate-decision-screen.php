@@ -137,9 +137,20 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             $sender_name = sanitize_text_field((string) get_option('erp_omd_estimate_mail_sender_name', ''));
             $sender_email = sanitize_email((string) get_option('erp_omd_estimate_mail_sender_email', ''));
             if ($sender_email !== '' && is_email($sender_email)) {
-                $headers[] = 'From: ' . ($sender_name !== '' ? $sender_name : 'WordPress') . ' <' . $sender_email . '>';
+                $from_email_filter = static function () use ($sender_email) {
+                    return $sender_email;
+                };
+                $from_name_filter = static function () use ($sender_name) {
+                    return $sender_name !== '' ? $sender_name : 'WordPress';
+                };
+                add_filter('wp_mail_from', $from_email_filter);
+                add_filter('wp_mail_from_name', $from_name_filter);
+                wp_mail($client_email, $subject, wpautop($body), $headers);
+                remove_filter('wp_mail_from', $from_email_filter);
+                remove_filter('wp_mail_from_name', $from_name_filter);
+            } else {
+                wp_mail($client_email, $subject, wpautop($body), $headers);
             }
-            wp_mail($client_email, $subject, wpautop($body), $headers);
         }
 
         private static function send_acceptance_notification_to_agency($estimate_id, ERP_OMD_Estimate_Repository $estimates, ERP_OMD_Estimate_Item_Repository $estimate_items, ERP_OMD_Estimate_Service $estimate_service, array $accept_result = [])
