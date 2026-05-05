@@ -63,7 +63,7 @@
                     ?>
                     <div class="erp-omd-form-grid">
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="erp-omd-fixed-monthly-cost-total"><?php esc_html_e('Suma aktywnych kosztów stałych (miesięcznie)', 'erp-omd'); ?></label>
+                            <label for="erp-omd-fixed-monthly-cost-total"><?php esc_html_e('Suma aktywnych kosztów stałych (> 0, dla aktualnego zakresu dat)', 'erp-omd'); ?></label>
                             <input id="erp-omd-fixed-monthly-cost-total" type="text" readonly value="<?php echo esc_attr(number_format((float) $fixed_monthly_cost, 2, '.', '')); ?>" />
                         </div>
                     </div>

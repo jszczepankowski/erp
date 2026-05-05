@@ -1347,6 +1347,7 @@ class ERP_OMD_Admin
         $notification_settings['day_of_month'] = min(31, max(1, (int) $notification_settings['day_of_month']));
         $fixed_monthly_cost = max(0.0, (float) get_option('erp_omd_fixed_monthly_cost', 0));
         $fixed_monthly_cost_items = $this->normalize_fixed_monthly_cost_items((array) get_option('erp_omd_fixed_monthly_cost_items', []));
+        $fixed_monthly_cost = $this->sum_fixed_monthly_cost_for_date_range($fixed_monthly_cost_items, current_time('Y-m-01'), current_time('Y-m-t'));
         if (empty($fixed_monthly_cost_items) && $fixed_monthly_cost > 0) {
             $fixed_monthly_cost_items[] = [
                 'name' => __('Koszt stały (legacy)', 'erp-omd'),
@@ -5004,6 +5005,39 @@ class ERP_OMD_Admin
         }
 
         return array_slice($items, 0, 50);
+    }
+
+
+    private function sum_fixed_monthly_cost_for_date_range(array $fixed_items, $range_start, $range_end)
+    {
+        $range_start = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $range_start) ? (string) $range_start : current_time('Y-m-01');
+        $range_end = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $range_end) ? (string) $range_end : current_time('Y-m-t');
+        if ($range_end < $range_start) {
+            $range_end = $range_start;
+        }
+
+        $sum = 0.0;
+        foreach ($fixed_items as $item) {
+            if (! is_array($item) || empty($item['active'])) {
+                continue;
+            }
+
+            $amount = (float) ($item['amount'] ?? 0);
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $valid_from = (string) ($item['valid_from'] ?? '');
+            $valid_to = (string) ($item['valid_to'] ?? '');
+            $effective_from = $valid_from !== '' ? $valid_from : '0001-01-01';
+            $effective_to = $valid_to !== '' ? $valid_to : '9999-12-31';
+
+            if ($effective_from <= $range_end && $effective_to >= $range_start) {
+                $sum += $amount;
+            }
+        }
+
+        return round($sum, 2);
     }
 
     private function handle_attachment_add()
