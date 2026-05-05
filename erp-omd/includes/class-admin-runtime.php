@@ -597,6 +597,7 @@ class ERP_OMD_Admin
             case 'bulk_cost_invoices': $this->handle_cost_invoice_bulk_action('invoices'); break;
             case 'bulk_ksef_cost_invoices': $this->handle_cost_invoice_bulk_action('ksef-cost'); break;
             case 'attach_cost_invoice_to_project': $this->handle_attach_cost_invoice_to_project(); break;
+            case 'attach_sales_invoice_to_project': $this->handle_attach_sales_invoice_to_project(); break;
             case 'moderate_ksef_queue': $this->handle_ksef_queue_moderation_action(); break;
             case 'bulk_ksef_queue': $this->handle_ksef_queue_bulk_action(); break;
             case 'import_ksef_sales_xml': $this->handle_import_ksef_sales_xml_action(); break;
@@ -1105,6 +1106,8 @@ class ERP_OMD_Admin
         $project_cost_rows = [];
         $project_cost_invoice_rows = [];
         $project_revenue_rows = [];
+        $project_sales_invoice_rows = [];
+        $project_final_sales_invoice_row = null;
         $project_cost_edit_row = null;
         $project_revenue_edit_row = null;
         $project_financial = null;
@@ -1124,6 +1127,24 @@ class ERP_OMD_Admin
                     }
                 ));
                 $project_revenue_rows = $this->project_revenues->for_project((int) $project['id']);
+                $ksef_service = new ERP_OMD_KSeF_Import_Service(
+                    new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+                    new ERP_OMD_Cost_Invoice_Repository(),
+                    new ERP_OMD_Cost_Invoice_Audit_Repository(),
+                    null,
+                    null,
+                    new ERP_OMD_Supplier_Repository(),
+                    $this->clients
+                );
+                $project_sales_invoice_rows = array_values(array_filter((array) $ksef_service->list_sales_inbox(), static function ($sales_row) use ($project) {
+                    return (int) ($sales_row['project_id'] ?? 0) === 0;
+                }));
+                $project_final_sales_invoice_candidates = array_values(array_filter((array) $ksef_service->list_sales_inbox(), static function ($sales_row) use ($project) {
+                    return (int) ($sales_row['project_id'] ?? 0) === (int) ($project['id'] ?? 0) && (int) ($sales_row['is_final'] ?? 0) === 1;
+                }));
+                if ($project_final_sales_invoice_candidates !== []) {
+                    $project_final_sales_invoice_row = $project_final_sales_invoice_candidates[0];
+                }
                 $edit_project_cost_id = (int) ($_GET['edit_project_cost_id'] ?? 0);
                 if ($edit_project_cost_id > 0) {
                     $candidate_project_cost = $this->project_costs->find($edit_project_cost_id);
@@ -1342,6 +1363,8 @@ class ERP_OMD_Admin
         $estimate_thank_you_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_client_thank_you_mail_settings', []), $estimate_thank_you_mail_settings);
         $estimate_internal_accept_mail_settings = $this->estimate_internal_accept_mail_defaults();
         $estimate_internal_accept_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_internal_accept_mail_settings', []), $estimate_internal_accept_mail_settings);
+        $estimate_mail_sender_name = sanitize_text_field((string) get_option('erp_omd_estimate_mail_sender_name', ''));
+        $estimate_mail_sender_email = sanitize_email((string) get_option('erp_omd_estimate_mail_sender_email', ''));
 
         $notification_recipients = (array) get_option('erp_omd_missing_hours_notification_recipients', []);
         $employees = $this->employees->all();
@@ -3481,7 +3504,13 @@ class ERP_OMD_Admin
         $estimate_items = (array) $this->estimate_items->for_estimate($estimate_id);
         $estimate_totals = $this->estimate_service->calculate_totals($estimate_items);
         $body .= $this->build_estimate_summary_table_html($estimate_items, $estimate_totals, true);
-        $sent = wp_mail($client_email, $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        $sender_name = sanitize_text_field((string) get_option('erp_omd_estimate_mail_sender_name', ''));
+        $sender_email = sanitize_email((string) get_option('erp_omd_estimate_mail_sender_email', ''));
+        if ($sender_email !== '' && is_email($sender_email)) {
+            $headers[] = 'From: ' . ($sender_name !== '' ? $sender_name : 'WordPress') . ' <' . $sender_email . '>';
+        }
+        $sent = wp_mail($client_email, $subject, wpautop($body), $headers);
         if (! $sent) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie udało się wysłać e-maila do klienta.', 'erp-omd'), ['id' => $estimate_id]);
         }
@@ -3926,6 +3955,38 @@ class ERP_OMD_Admin
         }
         $this->project_financial_service->rebuild_for_project($project_id);
         $this->redirect_with_notice('erp-omd-projects', 'success', $message, ['id' => $project_id]);
+    }
+
+
+    private function handle_attach_sales_invoice_to_project()
+    {
+        check_admin_referer('erp_omd_attach_sales_invoice_to_project');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $project_id = max(0, (int) ($_POST['project_id'] ?? 0));
+        $sales_id = max(0, (int) ($_POST['sales_id'] ?? 0));
+        $is_final = ! empty($_POST['is_final']);
+        if ($project_id <= 0 || $sales_id <= 0) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Wybierz projekt i fakturę sprzedażową.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        $service = new ERP_OMD_KSeF_Import_Service(
+            new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
+            new ERP_OMD_Cost_Invoice_Repository(),
+            new ERP_OMD_Cost_Invoice_Audit_Repository(),
+            null,
+            null,
+            new ERP_OMD_Supplier_Repository(),
+            $this->clients
+        );
+
+        $result = $service->attach_sales_document_to_project($sales_id, $project_id, $is_final, (int) get_current_user_id());
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', (array) ($result['errors'] ?? [])), ['id' => $project_id]);
+        }
+
+        $this->project_financial_service->rebuild_for_project($project_id);
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Faktura sprzedażowa została przypisana do projektu.', 'erp-omd'), ['id' => $project_id]);
     }
 
     private function handle_attach_cost_invoice_to_project()
@@ -4527,9 +4588,16 @@ class ERP_OMD_Admin
                 'subject' => sanitize_text_field(wp_unslash($_POST['estimate_internal_accept_mail_subject'] ?? $estimate_internal_accept_defaults['subject'])),
                 'body' => wp_kses_post(wp_unslash($_POST['estimate_internal_accept_mail_body'] ?? $estimate_internal_accept_defaults['body'])),
             ];
+            $estimate_mail_sender_name = sanitize_text_field(wp_unslash($_POST['estimate_mail_sender_name'] ?? ''));
+            $estimate_mail_sender_email = sanitize_email(wp_unslash($_POST['estimate_mail_sender_email'] ?? ''));
+            if ($estimate_mail_sender_email !== '' && ! is_email($estimate_mail_sender_email)) {
+                $this->redirect_with_notice('erp-omd-settings', 'error', __('Adres e-mail nadawcy kosztorysów jest niepoprawny.', 'erp-omd'), ['tab' => $settings_tab]);
+            }
             update_option('erp_omd_estimate_client_mail_settings', $estimate_mail_settings);
             update_option('erp_omd_estimate_client_thank_you_mail_settings', $estimate_thank_you_mail_settings);
             update_option('erp_omd_estimate_internal_accept_mail_settings', $estimate_internal_accept_settings);
+            update_option('erp_omd_estimate_mail_sender_name', $estimate_mail_sender_name);
+            update_option('erp_omd_estimate_mail_sender_email', $estimate_mail_sender_email);
         } elseif ($settings_tab === 'front_login') {
             $front_login_logo_id = max(0, (int) ($_POST['front_login_logo_id'] ?? 0));
             $front_login_cover_id = max(0, (int) ($_POST['front_login_cover_id'] ?? 0));

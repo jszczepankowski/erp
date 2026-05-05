@@ -251,6 +251,29 @@
                             <?php endif; ?>
                         </div>
                         <?php if (! $project_financial_rows_locked) : ?>
+                            <form method="post" style="margin-bottom:12px;">
+                                <?php wp_nonce_field('erp_omd_attach_sales_invoice_to_project'); ?>
+                                <input type="hidden" name="erp_omd_action" value="attach_sales_invoice_to_project" />
+                                <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                <div class="erp-omd-form-grid">
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                        <label for="attach-sales-invoice-id"><?php esc_html_e('Dodaj przychód z faktury sprzedażowej', 'erp-omd'); ?></label>
+                                        <select id="attach-sales-invoice-id" name="sales_id">
+                                            <option value=""><?php esc_html_e('Wybierz nieprzypisaną fakturę sprzedażową', 'erp-omd'); ?></option>
+                                            <?php foreach ((array) ($project_sales_invoice_rows ?? []) as $project_sales_invoice_row) : ?>
+                                                <option value="<?php echo esc_attr((string) ((int) ($project_sales_invoice_row['id'] ?? 0))); ?>"><?php echo esc_html(sprintf('#%d • %s • netto %s', (int) ($project_sales_invoice_row['id'] ?? 0), (string) ($project_sales_invoice_row['invoice_number'] ?? '—'), number_format_i18n((float) ($project_sales_invoice_row['net_amount'] ?? 0), 2))); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="erp-omd-form-field">
+                                        <label><input type="checkbox" name="is_final" value="1" /> <?php esc_html_e('Oznacz jako końcowa', 'erp-omd'); ?></label>
+                                    </div>
+                                </div>
+                                <div class="erp-omd-form-actions">
+                                    <?php submit_button(__('Podłącz fakturę sprzedażową', 'erp-omd'), 'secondary', '', false); ?>
+                                </div>
+                            </form>
+
                             <form method="post">
                                 <?php wp_nonce_field('erp_omd_save_project_revenue'); ?>
                                 <input type="hidden" name="erp_omd_action" value="save_project_revenue" />
@@ -283,6 +306,14 @@
                         <table class="widefat striped">
                             <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                             <tbody>
+                                <?php if (is_array($project_final_sales_invoice_row)) : ?>
+                                    <tr>
+                                        <td><?php echo esc_html((string) ($project_final_sales_invoice_row['issue_date'] ?? '—')); ?></td>
+                                        <td><?php echo esc_html(number_format_i18n((float) ($project_final_sales_invoice_row['net_amount'] ?? 0), 2)); ?></td>
+                                        <td><?php echo esc_html(sprintf(__('Faktura sprzedażowa końcowa: %s', 'erp-omd'), (string) ($project_final_sales_invoice_row['invoice_number'] ?? '—'))); ?></td>
+                                        <td><span class="tag"><?php esc_html_e('Końcowa', 'erp-omd'); ?></span></td>
+                                    </tr>
+                                <?php endif; ?>
                                 <?php if (empty($project_revenue_rows)) : ?>
                                     <tr><td colspan="4"><?php esc_html_e('Brak pozycji przychodowych projektu.', 'erp-omd'); ?></td></tr>
                                 <?php else : ?>
