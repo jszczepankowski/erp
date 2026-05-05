@@ -249,6 +249,9 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         if ($authentication_token === '') {
             $authentication_token = $this->extract_authentication_token_from_headers((array) ($auth['headers'] ?? []));
         }
+        if ($this->looks_like_jwt($authentication_token)) {
+            $authentication_token = '';
+        }
         $reference_number = (string) (($auth_payload['referenceNumber'] ?? $auth_payload['reference_number'] ?? ''));
         $status_ready = $this->is_auth_status_ready($auth_payload);
         $last_status_value = $this->extract_auth_status_value($auth_payload);
@@ -779,12 +782,21 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             }
         }
 
-        $authorization = trim((string) ($headers['authorization'] ?? ''));
-        if (strpos($authorization, 'Bearer ') === 0) {
-            return trim((string) substr($authorization, 7));
+        return '';
+    }
+
+    /**
+     * @param string $token
+     * @return bool
+     */
+    private function looks_like_jwt($token)
+    {
+        $token = trim((string) $token);
+        if ($token === '') {
+            return false;
         }
 
-        return '';
+        return preg_match('/^[A-Za-z0-9\\-_]+=*\\.[A-Za-z0-9\\-_]+=*\\.[A-Za-z0-9\\-_\\/+]+=*$/', $token) === 1;
     }
 
     /**
