@@ -374,6 +374,10 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         $payload = (array) ($auth['json'] ?? []);
         $reference = (string) ($payload['referenceNumber'] ?? $payload['reference_number'] ?? '');
         $auth_token = '';
+        $polling_token = $this->extract_authentication_token($payload);
+        if ($polling_token === '') {
+            $polling_token = $this->extract_authentication_token_from_headers_strict_mode((array) ($auth['headers'] ?? []));
+        }
         if ($reference === '') {
             $this->record_auth_stage('auth.status.error', ['error' => 'missing_reference_number']);
             return new WP_Error('erp_omd_ksef_auth_reference_missing', __('[stage:auth.status_poll] Brak referenceNumber po /auth/ksef-token.', 'erp-omd'));
@@ -381,8 +385,12 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
         $attempts = 30;
         for ($attempt = 0; $attempt < $attempts; $attempt++) {
-            $this->record_auth_stage('auth.status.poll_attempt', ['attempt' => (string) ($attempt + 1), 'attempts' => (string) $attempts]);
-            $status = $this->get_auth_status($environment, $reference, '');
+            $this->record_auth_stage('auth.status.poll_attempt', ['attempt' => (string) ($attempt + 1), 'attempts' => (string) $attempts, 'polling_token' => $polling_token !== '' ? 'yes' : 'no']);
+            $status = $this->get_auth_status($environment, $reference, $polling_token);
+            if ($status instanceof WP_Error && (string) $status->get_error_code() === 'ksef_http_401' && $polling_token !== '') {
+                $this->record_auth_stage('auth.status.poll_401_retry_no_bearer');
+                $status = $this->get_auth_status($environment, $reference, '');
+            }
             if ($status instanceof WP_Error) {
                 $this->record_auth_stage('auth.status.error', ['error' => (string) $status->get_error_message()]);
                 return $this->with_stage_error($status, 'auth.status_poll');
