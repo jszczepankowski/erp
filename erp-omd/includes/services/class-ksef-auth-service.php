@@ -347,8 +347,24 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
         $authentication_token = $this->extract_authentication_token($auth_payload);
         $reference_number = (string) ($auth_payload['referenceNumber'] ?? $auth_payload['reference_number'] ?? '');
         $processing_code = (int) ($auth_payload['processingCode'] ?? $auth_payload['processing_code'] ?? 0);
+        $status_ready = $processing_code === 200 || $this->is_auth_status_ready($auth_payload);
 
-        if ($authentication_token === '' && $reference_number !== '') {
+        if ($authentication_token !== '' && $status_ready) {
+            $redeem = $this->redeem_token($environment, $authentication_token);
+            if ($redeem instanceof WP_Error) {
+                return $this->with_stage_error($redeem, 'auth.redeem');
+            }
+
+            $stored = $this->storage->get_tokens($environment);
+            return [
+                'ok' => true,
+                'source' => 'strict_mode',
+                'access_token' => (string) ($stored['access_token'] ?? ''),
+                'refresh_token' => (string) ($stored['refresh_token'] ?? ''),
+            ];
+        }
+
+        if ($reference_number !== '') {
             $attempts = count($this->auth_status_poll_delays_seconds) + 1;
             for ($attempt = 0; $attempt < $attempts; $attempt++) {
                 $status = $this->get_auth_status($environment, $reference_number, $authentication_token);
@@ -361,12 +377,13 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
 
                 $status_payload = (array) ($status['json'] ?? []);
                 $processing_code = (int) ($status_payload['processingCode'] ?? $status_payload['processing_code'] ?? 0);
+                $status_ready = $processing_code === 200 || $this->is_auth_status_ready($status_payload);
                 $candidate = $this->extract_authentication_token($status_payload);
                 if ($candidate !== '') {
                     $authentication_token = $candidate;
                 }
 
-                if ($processing_code === 200 && $authentication_token !== '') {
+                if ($status_ready && $authentication_token !== '') {
                     break;
                 }
 
@@ -376,7 +393,7 @@ class ERP_OMD_KSeF_Auth_Service implements ERP_OMD_KSeF_Auth_Provider_Interface
             }
         }
 
-        if ($authentication_token === '' || $processing_code !== 200) {
+        if ($authentication_token === '' || ! $status_ready) {
             return new WP_Error('erp_omd_ksef_authentication_token_missing', __('[stage:auth.status_poll] Brak gotowego authenticationToken (processingCode!=200).', 'erp-omd'));
         }
 
