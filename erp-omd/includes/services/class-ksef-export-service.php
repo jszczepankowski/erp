@@ -75,7 +75,7 @@ class ERP_OMD_KSeF_Export_Service
             $payload['to'] = $to_hwm;
         }
 
-        $started = $this->start_export($environment, $payload);
+        $started = $this->start_export_with_fallbacks($environment, $payload);
         if ($started instanceof WP_Error) {
             $error_data = method_exists($started, 'get_error_data') ? (array) $started->get_error_data() : [];
             return [
@@ -201,6 +201,34 @@ class ERP_OMD_KSeF_Export_Service
     {
         $env = strtoupper(trim((string) $environment));
         return in_array($env, ['TEST', 'DEMO', 'PRD'], true) ? $env : 'TEST';
+    }
+
+    /**
+     * @param string $environment
+     * @param array<string,mixed> $payload
+     * @return array<string,mixed>|WP_Error
+     */
+    private function start_export_with_fallbacks($environment, array $payload)
+    {
+        $attempt_payloads = [$payload];
+        $subject_type = (string) ($payload['subjectType'] ?? '');
+        if ($subject_type !== '') {
+            $attempt_payloads[] = array_merge($payload, ['subjectType' => strtolower($subject_type)]);
+            $attempt_payloads[] = array_merge($payload, ['subjectType' => strtoupper($subject_type)]);
+        }
+
+        foreach ($attempt_payloads as $attempt) {
+            $response = $this->start_export($environment, (array) $attempt);
+            if (! ($response instanceof WP_Error)) {
+                return $response;
+            }
+            if ((string) $response->get_error_code() !== 'ksef_http_400') {
+                return $response;
+            }
+        }
+
+        $last = end($attempt_payloads);
+        return $this->start_export($environment, (array) $last);
     }
 
     /**
