@@ -115,7 +115,7 @@
                 <div class="erp-omd-card erp-omd-chart-card">
                     <div class="erp-omd-chart-header">
                         <div>
-                            <h2><?php esc_html_e('Wykres rentowności miesiąca', 'erp-omd'); ?></h2>
+                            <h2><?php esc_html_e('Rentowność czasu pracy', 'erp-omd'); ?></h2>
                             <p><?php esc_html_e('Szybki obraz relacji między przychodem, kosztem i zyskiem dla bieżącego okresu raportowego.', 'erp-omd'); ?></p>
                         </div>
                         <span class="erp-omd-chart-period"><?php echo esc_html($reporting_month_label); ?></span>
