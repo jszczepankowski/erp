@@ -7,7 +7,6 @@ class ERP_OMD_Cron_Manager
     const PROJECT_DEADLINE_HOOK = 'erp_omd_daily_project_deadline_notifications';
     const GOOGLE_CALENDAR_SYNC_HOOK = 'erp_omd_google_calendar_sync';
     const KSEF_RETRY_PIPELINE_HOOK = 'erp_omd_ksef_retry_pipeline';
-    const KSEF_INCREMENTAL_SYNC_HOOK = 'erp_omd_ksef_incremental_sync';
 
     public static function register_hooks()
     {
@@ -17,7 +16,6 @@ class ERP_OMD_Cron_Manager
         add_action(self::PROJECT_DEADLINE_HOOK, [__CLASS__, 'run_project_deadline_notifications']);
         add_action(self::GOOGLE_CALENDAR_SYNC_HOOK, [__CLASS__, 'run_google_calendar_sync']);
         add_action(self::KSEF_RETRY_PIPELINE_HOOK, [__CLASS__, 'run_ksef_retry_pipeline']);
-        add_action(self::KSEF_INCREMENTAL_SYNC_HOOK, [__CLASS__, 'run_ksef_incremental_sync']);
         self::schedule_events();
     }
 
@@ -33,7 +31,6 @@ class ERP_OMD_Cron_Manager
         wp_clear_scheduled_hook(self::PROJECT_DEADLINE_HOOK);
         wp_clear_scheduled_hook(self::GOOGLE_CALENDAR_SYNC_HOOK);
         wp_clear_scheduled_hook(self::KSEF_RETRY_PIPELINE_HOOK);
-        wp_clear_scheduled_hook(self::KSEF_INCREMENTAL_SYNC_HOOK);
     }
 
     public static function register_weekly_schedule($schedules)
@@ -84,9 +81,6 @@ class ERP_OMD_Cron_Manager
         }
         if (! wp_next_scheduled(self::KSEF_RETRY_PIPELINE_HOOK)) {
             wp_schedule_event(time() + 5 * MINUTE_IN_SECONDS, 'erp_omd_five_minutes', self::KSEF_RETRY_PIPELINE_HOOK);
-        }
-        if (! wp_next_scheduled(self::KSEF_INCREMENTAL_SYNC_HOOK)) {
-            wp_schedule_event(time() + 15 * MINUTE_IN_SECONDS, 'erp_omd_fifteen_minutes', self::KSEF_INCREMENTAL_SYNC_HOOK);
         }
     }
 
@@ -220,52 +214,6 @@ class ERP_OMD_Cron_Manager
         );
         $service->sync_all_projects();
     }
-
-
-
-    public static function run_ksef_incremental_sync()
-    {
-        if (! (bool) get_option('erp_omd_ksef_sync_hub_enabled', false)) {
-            return;
-        }
-
-        $environment = (string) get_option('erp_omd_ksef_sync_hub_env', 'TEST');
-        $mode = (string) get_option('erp_omd_ksef_sync_hub_mode', 'dry_run');
-        if (! in_array($mode, ['dry_run', 'active'], true)) {
-            $mode = 'dry_run';
-        }
-        $base_url = (string) get_option('erp_omd_ksef_api_base_url', '');
-        if ($base_url === '') {
-            return;
-        }
-
-        $connector = new ERP_OMD_KSeF_Connector($base_url);
-        $export_service = new ERP_OMD_KSeF_Export_Service($connector);
-        $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
-        $audit_repository = new ERP_OMD_Cost_Invoice_Audit_Repository();
-        $supplier_repository = new ERP_OMD_Supplier_Repository();
-        $client_repository = new ERP_OMD_Client_Repository();
-        $workflow = new ERP_OMD_Cost_Invoice_Workflow_Service(
-            $invoice_repository,
-            $audit_repository,
-            $supplier_repository,
-            new ERP_OMD_Project_Repository()
-        );
-        $import_service = $mode === 'active'
-            ? new ERP_OMD_KSeF_Import_Service(
-                $workflow,
-                $invoice_repository,
-                $audit_repository,
-                null,
-                null,
-                $supplier_repository,
-                $client_repository
-            )
-            : null;
-        $service = new ERP_OMD_KSeF_Incremental_Sync_Service(null, null, $export_service, $import_service);
-        $service->run_scheduled_sync($environment, 3);
-    }
-
     public static function run_ksef_retry_pipeline()
     {
         $invoice_repository = new ERP_OMD_Cost_Invoice_Repository();
