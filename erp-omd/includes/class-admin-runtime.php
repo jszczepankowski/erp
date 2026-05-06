@@ -1368,6 +1368,8 @@ class ERP_OMD_Admin
         $google_calendar_last_error = (string) get_option('erp_omd_google_calendar_last_error', '');
         $ksef_auto_create_supplier = (bool) get_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, false);
         $ksef_sync_hub_enabled = (bool) get_option('erp_omd_ksef_sync_hub_enabled', false);
+        $ksef_strict_connector_mode = (bool) get_option('erp_omd_ksef_strict_connector_mode', false);
+        $ksef_auth_provider_mode = 'legacy';
         $ksef_sync_hub_env = strtoupper((string) get_option('erp_omd_ksef_sync_hub_env', 'TEST'));
         if (! in_array($ksef_sync_hub_env, ['TEST', 'DEMO', 'PRD'], true)) {
             $ksef_sync_hub_env = 'TEST';
@@ -4607,6 +4609,7 @@ class ERP_OMD_Admin
                 $ksef_api_base_url = $this->default_ksef_api_base_url_for_environment($ksef_sync_hub_env);
             }
             update_option('erp_omd_ksef_sync_hub_enabled', ! empty($_POST['ksef_sync_hub_enabled']));
+            update_option('erp_omd_ksef_strict_connector_mode', ! empty($_POST['ksef_strict_connector_mode']));
             update_option('erp_omd_ksef_sync_hub_env', $ksef_sync_hub_env);
             update_option('erp_omd_ksef_sync_hub_mode', $ksef_sync_hub_mode);
             update_option('erp_omd_ksef_api_base_url', $ksef_api_base_url);
