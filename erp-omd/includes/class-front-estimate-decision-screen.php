@@ -133,7 +133,24 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
             $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
             $body .= self::build_summary_table_html($items, $totals, true);
-            wp_mail($client_email, $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);
+            $headers = ['Content-Type: text/html; charset=UTF-8'];
+            $sender_name = sanitize_text_field((string) get_option('erp_omd_estimate_mail_sender_name', ''));
+            $sender_email = sanitize_email((string) get_option('erp_omd_estimate_mail_sender_email', ''));
+            if ($sender_email !== '' && is_email($sender_email)) {
+                $from_email_filter = static function () use ($sender_email) {
+                    return $sender_email;
+                };
+                $from_name_filter = static function () use ($sender_name) {
+                    return $sender_name !== '' ? $sender_name : 'WordPress';
+                };
+                add_filter('wp_mail_from', $from_email_filter);
+                add_filter('wp_mail_from_name', $from_name_filter);
+                wp_mail($client_email, $subject, wpautop($body), $headers);
+                remove_filter('wp_mail_from', $from_email_filter);
+                remove_filter('wp_mail_from_name', $from_name_filter);
+            } else {
+                wp_mail($client_email, $subject, wpautop($body), $headers);
+            }
         }
 
         private static function send_acceptance_notification_to_agency($estimate_id, ERP_OMD_Estimate_Repository $estimates, ERP_OMD_Estimate_Item_Repository $estimate_items, ERP_OMD_Estimate_Service $estimate_service, array $accept_result = [])
@@ -197,7 +214,13 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
             $body .= self::build_summary_table_html((array) $items, $totals, true);
 
-            wp_mail(array_values($recipients), $subject, wpautop($body), ['Content-Type: text/html; charset=UTF-8']);
+            $headers = ['Content-Type: text/html; charset=UTF-8'];
+            $sender_name = sanitize_text_field((string) get_option('erp_omd_estimate_mail_sender_name', ''));
+            $sender_email = sanitize_email((string) get_option('erp_omd_estimate_mail_sender_email', ''));
+            if ($sender_email !== '' && is_email($sender_email)) {
+                $headers[] = 'From: ' . ($sender_name !== '' ? $sender_name : 'WordPress') . ' <' . $sender_email . '>';
+            }
+            wp_mail(array_values($recipients), $subject, wpautop($body), $headers);
         }
 
         private static function append_accept_note_to_project_history($estimate_id, $note, array $accept_result = [])
