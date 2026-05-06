@@ -60,12 +60,17 @@ class ERP_OMD_KSeF_Export_Service
      */
     public function run_incremental_export($environment, $subject_type, $from_hwm, $to_hwm)
     {
+        $from_hwm = $this->normalize_hwm_datetime($from_hwm, gmdate('Y-m-d\\TH:i:s\\Z', time() - DAY_IN_SECONDS));
+        $to_hwm = $this->normalize_hwm_datetime($to_hwm, '');
+        if ($to_hwm !== '' && strtotime($to_hwm) !== false && strtotime($from_hwm) !== false && strtotime($to_hwm) < strtotime($from_hwm)) {
+            $to_hwm = '';
+        }
+
         $payload = [
             'subjectType' => (string) $subject_type,
             'from' => (string) $from_hwm,
             'restrictToPermanentStorageHwmDate' => true,
         ];
-        $to_hwm = trim((string) $to_hwm);
         if ($to_hwm !== '') {
             $payload['to'] = $to_hwm;
         }
@@ -196,5 +201,25 @@ class ERP_OMD_KSeF_Export_Service
     {
         $env = strtoupper(trim((string) $environment));
         return in_array($env, ['TEST', 'DEMO', 'PRD'], true) ? $env : 'TEST';
+    }
+
+    /**
+     * @param string $value
+     * @param string $fallback
+     * @return string
+     */
+    private function normalize_hwm_datetime($value, $fallback = '')
+    {
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return (string) $fallback;
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            return (string) $fallback;
+        }
+
+        return gmdate('Y-m-d\\TH:i:s\\Z', $timestamp);
     }
 }
