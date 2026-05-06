@@ -1051,7 +1051,7 @@ class ERP_OMD_Reporting_Service
                 continue;
             }
 
-            $close_month = (string) ($project['operational_close_month'] ?? '');
+            $close_month = $this->resolve_project_close_month($project);
             if (preg_match('/^\d{4}-\d{2}$/', $close_month) !== 1 || ! isset($allowed_months[$close_month])) {
                 continue;
             }
@@ -1245,7 +1245,7 @@ class ERP_OMD_Reporting_Service
                 continue;
             }
 
-            $month = (string) ($project['operational_close_month'] ?? '');
+            $month = $this->resolve_project_close_month($project);
             if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
                 continue;
             }
@@ -1258,6 +1258,22 @@ class ERP_OMD_Reporting_Service
         }
 
         return $metrics;
+    }
+
+
+    private function resolve_project_close_month(array $project)
+    {
+        $end_date = (string) ($project['end_date'] ?? '');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date) === 1) {
+            return substr($end_date, 0, 7);
+        }
+
+        $legacy_close_month = (string) ($project['operational_close_month'] ?? '');
+        if (preg_match('/^\d{4}-\d{2}$/', $legacy_close_month) === 1) {
+            return $legacy_close_month;
+        }
+
+        return '';
     }
 
     private function build_salary_cost_index_by_month(array $months, array $month_ranges = [])
