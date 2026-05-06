@@ -46,7 +46,7 @@ $fragments = [
     [$admin, "case 'import_ksef_cost_xml'", 'Admin runtime should process cost XML import action.'],
     [$admin, "case 'bulk_ksef_cost_invoices'", 'Admin runtime should process KSeF cost bulk action.'],
     [$admin, "handle_cost_invoice_bulk_action('ksef-cost')", 'Admin runtime should reuse bulk action handler for KSeF cost tab.'],
-    [$admin, '$ksef_cost_invoices = array_values(array_filter((array) $cost_invoices', 'Admin runtime should prepare cost KSeF list.'],
+    [$admin, '$ksef_cost_invoices = array_values(array_filter((array) $all_cost_invoices', 'Admin runtime should prepare cost KSeF list.'],
     [$admin, 'function read_ksef_xml_from_request(', 'Admin runtime should read XML from textarea or file upload.'],
     [$admin, 'function read_ksef_xml_batch_from_request(', 'Admin runtime should support batch cost XML import.'],
     [$service, "'description' => trim((string) (\$document['description'] ?? ''))", 'Sales inbox rows should persist invoice description.'],
