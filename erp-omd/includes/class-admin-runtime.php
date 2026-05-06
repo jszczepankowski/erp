@@ -2653,22 +2653,6 @@ class ERP_OMD_Admin
     }
 
     /**
-     * @param string $environment
-     * @return string
-     */
-    private function default_ksef_api_base_url_for_environment($environment)
-    {
-        $env = strtoupper(trim((string) $environment));
-        $map = [
-            'TEST' => 'https://api-test.ksef.mf.gov.pl',
-            'DEMO' => 'https://api-demo.ksef.mf.gov.pl',
-            'PRD' => 'https://api.ksef.mf.gov.pl',
-        ];
-
-        return (string) ($map[$env] ?? '');
-    }
-
-    /**
      * @param string $subject_type
      * @return string
      */
