@@ -2677,44 +2677,6 @@ class ERP_OMD_Admin
     }
 
     /**
-     * @param string $error_message
-     * @return string
-     */
-    private function append_ksef_auth_stage_hint($error_message)
-    {
-        $message = trim((string) $error_message);
-        if ($message === '') {
-            return '';
-        }
-
-        if (preg_match('/\[stage:([a-z0-9._-]+)\]/i', $message, $matches) !== 1) {
-            return $message;
-        }
-
-        $stage = strtolower(trim((string) ($matches[1] ?? '')));
-        if ($stage === '') {
-            return $message;
-        }
-
-        $hints = [
-            'auth.challenge' => __('[1/6 challenge] sprawdź base URL środowiska KSeF, dostępność endpointu /auth/challenge i czy request idzie jako application/json.', 'erp-omd'),
-            'auth.public_key' => __('[2/6 public key] sprawdź, czy zapisano poprawny certyfikat MF (PEM) dla wybranego środowiska oraz czy nie wygasł.', 'erp-omd'),
-            'auth.encrypt_token' => __('[3/6 encrypt token] sprawdź format Token AP i zgodność klucza publicznego z aktualnym środowiskiem.', 'erp-omd'),
-            'auth.ksef_token' => __('[4/6 auth request] sprawdź ContextIdentifier (np. NIP), format payloadu XML/JSON oraz czy challenge nie wygasł.', 'erp-omd'),
-            'auth.status_poll' => __('[5/6 status polling] sprawdź referenceNumber, opóźnienia/OCSP/CRL oraz czy status nie wymaga dłuższego oczekiwania.', 'erp-omd'),
-            'auth.redeem' => __('[6/6 redeem JWT] sprawdź format Authorization (Bearer), jednorazowość authenticationToken oraz wymagany body/Content-Type.', 'erp-omd'),
-        ];
-
-        if (! isset($hints[$stage])) {
-            return $message;
-        }
-
-        $flow_map = __('flow_auth=1.challenge -> 2.public_key -> 3.encrypt_token -> 4.auth_ksef_token -> 5.status_polling -> 6.redeem_jwt', 'erp-omd');
-
-        return $message . ' | hint_stage: ' . $hints[$stage] . ' | ' . $flow_map;
-    }
-
-    /**
      * @param string $label
      * @param string $status
      * @return string
