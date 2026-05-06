@@ -531,17 +531,5 @@
             <?php wp_nonce_field('erp_omd_google_calendar_fetch_calendars'); ?>
             <input type="hidden" name="erp_omd_action" value="google_calendar_fetch_calendars" />
         </form>
-        <form id="erp-omd-ksef-sync-hub-dry-run-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'ksef'], admin_url('admin.php'))); ?>">
-            <?php wp_nonce_field('erp_omd_ksef_sync_hub_dry_run'); ?>
-            <input type="hidden" name="erp_omd_action" value="ksef_sync_hub_dry_run" />
-        </form>
-        <form id="erp-omd-ksef-sync-hub-fetch-public-key-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'ksef'], admin_url('admin.php'))); ?>">
-            <?php wp_nonce_field('erp_omd_ksef_sync_hub_fetch_public_key'); ?>
-            <input type="hidden" name="erp_omd_action" value="ksef_sync_hub_fetch_public_key" />
-        </form>
-        <form id="erp-omd-ksef-sync-hub-apply-env-defaults-form" method="post" action="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'ksef'], admin_url('admin.php'))); ?>">
-            <?php wp_nonce_field('erp_omd_ksef_sync_hub_apply_env_defaults'); ?>
-            <input type="hidden" name="erp_omd_action" value="ksef_sync_hub_apply_env_defaults" />
-        </form>
     </div>
 </div>
