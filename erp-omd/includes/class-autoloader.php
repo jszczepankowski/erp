@@ -57,7 +57,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_KSeF_Auth_Storage' => 'includes/services/class-ksef-auth-storage.php',
         'ERP_OMD_KSeF_Public_Key_Service' => 'includes/services/class-ksef-public-key-service.php',
         'ERP_OMD_KSeF_Auth_Service' => 'includes/services/class-ksef-auth-service.php',
-        'ERP_OMD_KSeF_External_Auth_Provider' => 'includes/services/class-ksef-external-auth-provider.php',
+        'ERP_OMD_KSeF_Local_Connector_Auth_Provider' => 'includes/services/class-ksef-local-connector-auth-provider.php',
         'ERP_OMD_KSeF_Incremental_Sync_Service' => 'includes/services/class-ksef-incremental-sync-service.php',
         'ERP_OMD_KSeF_Export_Service' => 'includes/services/class-ksef-export-service.php',
         'ERP_OMD_Client_Portal_Service' => 'includes/services/class-client-portal-service.php',

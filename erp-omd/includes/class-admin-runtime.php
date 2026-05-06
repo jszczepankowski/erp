@@ -1393,7 +1393,8 @@ class ERP_OMD_Admin
         $ksef_auto_create_supplier = (bool) get_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, false);
         $ksef_sync_hub_enabled = (bool) get_option('erp_omd_ksef_sync_hub_enabled', false);
         $ksef_strict_connector_mode = (bool) get_option('erp_omd_ksef_strict_connector_mode', false);
-        $ksef_auth_provider_mode = 'legacy';
+        $ksef_auth_provider_mode = sanitize_key((string) get_option('erp_omd_ksef_auth_provider_mode', 'local_connector'));
+        if (! in_array($ksef_auth_provider_mode, ['legacy', 'local_connector'], true)) { $ksef_auth_provider_mode = 'local_connector'; }
         $ksef_sync_hub_env = strtoupper((string) get_option('erp_omd_ksef_sync_hub_env', 'TEST'));
         if (! in_array($ksef_sync_hub_env, ['TEST', 'DEMO', 'PRD'], true)) {
             $ksef_sync_hub_env = 'TEST';
@@ -2631,9 +2632,9 @@ class ERP_OMD_Admin
         }
 
         $connector = new ERP_OMD_KSeF_Connector($base_url);
-        $provider_mode = sanitize_key((string) get_option('erp_omd_ksef_auth_provider_mode', 'legacy'));
-        if ($provider_mode === 'gateway') {
-            $auth_service = new ERP_OMD_KSeF_External_Auth_Provider((string) get_option('erp_omd_ksef_gateway_base_url', ''), (string) get_option('erp_omd_ksef_gateway_api_key', ''));
+        $provider_mode = sanitize_key((string) get_option('erp_omd_ksef_auth_provider_mode', 'local_connector'));
+        if ($provider_mode === 'local_connector') {
+            $auth_service = new ERP_OMD_KSeF_Local_Connector_Auth_Provider($base_url);
         } else {
             $auth_service = new ERP_OMD_KSeF_Auth_Service($connector);
         }
@@ -4696,6 +4697,9 @@ class ERP_OMD_Admin
             }
             update_option('erp_omd_ksef_sync_hub_enabled', ! empty($_POST['ksef_sync_hub_enabled']));
             update_option('erp_omd_ksef_strict_connector_mode', ! empty($_POST['ksef_strict_connector_mode']));
+            $ksef_auth_provider_mode = sanitize_key((string) ($_POST['ksef_auth_provider_mode'] ?? 'local_connector'));
+            if (! in_array($ksef_auth_provider_mode, ['legacy', 'local_connector'], true)) { $ksef_auth_provider_mode = 'local_connector'; }
+            update_option('erp_omd_ksef_auth_provider_mode', $ksef_auth_provider_mode);
             update_option('erp_omd_ksef_sync_hub_env', $ksef_sync_hub_env);
             update_option('erp_omd_ksef_sync_hub_mode', $ksef_sync_hub_mode);
             update_option('erp_omd_ksef_api_base_url', $ksef_api_base_url);

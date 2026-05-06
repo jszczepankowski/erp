@@ -363,16 +363,9 @@
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-ksef-auth-provider-mode"><?php esc_html_e('Provider auth', 'erp-omd'); ?></label>
                             <select id="erp-omd-ksef-auth-provider-mode" name="ksef_auth_provider_mode">
+                                <option value="local_connector" <?php selected((string) $ksef_auth_provider_mode, 'local_connector'); ?>>local_connector (zalecane)</option>
                                 <option value="legacy" <?php selected((string) $ksef_auth_provider_mode, 'legacy'); ?>>legacy (wtyczka)</option>
-                                <option value="gateway" <?php selected((string) $ksef_auth_provider_mode, 'gateway'); ?>>gateway (zewnętrzny konektor)</option>
                             </select>
-                        </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                            <label for="erp-omd-ksef-gateway-base-url"><?php esc_html_e('Gateway Base URL', 'erp-omd'); ?></label>
-                            <input id="erp-omd-ksef-gateway-base-url" type="text" name="ksef_gateway_base_url" value="<?php echo esc_attr((string) $ksef_gateway_base_url); ?>" placeholder="https://ksef-gateway.example.com" />
-                            <label for="erp-omd-ksef-gateway-api-key"><?php esc_html_e('Gateway API Key (opcjonalnie)', 'erp-omd'); ?></label>
-                            <input id="erp-omd-ksef-gateway-api-key" type="password" name="ksef_gateway_api_key" value="" autocomplete="new-password" />
-                            <?php if ($ksef_gateway_api_key_masked !== '') : ?><p class="description"><?php echo esc_html(sprintf(__('Obecnie zapisany klucz API: %s', 'erp-omd'), (string) $ksef_gateway_api_key_masked)); ?></p><?php endif; ?>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-ksef-sync-backfill-hours"><?php esc_html_e('Backfill (h)', 'erp-omd'); ?></label>
