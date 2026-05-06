@@ -226,6 +226,22 @@ class ERP_OMD_KSeF_Export_Service
             $attempt_payloads[] = $upper;
         }
 
+        if (isset($payload['filters']['dateRange']) && is_array($payload['filters']['dateRange'])) {
+            $issue = $payload;
+            $issue['filters']['dateRange']['dateType'] = 'Issue';
+            $attempt_payloads[] = $issue;
+
+            $without_restrict = $payload;
+            unset($without_restrict['filters']['dateRange']['restrictToPermanentStorageHwmDate']);
+            $attempt_payloads[] = $without_restrict;
+
+            $ensure_to = $payload;
+            if (empty($ensure_to['filters']['dateRange']['to'])) {
+                $ensure_to['filters']['dateRange']['to'] = gmdate('Y-m-d\\TH:i:s\\Z');
+            }
+            $attempt_payloads[] = $ensure_to;
+        }
+
         foreach ($attempt_payloads as $attempt) {
             $response = $this->start_export($environment, (array) $attempt);
             if (! ($response instanceof WP_Error)) {
