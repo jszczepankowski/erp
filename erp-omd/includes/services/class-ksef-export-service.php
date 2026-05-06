@@ -67,12 +67,17 @@ class ERP_OMD_KSeF_Export_Service
         }
 
         $payload = [
-            'subjectType' => (string) $subject_type,
-            'from' => (string) $from_hwm,
-            'restrictToPermanentStorageHwmDate' => true,
+            'filters' => [
+                'subjectType' => (string) $subject_type,
+                'dateRange' => [
+                    'dateType' => 'PermanentStorage',
+                    'from' => (string) $from_hwm,
+                    'restrictToPermanentStorageHwmDate' => true,
+                ],
+            ],
         ];
         if ($to_hwm !== '') {
-            $payload['to'] = $to_hwm;
+            $payload['filters']['dateRange']['to'] = $to_hwm;
         }
 
         $started = $this->start_export_with_fallbacks($environment, $payload);
@@ -211,10 +216,14 @@ class ERP_OMD_KSeF_Export_Service
     private function start_export_with_fallbacks($environment, array $payload)
     {
         $attempt_payloads = [$payload];
-        $subject_type = (string) ($payload['subjectType'] ?? '');
+        $subject_type = (string) (($payload['filters']['subjectType'] ?? ''));
         if ($subject_type !== '') {
-            $attempt_payloads[] = array_merge($payload, ['subjectType' => strtolower($subject_type)]);
-            $attempt_payloads[] = array_merge($payload, ['subjectType' => strtoupper($subject_type)]);
+            $lower = $payload;
+            $lower['filters']['subjectType'] = strtolower($subject_type);
+            $attempt_payloads[] = $lower;
+            $upper = $payload;
+            $upper['filters']['subjectType'] = strtoupper($subject_type);
+            $attempt_payloads[] = $upper;
         }
 
         foreach ($attempt_payloads as $attempt) {
