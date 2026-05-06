@@ -1268,11 +1268,6 @@ class ERP_OMD_Reporting_Service
             return substr($end_date, 0, 7);
         }
 
-        $legacy_close_month = (string) ($project['operational_close_month'] ?? '');
-        if (preg_match('/^\d{4}-\d{2}$/', $legacy_close_month) === 1) {
-            return $legacy_close_month;
-        }
-
         return '';
     }
 
