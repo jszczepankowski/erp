@@ -60,17 +60,27 @@ class ERP_OMD_KSeF_Export_Service
      */
     public function run_incremental_export($environment, $subject_type, $from_hwm, $to_hwm)
     {
-        $payload = [
-            'subjectType' => (string) $subject_type,
-            'from' => (string) $from_hwm,
-            'restrictToPermanentStorageHwmDate' => true,
-        ];
-        $to_hwm = trim((string) $to_hwm);
-        if ($to_hwm !== '') {
-            $payload['to'] = $to_hwm;
+        $from_hwm = $this->normalize_hwm_datetime($from_hwm, gmdate('Y-m-d\\TH:i:s\\Z', time() - DAY_IN_SECONDS));
+        $to_hwm = $this->normalize_hwm_datetime($to_hwm, '');
+        if ($to_hwm !== '' && strtotime($to_hwm) !== false && strtotime($from_hwm) !== false && strtotime($to_hwm) < strtotime($from_hwm)) {
+            $to_hwm = '';
         }
 
-        $started = $this->start_export($environment, $payload);
+        $payload = [
+            'filters' => [
+                'subjectType' => (string) $subject_type,
+                'dateRange' => [
+                    'dateType' => 'PermanentStorage',
+                    'from' => (string) $from_hwm,
+                    'restrictToPermanentStorageHwmDate' => true,
+                ],
+            ],
+        ];
+        if ($to_hwm !== '') {
+            $payload['filters']['dateRange']['to'] = $to_hwm;
+        }
+
+        $started = $this->start_export_with_fallbacks($environment, $payload);
         if ($started instanceof WP_Error) {
             $error_data = method_exists($started, 'get_error_data') ? (array) $started->get_error_data() : [];
             return [
@@ -196,5 +206,57 @@ class ERP_OMD_KSeF_Export_Service
     {
         $env = strtoupper(trim((string) $environment));
         return in_array($env, ['TEST', 'DEMO', 'PRD'], true) ? $env : 'TEST';
+    }
+
+    /**
+     * @param string $environment
+     * @param array<string,mixed> $payload
+     * @return array<string,mixed>|WP_Error
+     */
+    private function start_export_with_fallbacks($environment, array $payload)
+    {
+        $attempt_payloads = [$payload];
+        $subject_type = (string) (($payload['filters']['subjectType'] ?? ''));
+        if ($subject_type !== '') {
+            $lower = $payload;
+            $lower['filters']['subjectType'] = strtolower($subject_type);
+            $attempt_payloads[] = $lower;
+            $upper = $payload;
+            $upper['filters']['subjectType'] = strtoupper($subject_type);
+            $attempt_payloads[] = $upper;
+        }
+
+        foreach ($attempt_payloads as $attempt) {
+            $response = $this->start_export($environment, (array) $attempt);
+            if (! ($response instanceof WP_Error)) {
+                return $response;
+            }
+            if ((string) $response->get_error_code() !== 'ksef_http_400') {
+                return $response;
+            }
+        }
+
+        $last = end($attempt_payloads);
+        return $this->start_export($environment, (array) $last);
+    }
+
+    /**
+     * @param string $value
+     * @param string $fallback
+     * @return string
+     */
+    private function normalize_hwm_datetime($value, $fallback = '')
+    {
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return (string) $fallback;
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            return (string) $fallback;
+        }
+
+        return gmdate('Y-m-d\\TH:i:s\\Z', $timestamp);
     }
 }
