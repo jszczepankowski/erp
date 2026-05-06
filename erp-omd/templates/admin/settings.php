@@ -328,6 +328,10 @@
                                 <input type="checkbox" name="ksef_sync_hub_enabled" value="1" <?php checked(! empty($ksef_sync_hub_enabled)); ?> />
                                 <?php esc_html_e('Włącz KSeF Sync Hub (cron incremental sync)', 'erp-omd'); ?>
                             </label>
+                            <label class="erp-omd-form-label" style="margin-top:8px;">
+                                <input type="checkbox" name="ksef_strict_connector_mode" value="1" <?php checked(! empty($ksef_strict_connector_mode)); ?> />
+                                <?php esc_html_e('Włącz Strict Connector Mode (zalecane do diagnostyki auth/redeem)', 'erp-omd'); ?>
+                            </label>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-ksef-sync-hub-env"><?php esc_html_e('Środowisko', 'erp-omd'); ?></label>
@@ -346,6 +350,20 @@
                                 <option value="dry_run" <?php selected((string) $ksef_sync_hub_mode, 'dry_run'); ?>>dry_run</option>
                                 <option value="active" <?php selected((string) $ksef_sync_hub_mode, 'active'); ?>>active</option>
                             </select>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <label for="erp-omd-ksef-auth-provider-mode"><?php esc_html_e('Provider auth', 'erp-omd'); ?></label>
+                            <select id="erp-omd-ksef-auth-provider-mode" name="ksef_auth_provider_mode">
+                                <option value="legacy" <?php selected((string) $ksef_auth_provider_mode, 'legacy'); ?>>legacy (wtyczka)</option>
+                                <option value="gateway" <?php selected((string) $ksef_auth_provider_mode, 'gateway'); ?>>gateway (zewnętrzny konektor)</option>
+                            </select>
+                        </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="erp-omd-ksef-gateway-base-url"><?php esc_html_e('Gateway Base URL', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-gateway-base-url" type="text" name="ksef_gateway_base_url" value="<?php echo esc_attr((string) $ksef_gateway_base_url); ?>" placeholder="https://ksef-gateway.example.com" />
+                            <label for="erp-omd-ksef-gateway-api-key"><?php esc_html_e('Gateway API Key (opcjonalnie)', 'erp-omd'); ?></label>
+                            <input id="erp-omd-ksef-gateway-api-key" type="password" name="ksef_gateway_api_key" value="" autocomplete="new-password" />
+                            <?php if ($ksef_gateway_api_key_masked !== '') : ?><p class="description"><?php echo esc_html(sprintf(__('Obecnie zapisany klucz API: %s', 'erp-omd'), (string) $ksef_gateway_api_key_masked)); ?></p><?php endif; ?>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                             <label for="erp-omd-ksef-sync-backfill-hours"><?php esc_html_e('Backfill (h)', 'erp-omd'); ?></label>

@@ -1368,6 +1368,11 @@ class ERP_OMD_Admin
         $google_calendar_last_error = (string) get_option('erp_omd_google_calendar_last_error', '');
         $ksef_auto_create_supplier = (bool) get_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, false);
         $ksef_sync_hub_enabled = (bool) get_option('erp_omd_ksef_sync_hub_enabled', false);
+        $ksef_strict_connector_mode = (bool) get_option('erp_omd_ksef_strict_connector_mode', false);
+        $ksef_auth_provider_mode = sanitize_key((string) get_option('erp_omd_ksef_auth_provider_mode', 'legacy'));
+        if (! in_array($ksef_auth_provider_mode, ['legacy', 'gateway'], true)) { $ksef_auth_provider_mode = 'legacy'; }
+        $ksef_gateway_base_url = (string) get_option('erp_omd_ksef_gateway_base_url', '');
+        $ksef_gateway_api_key_masked = $this->masked_secret((string) get_option('erp_omd_ksef_gateway_api_key', ''));
         $ksef_sync_hub_env = strtoupper((string) get_option('erp_omd_ksef_sync_hub_env', 'TEST'));
         if (! in_array($ksef_sync_hub_env, ['TEST', 'DEMO', 'PRD'], true)) {
             $ksef_sync_hub_env = 'TEST';
@@ -2605,7 +2610,12 @@ class ERP_OMD_Admin
         }
 
         $connector = new ERP_OMD_KSeF_Connector($base_url);
-        $auth_service = new ERP_OMD_KSeF_Auth_Service($connector);
+        $provider_mode = sanitize_key((string) get_option('erp_omd_ksef_auth_provider_mode', 'legacy'));
+        if ($provider_mode === 'gateway') {
+            $auth_service = new ERP_OMD_KSeF_External_Auth_Provider((string) get_option('erp_omd_ksef_gateway_base_url', ''), (string) get_option('erp_omd_ksef_gateway_api_key', ''));
+        } else {
+            $auth_service = new ERP_OMD_KSeF_Auth_Service($connector);
+        }
         $token_result = $auth_service->ensure_access_token($environment, $ap_token, $context_identifier);
         if ($token_result instanceof WP_Error || ! (bool) ($token_result['ok'] ?? false)) {
             $error_code = $token_result instanceof WP_Error ? (string) $token_result->get_error_code() : '';
@@ -4607,6 +4617,13 @@ class ERP_OMD_Admin
                 $ksef_api_base_url = $this->default_ksef_api_base_url_for_environment($ksef_sync_hub_env);
             }
             update_option('erp_omd_ksef_sync_hub_enabled', ! empty($_POST['ksef_sync_hub_enabled']));
+            update_option('erp_omd_ksef_strict_connector_mode', ! empty($_POST['ksef_strict_connector_mode']));
+            $ksef_auth_provider_mode = sanitize_key((string) ($_POST['ksef_auth_provider_mode'] ?? 'legacy'));
+            if (! in_array($ksef_auth_provider_mode, ['legacy', 'gateway'], true)) { $ksef_auth_provider_mode = 'legacy'; }
+            update_option('erp_omd_ksef_auth_provider_mode', $ksef_auth_provider_mode);
+            update_option('erp_omd_ksef_gateway_base_url', untrailingslashit(esc_url_raw((string) wp_unslash($_POST['ksef_gateway_base_url'] ?? ''))));
+            $ksef_gateway_api_key = trim((string) wp_unslash($_POST['ksef_gateway_api_key'] ?? ''));
+            if ($ksef_gateway_api_key !== '') { update_option('erp_omd_ksef_gateway_api_key', $ksef_gateway_api_key); }
             update_option('erp_omd_ksef_sync_hub_env', $ksef_sync_hub_env);
             update_option('erp_omd_ksef_sync_hub_mode', $ksef_sync_hub_mode);
             update_option('erp_omd_ksef_api_base_url', $ksef_api_base_url);
