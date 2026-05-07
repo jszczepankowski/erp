@@ -21,6 +21,11 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 $decision = sanitize_key((string) wp_unslash($_POST['decision'] ?? ''));
                 $comment = sanitize_textarea_field((string) wp_unslash($_POST['comment'] ?? ''));
                 $note = sanitize_textarea_field((string) wp_unslash($_POST['note'] ?? ''));
+                $delivery_other = ! empty($_POST['delivery_other']) ? 1 : 0;
+                $delivery_address = sanitize_textarea_field((string) wp_unslash($_POST['delivery_address'] ?? ''));
+                $preferred_delivery_date = sanitize_text_field((string) wp_unslash($_POST['preferred_delivery_date'] ?? ''));
+                $invoice_other_entity = ! empty($_POST['invoice_other_entity']) ? 1 : 0;
+                $invoice_nip = sanitize_text_field((string) wp_unslash($_POST['invoice_nip'] ?? ''));
                 $selected_decision = in_array($decision, ['accept', 'reject'], true) ? $decision : 'accept';
                 $comment_value = $comment;
                 $note_value = $note;
@@ -45,6 +50,13 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                             $estimates->save_client_decision_note($estimate_id, $note);
                             self::append_accept_note_to_project_history($estimate_id, $note, $result);
                             self::send_thank_you_mail($estimate_id, $estimates, $estimate_items, $estimate_service);
+                            update_option('erp_omd_estimate_acceptance_meta_' . $estimate_id, [
+                                'delivery_other' => $delivery_other,
+                                'delivery_address' => $delivery_other ? $delivery_address : '',
+                                'preferred_delivery_date' => $preferred_delivery_date,
+                                'invoice_other_entity' => $invoice_other_entity,
+                                'invoice_nip' => $invoice_other_entity ? $invoice_nip : '',
+                            ], false);
                             self::send_acceptance_notification_to_agency($estimate_id, $estimates, $estimate_items, $estimate_service, (array) $result);
                             $notice_type = 'success';
                             $notice_message = __('Dziękujemy. Kosztorys został zaakceptowany.', 'erp-omd');
@@ -110,13 +122,16 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 return;
             }
             $client = $client_repository->find((int) ($estimate['client_id'] ?? 0));
-            $client_email = sanitize_email((string) ($client['email'] ?? ''));
-            if (! is_email($client_email)) {
+            $client_email_raw = (string) ($client['email'] ?? '');
+            $client_emails = preg_split('/[,;\s]+/', $client_email_raw) ?: [];
+            $client_emails = array_values(array_unique(array_filter(array_map('sanitize_email', $client_emails), 'is_email')));
+            if ($client_emails === []) {
                 return;
             }
 
             $items = $estimate_items->for_estimate((int) $estimate_id);
             $totals = $estimate_service->calculate_totals($items);
+            $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
             $mail_defaults = [
                 'subject' => __('[ERP OMD] Dziękujemy za akceptację kosztorysu {estimate_name}', 'erp-omd'),
                 'body' => __('Dziękujemy za akceptację kosztorysu <strong>{estimate_name}</strong>.<br><br>Poniżej przesyłamy podsumowanie pozycji i finalnej kwoty.', 'erp-omd'),
@@ -132,6 +147,20 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
 
             $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
             $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
+            $accept_meta_lines = [];
+            if (! empty($accept_meta['preferred_delivery_date'])) {
+                $accept_meta_lines[] = sprintf(__('Preferowany termin realizacji: %s', 'erp-omd'), (string) $accept_meta['preferred_delivery_date']);
+            }
+            if (! empty($accept_meta['delivery_address'])) {
+                $accept_meta_lines[] = sprintf(__('Adres do dostawy: %s', 'erp-omd'), (string) $accept_meta['delivery_address']);
+            }
+            if (! empty($accept_meta['invoice_nip'])) {
+                $accept_meta_lines[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), (string) $accept_meta['invoice_nip']);
+            }
+            if ($accept_meta_lines !== []) {
+                $body .= '<br><br><strong>' . esc_html__('Dodatkowe dane z akceptacji:', 'erp-omd') . '</strong><br>'
+                    . implode('<br>', array_map('esc_html', $accept_meta_lines)) . '<br>';
+            }
             $body .= self::build_summary_table_html($items, $totals, true);
             $headers = ['Content-Type: text/html; charset=UTF-8'];
             $sender_name = sanitize_text_field((string) get_option('erp_omd_estimate_mail_sender_name', ''));
@@ -145,11 +174,11 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 };
                 add_filter('wp_mail_from', $from_email_filter);
                 add_filter('wp_mail_from_name', $from_name_filter);
-                wp_mail($client_email, $subject, wpautop($body), $headers);
+                wp_mail($client_emails, $subject, wpautop($body), $headers);
                 remove_filter('wp_mail_from', $from_email_filter);
                 remove_filter('wp_mail_from_name', $from_name_filter);
             } else {
-                wp_mail($client_email, $subject, wpautop($body), $headers);
+                wp_mail($client_emails, $subject, wpautop($body), $headers);
             }
         }
 
@@ -182,7 +211,16 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 }
             }
 
-            foreach ($project_manager_ids as $manager_user_id) {
+            $employees_repo = class_exists('ERP_OMD_Employee_Repository') ? new ERP_OMD_Employee_Repository() : null;
+            foreach ($project_manager_ids as $manager_employee_id) {
+                $manager_user_id = 0;
+                if ($employees_repo && method_exists($employees_repo, 'find')) {
+                    $manager_employee = (array) $employees_repo->find((int) $manager_employee_id);
+                    $manager_user_id = (int) ($manager_employee['user_id'] ?? 0);
+                }
+                if ($manager_user_id <= 0) {
+                    continue;
+                }
                 $manager_email = sanitize_email((string) get_the_author_meta('user_email', $manager_user_id));
                 if (is_email($manager_email)) {
                     $recipients[$manager_email] = $manager_email;
@@ -198,6 +236,9 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             $estimate_name = (string) ($estimate['name'] ?? ('#' . (int) $estimate_id));
             $client_note = trim((string) ($estimate['client_decision_note'] ?? ''));
             $project_name = trim((string) ($project['name'] ?? ''));
+            $client_repository = new ERP_OMD_Client_Repository();
+            $client = (array) $client_repository->find((int) ($estimate['client_id'] ?? 0));
+            $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
 
             $mail_defaults = [
                 'subject' => __('[ERP OMD] Klient zaakceptował kosztorys: {estimate_name}', 'erp-omd'),
@@ -209,9 +250,22 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 '{project_name}' => ($project_name !== '' ? $project_name : '—'),
                 '{final_gross}' => number_format_i18n((float) ($totals['gross'] ?? 0), 2),
                 '{client_note}' => ($client_note !== '' ? $client_note : '—'),
+                '{estimate_id}' => (string) ((int) ($estimate['id'] ?? $estimate_id)),
+                '{client_email}' => (string) ($client['email'] ?? '—'),
+                '{client_name}' => (string) ($client['name'] ?? '—'),
             ];
             $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
             $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
+            $accept_meta_lines = [];
+            if (! empty($accept_meta['preferred_delivery_date'])) {
+                $accept_meta_lines[] = sprintf(__('Preferowany termin realizacji: %s', 'erp-omd'), (string) $accept_meta['preferred_delivery_date']);
+            }
+            if (! empty($accept_meta['delivery_address'])) {
+                $accept_meta_lines[] = sprintf(__('Adres do dostawy: %s', 'erp-omd'), (string) $accept_meta['delivery_address']);
+            }
+            if (! empty($accept_meta['invoice_nip'])) {
+                $accept_meta_lines[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), (string) $accept_meta['invoice_nip']);
+            }
             $body .= self::build_summary_table_html((array) $items, $totals, true);
 
             $headers = ['Content-Type: text/html; charset=UTF-8'];
@@ -226,7 +280,19 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
         private static function append_accept_note_to_project_history($estimate_id, $note, array $accept_result = [])
         {
             $clean_note = trim((string) $note);
-            if ($clean_note === '' || ! class_exists('ERP_OMD_Project_Note_Repository')) {
+            $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
+            $meta_lines = [];
+            if (! empty($accept_meta['preferred_delivery_date'])) {
+                $meta_lines[] = sprintf(__('Preferowany termin realizacji: %s', 'erp-omd'), (string) $accept_meta['preferred_delivery_date']);
+            }
+            if (! empty($accept_meta['delivery_other']) && ! empty($accept_meta['delivery_address'])) {
+                $meta_lines[] = sprintf(__('Adres do dostawy: %s', 'erp-omd'), (string) $accept_meta['delivery_address']);
+            }
+            if (! empty($accept_meta['invoice_other_entity']) && ! empty($accept_meta['invoice_nip'])) {
+                $meta_lines[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), (string) $accept_meta['invoice_nip']);
+            }
+
+            if (($clean_note === '' && $meta_lines === []) || ! class_exists('ERP_OMD_Project_Note_Repository')) {
                 return;
             }
 
@@ -248,9 +314,16 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             }
 
             $project_notes = new ERP_OMD_Project_Note_Repository();
+            $note_parts = [];
+            if ($clean_note !== '') {
+                $note_parts[] = sprintf(__('Akceptacja klienta (uwaga): %s', 'erp-omd'), $clean_note);
+            }
+            if ($meta_lines !== []) {
+                $note_parts[] = __('Dane z akceptacji kosztorysu:', 'erp-omd') . "\n- " . implode("\n- ", $meta_lines);
+            }
             $project_notes->create(
                 $project_id,
-                sprintf(__('Akceptacja klienta (uwaga): %s', 'erp-omd'), $clean_note),
+                implode("\n\n", $note_parts),
                 $author_user_id
             );
         }
