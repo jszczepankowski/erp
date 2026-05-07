@@ -716,7 +716,7 @@ class ERP_OMD_Frontend
             return;
         }
         if ($action === 'accept_client_estimate') {
-            $this->accept_client_estimate($user);
+            $this->handle_client_estimate_acceptance($user);
             return;
         }
         if ($action === 'delete_project_attachment') {
@@ -725,6 +725,24 @@ class ERP_OMD_Frontend
         }
 
         $this->redirect_client_with_notice('error', __('Nieobsługiwana akcja formularza klienta.', 'erp-omd'));
+    }
+
+    private function handle_client_estimate_acceptance(WP_User $user)
+    {
+        $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+        $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+        $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
+        if (! $estimate || (int) ($estimate['client_id'] ?? 0) !== $client_id) {
+            $this->redirect_client_with_notice('error', __('Nie znaleziono kosztorysu przypisanego do Twojego konta.', 'erp-omd'));
+        }
+        if ((string) ($estimate['status'] ?? '') === 'zaakceptowany') {
+            $this->redirect_client_with_notice('info', __('Ten kosztorys jest już zaakceptowany.', 'erp-omd'));
+        }
+        $result = $this->estimate_service->accept($estimate_id);
+        if ($result instanceof WP_Error) {
+            $this->redirect_client_with_notice('error', $result->get_error_message());
+        }
+        $this->redirect_client_with_notice('success', __('Kosztorys został zaakceptowany.', 'erp-omd'));
     }
 
     private function accept_client_estimate(WP_User $user)
