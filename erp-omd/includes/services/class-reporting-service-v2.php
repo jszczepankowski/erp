@@ -240,7 +240,6 @@ class ERP_OMD_Reporting_Service
                 'project_name' => (string) ($project['name'] ?? ''),
                 'client_name' => (string) ($project['client_name'] ?? ''),
                 'status' => (string) ($project['status'] ?? ''),
-                'operational_close_month' => (string) ($project['operational_close_month'] ?? ''),
                 'billing_type' => (string) ($project['billing_type'] ?? ''),
                 'manager_login' => (string) ($project['manager_login'] ?? '—'),
                 'budget' => (float) ($project['budget'] ?? 0),
@@ -762,7 +761,6 @@ class ERP_OMD_Reporting_Service
                         number_format((float) $row['margin'], 2, '.', ''),
                         number_format((float) $row['budget_usage'], 2, '.', ''),
                         $row['status'],
-                        (string) ($row['operational_close_month'] ?? ''),
                     ];
 
                     if ($detail_mode) {
@@ -800,7 +798,6 @@ class ERP_OMD_Reporting_Service
                         number_format((float) $row['margin'], 2, '.', ''),
                         number_format((float) $row['budget_usage'], 2, '.', ''),
                         $row['status'],
-                        (string) ($row['operational_close_month'] ?? ''),
                     ];
 
                     if ($detail_mode && ! empty($row['detail'])) {
@@ -1051,7 +1048,7 @@ class ERP_OMD_Reporting_Service
                 continue;
             }
 
-            $close_month = (string) ($project['operational_close_month'] ?? '');
+            $close_month = $this->resolve_project_close_month($project);
             if (preg_match('/^\d{4}-\d{2}$/', $close_month) !== 1 || ! isset($allowed_months[$close_month])) {
                 continue;
             }
@@ -1245,7 +1242,7 @@ class ERP_OMD_Reporting_Service
                 continue;
             }
 
-            $month = (string) ($project['operational_close_month'] ?? '');
+            $month = $this->resolve_project_close_month($project);
             if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
                 continue;
             }
@@ -1258,6 +1255,17 @@ class ERP_OMD_Reporting_Service
         }
 
         return $metrics;
+    }
+
+
+    private function resolve_project_close_month(array $project)
+    {
+        $end_date = (string) ($project['end_date'] ?? '');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date) === 1) {
+            return substr($end_date, 0, 7);
+        }
+
+        return '';
     }
 
     private function build_salary_cost_index_by_month(array $months, array $month_ranges = [])
