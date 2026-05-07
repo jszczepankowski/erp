@@ -6,7 +6,7 @@
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'calendar'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'calendar' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kalendarz', 'erp-omd'); ?></a>
     </nav>
 
-    <div class="erp-omd-page-sections <?php echo false ? 'erp-omd-monitoring-layout' : ''; ?>">
+    <div class="erp-omd-page-sections">
         <?php if (true) : ?>
         <section class="erp-omd-card">
             <div class="erp-omd-section-header">
@@ -151,7 +151,6 @@
                             <input type="hidden" name="project_id" value="<?php echo esc_attr($report_filters['project_id']); ?>" />
                             <input type="hidden" name="employee_id" value="<?php echo esc_attr($report_filters['employee_id']); ?>" />
                             <input type="hidden" name="status" value="<?php echo esc_attr($report_filters['status']); ?>" />
-                            <input type="hidden" name="mode" value="<?php echo esc_attr($report_filters['mode']); ?>" />
                             <input type="hidden" name="detail" value="<?php echo esc_attr($report_filters['detail']); ?>" />
                             <input type="hidden" name="page_num" value="<?php echo esc_attr((string) ($report_filters['page_num'] ?? 1)); ?>" />
                             <button class="button button-secondary" type="submit"><?php esc_html_e('Eksport CSV', 'erp-omd'); ?></button>

@@ -1283,7 +1283,6 @@ class ERP_OMD_Admin
             'lifecycle_alerts',
             'google_calendar',
             'ksef',
-            'reports_v1_monitoring',
         ];
         $settings_tab = sanitize_key((string) ($_GET['tab'] ?? 'fixed_costs'));
         if (! in_array($settings_tab, $allowed_settings_tabs, true)) {
@@ -1294,42 +1293,6 @@ class ERP_OMD_Admin
         $front_admin_redirect_enabled = (bool) get_option('erp_omd_front_admin_redirect_enabled', true);
         $margin_threshold = (float) get_option('erp_omd_alert_margin_threshold', 10);
         $company_nip = preg_replace('/[^0-9]/', '', (string) get_option('erp_omd_company_nip', ''));
-        $reports_v1_metrics_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
-        $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
-        $reports_v1_slo_recommended_p95_max = $reports_v1_slo_generation_p95_max;
-        $reports_v1_slo_calibration_sample_count = 0;
-        $reports_v1_slo_calibration_sample_target = 20;
-        $reports_v1_slo_samples_missing_to_calibration = $reports_v1_slo_calibration_sample_target;
-        $reports_v1_slo_calibration_decision_ready = false;
-        $reports_v1_slo_calibration_next_action = __('Zbieraj próbki metryk raportów, aby domknąć kalibrację SLO.', 'erp-omd');
-        $reports_v1_slo_last_decision = (array) get_option('erp_omd_reports_v1_slo_calibration_decision', []);
-        $reports_v1_slo_closure = (array) get_option('erp_omd_reports_v1_slo_calibration_closure', []);
-        $reports_v1_slo_closure_confirmed = ! empty($reports_v1_slo_closure['closed_at']) && ! empty($reports_v1_slo_closure['closed_by_user_id']);
-        $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
-        $reports_v1_samples = array_values(array_map(static function ($row) {
-            return (int) ($row['generation_ms'] ?? 0);
-        }, $reports_v1_metrics_log));
-        sort($reports_v1_samples);
-        $reports_v1_slo_calibration_sample_count = count($reports_v1_samples);
-        $reports_v1_slo_samples_missing_to_calibration = max(0, (int) $reports_v1_slo_calibration_sample_target - (int) $reports_v1_slo_calibration_sample_count);
-        $reports_v1_slo_calibration_decision_ready = $reports_v1_slo_samples_missing_to_calibration === 0;
-        if ($reports_v1_slo_calibration_sample_count > 0) {
-            $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_slo_calibration_sample_count) - 1;
-            $reports_v1_p95_index = max(0, min($reports_v1_slo_calibration_sample_count - 1, $reports_v1_p95_index));
-            $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
-            $reports_v1_slo_recommended_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
-            $reports_v1_slo_recommended_p95_max = max(100, min(30000, $reports_v1_slo_recommended_p95_max));
-        }
-        if ($reports_v1_slo_closure_confirmed) {
-            $reports_v1_slo_calibration_next_action = __('Kalibracja formalnie zamknięta: monitoruj SLO w trybie steady-state i aktualizuj próg tylko przy trwałej zmianie trendu.', 'erp-omd');
-        } elseif ($reports_v1_slo_calibration_decision_ready) {
-            $reports_v1_slo_calibration_next_action = __('Kalibracja gotowa: zweryfikuj rekomendowany próg p95 i zapisz finalną wartość.', 'erp-omd');
-        } else {
-            $reports_v1_slo_calibration_next_action = sprintf(
-                __('Kalibracja jeszcze niegotowa: zbierz %d dodatkowych próbek.', 'erp-omd'),
-                (int) $reports_v1_slo_samples_missing_to_calibration
-            );
-        }
         $front_login_logo_id = (int) get_option('erp_omd_front_login_logo_id', 0);
         $front_login_cover_id = (int) get_option('erp_omd_front_login_cover_id', 0);
         $front_login_logo_url = $front_login_logo_id > 0 ? (string) wp_get_attachment_image_url($front_login_logo_id, 'medium') : '';
@@ -1463,20 +1426,6 @@ class ERP_OMD_Admin
 
     public function render_reports()
     {
-        $reports_v1_rollout = 'all';
-        $reports_v1_enabled = true;
-        $reports_v1_freshness_minutes = max(5, (int) get_option('erp_omd_reports_v1_metrics_freshness_minutes', 1440));
-        $reports_v1_freshness_seconds = $reports_v1_freshness_minutes * 60;
-        $previous_report_monitoring = (array) get_option('erp_omd_reports_v1_last_metrics', []);
-        $previous_report_age_seconds = null;
-        $previous_report_captured_at = (string) ($previous_report_monitoring['captured_at'] ?? '');
-        if ($previous_report_captured_at !== '') {
-            $previous_timestamp = strtotime($previous_report_captured_at);
-            if ($previous_timestamp !== false) {
-                $previous_report_age_seconds = max(0, (int) (time() - $previous_timestamp));
-            }
-        }
-
         $report_filters = $this->reporting_service->sanitize_filters($_GET);
         $requested_report_type = sanitize_key((string) ($_GET['report_type'] ?? ''));
         $allowed_report_types = ['projects', 'clients', 'invoice', 'monthly', 'omd_rozliczenia', 'time_entries'];
@@ -1486,170 +1435,17 @@ class ERP_OMD_Admin
         if ($report_filters['tab'] === 'reports') {
             $report_filters['report_type'] = $requested_report_type;
         }
-        $report_started_at = microtime(true);
         $report_rows = [];
-        $report_error = false;
-        $report_error_message = '';
         $report_error_notice = '';
         if ($report_filters['tab'] === 'reports' && $report_filters['report_type'] !== '') {
             try {
                 $report_rows = $this->reporting_service->build_report($report_filters['report_type'], $report_filters);
             } catch (Throwable $error) {
-                $report_error = true;
-                $report_error_message = (string) $error->getMessage();
                 $report_error_notice = __('Nie udało się zbudować raportu. Sprawdź logi systemowe i spróbuj ponownie.', 'erp-omd');
             }
         }
-        $report_generation_ms = (int) round((microtime(true) - $report_started_at) * 1000);
         $report_pagination = (array) ($this->reporting_service->last_report_pagination ?? []);
         $calendar_data = $this->reporting_service->build_calendar($report_filters);
-        $dashboard_preview_queue_limit = max(1, min(100, (int) ($_GET['dashboard_queue_limit'] ?? 25)));
-        $dashboard_preview_filters = [
-            'queue_limit' => $dashboard_preview_queue_limit,
-        ];
-        $metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
-        if ($report_filters['tab'] === 'reports' && $report_filters['report_type'] !== '') {
-            $report_monitoring = [
-                'generation_ms' => $report_generation_ms,
-                'rows_count' => is_array($report_rows) ? count($report_rows) : 0,
-                'report_type' => (string) ($report_filters['report_type'] ?? ''),
-                'rollout' => $reports_v1_rollout,
-                'enabled' => $reports_v1_enabled,
-                'has_error' => $report_error,
-                'error_message' => $report_error_message,
-                'captured_at' => gmdate('c'),
-                'freshness_threshold_minutes' => $reports_v1_freshness_minutes,
-                'previous_metrics_age_seconds' => $previous_report_age_seconds,
-                'previous_metrics_stale' => $previous_report_age_seconds === null ? null : ($previous_report_age_seconds > $reports_v1_freshness_seconds),
-                'slo_sample_target_min' => 20,
-            ];
-            update_option('erp_omd_reports_v1_last_metrics', $report_monitoring);
-            array_unshift($metrics_log, $report_monitoring);
-            $metrics_log = array_slice($metrics_log, 0, 20);
-            $report_monitoring['slo_sample_count'] = count($metrics_log);
-            $report_monitoring['slo_samples_missing_to_calibration'] = max(0, (int) $report_monitoring['slo_sample_target_min'] - (int) $report_monitoring['slo_sample_count']);
-            $report_monitoring['slo_calibration_decision_ready'] = (int) $report_monitoring['slo_samples_missing_to_calibration'] === 0;
-            $report_monitoring['slo_calibration_next_action'] = ! empty($report_monitoring['slo_calibration_decision_ready'])
-                ? __('Zweryfikuj rekomendowany próg p95 i zapisz finalną wartość w Ustawieniach.', 'erp-omd')
-                : sprintf(
-                    __('Zbierz jeszcze %d próbek, aby domknąć kalibrację SLO.', 'erp-omd'),
-                    (int) $report_monitoring['slo_samples_missing_to_calibration']
-                );
-            update_option('erp_omd_reports_v1_metrics_log', $metrics_log);
-        }
-        $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) get_option('erp_omd_reports_v1_slo_generation_p95_max', 2500)));
-        $reports_v1_slo_closure = (array) get_option('erp_omd_reports_v1_slo_calibration_closure', []);
-        $reports_v1_slo_calibration_closed = ! empty($reports_v1_slo_closure['closed_at']) && ! empty($reports_v1_slo_closure['closed_by_user_id']);
-        $reports_v1_sustained_drift_window_size = 3;
-        $reports_v1_recent_metrics_samples = array_slice($metrics_log, 0, $reports_v1_sustained_drift_window_size);
-        $reports_v1_history_limit = 5;
-        $reports_v1_history_samples = array_slice($metrics_log, 0, $reports_v1_history_limit);
-        $reports_v1_history_drift_only = ! empty($_GET['steady_state_drift_only']) && (string) $_GET['steady_state_drift_only'] === '1';
-        $reports_v1_recent_generation_samples = array_values(array_map(static function ($row) {
-            return (int) ($row['generation_ms'] ?? 0);
-        }, $reports_v1_recent_metrics_samples));
-        $reports_v1_recent_error_samples = array_values(array_map(static function ($row) {
-            return ! empty($row['has_error']);
-        }, $reports_v1_recent_metrics_samples));
-        $reports_v1_sustained_generation_drift = $reports_v1_slo_calibration_closed
-            && count($reports_v1_recent_generation_samples) === $reports_v1_sustained_drift_window_size
-            && count(array_filter($reports_v1_recent_generation_samples, static function ($sample) use ($reports_v1_slo_generation_p95_max) {
-                return (int) $sample > (int) $reports_v1_slo_generation_p95_max;
-            })) === $reports_v1_sustained_drift_window_size;
-        $reports_v1_sustained_error_drift = $reports_v1_slo_calibration_closed
-            && count($reports_v1_recent_error_samples) === $reports_v1_sustained_drift_window_size
-            && count(array_filter($reports_v1_recent_error_samples)) === $reports_v1_sustained_drift_window_size;
-        $reports_v1_sustained_drift_detected = $reports_v1_sustained_generation_drift || $reports_v1_sustained_error_drift;
-        $reports_v1_history_drift_count = count(
-            array_filter(
-                $reports_v1_history_samples,
-                static function ($row) use ($reports_v1_slo_generation_p95_max) {
-                    $generation_ms = (int) ($row['generation_ms'] ?? 0);
-                    return ! empty($row['has_error']) || $generation_ms > (int) $reports_v1_slo_generation_p95_max;
-                }
-            )
-        );
-        $reports_v1_history_total_count = count($reports_v1_history_samples);
-        $reports_v1_history_drift_ratio_percent = $reports_v1_history_total_count > 0
-            ? round(($reports_v1_history_drift_count / $reports_v1_history_total_count) * 100, 2)
-            : 0.0;
-        $reports_v1_steady_state_banner = [
-            'level' => 'notice-info',
-            'title' => __('Reports v1 — steady-state monitoring', 'erp-omd'),
-            'message' => __('Kalibracja SLO nie jest jeszcze formalnie zamknięta — trwały dryf będzie oceniany po closure.', 'erp-omd'),
-            'actions' => [
-                __('Dokończ decyzję/closure kalibracji w Ustawieniach.', 'erp-omd'),
-            ],
-            'history' => array_values(array_filter(array_map(static function ($row) use ($reports_v1_slo_generation_p95_max) {
-                $generation_ms = (int) ($row['generation_ms'] ?? 0);
-                return [
-                    'captured_at' => (string) ($row['captured_at'] ?? ''),
-                    'report_type' => (string) ($row['report_type'] ?? ''),
-                    'generation_ms' => $generation_ms,
-                    'has_error' => ! empty($row['has_error']),
-                    'generation_above_threshold' => $generation_ms > (int) $reports_v1_slo_generation_p95_max,
-                ];
-            }, $reports_v1_history_samples), static function ($row) use ($reports_v1_history_drift_only) {
-                if (! $reports_v1_history_drift_only) {
-                    return true;
-                }
-                return ! empty($row['has_error']) || ! empty($row['generation_above_threshold']);
-            })),
-            'history_drift_only' => $reports_v1_history_drift_only,
-            'history_total_count' => $reports_v1_history_total_count,
-            'history_drift_count' => $reports_v1_history_drift_count,
-            'history_drift_ratio_percent' => $reports_v1_history_drift_ratio_percent,
-            'history_last_sample_at' => (string) ($reports_v1_history_samples[0]['captured_at'] ?? ''),
-        ];
-        if ($reports_v1_slo_calibration_closed && ! $reports_v1_sustained_drift_detected) {
-            $reports_v1_steady_state_banner['level'] = 'notice-success';
-            $reports_v1_steady_state_banner['message'] = __('Kalibracja SLO jest zamknięta, a monitoring steady-state nie wykrywa trwałego dryfu metryk.', 'erp-omd');
-            $reports_v1_steady_state_banner['actions'] = [
-                __('Kontynuuj obserwację trendu p95/error-rate i reaguj tylko przy trwałym dryfie.', 'erp-omd'),
-            ];
-        }
-        if ($reports_v1_sustained_drift_detected) {
-            $reports_v1_steady_state_banner['level'] = 'notice-warning';
-            $reports_v1_steady_state_banner['message'] = __('Wykryto trwały dryf metryk Reports v1 — uruchom playbook rollback/tuning.', 'erp-omd');
-            $reports_v1_steady_state_banner['actions'] = [
-                __('Sprawdź runbook on-call i wykonaj rollback/tuning dla ciężkich raportów.', 'erp-omd'),
-                __('Zweryfikuj system/status (reasons, recommended_actions) przed zmianą progów.', 'erp-omd'),
-            ];
-        }
-        $reports_v1_runbook_url = admin_url('admin.php?page=erp-omd-settings#reports-v1-slo-monitoring');
-        $reports_v1_monitoring_summary = [
-            'slo_generation_p95_max' => (int) $reports_v1_slo_generation_p95_max,
-            'freshness_minutes' => (int) $reports_v1_freshness_minutes,
-            'drift_ratio_percent' => (float) $reports_v1_history_drift_ratio_percent,
-            'calibration_closed' => (bool) $reports_v1_slo_calibration_closed,
-            'sustained_drift_detected' => (bool) $reports_v1_sustained_drift_detected,
-            'last_sample_at' => (string) ($reports_v1_history_samples[0]['captured_at'] ?? ''),
-        ];
-        $reports_page_base_args = [
-            'page' => 'erp-omd-reports',
-            'tab' => (string) ($report_filters['tab'] ?? 'reports'),
-            'report_type' => (string) ($report_filters['report_type'] ?? ''),
-            'month' => (string) ($report_filters['month'] ?? ''),
-            'client_id' => (int) ($report_filters['client_id'] ?? 0),
-            'project_id' => (int) ($report_filters['project_id'] ?? 0),
-            'employee_id' => (int) ($report_filters['employee_id'] ?? 0),
-            'status' => (string) ($report_filters['status'] ?? ''),
-            'detail' => (string) ($report_filters['detail'] ?? 'simple'),
-            'mode' => (string) ($report_filters['mode'] ?? 'LIVE'),
-            'per_page' => (int) ($report_filters['per_page'] ?? 25),
-            'dashboard_queue_limit' => (int) ($dashboard_preview_filters['queue_limit'] ?? 25),
-        ];
-        $reports_v1_history_toggle_url = add_query_arg(
-            array_merge(
-                $reports_page_base_args,
-                ['steady_state_drift_only' => $reports_v1_history_drift_only ? '0' : '1']
-            ),
-            admin_url('admin.php')
-        );
-        $reports_v1_steady_state_banner['history_toggle_label'] = $reports_v1_history_drift_only
-            ? __('Pokaż wszystkie próbki', 'erp-omd')
-            : __('Pokaż tylko próbki z dryfem', 'erp-omd');
-        $reports_v1_steady_state_banner['history_toggle_url'] = $reports_v1_history_toggle_url;
         $clients = $this->clients->all();
         $projects = $this->projects->all();
         $employees = $this->employees->all();
@@ -4401,7 +4197,6 @@ class ERP_OMD_Admin
         } elseif ($settings_tab === 'lifecycle_alerts') {
             update_option('erp_omd_delete_data_on_uninstall', ! empty($_POST['delete_data_on_uninstall']));
             update_option('erp_omd_front_admin_redirect_enabled', ! empty($_POST['front_admin_redirect_enabled']));
-            update_option('erp_omd_reports_v1_rollout', 'all');
             $company_nip = preg_replace('/[^0-9]/', '', (string) wp_unslash($_POST['company_nip'] ?? ''));
             if (! is_string($company_nip)) {
                 $company_nip = '';

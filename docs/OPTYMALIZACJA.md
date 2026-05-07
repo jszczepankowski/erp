@@ -237,12 +237,10 @@ Dokument roboczy ustaleń do realizacji i wdrożenia.
 
 ### Kierunek 2: API-first + integracje
 **Teza**
-- wykorzystać warstwę REST, feature flags i SLO,
 - budować oficjalne integracje: księgowość, BI, komunikatory, CRM.
 
 ### Kierunek 3: „Performance as a feature”
 **Teza**
-- przejść z ogólnego SLO raportów do SLA per ekran,
 - mierzyć KPI użytkowe: czas akceptacji, czas fakturowania, utilization.
 
 ### Kierunek 4: Front operacyjny jako główne UI dzienne

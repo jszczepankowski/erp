@@ -46,7 +46,6 @@ Następny krok wg planu: **utrzymanie/stabilizacja** (monitoring operacyjny + de
   - limity payloadu (`adjustments_limit`, `queue_limit`, `profitability_limit`) i `applied_limits`.
 
 ### Reporting i statusy domenowe
-- [x] Reporting: dodany `mode` (`LIVE`, `DO ROZLICZENIA`, `ZAMKNIETY`).
 - [x] Reporting: domyślnie approved-only dla time entries.
 - [x] Reporting: obsługa `archiwum`.
 - [x] Reporting/eksport projektów: kolumna `operational_close_month` (Miesiąc zamk. oper.).
@@ -132,7 +131,6 @@ Format ID: `WB-<obszar>-<nr>` (np. `WB-P1-02`).
 - `WB-P5-01` — [x] Feature flags + canary rollout (admin -> wszyscy).
 - `WB-P5-02` — [x] Monitoring błędów/wydajności + plan rollback przez flagi.
 - `WB-P5-03` — [x] Raport powdrożeniowy i cleanup legacy po stabilizacji.
-- `WB-P5-04` — [x] Utrwalony monitoring API (`system/status`) z freshness metryk i konfigurowalnym progiem świeżości.
 
 ## 7) Jak odwoływać się do kroków
 - W nowym chacie podaj po prostu: „Robimy `WB-P2-03`”.
