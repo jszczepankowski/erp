@@ -279,10 +279,6 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             if (! empty($accept_meta['invoice_nip'])) {
                 $accept_meta_lines[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), (string) $accept_meta['invoice_nip']);
             }
-            if ($accept_meta_lines !== []) {
-                $body .= '<br><br><strong>' . esc_html__('Dodatkowe dane z akceptacji:', 'erp-omd') . '</strong><br>'
-                    . implode('<br>', array_map('esc_html', $accept_meta_lines)) . '<br>';
-            }
             $body .= self::build_summary_table_html((array) $items, $totals, true);
 
             $headers = ['Content-Type: text/html; charset=UTF-8'];
