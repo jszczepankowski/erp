@@ -383,6 +383,13 @@ class ERP_OMD_Frontend
                 )
             )
             : [];
+        foreach ($client_estimates as &$client_estimate_row) {
+            $estimate_id = (int) ($client_estimate_row['id'] ?? 0);
+            $estimate_items_rows = $estimate_id > 0 ? (array) $this->estimate_items->for_estimate($estimate_id) : [];
+            $client_estimate_row['items_count'] = count($estimate_items_rows);
+            $client_estimate_row['totals'] = $this->estimate_service->calculate_totals($estimate_items_rows);
+        }
+        unset($client_estimate_row);
         $selected_client_request_id = (int) ($_GET['request_id'] ?? 0);
         $selected_client_request = null;
         if ($selected_client_request_id > 0) {
@@ -692,12 +699,34 @@ class ERP_OMD_Frontend
             $this->create_client_project_note($user);
             return;
         }
+        if ($action === 'accept_client_estimate') {
+            $this->accept_client_estimate($user);
+            return;
+        }
         if ($action === 'delete_project_attachment') {
             $this->delete_client_project_attachment($user);
             return;
         }
 
         $this->redirect_client_with_notice('error', __('Nieobsługiwana akcja formularza klienta.', 'erp-omd'));
+    }
+
+    private function accept_client_estimate(WP_User $user)
+    {
+        $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+        $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+        $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
+        if (! $estimate || (int) ($estimate['client_id'] ?? 0) !== $client_id) {
+            $this->redirect_client_with_notice('error', __('Nie znaleziono kosztorysu przypisanego do Twojego konta.', 'erp-omd'));
+        }
+        if ((string) ($estimate['status'] ?? '') === 'zaakceptowany') {
+            $this->redirect_client_with_notice('info', __('Ten kosztorys jest już zaakceptowany.', 'erp-omd'));
+        }
+        $result = $this->estimate_service->accept($estimate_id);
+        if ($result instanceof WP_Error) {
+            $this->redirect_client_with_notice('error', $result->get_error_message());
+        }
+        $this->redirect_client_with_notice('success', __('Kosztorys został zaakceptowany.', 'erp-omd'));
     }
 
     private function process_manager_request(WP_User $user)
