@@ -34,6 +34,11 @@ class ERP_OMD_Client_Project_Service
         $data['company'] = trim((string) ($data['company'] ?? ''));
         $data['nip'] = $this->normalize_nip((string) ($data['nip'] ?? ''));
         $data['email'] = trim((string) ($data['email'] ?? ''));
+        if ($data['email'] !== '') {
+            $emails = preg_split('/[,;\s]+/', $data['email']) ?: [];
+            $emails = array_values(array_filter(array_map('sanitize_email', $emails)));
+            $data['email'] = implode(', ', array_values(array_unique($emails)));
+        }
         $data['phone'] = $this->normalize_phone((string) ($data['phone'] ?? ''));
         $data['contact_person_name'] = trim((string) ($data['contact_person_name'] ?? ''));
         $data['contact_person_email'] = trim((string) ($data['contact_person_email'] ?? ''));
@@ -67,8 +72,14 @@ class ERP_OMD_Client_Project_Service
             $errors[] = __('NIP klienta musi być unikalny.', 'erp-omd');
         }
 
-        if ($data['email'] !== '' && ! is_email($data['email'])) {
-            $errors[] = __('Adres e-mail klienta jest niepoprawny.', 'erp-omd');
+        if ($data['email'] !== '') {
+            $client_emails = preg_split('/[,;\s]+/', (string) $data['email']) ?: [];
+            $client_emails = array_values(array_filter(array_map('sanitize_email', $client_emails)));
+            if ($client_emails === [] || count($client_emails) !== count(array_filter($client_emails, 'is_email'))) {
+                $errors[] = __('Adres e-mail klienta jest niepoprawny.', 'erp-omd');
+            } else {
+                $data['email'] = implode(', ', array_values(array_unique($client_emails)));
+            }
         }
 
         if ($data['contact_person_email'] !== '' && ! is_email($data['contact_person_email'])) {

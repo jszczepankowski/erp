@@ -80,6 +80,19 @@
                 <input type="hidden" name="erp_omd_front_action" value="estimate_decision" />
                 <input type="hidden" name="token" value="<?php echo esc_attr($token); ?>" />
 
+                <div class="erp-omd-front-form-field">
+                    <label for="erp-omd-preferred-delivery-date"><?php esc_html_e('Preferowany termin realizacji', 'erp-omd'); ?></label>
+                    <input id="erp-omd-preferred-delivery-date" type="date" name="preferred_delivery_date" />
+                </div>
+                <div class="erp-omd-front-form-field">
+                    <label><input type="checkbox" name="delivery_other" value="1" data-estimate-toggle="delivery-address"> <?php esc_html_e('Inne miejsce dostawy', 'erp-omd'); ?></label>
+                    <textarea name="delivery_address" rows="3" placeholder="<?php echo esc_attr__('Adres do dostawy', 'erp-omd'); ?>" data-estimate-target="delivery-address" hidden></textarea>
+                </div>
+                <div class="erp-omd-front-form-field">
+                    <label><input type="checkbox" name="invoice_other_entity" value="1" data-estimate-toggle="invoice-nip"> <?php esc_html_e('Faktura na inny podmiot', 'erp-omd'); ?></label>
+                    <input type="text" name="invoice_nip" placeholder="<?php echo esc_attr__('NIP do faktury', 'erp-omd'); ?>" data-estimate-target="invoice-nip" hidden />
+                </div>
+
                 <div class="erp-omd-front-estimate-decision-choice">
                     <label>
                         <input type="radio" name="decision" value="accept" <?php checked($selected_decision, 'accept'); ?>>
@@ -124,12 +137,26 @@
                             field.hidden = field.getAttribute('data-estimate-decision-field') !== decision;
                         });
                     };
+                    var syncConditionalFields = function () {
+                        form.querySelectorAll('[data-estimate-toggle]').forEach(function (checkbox) {
+                            var key = checkbox.getAttribute('data-estimate-toggle');
+                            var target = form.querySelector('[data-estimate-target="' + key + '"]');
+                            if (!target) {
+                                return;
+                            }
+                            target.hidden = !checkbox.checked;
+                        });
+                    };
 
                     form.querySelectorAll('input[name="decision"]').forEach(function (radio) {
                         radio.addEventListener('change', syncDecisionFields);
                     });
+                    form.querySelectorAll('[data-estimate-toggle]').forEach(function (checkbox) {
+                        checkbox.addEventListener('change', syncConditionalFields);
+                    });
 
                     syncDecisionFields();
+                    syncConditionalFields();
                 }());
             </script>
         <?php endif; ?>
