@@ -24,4 +24,4 @@ Status: **PASS**
 ## Wniosek
 
 Regresja migracyjna na staging zakończona pozytywnie.  
-ETAP 2 (Fala 2) może zostać formalnie zamknięty i przekazany do ETAP 3 (operacyjność steady-state).
+ETAP 2 (Fala 2) może zostać formalnie zamknięty i przekazany do ETAP 3 (operacyjność stabilizacja).

@@ -5,7 +5,6 @@ Wejście: `docs/SPECYFIKACJA_V1_WARIANT_B.txt` + aktualny stan kodu i snapshotó
 
 ## 1) Cel
 
-Domknąć wdrożenie **100% MUST** ze specyfikacji v1 oraz utrwalić tryb utrzymaniowy (steady-state), tak aby:
 - proces miesiąca LIVE -> DO ROZLICZENIA -> ZAMKNIĘTY działał bez wyjątków,
 - korekty admina miały pełny, audytowalny i wygodny operacyjnie flow,
 - raporty operacyjne i OMD były spójne definicyjnie oraz stabilne wydajnościowo,
@@ -43,11 +42,8 @@ Legenda: ✅ gotowe, 🟡 częściowo, ❌ brak.
 - ✅ Dashboard v1 ma status miesiąca, checklistę, trend 3M, top/bottom, kolejkę i korekty.
 - ✅ OMD jako warstwa controllingowa jest utrzymany i opisany.
 - ✅ Kontrakt status-label i linki drilldown są domknięte.
-- 🟡 Potrzebne domknięcie operacyjne: runbook-driven ćwiczenia rollback + potwierdzenie ergonomii on-call na realnych incydentach/symulacjach.
 
 ### F. Bezpieczeństwo / wydajność / obserwowalność (SPEC EPIC E7)
-- ✅ Monitoring raportów, SLO p95, freshness, error-rate i sygnały drift działają (`system/status` + banery UX).
-- ✅ Tryb steady-state i telemetryka drift ratio są wdrożone.
 - 🟡 Brakuje cyklicznego benchmarku wydajności na większym wolumenie danych oraz formalnego raportu z testów penetracyjnych endpointów krytycznych.
 
 ## 3) Jak ma działać całość po domknięciu (target operating model)
@@ -58,7 +54,6 @@ Legenda: ✅ gotowe, 🟡 częściowo, ❌ brak.
 4. **Admin zamyka miesiąc do ZAMKNIĘTY**; od tego momentu korekty idą tylko ścieżką admina.
 5. Przez **72h** działa korekta standardowa; po oknie tylko tryb awaryjny (`EMERGENCY_ADJUSTMENT`) z obowiązkowym powodem i pełnym audytem.
 6. Raporty klient/projekt/czas oraz OMD są spójne metrycznie, a dashboard v1 pokazuje stan, trend i priorytety operatorskie.
-7. On-call opiera decyzje o rollback/tuning o `system/status`, runbook i próbki telemetryczne steady-state.
 
 ## 4) Plan domknięcia pełnego wdrożenia (4 fale)
 
@@ -84,9 +79,6 @@ Wyjście z Fali 2:
 - raport wydajności z rekomendacjami indeksów/tuningu,
 - checklista security bez krytycznych findings.
 
-## Fala 3 (P1) — operacyjność steady-state
-1. **Rollback drill** wg runbooka (ćwiczenie na sucho + czasy reakcji).
-2. **Kalibracja i przegląd progów SLO** na podstawie realnych próbek.
 3. **Operacyjna matryca alertów** (co jest `ok/warn/alert`, kto reaguje, w jakim SLA).
 
 Wyjście z Fali 3:
@@ -94,7 +86,6 @@ Wyjście z Fali 3:
 - potwierdzone czasy MTTR/rollback.
 
 ## Fala 4 (P2) — cleanup i zamknięcie programu
-1. Ujednolicenie dokumentacji (`RAPORTY_NEW`, `WARIANT_B_PROGRESS`, checklisty go-live/runbook).
 2. Zamknięcie otwartych „legacy mentions” i dopisanie finalnej noty „v1 fully implemented”.
 3. Ustalenie backlogu „v1.1” (już poza MUST baseline).
 
@@ -111,7 +102,6 @@ Sprint A:
 
 Sprint B:
 - testy bezpieczeństwa endpointów,
-- rollback drill + aktualizacja runbooka,
 - finalny raport „MUST coverage 100%”.
 
 ## 6) Definicja sukcesu (DoD programu)

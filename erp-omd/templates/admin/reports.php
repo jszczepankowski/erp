@@ -6,7 +6,7 @@
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'calendar'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $report_filters['tab'] === 'calendar' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Kalendarz', 'erp-omd'); ?></a>
     </nav>
 
-    <div class="erp-omd-page-sections <?php echo false ? 'erp-omd-monitoring-layout' : ''; ?>">
+    <div class="erp-omd-page-sections">
         <?php if (true) : ?>
         <section class="erp-omd-card">
             <div class="erp-omd-section-header">

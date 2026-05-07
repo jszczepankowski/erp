@@ -28,7 +28,7 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - [x] **2.2** Testy bezpieczeństwa endpointów krytycznych.
 - [x] **2.3** Regresja migracyjna na staging (kopie danych/historyczne miesiące).
 
-### ETAP 3 — Operacyjność steady-state (Fala 3)
+### ETAP 3 — Operacyjność i stabilizacja (Fala 3)
 - [x] **3.1** Rollback drill (runbook, czasy wykonania).
 - [x] **3.2** Przegląd i utrwalenie progów operacyjnych.
 - [x] **3.3** Matryca reakcji operacyjnej (kto/co/kiedy).
@@ -77,8 +77,6 @@ Spec referencyjna: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
 - **DONE:** ETAP 2 / KROK 2.2 — testy bezpieczeństwa endpointów krytycznych zakończone wynikiem PASS (S-01..S-10), raport: `docs/SECURITY_ENDPOINTS_TEST_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 2 / KROK 2.3 — regresja migracyjna na staging zakończona wynikiem PASS (A1..C2), raport: `docs/STAGING_MIGRATION_REGRESSION_REPORT_2026-04-08.md`.
 - **DONE:** ETAP 3 / KROK 3.1 — rollback drill zakończony wynikiem PASS (R1..R8), raport: `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`.
-- **DONE:** ETAP 3 / KROK 3.2 — przegląd i utrwalenie progów SLO zakończony wynikiem PASS, decyzja KEEP, raport: `docs/SLO_REVIEW_REPORT_2026-04-08.md`.
-- **DONE:** ETAP 3 / KROK 3.3 — matryca reakcji operacyjnej zwalidowana „na żywo”, wynik PASS (M1..M4), raport: `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`.
 - **DONE:** ETAP 4 / KROK 4.1 — checklista ujednolicenia dokumentacji zakończona wynikiem PASS; source-of-truth zebrany w `docs/archiwum/CHECKLISTA_UJEDNOLICENIA_DOKUMENTACJI_2026-04-08.md`.
 - **DONE:** ETAP 4 / KROK 4.2 — opublikowano finalną notę domknięcia „v1 fully implemented”: `docs/V1_FULLY_IMPLEMENTED_NOTE_2026-04-08.md`.
 - **DONE:** ETAP 4 / KROK 4.3 — spisano backlog v1.1 (poza MUST): `docs/BACKLOG_V1_1_2026-04-08.md`.

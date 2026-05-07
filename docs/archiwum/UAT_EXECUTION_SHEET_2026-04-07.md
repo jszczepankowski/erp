@@ -13,7 +13,6 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 
 - Raporty (biznes): `admin.php?page=erp-omd-reports&tab=reports`
 - Monitoring techniczny: `admin.php?page=erp-omd-reports&tab=monitoring`
-- Ustawienia SLO: `admin.php?page=erp-omd-settings#reports-v1-slo-monitoring`
 
 ## 2a) Zasada komunikacji testów (USTALENIE)
 
@@ -86,7 +85,6 @@ Cel: szybkie, operacyjne wykonanie UAT ekranów 1–6 przed domknięciem ETAP 1.
 - **[WYMAGA POTWIERDZENIA UŻYTKOWNIKA]** Wynik: `PASS (potwierdzone przez użytkownika)`
 
 ## Krok 6 — Zarządzanie miesiącem
-- Link: `admin.php?page=erp-omd-reports&tab=monitoring` + `admin.php?page=erp-omd-settings#reports-v1-slo-monitoring`.
 - Sprawdź: przejścia statusów, blokady po zamknięciu, zachowanie ścieżki korekt.
 - Akcje UI dostępne: przyciski przejść statusu i szybka korekta admina w `Monitoring techniczny`.
 - Auto-smoke backend (2026-04-08): `php tests/omd-period-service-test.php` + `php tests/rest-api-test.php` — PASS; do domknięcia pozostaje walidacja manualna admin/non-admin.

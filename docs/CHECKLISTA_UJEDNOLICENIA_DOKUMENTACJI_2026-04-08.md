@@ -1,6 +1,6 @@
 # ETAP 4 / KROK 4.1 — checklista ujednolicenia dokumentacji końcowej
 
-Data: 2026-04-08  
+Data: 2026-04-08
 Status: **PASS**
 
 ## 1) Cel kroku
@@ -22,8 +22,6 @@ Ujednolicić dokumentację końcową tak, aby:
   - `docs/SECURITY_ENDPOINTS_TEST_REPORT_2026-04-08.md`
   - `docs/STAGING_MIGRATION_REGRESSION_REPORT_2026-04-08.md`
   - `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`
-  - `docs/SLO_REVIEW_REPORT_2026-04-08.md`
-  - `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`
 
 ## 3) Checklista „na żywo” (PASS/FAIL)
 
@@ -40,7 +38,7 @@ Ujednolicić dokumentację końcową tak, aby:
 - [x] `RAPORTY_NEW.md` ma spójny status strumienia utrzymaniowego (WB-MNT) względem dziennika.
 
 ### C4.4 — Spójność artefaktów operacyjnych
-- [x] Benchmark/security/staging/rollback/SLO/matryca mają status i datę.
+- [x] Benchmark/security/staging/rollback mają status i datę.
 - [x] Każdy artefakt ma jasny wniosek operacyjny.
 
 ### C4.5 — Konsolidacja końcowa
@@ -53,13 +51,11 @@ Ujednolicić dokumentację końcową tak, aby:
 - Plan referencyjny i kryteria zakończenia: `docs/PLAN_PELNE_WDROZENIE_WARIANT_B_V1.md`
 - Wynik UAT: `docs/UAT_MASTER_PASS_V1_2026-04-07.md`
 - Przebieg operacyjny UAT: `docs/UAT_EXECUTION_SHEET_2026-04-07.md`
-- Artefakty steady-state:  
-  `docs/REPORTING_BENCHMARK_BASELINE_2026-04-07.md`,  
-  `docs/SECURITY_ENDPOINTS_TEST_REPORT_2026-04-08.md`,  
-  `docs/STAGING_MIGRATION_REGRESSION_REPORT_2026-04-08.md`,  
-  `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`,  
-  `docs/SLO_REVIEW_REPORT_2026-04-08.md`,  
-  `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`
+- Artefakty stabilizacja:
+  `docs/REPORTING_BENCHMARK_BASELINE_2026-04-07.md`,
+  `docs/SECURITY_ENDPOINTS_TEST_REPORT_2026-04-08.md`,
+  `docs/STAGING_MIGRATION_REGRESSION_REPORT_2026-04-08.md`,
+  `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`
 
 ## 5) Kryterium wyniku
 
