@@ -346,7 +346,7 @@ if (! class_exists('ERP_OMD_Project_Repository')) {
             return [
                 ['id' => 10, 'client_id' => 1, 'name' => 'Projekt A', 'status' => 'w_realizacji', 'start_date' => '2026-03-01', 'end_date' => '2026-03-31'],
                 ['id' => 11, 'client_id' => 0, 'name' => '', 'status' => 'do_rozpoczecia', 'start_date' => '2026-05-01', 'end_date' => '2026-05-31'],
-                ['id' => 12, 'client_id' => 0, 'name' => '', 'status' => 'do_rozpoczecia', 'operational_close_month' => '2026-03', 'start_date' => '', 'end_date' => ''],
+                ['id' => 12, 'client_id' => 0, 'name' => '', 'status' => 'do_rozpoczecia', 'start_date' => '', 'end_date' => ''],
             ];
         }
         public function find($id) { return ['id' => $id, 'client_id' => 1]; }
