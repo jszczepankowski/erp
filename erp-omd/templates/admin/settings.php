@@ -9,7 +9,6 @@
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'lifecycle_alerts'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'lifecycle_alerts' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Lifecycle i alerty', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'google_calendar'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'google_calendar' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Google Calendar', 'erp-omd'); ?></a>
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'ksef'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'ksef' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('KSeF', 'erp-omd'); ?></a>
-        <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-settings', 'tab' => 'reports_v1_monitoring'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $settings_tab === 'reports_v1_monitoring' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Reports SLO i monitoring', 'erp-omd'); ?></a>
     </nav>
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Konfiguracja ustawień ERP OMD', 'erp-omd'); ?></h2>
@@ -416,86 +415,6 @@
                                 <button type="submit" class="button" form="erp-omd-google-calendar-sync-now-form"><?php esc_html_e('Synchronizuj teraz', 'erp-omd'); ?></button>
                                 <button type="submit" class="button" form="erp-omd-google-calendar-fetch-calendars-form"><?php esc_html_e('Pobierz kalendarze Google', 'erp-omd'); ?></button>
                             </p>
-                        </div>
-                    </div>
-                </section>
-                <?php elseif ($settings_tab === 'reports_v1_monitoring') : ?>
-                <section class="erp-omd-form-section">
-                    <div class="erp-omd-form-section-header">
-                        <h3 id="reports-v1-slo-monitoring"><?php esc_html_e('Reports SLO i monitoring', 'erp-omd'); ?></h3>
-                        <p><?php esc_html_e('Ustawienia i status kalibracji SLO wydzielone do osobnego boxu na końcu ekranu.', 'erp-omd'); ?></p>
-                    </div>
-                    <div class="erp-omd-form-grid erp-omd-form-grid-reports-slo">
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="erp-omd-reports-v1-freshness-minutes"><?php esc_html_e('Maks. wiek metryk Reports v1 (min)', 'erp-omd'); ?></label>
-                            <input id="erp-omd-reports-v1-freshness-minutes" type="number" min="5" step="1" name="reports_v1_metrics_freshness_minutes" value="<?php echo esc_attr((string) $reports_v1_metrics_freshness_minutes); ?>" />
-                        </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="erp-omd-reports-v1-slo-p95-max"><?php esc_html_e('SLO: maks. p95 czasu raportu (ms)', 'erp-omd'); ?></label>
-                            <input id="erp-omd-reports-v1-slo-p95-max" type="number" min="100" max="30000" step="50" name="reports_v1_slo_generation_p95_max" value="<?php echo esc_attr((string) $reports_v1_slo_generation_p95_max); ?>" />
-                        </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="erp-omd-reports-v1-slo-p95-recommended"><?php esc_html_e('Rekomendowany próg p95 (ms)', 'erp-omd'); ?></label>
-                            <input id="erp-omd-reports-v1-slo-p95-recommended" type="number" readonly value="<?php echo esc_attr((string) $reports_v1_slo_recommended_p95_max); ?>" />
-                            <p class="description"><?php echo esc_html(sprintf(__('Próbki do rekomendacji: %d', 'erp-omd'), (int) $reports_v1_slo_calibration_sample_count)); ?></p>
-                        </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
-                            <label class="erp-omd-form-label">
-                                <input type="checkbox" name="apply_reports_v1_recommended_p95_max" value="1" />
-                                <?php esc_html_e('Przy zapisie zastosuj rekomendowany próg p95 na podstawie logu metryk.', 'erp-omd'); ?>
-                            </label>
-                            <label class="erp-omd-form-label" style="margin-top:8px;">
-                                <input type="checkbox" name="confirm_reports_v1_slo_calibration_decision" value="1" />
-                                <?php esc_html_e('Potwierdź finalną decyzję progu p95 (zapisz wpis audytowy decyzji).', 'erp-omd'); ?>
-                            </label>
-                            <label class="erp-omd-form-label" style="margin-top:8px;">
-                                <input type="checkbox" name="confirm_reports_v1_slo_calibration_closure" value="1" />
-                                <?php esc_html_e('Formalnie zamknij kalibrację SLO (po potwierdzonej decyzji) i przejdź do monitoringu steady-state.', 'erp-omd'); ?>
-                            </label>
-                            <p class="description">
-                                <?php
-                                echo esc_html(
-                                    sprintf(
-                                        __('Status kalibracji SLO: %1$s | brakujące próbki: %2$d | akcja: %3$s', 'erp-omd'),
-                                        ! empty($reports_v1_slo_calibration_decision_ready) ? __('ready', 'erp-omd') : __('pending', 'erp-omd'),
-                                        (int) $reports_v1_slo_samples_missing_to_calibration,
-                                        (string) $reports_v1_slo_calibration_next_action
-                                    )
-                                );
-                                ?>
-                            </p>
-                            <?php if (! empty($reports_v1_slo_last_decision)) : ?>
-                                <p class="description">
-                                    <?php
-                                    echo esc_html(
-                                        sprintf(
-                                            __('Ostatnia decyzja SLO: próg=%1$d ms | rekomendacja=%2$d ms | próbki=%3$d | data=%4$s | user_id=%5$d', 'erp-omd'),
-                                            (int) ($reports_v1_slo_last_decision['threshold_ms'] ?? 0),
-                                            (int) ($reports_v1_slo_last_decision['recommended_threshold_ms'] ?? 0),
-                                            (int) ($reports_v1_slo_last_decision['sample_count'] ?? 0),
-                                            (string) ($reports_v1_slo_last_decision['decided_at'] ?? ''),
-                                            (int) ($reports_v1_slo_last_decision['decided_by_user_id'] ?? 0)
-                                        )
-                                    );
-                                    ?>
-                                </p>
-                            <?php endif; ?>
-                            <?php if (! empty($reports_v1_slo_closure_confirmed)) : ?>
-                                <p class="description">
-                                    <?php
-                                    echo esc_html(
-                                        sprintf(
-                                            __('Kalibracja formalnie zamknięta: data=%1$s | user_id=%2$d | decyzja=%3$s | próg=%4$d ms', 'erp-omd'),
-                                            (string) ($reports_v1_slo_closure['closed_at'] ?? ''),
-                                            (int) ($reports_v1_slo_closure['closed_by_user_id'] ?? 0),
-                                            (string) ($reports_v1_slo_closure['decision_decided_at'] ?? ''),
-                                            (int) ($reports_v1_slo_closure['decision_threshold_ms'] ?? 0)
-                                        )
-                                    );
-                                    ?>
-                                </p>
-                            <?php endif; ?>
-                            <p class="description"><?php esc_html_e('Reports v1 jest aktywny dla wszystkich użytkowników ERP OMD. Legacy rollout/canary został wygaszony.', 'erp-omd'); ?></p>
                         </div>
                     </div>
                 </section>
