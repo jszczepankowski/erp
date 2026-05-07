@@ -1218,34 +1218,6 @@ class ERP_OMD_Installer
             WHERE manager_id IS NOT NULL"
         );
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         update_option('erp_omd_db_version', ERP_OMD_DB_VERSION);
         add_option('erp_omd_delete_data_on_uninstall', false);
         add_option('erp_omd_alert_margin_threshold', 10);
