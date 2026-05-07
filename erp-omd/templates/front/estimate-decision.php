@@ -98,6 +98,14 @@
                 <div class="erp-omd-front-form-field" data-estimate-decision-field="accept" <?php echo $selected_decision === 'accept' ? '' : 'hidden'; ?>>
                     <label for="erp-omd-estimate-accept-note"><?php esc_html_e('Uwagi do akceptacji kosztorysu (opcjonalnie)', 'erp-omd'); ?></label>
                     <textarea id="erp-omd-estimate-accept-note" name="note" rows="4"><?php echo esc_textarea($note_value ?? ''); ?></textarea>
+
+                    <label><input type="checkbox" name="delivery_other" value="1"> <?php esc_html_e('Inne miejsce dostawy', 'erp-omd'); ?></label>
+                    <textarea name="delivery_address" rows="3" placeholder="<?php echo esc_attr__('Adres do dostawy', 'erp-omd'); ?>"></textarea>
+                    <label for="erp-omd-preferred-delivery-date"><?php esc_html_e('Preferowany termin realizacji', 'erp-omd'); ?></label>
+                    <input id="erp-omd-preferred-delivery-date" type="date" name="preferred_delivery_date" />
+                    <label><input type="checkbox" name="invoice_other_entity" value="1"> <?php esc_html_e('Faktura na inny podmiot', 'erp-omd'); ?></label>
+                    <input type="text" name="invoice_nip" placeholder="<?php echo esc_attr__('NIP do faktury', 'erp-omd'); ?>" />
+
                 </div>
 
                 <button class="erp-omd-front-button erp-omd-front-button-secondary" type="submit"><?php esc_html_e('Wyślij decyzję', 'erp-omd'); ?></button>

@@ -574,13 +574,34 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             <a class="button button-small <?php echo ($ksef_sales_assignment_filter ?? 'all') === 'all' ? '' : 'button-link'; ?>" href="<?php echo esc_url($sales_filter_all_url); ?>"><?php esc_html_e('Wszystkie', 'erp-omd'); ?></a>
         </div>
 
+        <?php
+        $sales_sort = sanitize_key((string) ($_GET['ksef_sales_sort'] ?? 'date_desc'));
+        if (! in_array($sales_sort, ['date_asc', 'date_desc'], true)) {
+            $sales_sort = 'date_desc';
+        }
+        $ksef_sales_rows = (array) $ksef_sales_inbox;
+        usort($ksef_sales_rows, static function ($left, $right) use ($sales_sort) {
+            $left_date = (string) ($left['issue_date'] ?? '');
+            $right_date = (string) ($right['issue_date'] ?? '');
+            if ($left_date === $right_date) {
+                return ((int) ($right['id'] ?? 0)) <=> ((int) ($left['id'] ?? 0));
+            }
+            return $sales_sort === 'date_asc' ? strcmp($left_date, $right_date) : strcmp($right_date, $left_date);
+        });
+        $sales_date_sort_url = add_query_arg([
+            'page' => 'erp-omd-cost-invoices',
+            'tab' => 'ksef-sales',
+            'ksef_sales_assignment' => (string) ($ksef_sales_assignment_filter ?? 'all'),
+            'ksef_sales_sort' => $sales_sort === 'date_asc' ? 'date_desc' : 'date_asc',
+        ], admin_url('admin.php'));
+        ?>
         <table class="widefat striped">
-            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><a href="<?php echo esc_url($sales_date_sort_url); ?>"><?php esc_html_e('Data', 'erp-omd'); ?></a></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
             <tbody>
             <?php if (empty($ksef_sales_inbox)) : ?>
-                <tr><td colspan="8"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="7"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
             <?php else : ?>
-                <?php foreach ((array) $ksef_sales_inbox as $sales_row) : ?>
+                <?php foreach ($ksef_sales_rows as $sales_row) : ?>
                     <tr>
                         <?php $sales_client_id = (int) ($sales_row['client_id'] ?? 0); ?>
                         <td><?php echo esc_html((string) ((int) ($sales_row['id'] ?? 0))); ?></td>
@@ -589,7 +610,6 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                         <td><?php echo esc_html((string) ($client_name_by_id[$sales_client_id] ?? '—')); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['buyer_nip'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($project_name_by_id[(int) ($sales_row['project_id'] ?? 0)] ?? ('#' . (int) ($sales_row['project_id'] ?? 0)))); ?></td>
-                        <td><?php echo esc_html((string) ($sales_row['status'] ?? '')); ?></td>
                         <td>
                             <form method="post" style="display:flex;gap:6px;align-items:center;">
                                 <?php wp_nonce_field('erp_omd_attach_ksef_sales_invoice'); ?>

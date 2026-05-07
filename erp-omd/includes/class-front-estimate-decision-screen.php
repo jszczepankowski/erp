@@ -45,6 +45,13 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                             $estimates->save_client_decision_note($estimate_id, $note);
                             self::append_accept_note_to_project_history($estimate_id, $note, $result);
                             self::send_thank_you_mail($estimate_id, $estimates, $estimate_items, $estimate_service);
+                            update_option('erp_omd_estimate_acceptance_meta_' . $estimate_id, [
+                                'delivery_other' => $delivery_other,
+                                'delivery_address' => $delivery_other ? $delivery_address : '',
+                                'preferred_delivery_date' => $preferred_delivery_date,
+                                'invoice_other_entity' => $invoice_other_entity,
+                                'invoice_nip' => $invoice_other_entity ? $invoice_nip : '',
+                            ], false);
                             self::send_acceptance_notification_to_agency($estimate_id, $estimates, $estimate_items, $estimate_service, (array) $result);
                             $notice_type = 'success';
                             $notice_message = __('Dziękujemy. Kosztorys został zaakceptowany.', 'erp-omd');
@@ -110,8 +117,10 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 return;
             }
             $client = $client_repository->find((int) ($estimate['client_id'] ?? 0));
-            $client_email = sanitize_email((string) ($client['email'] ?? ''));
-            if (! is_email($client_email)) {
+            $client_email_raw = (string) ($client['email'] ?? '');
+            $client_emails = preg_split('/[,;\s]+/', $client_email_raw) ?: [];
+            $client_emails = array_values(array_unique(array_filter(array_map('sanitize_email', $client_emails), 'is_email')));
+            if ($client_emails === []) {
                 return;
             }
 
@@ -145,11 +154,11 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 };
                 add_filter('wp_mail_from', $from_email_filter);
                 add_filter('wp_mail_from_name', $from_name_filter);
-                wp_mail($client_email, $subject, wpautop($body), $headers);
+                wp_mail($client_emails, $subject, wpautop($body), $headers);
                 remove_filter('wp_mail_from', $from_email_filter);
                 remove_filter('wp_mail_from_name', $from_name_filter);
             } else {
-                wp_mail($client_email, $subject, wpautop($body), $headers);
+                wp_mail($client_emails, $subject, wpautop($body), $headers);
             }
         }
 

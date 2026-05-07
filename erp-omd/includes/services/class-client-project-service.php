@@ -220,6 +220,14 @@ class ERP_OMD_Client_Project_Service
             $retainer_monthly_fee = 0.0;
         }
 
+        $start_date = trim((string) ($data['start_date'] ?? ($existing_project['start_date'] ?? '')));
+        $end_date = trim((string) ($data['end_date'] ?? ($existing_project['end_date'] ?? '')));
+        $is_new_project = $existing_project === null || (int) ($existing_project['id'] ?? 0) <= 0;
+        if ($billing_type === 'retainer' && $is_new_project && $start_date === '' && $end_date === '') {
+            $start_date = current_time('Y-m-01');
+            $end_date = current_time('Y-m-t');
+        }
+
         return [
             'client_id' => (int) ($data['client_id'] ?? ($existing_project['client_id'] ?? 0)),
             'name' => trim((string) ($data['name'] ?? ($existing_project['name'] ?? ''))),
@@ -227,8 +235,8 @@ class ERP_OMD_Client_Project_Service
             'budget' => $budget,
             'retainer_monthly_fee' => $retainer_monthly_fee,
             'status' => trim((string) ($data['status'] ?? ($existing_project['status'] ?? 'do_rozpoczecia'))) ?: 'do_rozpoczecia',
-            'start_date' => trim((string) ($data['start_date'] ?? ($existing_project['start_date'] ?? ''))),
-            'end_date' => trim((string) ($data['end_date'] ?? ($existing_project['end_date'] ?? ''))),
+            'start_date' => $start_date,
+            'end_date' => $end_date,
             'deadline_date' => trim((string) ($data['deadline_date'] ?? ($existing_project['deadline_date'] ?? ''))),
             'deadline_completed_at' => trim((string) ($data['deadline_completed_at'] ?? ($existing_project['deadline_completed_at'] ?? ''))),
             'deadline_completed_by' => (int) ($data['deadline_completed_by'] ?? ($existing_project['deadline_completed_by'] ?? 0)),
