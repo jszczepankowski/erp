@@ -1023,7 +1023,7 @@ class ERP_OMD_REST_API
             'project_statuses' => ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'],
             'estimate_statuses' => ['wstepny', 'do_akceptacji', 'odrzucony', 'zaakceptowany'],
             'time_statuses' => ['submitted', 'approved', 'rejected'],
-            'report_types' => ['projects', 'clients', 'invoice', 'monthly'],
+            'report_types' => ['projects', 'invoice', 'omd_rozliczenia', 'time_entries'],
             'attachment_entity_types' => ['project', 'estimate'],
             'export_variants' => ['client', 'agency', 'variant_a', 'variant_b'],
         ]);

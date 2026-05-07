@@ -225,8 +225,8 @@ class ERP_OMD_Admin
                         continue;
                     }
 
-                    $selected_month_summary['revenue'] = (float) ($trend_row['active_project_budgets'] ?? 0.0) + (float) ($trend_row['time_revenue'] ?? 0.0);
-                    $selected_month_summary['cost'] = (float) ($trend_row['salary_cost'] ?? 0.0) + (float) ($trend_row['project_direct_cost'] ?? 0.0) + (float) ($trend_row['time_cost'] ?? 0.0) + (float) ($trend_row['fixed_cost'] ?? 0.0);
+                    $selected_month_summary['revenue'] = (float) ($trend_row['project_revenue'] ?? 0.0);
+                    $selected_month_summary['cost'] = (float) ($trend_row['salary_cost'] ?? 0.0) + (float) ($trend_row['project_direct_cost'] ?? 0.0) + (float) ($trend_row['fixed_cost'] ?? 0.0);
                     $selected_month_summary['salary_cost'] = (float) ($trend_row['salary_cost'] ?? 0.0);
                     $selected_month_summary['project_direct_cost'] = (float) ($trend_row['project_direct_cost'] ?? 0.0);
                     $selected_month_summary['time_cost'] = (float) ($trend_row['time_cost'] ?? 0.0);
@@ -1428,7 +1428,7 @@ class ERP_OMD_Admin
     {
         $report_filters = $this->reporting_service->sanitize_filters($_GET);
         $requested_report_type = sanitize_key((string) ($_GET['report_type'] ?? ''));
-        $allowed_report_types = ['projects', 'clients', 'invoice', 'monthly', 'omd_rozliczenia', 'time_entries'];
+        $allowed_report_types = ['projects', 'invoice', 'omd_rozliczenia', 'time_entries'];
         if (! in_array($requested_report_type, $allowed_report_types, true)) {
             $requested_report_type = '';
         }
@@ -1470,10 +1470,8 @@ class ERP_OMD_Admin
         ];
         $report_titles = [
             'projects' => __('Raport projektów', 'erp-omd'),
-            'clients' => __('Raport klientów', 'erp-omd'),
             'invoice' => __('Raport projektów do faktury', 'erp-omd'),
             'time_entries' => __('Raport czasu pracy', 'erp-omd'),
-            'monthly' => __('Raport miesięczny', 'erp-omd'),
             'omd_rozliczenia' => __('Raport operacyjny OMD', 'erp-omd'),
         ];
         $report_title = $report_titles[$report_filters['report_type']] ?? __('Raporty', 'erp-omd');

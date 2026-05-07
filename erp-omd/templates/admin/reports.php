@@ -60,17 +60,15 @@
                                     <select id="report-type" name="report_type">
                                         <option value="" <?php selected($report_filters['report_type'], ''); ?>><?php esc_html_e('— Wybierz typ raportu —', 'erp-omd'); ?></option>
                                         <option value="projects" <?php selected($report_filters['report_type'], 'projects'); ?>><?php esc_html_e('Raport projektów', 'erp-omd'); ?></option>
-                                        <option value="clients" <?php selected($report_filters['report_type'], 'clients'); ?>><?php esc_html_e('Raport klientów', 'erp-omd'); ?></option>
                                         <option value="invoice" <?php selected($report_filters['report_type'], 'invoice'); ?>><?php esc_html_e('Projekty do faktury', 'erp-omd'); ?></option>
                                         <option value="time_entries" <?php selected($report_filters['report_type'], 'time_entries'); ?>><?php esc_html_e('Czas pracy', 'erp-omd'); ?></option>
-                                        <option value="monthly" <?php selected($report_filters['report_type'], 'monthly'); ?>><?php esc_html_e('Raport miesięczny', 'erp-omd'); ?></option>
                                         <option value="omd_rozliczenia" <?php selected($report_filters['report_type'], 'omd_rozliczenia'); ?>><?php esc_html_e('Raport operacyjny OMD', 'erp-omd'); ?></option>
                                     </select>
                                 </div>
                             <?php endif; ?>
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
                                 <label for="report-month"><?php esc_html_e('Miesiąc', 'erp-omd'); ?></label>
-                                <input id="report-month" type="date" name="month" value="<?php echo esc_attr($report_filters['month'] . '-01'); ?>" />
+                                <input id="report-month" type="month" name="month" value="<?php echo esc_attr($report_filters['month']); ?>" />
                             </div>
                             <div class="erp-omd-form-field" data-report-filter-field="client" <?php echo $show_client_field ? '' : 'hidden'; ?>>
                                 <label for="report-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
@@ -225,22 +223,20 @@
                     </table>
                 <?php elseif ($report_filters['report_type'] === 'omd_rozliczenia') : ?>
                     <p class="description">
-                        <?php esc_html_e('Legenda OMD: wynik operacyjny = budżety aktywnych projektów + zysk godzinowy - koszt projektów; narzut controllingowy = koszt pensji + koszty stałe; wynik controllingowy = wynik operacyjny - narzut controllingowy.', 'erp-omd'); ?>
+                        <?php esc_html_e('Legenda OMD: wynik operacyjny = suma przychodów wszystkich projektów - suma kosztów bezpośrednich projektów; narzut controllingowy = koszt pensji + koszty stałe; wynik controllingowy = wynik operacyjny - narzut controllingowy.', 'erp-omd'); ?>
                     </p>
                     <table class="widefat striped">
-                        <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt pensji', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Koszty czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Stałe koszty', 'erp-omd'); ?></th><th><?php esc_html_e('Budżety aktywnych projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk godzinowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></th><th><?php esc_html_e('Narzut controllingowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik controllingowy', 'erp-omd'); ?></th></tr></thead>
+                        <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk godzinowy (info)', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt pensji', 'erp-omd'); ?></th><th><?php esc_html_e('Stałe koszty', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></th><th><?php esc_html_e('Narzut controllingowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik controllingowy', 'erp-omd'); ?></th></tr></thead>
                         <tbody>
-                        <?php if (empty($report_rows)) : ?><tr><td colspan="11"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
+                        <?php if (empty($report_rows)) : ?><tr><td colspan="9"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
                         <?php foreach ($report_rows as $row) : ?>
                             <tr>
                                 <td><?php echo esc_html($row['month']); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['salary_cost'], 2)); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['project_direct_cost'], 2)); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['time_cost'], 2)); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['fixed_cost'], 2)); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['active_project_budgets'], 2)); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['time_revenue'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['project_revenue'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['hourly_profit'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['project_direct_cost'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['salary_cost'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['fixed_cost'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['operational_result'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['controlling_overhead'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['controlling_result'], 2)); ?></td>

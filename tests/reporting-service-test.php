@@ -294,9 +294,9 @@ final class ReportingServiceTestRunner
         $this->assertSame(0.0, $omdSettlement[10]['active_project_budgets'], 'OMD settlement should not recognize project budget before project end_date month.');
         $this->assertSame(5000.0, $omdSettlement[11]['active_project_budgets'], 'OMD settlement should recognize project budget in project end_date month.');
         $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
-        $this->assertSame(5230.0, $omdSettlement[11]['operational_result'], 'OMD settlement should expose operational result before controlling overhead.');
+        $this->assertSame(5550.0, $omdSettlement[11]['operational_result'], 'OMD settlement should expose operational result before controlling overhead.');
         $this->assertSame(19000.0, $omdSettlement[11]['controlling_overhead'], 'OMD settlement should expose controlling overhead components.');
-        $this->assertSame(-13770.0, $omdSettlement[11]['controlling_result'], 'OMD settlement should expose controlling result after overhead.');
+        $this->assertSame(-13450.0, $omdSettlement[11]['controlling_result'], 'OMD settlement should expose controlling result after overhead.');
         $this->assertSame(0, $salaryRepository->for_employee_calls - $salaryCallsBeforeSettlement, 'OMD settlement should avoid per-employee salary reads when batch prefetch is available.');
         $this->assertSame(1, $salaryRepository->for_employees_calls - $salaryBatchCallsBeforeSettlement, 'OMD settlement should prefetch salary history in one batch query for 12M range.');
         $this->assertSame(1, $projectRepository->all_calls - $projectAllCallsBeforeSettlement, 'OMD settlement should fetch project list once and reuse it across 12 months.');
@@ -323,8 +323,8 @@ final class ReportingServiceTestRunner
         $this->assertSame('2026-03-15', $timeExport['rows'][0][0], 'Time entries export should match visible row order.');
 
         $omdExport = $service->export_definition('omd_rozliczenia', $filters);
-        $this->assertSame(true, in_array('Koszty czasu', $omdExport['headers'], true), 'OMD export should expose time-cost column.');
-        $this->assertSame(true, in_array('Przychód czasu', $omdExport['headers'], true), 'OMD export should expose time-revenue column.');
+        $this->assertSame(true, in_array('Przychód projektów', $omdExport['headers'], true), 'OMD export should expose project revenue column.');
+        $this->assertSame(true, in_array('Koszt bezpośredni projektów', $omdExport['headers'], true), 'OMD export should expose direct project cost column.');
         $this->assertSame(true, in_array('Narzut controllingowy', $omdExport['headers'], true), 'OMD export should expose controlling overhead column.');
         $this->assertSame(true, in_array('Wynik controllingowy', $omdExport['headers'], true), 'OMD export should expose controlling result column.');
         $this->assertSame(true, in_array('Wynik operacyjny', $omdExport['headers'], true), 'OMD export should expose operational result column.');

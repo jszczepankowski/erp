@@ -45,7 +45,7 @@ class ERP_OMD_Reporting_Service
         }
 
         $report_type = isset($raw_filters['report_type']) ? sanitize_key((string) $raw_filters['report_type']) : 'projects';
-        if (! in_array($report_type, ['projects', 'clients', 'invoice', 'monthly', 'omd_rozliczenia', 'time_entries'], true)) {
+        if (! in_array($report_type, ['projects', 'invoice', 'omd_rozliczenia', 'time_entries'], true)) {
             $report_type = 'projects';
         }
 
@@ -184,15 +184,17 @@ class ERP_OMD_Reporting_Service
 
                     $fixed_cost = (float) ($fixed_cost_by_month[$month] ?? 0.0);
                     $hourly_profit = $time_revenue - $time_cost;
-                    $operational_result = ($active_budgets + $hourly_profit) - $direct_cost;
+                    $project_revenue = $active_budgets + $time_revenue;
+                    $operational_result = $project_revenue - $direct_cost;
                     $controlling_overhead = $salary_cost + $fixed_cost;
                     $controlling_result = $operational_result - $controlling_overhead;
                     $rows[] = [
                         'month' => $month,
                         'salary_cost' => round($salary_cost, 2),
                         'project_direct_cost' => round($direct_cost, 2),
-                        'active_project_budgets' => round($active_budgets, 2),
+                        'project_revenue' => round($project_revenue, 2),
                         'hourly_profit' => round($hourly_profit, 2),
+                        'active_project_budgets' => round($active_budgets, 2),
                         'fixed_cost' => round($fixed_cost, 2),
                         'operational_result' => round($operational_result, 2),
                         'controlling_overhead' => round($controlling_overhead, 2),
@@ -866,17 +868,15 @@ class ERP_OMD_Reporting_Service
             case 'omd_rozliczenia':
                 return [
                     'filename' => sprintf('erp-omd-rozliczenie-omd-%s.csv', $month),
-                    'headers' => ['Miesiąc', 'Koszt pensji', 'Koszt projektów', 'Koszty czasu', 'Stałe koszty', 'Budżety aktywnych projektów', 'Przychód czasu', 'Zysk godzinowy', 'Wynik operacyjny', 'Narzut controllingowy', 'Wynik controllingowy'],
+                    'headers' => ['Miesiąc', 'Przychód projektów', 'Zysk godzinowy', 'Koszt bezpośredni projektów', 'Koszt pensji', 'Stałe koszty', 'Wynik operacyjny', 'Narzut controllingowy', 'Wynik controllingowy'],
                     'rows' => array_map(static function ($row) {
                         return [
                             $row['month'],
-                            number_format((float) $row['salary_cost'], 2, '.', ''),
-                            number_format((float) $row['project_direct_cost'], 2, '.', ''),
-                            number_format((float) $row['time_cost'], 2, '.', ''),
-                            number_format((float) $row['fixed_cost'], 2, '.', ''),
-                            number_format((float) $row['active_project_budgets'], 2, '.', ''),
-                            number_format((float) $row['time_revenue'], 2, '.', ''),
+                            number_format((float) $row['project_revenue'], 2, '.', ''),
                             number_format((float) $row['hourly_profit'], 2, '.', ''),
+                            number_format((float) $row['project_direct_cost'], 2, '.', ''),
+                            number_format((float) $row['salary_cost'], 2, '.', ''),
+                            number_format((float) $row['fixed_cost'], 2, '.', ''),
                             number_format((float) $row['operational_result'], 2, '.', ''),
                             number_format((float) $row['controlling_overhead'], 2, '.', ''),
                             number_format((float) $row['controlling_result'], 2, '.', ''),
