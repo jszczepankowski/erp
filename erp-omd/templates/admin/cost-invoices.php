@@ -235,7 +235,12 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                     <?php foreach ($projects as $project) : ?>
                                         <?php $project_id = (int) ($project['id'] ?? 0); ?>
                                         <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
-                                        <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($invoice_form['project_id'] ?? 0), $project_id); ?>><?php echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '')); ?></option>
+                                        <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($invoice_form['project_id'] ?? 0), $project_id); ?>><?php
+                                            $project_start_label = (string) ($project['start_date'] ?? '');
+                                            $project_end_label = (string) ($project['end_date'] ?? '');
+                                            $project_date_range = trim(($project_start_label !== '' ? $project_start_label : '??') . ' - ' . ($project_end_label !== '' ? $project_end_label : '??'));
+                                            echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '') . ' (' . $project_date_range . ' | ' . (string) ($project['billing_type'] ?? '') . ')');
+                                        ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -409,11 +414,11 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     </a>
                 <?php endforeach; ?>
             </div>
-            <form method="post">
+            <form method="post" id="erp-omd-bulk-cost-invoices-form">
                 <?php wp_nonce_field('erp_omd_bulk_cost_invoices'); ?>
                 <input type="hidden" name="erp_omd_action" value="bulk_cost_invoices" />
                 <p>
-                    <select name="bulk_action">
+                    <select name="bulk_action" form="erp-omd-bulk-cost-invoices-form">
                         <option value=""><?php esc_html_e('Akcje zbiorowe', 'erp-omd'); ?></option>
                         <option value="delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></option>
                         <option value="status_zaimportowana"><?php esc_html_e('Status: zaimportowana', 'erp-omd'); ?></option>
@@ -422,8 +427,9 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                         <option value="status_przypisana"><?php esc_html_e('Status: przypisana', 'erp-omd'); ?></option>
                         <option value="status_nieistotne"><?php esc_html_e('Status: nieistotne', 'erp-omd'); ?></option>
                     </select>
-                    <button type="submit" class="button button-secondary"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
+                    <button type="submit" class="button button-secondary" form="erp-omd-bulk-cost-invoices-form"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
                 </p>
+            </form>
             <table class="widefat striped">
                 <thead>
                     <tr>
@@ -437,7 +443,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     <?php foreach ($cost_invoices as $invoice) : ?>
                         <?php $invoice_id = (int) ($invoice['id'] ?? 0); ?>
                         <tr>
-                            <td><input type="checkbox" class="cost-invoice-checkbox" name="cost_invoice_ids[]" value="<?php echo esc_attr((string) $invoice_id); ?>" /></td>
+                            <td><input type="checkbox" class="cost-invoice-checkbox" name="cost_invoice_ids[]" value="<?php echo esc_attr((string) $invoice_id); ?>" form="erp-omd-bulk-cost-invoices-form" /></td>
                             <td><?php echo esc_html((string) $invoice_id); ?></td>
                             <td><?php echo esc_html((string) ($invoice['issue_date'] ?? '')); ?></td>
                             <td><?php echo esc_html((string) ($invoice['invoice_number'] ?? '')); ?></td>
@@ -462,7 +468,6 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            </form>
         </section>
     </section>
     <?php endif; ?>
@@ -570,21 +575,20 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         </div>
 
         <table class="widefat striped">
-            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Client ID', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Końcowa', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
             <tbody>
             <?php if (empty($ksef_sales_inbox)) : ?>
-                <tr><td colspan="9"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
+                <tr><td colspan="8"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
             <?php else : ?>
                 <?php foreach ((array) $ksef_sales_inbox as $sales_row) : ?>
                     <tr>
                         <?php $sales_client_id = (int) ($sales_row['client_id'] ?? 0); ?>
                         <td><?php echo esc_html((string) ((int) ($sales_row['id'] ?? 0))); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['invoice_number'] ?? '')); ?></td>
+                        <td><?php echo esc_html((string) ($sales_row['issue_date'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($client_name_by_id[$sales_client_id] ?? '—')); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['buyer_nip'] ?? '')); ?></td>
-                        <td><?php echo esc_html((string) $sales_client_id); ?></td>
                         <td><?php echo esc_html((string) ($project_name_by_id[(int) ($sales_row['project_id'] ?? 0)] ?? ('#' . (int) ($sales_row['project_id'] ?? 0)))); ?></td>
-                        <td><?php echo ((int) ($sales_row['is_final'] ?? 0) === 1) ? esc_html__('Tak', 'erp-omd') : esc_html__('Nie', 'erp-omd'); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['status'] ?? '')); ?></td>
                         <td>
                             <form method="post" style="display:flex;gap:6px;align-items:center;">
@@ -599,9 +603,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                         <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php if (! empty($final_invoice_project_ids[$project_id]) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
-                                        <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($sales_row['project_id'] ?? 0), $project_id); ?>>
-                                            <?php echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '')); ?>
-                                        </option>
+                                        <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($sales_row['project_id'] ?? 0), $project_id); ?>><?php echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '')); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <label style="display:flex;gap:3px;align-items:center;">
