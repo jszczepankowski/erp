@@ -112,59 +112,6 @@ class ERP_OMD_REST_API
         $this->register_project_routes();
         $this->register_time_routes();
         $this->register_report_routes();
-        if (false) {
-        register_rest_route('erp-omd/v1', '/periods', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => function () {
-                return rest_ensure_response($this->period_service->list_periods());
-            }, 'permission_callback' => [$this, 'can_access_reports']],
-        ]);
-        register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
-                $month = sanitize_text_field((string) $request['month']);
-                // Keep route regex broad to return explicit 422 from callback (instead of 404 route miss) for out-of-range months.
-                if (! $this->is_valid_month_string($month)) {
-                    return new WP_Error('erp_omd_period_month_invalid', __('Month must use YYYY-MM format.', 'erp-omd'), ['status' => 422]);
-                }
-                $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
-                $signals = $this->readiness_signals_for_month($month);
-                $checklist = $this->period_service->build_readiness_checklist($signals);
-                return rest_ensure_response([
-                    'period' => $period,
-                    'checklist' => $checklist,
-                    'readiness_signals' => [
-                        'time_entries_finalized' => (bool) ($signals['time_entries_finalized'] ?? false),
-                        'project_costs_verified' => (bool) ($signals['project_costs_verified'] ?? false),
-                        'project_client_completeness' => (bool) ($signals['project_client_completeness'] ?? false),
-                        'critical_settlement_locks' => (bool) ($signals['critical_settlement_locks'] ?? false),
-                    ],
-                    'readiness_meta' => (array) ($signals['_meta'] ?? []),
-                ]);
-            }, 'permission_callback' => [$this, 'can_access_reports']],
-        ]);
-        register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))/transition', [
-            ['methods' => WP_REST_Server::CREATABLE, 'callback' => function (WP_REST_Request $request) {
-                $month = sanitize_text_field((string) $request['month']);
-                // Keep route regex broad to return explicit 422 from callback (instead of 404 route miss) for out-of-range months.
-                if (! $this->is_valid_month_string($month)) {
-                    return new WP_Error('erp_omd_period_month_invalid', __('Month must use YYYY-MM format.', 'erp-omd'), ['status' => 422]);
-                }
-                $to_status = sanitize_text_field((string) $request->get_param('to_status'));
-                if (! in_array($to_status, [ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, ERP_OMD_Period_Service::STATUS_ZAMKNIETY], true)) {
-                    return new WP_Error('erp_omd_period_transition_invalid', __('Invalid target period status.', 'erp-omd'), ['status' => 422]);
-                }
-
-                try {
-                    $result = $this->period_service->transition_month($month, $to_status, $this->readiness_signals_for_month($month));
-                } catch (InvalidArgumentException $exception) {
-                    return new WP_Error('erp_omd_period_transition_blocked', $exception->getMessage(), ['status' => 422]);
-                } catch (RuntimeException $exception) {
-                    return new WP_Error('erp_omd_period_transition_failed', $exception->getMessage(), ['status' => 500]);
-                }
-
-                return rest_ensure_response($result);
-            }, 'permission_callback' => [$this, 'can_manage_settings']],
-        ]);
-        }
         register_rest_route('erp-omd/v1', '/adjustments', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
                 $limit = (int) $request->get_param('limit');
