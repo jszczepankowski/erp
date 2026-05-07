@@ -21,6 +21,11 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 $decision = sanitize_key((string) wp_unslash($_POST['decision'] ?? ''));
                 $comment = sanitize_textarea_field((string) wp_unslash($_POST['comment'] ?? ''));
                 $note = sanitize_textarea_field((string) wp_unslash($_POST['note'] ?? ''));
+                $delivery_other = ! empty($_POST['delivery_other']) ? 1 : 0;
+                $delivery_address = sanitize_textarea_field((string) wp_unslash($_POST['delivery_address'] ?? ''));
+                $preferred_delivery_date = sanitize_text_field((string) wp_unslash($_POST['preferred_delivery_date'] ?? ''));
+                $invoice_other_entity = ! empty($_POST['invoice_other_entity']) ? 1 : 0;
+                $invoice_nip = sanitize_text_field((string) wp_unslash($_POST['invoice_nip'] ?? ''));
                 $selected_decision = in_array($decision, ['accept', 'reject'], true) ? $decision : 'accept';
                 $comment_value = $comment;
                 $note_value = $note;
