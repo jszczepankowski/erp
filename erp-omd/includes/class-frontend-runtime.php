@@ -373,6 +373,39 @@ class ERP_OMD_Frontend
         $client_project_requests = $client_id > 0
             ? (array) $this->project_requests->all(['client_id' => $client_id])
             : [];
+        $client_estimates = $client_id > 0
+            ? array_values(
+                array_filter(
+                    (array) $this->estimates->all(),
+                    static function ($estimate_row) use ($client_id) {
+                        return (int) ($estimate_row['client_id'] ?? 0) === (int) $client_id;
+                    }
+                )
+            )
+            : [];
+        foreach ($client_estimates as &$client_estimate_row) {
+            $estimate_id = (int) ($client_estimate_row['id'] ?? 0);
+            $estimate_items_rows = $estimate_id > 0 ? (array) $this->estimate_items->for_estimate($estimate_id) : [];
+            $client_estimate_row['items_count'] = count($estimate_items_rows);
+            $client_estimate_row['totals'] = $this->estimate_service->calculate_totals($estimate_items_rows);
+            $client_estimate_row['items'] = $estimate_items_rows;
+        }
+        unset($client_estimate_row);
+        $selected_client_estimate_id = (int) ($_GET['estimate_id'] ?? 0);
+        $visible_client_estimate_ids = array_map('intval', wp_list_pluck($client_estimates, 'id'));
+        if ($selected_client_estimate_id > 0 && ! in_array($selected_client_estimate_id, $visible_client_estimate_ids, true)) {
+            $selected_client_estimate_id = 0;
+        }
+        if ($selected_client_estimate_id <= 0) {
+            $selected_client_estimate_id = (int) ($client_estimates[0]['id'] ?? 0);
+        }
+        $selected_client_estimate = null;
+        foreach ($client_estimates as $client_estimate_row) {
+            if ((int) ($client_estimate_row['id'] ?? 0) === $selected_client_estimate_id) {
+                $selected_client_estimate = $client_estimate_row;
+                break;
+            }
+        }
         $selected_client_request_id = (int) ($_GET['request_id'] ?? 0);
         $selected_client_request = null;
         if ($selected_client_request_id > 0) {
@@ -680,6 +713,23 @@ class ERP_OMD_Frontend
         }
         if ($action === 'create_project_note') {
             $this->create_client_project_note($user);
+            return;
+        }
+        if ($action === 'accept_client_estimate') {
+            $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+            $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+            $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
+            if (! $estimate || (int) ($estimate['client_id'] ?? 0) !== $client_id) {
+                $this->redirect_client_with_notice('error', __('Nie znaleziono kosztorysu przypisanego do Twojego konta.', 'erp-omd'));
+            }
+            if ((string) ($estimate['status'] ?? '') === 'zaakceptowany') {
+                $this->redirect_client_with_notice('info', __('Ten kosztorys jest już zaakceptowany.', 'erp-omd'));
+            }
+            $result = $this->estimate_service->accept($estimate_id);
+            if ($result instanceof WP_Error) {
+                $this->redirect_client_with_notice('error', $result->get_error_message());
+            }
+            $this->redirect_client_with_notice('success', __('Kosztorys został zaakceptowany.', 'erp-omd'));
             return;
         }
         if ($action === 'delete_project_attachment') {
