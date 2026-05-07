@@ -346,7 +346,7 @@ if (! class_exists('ERP_OMD_Project_Repository')) {
             return [
                 ['id' => 10, 'client_id' => 1, 'name' => 'Projekt A', 'status' => 'w_realizacji', 'start_date' => '2026-03-01', 'end_date' => '2026-03-31'],
                 ['id' => 11, 'client_id' => 0, 'name' => '', 'status' => 'do_rozpoczecia', 'start_date' => '2026-05-01', 'end_date' => '2026-05-31'],
-                ['id' => 12, 'client_id' => 0, 'name' => '', 'status' => 'do_rozpoczecia', 'operational_close_month' => '2026-03', 'start_date' => '', 'end_date' => ''],
+                ['id' => 12, 'client_id' => 0, 'name' => '', 'status' => 'do_rozpoczecia', 'start_date' => '', 'end_date' => ''],
             ];
         }
         public function find($id) { return ['id' => $id, 'client_id' => 1]; }
@@ -640,7 +640,7 @@ final class RestApiTestRunner
         $this->assertSame(0, (int) preg_match_all('/function\s+adjustments_create_endpoint_v1\s*\(/', (string) $restApiSource), 'REST API source should not declare adjustments_create_endpoint_v1 as a class method.');
 
         $periodRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/periods/", (string) $restApiSource);
-        $this->assertSame(3, (int) $periodRouteCount, 'REST API source should register all three period routes directly in register_routes.');
+        $this->assertSame(0, (int) $periodRouteCount, 'REST API source should not register legacy period routes.');
         $adjustmentsRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/adjustments'/", (string) $restApiSource);
         $this->assertSame(1, (int) $adjustmentsRouteCount, 'REST API source should register adjustments route directly in register_routes.');
         $dashboardRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/dashboard-v1'/", (string) $restApiSource);
@@ -676,7 +676,6 @@ final class RestApiTestRunner
             new ERP_OMD_Project_Financial_Service(),
             new ERP_OMD_Reporting_Service(),
             new ERP_OMD_Alert_Service(),
-            new ERP_OMD_Period_Service(),
             new ERP_OMD_Adjustment_Audit_Repository()
         );
 
@@ -745,31 +744,6 @@ final class RestApiTestRunner
         $this->assertSame(false, in_array('Sustained drift detected: execute rollback/tuning playbook for Reports v1 thresholds and heavy report paths.', $system['feature_flags']['reports_v1_operational_status']['recommended_actions'], true), 'Operational status should avoid rollback recommendation when sustained drift is not present.');
 
         $api->register_routes();
-        $periodStatusCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', WP_REST_Server::READABLE);
-        $periodStatusPayload = $periodStatusCallback(new WP_REST_Request(['month' => '2026-03']));
-        $this->assertSame(false, $periodStatusPayload['checklist']['ready'], 'Period status endpoint should expose non-ready checklist for month with submitted entries.');
-        $this->assertSame(true, in_array('time_entries_finalized', $periodStatusPayload['checklist']['blockers'], true), 'Period status endpoint should include time_entries_finalized as a blocker.');
-        $this->assertSame(false, $periodStatusPayload['checklist']['checks']['project_client_completeness'], 'Checklist should validate client completeness for projects explicitly closed operationally in selected month.');
-        $this->assertSame(true, in_array('project_client_completeness', $periodStatusPayload['checklist']['blockers'], true), 'Checklist should flag project_client_completeness when operationally-closed project data is incomplete.');
-        $this->assertSame(false, $periodStatusPayload['readiness_signals']['time_entries_finalized'], 'Period status endpoint should expose normalized readiness_signals.');
-        $this->assertSame(1, $periodStatusPayload['readiness_meta']['submitted_or_rejected_entries'], 'Readiness meta should count blocking submitted/rejected entries in selected month.');
-        $this->assertSame(0, $periodStatusPayload['readiness_meta']['relevant_projects_without_cost_rows'], 'Readiness meta should expose count of relevant projects missing cost rows.');
-        $this->assertSame(2, $periodStatusPayload['readiness_meta']['relevant_projects'], 'Readiness meta should count projects relevant for selected month closure.');
-        $periodStatusInvalidMonth = $periodStatusCallback(new WP_REST_Request(['month' => '2026-13']));
-        $this->assertSame('erp_omd_period_month_invalid', $periodStatusInvalidMonth->get_error_code(), 'Period status endpoint should reject out-of-range month values.');
-
-        $transitionCallback = $this->findRouteCallback('/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))/transition', WP_REST_Server::CREATABLE);
-        $transitionBlocked = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'DO_ROZLICZENIA']));
-        $this->assertSame('erp_omd_period_transition_blocked', $transitionBlocked->get_error_code(), 'Transition endpoint should block LIVE -> DO_ROZLICZENIA when checklist is not ready.');
-        $transitionInvalidMonth = $transitionCallback(new WP_REST_Request(['month' => '2026-13', 'to_status' => 'DO_ROZLICZENIA']));
-        $this->assertSame('erp_omd_period_month_invalid', $transitionInvalidMonth->get_error_code(), 'Transition endpoint should reject out-of-range month values.');
-
-        $transitionInvalid = $transitionCallback(new WP_REST_Request(['month' => '2026-03', 'to_status' => 'LIVE']));
-        $this->assertSame('erp_omd_period_transition_invalid', $transitionInvalid->get_error_code(), 'Transition endpoint should reject unsupported target statuses.');
-        $transitionReady = $transitionCallback(new WP_REST_Request(['month' => '2026-04', 'to_status' => 'DO_ROZLICZENIA']));
-        $this->assertSame('DO_ROZLICZENIA', $transitionReady['period']['status'], 'Transition endpoint should allow LIVE -> DO_ROZLICZENIA for ready month.');
-        $transitionClosed = $transitionCallback(new WP_REST_Request(['month' => '2026-04', 'to_status' => 'ZAMKNIETY']));
-        $this->assertSame('ZAMKNIETY', $transitionClosed['period']['status'], 'Transition endpoint should allow DO_ROZLICZENIA -> ZAMKNIETY.');
 
         $adjustmentsCallback = $this->findRouteCallback('/adjustments', WP_REST_Server::READABLE);
         $filteredAdjustments = $adjustmentsCallback(new WP_REST_Request([
@@ -796,13 +770,8 @@ final class RestApiTestRunner
         $this->assertSame(1, $dashboardPayload['applied_limits']['profitability_items'], 'Dashboard endpoint should expose applied profitability item limit.');
         $this->assertSame('2026-03', $dashboardPayload['month'], 'Dashboard endpoint should preserve explicit month filter.');
         $this->assertSame('ZAMKNIETY', $dashboardPayload['mode'], 'Dashboard endpoint should expose applied reporting mode.');
-        $this->assertSame('LIVE', $dashboardPayload['period_status'], 'Dashboard endpoint should expose raw period status value.');
-        $this->assertSame('LIVE', $dashboardPayload['period_status_label'], 'Dashboard endpoint should expose user-facing period status label without underscores.');
-        $this->assertSame(false, $dashboardPayload['readiness_checklist']['ready'], 'Dashboard endpoint should expose readiness checklist snapshot for selected month.');
+        $this->assertSame(true, $dashboardPayload['readiness_checklist']['ready'], 'Dashboard endpoint should expose readiness checklist snapshot for selected month.');
         $this->assertSame(1, $dashboardPayload['readiness_meta']['submitted_or_rejected_entries'], 'Dashboard readiness meta should expose submitted/rejected entry counter.');
-        $this->assertSame('DO_ROZLICZENIA', $dashboardPayload['status_actions'][0]['to_status'], 'Dashboard endpoint should expose next status action for current month.');
-        $this->assertSame('DO ROZLICZENIA', $dashboardPayload['status_actions'][0]['to_status_label'], 'Dashboard status actions should expose user-facing labels without underscores.');
-        $this->assertSame(false, $dashboardPayload['status_actions'][0]['enabled'], 'Dashboard status action should be disabled when checklist is not ready.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['trend_3m']), 'Dashboard endpoint should expose metric definitions for frontend tooltip rendering.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['readiness_checklist.ready']), 'Dashboard endpoint should expose readiness definition tooltip key.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['data_health.has_operational_data']), 'Dashboard endpoint should expose data_health definition tooltip key.');

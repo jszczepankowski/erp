@@ -558,15 +558,23 @@ class ERP_OMD_Installer
         );
 
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -591,46 +599,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -655,46 +641,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -719,46 +683,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -783,46 +725,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -847,46 +767,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -911,46 +809,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -975,46 +851,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1039,46 +893,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1103,46 +935,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1167,46 +977,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1231,46 +1019,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1295,46 +1061,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1359,46 +1103,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1423,49 +1145,6 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
         dbDelta(
             "CREATE TABLE {$adjustment_audit_table} (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1485,932 +1164,6 @@ class ERP_OMD_Installer
                 KEY adjustment_type (adjustment_type),
                 KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        self::add_column_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD COLUMN operational_close_month CHAR(7) NULL AFTER end_date");
-        self::add_index_if_missing($projects_table, 'operational_close_month', "ALTER TABLE {$projects_table} ADD INDEX operational_close_month (operational_close_month)");
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        // Backfill operational_close_month for historical projects:
-        // 1) prefer end_date month when available
-        // 2) fallback to updated_at month for closed/invoice-ready projects
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(end_date, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND end_date IS NOT NULL
-              AND end_date != '0000-00-00'"
-        );
-        $wpdb->query(
-            "UPDATE {$projects_table}
-            SET operational_close_month = DATE_FORMAT(updated_at, '%Y-%m')
-            WHERE (operational_close_month IS NULL OR operational_close_month = '')
-              AND status IN ('do_faktury', 'zakonczony')
-              AND updated_at IS NOT NULL"
         );
 
         self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_employees_default_role', "ALTER TABLE {$employees_table} ADD CONSTRAINT fk_erp_omd_employees_default_role FOREIGN KEY (default_role_id) REFERENCES {$roles_table}(id) ON DELETE SET NULL");
