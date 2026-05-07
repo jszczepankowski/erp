@@ -2784,6 +2784,10 @@ class ERP_OMD_Installer
             )
         );
 
+        self::drop_index_if_exists($projects_table, 'operational_close_month');
+        self::drop_column_if_exists($projects_table, 'operational_close_month');
+        self::drop_table_if_exists($periods_table);
+
         update_option('erp_omd_db_version', ERP_OMD_DB_VERSION);
         add_option('erp_omd_delete_data_on_uninstall', false);
         add_option('erp_omd_alert_margin_threshold', 10);
@@ -2930,6 +2934,61 @@ class ERP_OMD_Installer
 
         if (! $exists) {
             $wpdb->query($sql);
+        }
+    }
+
+    private static function drop_index_if_exists($table_name, $index_name)
+    {
+        global $wpdb;
+
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s LIMIT 1',
+                DB_NAME,
+                $table_name,
+                $index_name
+            )
+        );
+
+        if ($exists) {
+            $safe_index_name = str_replace('`', '``', (string) $index_name);
+            $wpdb->query("ALTER TABLE {$table_name} DROP INDEX `{$safe_index_name}`");
+        }
+    }
+
+    private static function drop_column_if_exists($table_name, $column_name)
+    {
+        global $wpdb;
+
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s LIMIT 1',
+                DB_NAME,
+                $table_name,
+                $column_name
+            )
+        );
+
+        if ($exists) {
+            $safe_column_name = str_replace('`', '``', (string) $column_name);
+            $wpdb->query("ALTER TABLE {$table_name} DROP COLUMN `{$safe_column_name}`");
+        }
+    }
+
+    private static function drop_table_if_exists($table_name)
+    {
+        global $wpdb;
+
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s LIMIT 1',
+                DB_NAME,
+                $table_name
+            )
+        );
+
+        if ($exists) {
+            $wpdb->query("DROP TABLE IF EXISTS {$table_name}");
         }
     }
 }
