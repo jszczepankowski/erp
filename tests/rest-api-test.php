@@ -87,27 +87,6 @@ if (! function_exists('get_option')) {
         $options = [
             'erp_omd_delete_data_on_uninstall' => false,
             'erp_omd_alert_margin_threshold' => 10,
-            'erp_omd_reports_v1_rollout' => 'off',
-            'erp_omd_reports_v1_last_metrics' => [
-                'generation_ms' => 42,
-                'rows_count' => 7,
-                'report_type' => 'projects',
-                'rollout' => 'all',
-                'enabled' => true,
-                'captured_at' => '2026-04-02T10:00:00+00:00',
-            ],
-            'erp_omd_reports_v1_metrics_log' => [
-                ['generation_ms' => 42, 'rows_count' => 7, 'report_type' => 'projects', 'rollout' => 'all', 'enabled' => true, 'captured_at' => '2026-04-02T10:00:00+00:00'],
-                ['generation_ms' => 55, 'rows_count' => 11, 'report_type' => 'time_entries', 'rollout' => 'admins', 'enabled' => true, 'captured_at' => '2026-04-02T09:00:00+00:00'],
-            ],
-            'erp_omd_reports_v1_slo_generation_p95_max' => 1800,
-            'erp_omd_reports_v1_slo_calibration_decision' => [
-                'decided_at' => '2026-04-02T12:30:00+00:00',
-                'decided_by_user_id' => 99,
-                'threshold_ms' => 1800,
-                'recommended_threshold_ms' => 500,
-                'sample_count' => 20,
-            ],
         ];
 
         return $options[$key] ?? $default;
@@ -643,50 +622,7 @@ final class RestApiTestRunner
         $system = $api->get_system_status();
         $this->assertSame(1, $system['counts']['alerts'], 'System status should include alert count.');
         $this->assertSame(true, $system['current_user']['can_manage_settings'], 'System status should expose current user capabilities.');
-        $this->assertSame('all', $system['feature_flags']['reports_v1_rollout'], 'System status should expose reports v1 rollout flag.');
-        $this->assertSame(true, $system['feature_flags']['reports_v1_enabled_for_current_user'], 'System status should expose reports v1 effective state for current user.');
-        $this->assertSame(42, $system['feature_flags']['reports_v1_last_metrics']['generation_ms'], 'System status should expose persisted reports v1 monitoring metrics.');
-        $this->assertSame('projects', $system['feature_flags']['reports_v1_last_metrics']['report_type'], 'System status should expose monitoring report type.');
-        $this->assertSame(2, count($system['feature_flags']['reports_v1_metrics_log']), 'System status should expose compact reports v1 metrics log.');
-        $this->assertSame('time_entries', $system['feature_flags']['reports_v1_metrics_log'][1]['report_type'], 'System status should preserve metrics log ordering for latest samples.');
-        $this->assertSame(false, $system['feature_flags']['reports_v1_metrics_log'][0]['has_error'], 'System status should expose error marker for reports monitoring samples.');
-        $this->assertSame(1800, $system['feature_flags']['reports_v1_slo']['generation_ms_p95_max'], 'System status should expose reports v1 SLO thresholds.');
-        $this->assertSame(1800, $system['feature_flags']['reports_v1_slo_decision']['threshold_ms'], 'System status should expose latest persisted SLO decision threshold.');
-        $this->assertSame('2026-04-02T12:30:00+00:00', $system['feature_flags']['reports_v1_slo_decision']['decided_at'], 'System status should expose timestamp of latest SLO decision.');
-        $this->assertSame(55, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95'], 'System status should expose computed p95 from compact metrics samples.');
-        $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_within_target'], 'System status should expose whether generation p95 is within target.');
-        $this->assertSame(20, $system['feature_flags']['reports_v1_slo_status']['sample_target_min'], 'System status should expose minimum sample target for SLO calibration.');
-        $this->assertSame('insufficient_samples', $system['feature_flags']['reports_v1_slo_status']['calibration_state'], 'System status should report calibration state when production sample count is too low.');
-        $this->assertSame(18, $system['feature_flags']['reports_v1_slo_status']['samples_missing_to_calibration'], 'System status should expose how many samples are missing to finalize calibration.');
-        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['calibration_decision_ready'], 'System status should expose whether SLO calibration decision can be finalized.');
-        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['calibration_closed'], 'System status should expose whether SLO calibration was formally closed.');
-        $this->assertSame('', $system['feature_flags']['reports_v1_slo_status']['calibration_closed_at'], 'System status should expose closure timestamp when calibration is formally closed.');
-        $this->assertSame('Collect 18 more samples to finalize calibration.', $system['feature_flags']['reports_v1_slo_status']['calibration_next_action'], 'System status should expose explicit next action for SLO calibration workflow.');
-        $this->assertSame(500, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_recommended_max'], 'System status should expose rounded recommended p95 target for calibration.');
-        $this->assertSame(1300, $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_threshold_delta'], 'System status should expose delta between current and recommended p95 threshold.');
-        $this->assertSame('decrease', $system['feature_flags']['reports_v1_slo_status']['generation_ms_p95_tuning_direction'], 'System status should expose tuning direction based on current vs recommended p95 threshold.');
-        $this->assertSame(3, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_window_size'], 'System status should expose window size used to evaluate sustained drift.');
-        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_evaluation_enabled'], 'System status should evaluate sustained drift only after formal calibration closure.');
-        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_generation_drift_detected'], 'System status should not flag sustained generation drift for healthy compact samples.');
-        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_error_drift_detected'], 'System status should not flag sustained error drift for healthy compact samples.');
-        $this->assertSame(false, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_detected'], 'System status should expose consolidated sustained drift marker.');
-        $this->assertSame(2, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_samples_evaluated'], 'System status should expose evaluated sample count for sustained drift telemetry.');
-        $this->assertSame(0, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_positive_samples'], 'System status should expose number of recent samples with drift symptoms.');
-        $this->assertSame(0.0, $system['feature_flags']['reports_v1_slo_status']['sustained_drift_positive_ratio_percent'], 'System status should expose percentage ratio of drift-positive samples.');
-        $this->assertSame('2026-04-02T10:00:00+00:00', $system['feature_flags']['reports_v1_slo_status']['sustained_drift_last_sample_at'], 'System status should expose timestamp of latest sample used by sustained drift telemetry.');
-        $this->assertSame('', $system['feature_flags']['reports_v1_slo_closure']['closed_at'], 'System status should expose empty closure payload when SLO calibration closure is not persisted yet.');
-        $this->assertSame(0.0, $system['feature_flags']['reports_v1_slo_status']['error_rate_percent'], 'System status should expose computed error rate percent from monitoring samples.');
-        $this->assertSame(true, $system['feature_flags']['reports_v1_slo_status']['error_rate_within_target'], 'System status should expose whether current error rate is within target.');
-        $this->assertSame(0, count($system['feature_flags']['reports_v1_slo_status']['missing_signals']), 'System status should clear missing signals when error rate telemetry is available.');
-        $this->assertSame(1440, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_minutes'], 'System status should expose configurable freshness threshold in minutes.');
-        $this->assertSame(86400, $system['feature_flags']['reports_v1_metrics_freshness']['threshold_seconds'], 'System status should expose configurable freshness threshold in seconds.');
-        $this->assertSame(0, $system['feature_flags']['reports_v1_metrics_freshness']['last_metrics_age_seconds'], 'System status should clamp future-captured metrics age to zero.');
-        $this->assertSame(true, $system['feature_flags']['reports_v1_metrics_freshness']['last_metrics_fresh_under_threshold'], 'System status should expose freshness signal for latest reports metrics.');
-        $this->assertSame('ok', $system['feature_flags']['reports_v1_operational_status']['level'], 'System status should expose actionable operational status for reports v1.');
-        $this->assertSame(false, $system['feature_flags']['reports_v1_operational_status']['requires_attention'], 'Operational status should remain green when monitoring signals are complete and fresh.');
-        $this->assertSame(0, count($system['feature_flags']['reports_v1_operational_status']['reasons']), 'Operational status should have no reasons when reports monitoring is healthy.');
-        $this->assertSame(false, in_array('sustained_drift_detected', $system['feature_flags']['reports_v1_operational_status']['reasons'], true), 'Operational status should avoid sustained drift reason for healthy samples.');
-        $this->assertSame(false, in_array('Sustained drift detected: execute rollback/tuning playbook for Reports v1 thresholds and heavy report paths.', $system['feature_flags']['reports_v1_operational_status']['recommended_actions'], true), 'Operational status should avoid rollback recommendation when sustained drift is not present.');
+        $this->assertSame(false, array_key_exists('feature_flags', $system), 'System status should no longer expose retired feature flag contracts.');
 
         $api->register_routes();
 

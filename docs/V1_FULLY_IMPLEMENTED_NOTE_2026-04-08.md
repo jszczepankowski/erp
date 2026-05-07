@@ -13,7 +13,6 @@ Wariant B w zakresie **v1 MUST baseline** uznajemy za **w pełni wdrożony**.
 - Bezpieczeństwo endpointów krytycznych: PASS.
 - Regresja migracyjna na staging: PASS.
 - Rollback drill przećwiczony i udokumentowany: PASS.
-- Przegląd SLO i matryca reakcji operacyjnej: PASS.
 - Dokumentacja końcowa (ETAP 4 / KROK 4.1) ujednolicona i spójna.
 
 ## 3) Source of truth
@@ -26,8 +25,6 @@ Wariant B w zakresie **v1 MUST baseline** uznajemy za **w pełni wdrożony**.
 - `docs/SECURITY_ENDPOINTS_TEST_REPORT_2026-04-08.md`
 - `docs/STAGING_MIGRATION_REGRESSION_REPORT_2026-04-08.md`
 - `docs/ROLLBACK_DRILL_REPORT_2026-04-08.md`
-- `docs/SLO_REVIEW_REPORT_2026-04-08.md`
-- `docs/OPERACYJNA_MATRYCA_REAKCJI_2026-04-08.md`
 
 ## 4) Zakres poza v1 (następny krok)
 

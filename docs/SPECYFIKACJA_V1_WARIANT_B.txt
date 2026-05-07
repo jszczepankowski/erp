@@ -534,7 +534,6 @@ R1.1 Backend fundament
 R1.2 Nowe API i feature flags
 - endpointy dashboard/raportów v1
 - feature flags:
-  - reports_v1_enabled
   - dashboard_v1_enabled
   - period_lock_enabled
 
@@ -565,7 +564,6 @@ R3.1 Przygotowanie (T-7 do T-1)
 
 R3.2 Przełączenie (T0)
 - Włączyć period_lock_enabled (najpierw).
-- Włączyć reports_v1_enabled dla adminów (canary).
 - Po walidacji: włączyć dla wszystkich.
 - Włączyć dashboard_v1_enabled.
 
@@ -583,7 +581,6 @@ Brak przestoju — wymagania techniczne
 
 Plan rollback (awaryjny)
 - Wyłączyć dashboard_v1_enabled.
-- Wyłączyć reports_v1_enabled.
 - Zostawić nowe tabele i logikę w trybie pasywnym.
 - Przywrócić stare widoki raportowe.
 - Przeanalizować dane i poprawić migrację bez downtime.
