@@ -252,7 +252,7 @@ Minimalne endpointy / akcje:
   - awaryjna
 - Raporty operacyjne:
   - klient / projekt / czas (simple/detail)
-  - filtr month, mode, client, project, employee, status.
+  - filtr month, client, project, employee, status.
 - Dashboard v1 payload.
 
 14. Kryteria akceptacji (UAT) (MUST)
@@ -264,7 +264,7 @@ Minimalne endpointy / akcje:
 - Wynik miesiąca opiera się o:
   - entry_date (approved time),
   - operational_close_month (budżet).
-- Raporty klient/projekt/czas działają w trybach LIVE/DO ROZLICZENIA/ZAMKNIĘTY.
+- Raporty klient/projekt/czas działają na aktywnych filtrach raportowych bez dodatkowego filtra trybu okresu.
 - Raport projektowy zawiera koszty projektu.
 - Dashboard pokazuje trend 3M i ranking klient/projekt (przełącznik).
 - OMD rozliczenia działa jako warstwa controllingowa.
@@ -362,7 +362,6 @@ Story E4-S1: Raport per klient (simple + detail)
 Taski:
 - API summary klienta.
 - API drilldown klient -> projekt -> pozycje.
-- Filtry trybu: LIVE/DO ROZLICZENIA/ZAMKNIĘTY.
 - Eksport CSV/XLS.
 
 Story E4-S2: Raport per projekt (simple + detail, z kosztami projektu)
@@ -460,7 +459,7 @@ UAT-D4: Korekty
 Ekran 2: Raport per klient
 UAT-C1: Widok prosty
 - Kolumny: godziny, przychód, koszt, zysk, marża, liczba projektów.
-- Filtry miesiąca i trybu działają poprawnie.
+- Filtr miesiąca działa poprawnie.
 - Sumy zgadzają się z drilldown.
 
 UAT-C2: Widok szczegółowy

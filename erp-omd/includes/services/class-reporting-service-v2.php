@@ -59,11 +59,6 @@ class ERP_OMD_Reporting_Service
             $status = '';
         }
 
-        $mode = strtoupper(sanitize_text_field((string) ($raw_filters['mode'] ?? 'LIVE')));
-        if (! in_array($mode, ['LIVE', 'DO_ROZLICZENIA', 'ZAMKNIETY'], true)) {
-            $mode = 'LIVE';
-        }
-
         $detail = sanitize_key((string) ($raw_filters['detail'] ?? 'simple'));
         if (! in_array($detail, ['simple', 'detail'], true)) {
             $detail = 'simple';
@@ -83,7 +78,6 @@ class ERP_OMD_Reporting_Service
             'project_id' => (int) ($raw_filters['project_id'] ?? 0),
             'employee_id' => (int) ($raw_filters['employee_id'] ?? 0),
             'status' => $status,
-            'mode' => $mode,
             'detail' => $detail,
             'month' => $month,
             'report_type' => $report_type,
@@ -911,14 +905,6 @@ class ERP_OMD_Reporting_Service
                 && $this->isProjectStatusFilter($filters['status'])
                 && (string) ($project['status'] ?? '') !== $filters['status']
             ) {
-                return false;
-            }
-
-            $project_status = (string) ($project['status'] ?? '');
-            if (($filters['mode'] ?? 'LIVE') === 'DO_ROZLICZENIA' && ! in_array($project_status, ['do_faktury', 'zakonczony'], true)) {
-                return false;
-            }
-            if (($filters['mode'] ?? 'LIVE') === 'ZAMKNIETY' && ! in_array($project_status, ['zakonczony', 'archiwum'], true)) {
                 return false;
             }
 

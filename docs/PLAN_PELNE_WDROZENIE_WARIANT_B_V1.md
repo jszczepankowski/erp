@@ -35,7 +35,6 @@ Legenda: ✅ gotowe, 🟡 częściowo, ❌ brak.
 ### D. Raporty operacyjne (SPEC rozdz. 7.1, 9)
 - ✅ Raport klient/projekt/czas (simple/detail), drilldown oraz paginacja działają.
 - ✅ Eksport CSV 1:1 z aktywnymi filtrami jest wdrożony.
-- ✅ Tryby `mode` (LIVE/DO_ROZLICZENIA/ZAMKNIETY) są spięte z raportowaniem.
 - 🟡 Brakuje formalnego „UAT pass” udokumentowanego w jednym artefakcie per ekran i per scenariusz graniczny.
 
 ### E. Dashboard v1 i OMD (SPEC rozdz. 7.2, 8)

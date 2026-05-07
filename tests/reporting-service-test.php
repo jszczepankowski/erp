@@ -240,8 +240,10 @@ final class ReportingServiceTestRunner
         $this->assertSame(1, count($invoiceStatusProjectReport), 'Project status filter should narrow projects by lifecycle status.');
         $this->assertSame('Branding', $invoiceStatusProjectReport[0]['project_name'], 'Project status filter should keep matching project rows.');
 
-        $settlementModeReport = $service->build_project_report($service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'mode' => 'DO_ROZLICZENIA']));
-        $this->assertSame(1, count($settlementModeReport), 'DO ROZLICZENIA mode should keep invoice-ready/closed projects only.');
+        $modeIgnoredFilters = $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'mode' => 'DO_ROZLICZENIA']);
+        $this->assertSame(false, array_key_exists('mode', $modeIgnoredFilters), 'Reporting filters should not expose mode after mode cleanup.');
+        $modeIgnoredReport = $service->build_project_report($modeIgnoredFilters);
+        $this->assertSame(2, count($modeIgnoredReport), 'Mode parameter should no longer narrow project reports.');
 
         $projectDetail = $service->build_project_report($service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'detail' => 'detail', 'project_id' => 10]));
         $this->assertSame(1, count($projectDetail), 'Project detail report should respect project filter.');

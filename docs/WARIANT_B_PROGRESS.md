@@ -46,7 +46,6 @@ Następny krok wg planu: **utrzymanie/stabilizacja** (monitoring operacyjny + de
   - limity payloadu (`adjustments_limit`, `queue_limit`, `profitability_limit`) i `applied_limits`.
 
 ### Reporting i statusy domenowe
-- [x] Reporting: dodany `mode` (`LIVE`, `DO ROZLICZENIA`, `ZAMKNIETY`).
 - [x] Reporting: domyślnie approved-only dla time entries.
 - [x] Reporting: obsługa `archiwum`.
 - [x] Reporting/eksport projektów: kolumna `operational_close_month` (Miesiąc zamk. oper.).
