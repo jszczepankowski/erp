@@ -24,7 +24,6 @@ class ERP_OMD_REST_API
     private $project_financial_service;
     private $reporting_service;
     private $alert_service;
-    private $period_service;
     private $adjustment_audit;
     private $suppliers;
     private $cost_invoices;
@@ -58,7 +57,6 @@ class ERP_OMD_REST_API
         ERP_OMD_Project_Financial_Service $project_financial_service,
         ERP_OMD_Reporting_Service $reporting_service,
         ERP_OMD_Alert_Service $alert_service,
-        $period_service = null,
         $adjustment_audit_repository = null
 
     ) {
@@ -84,7 +82,6 @@ class ERP_OMD_REST_API
         $this->project_financial_service = $project_financial_service;
         $this->reporting_service = $reporting_service;
         $this->alert_service = $alert_service;
-        $this->period_service = $period_service ?: new ERP_OMD_Period_Service(new ERP_OMD_Period_Repository());
         $this->adjustment_audit = $adjustment_audit_repository ?: new ERP_OMD_Adjustment_Audit_Repository();
         $this->suppliers = class_exists('ERP_OMD_Supplier_Repository') ? new ERP_OMD_Supplier_Repository() : null;
         $this->cost_invoices = class_exists('ERP_OMD_Cost_Invoice_Repository') ? new ERP_OMD_Cost_Invoice_Repository() : null;
@@ -112,57 +109,6 @@ class ERP_OMD_REST_API
         $this->register_project_routes();
         $this->register_time_routes();
         $this->register_report_routes();
-        register_rest_route('erp-omd/v1', '/periods', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => function () {
-                return rest_ensure_response($this->period_service->list_periods());
-            }, 'permission_callback' => [$this, 'can_access_reports']],
-        ]);
-        register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
-                $month = sanitize_text_field((string) $request['month']);
-                // Keep route regex broad to return explicit 422 from callback (instead of 404 route miss) for out-of-range months.
-                if (! $this->is_valid_month_string($month)) {
-                    return new WP_Error('erp_omd_period_month_invalid', __('Month must use YYYY-MM format.', 'erp-omd'), ['status' => 422]);
-                }
-                $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
-                $signals = $this->readiness_signals_for_month($month);
-                $checklist = $this->period_service->build_readiness_checklist($signals);
-                return rest_ensure_response([
-                    'period' => $period,
-                    'checklist' => $checklist,
-                    'readiness_signals' => [
-                        'time_entries_finalized' => (bool) ($signals['time_entries_finalized'] ?? false),
-                        'project_costs_verified' => (bool) ($signals['project_costs_verified'] ?? false),
-                        'project_client_completeness' => (bool) ($signals['project_client_completeness'] ?? false),
-                        'critical_settlement_locks' => (bool) ($signals['critical_settlement_locks'] ?? false),
-                    ],
-                    'readiness_meta' => (array) ($signals['_meta'] ?? []),
-                ]);
-            }, 'permission_callback' => [$this, 'can_access_reports']],
-        ]);
-        register_rest_route('erp-omd/v1', '/periods/(?P<month>\\d{4}-(0[1-9]|1[0-2]))/transition', [
-            ['methods' => WP_REST_Server::CREATABLE, 'callback' => function (WP_REST_Request $request) {
-                $month = sanitize_text_field((string) $request['month']);
-                // Keep route regex broad to return explicit 422 from callback (instead of 404 route miss) for out-of-range months.
-                if (! $this->is_valid_month_string($month)) {
-                    return new WP_Error('erp_omd_period_month_invalid', __('Month must use YYYY-MM format.', 'erp-omd'), ['status' => 422]);
-                }
-                $to_status = sanitize_text_field((string) $request->get_param('to_status'));
-                if (! in_array($to_status, [ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, ERP_OMD_Period_Service::STATUS_ZAMKNIETY], true)) {
-                    return new WP_Error('erp_omd_period_transition_invalid', __('Invalid target period status.', 'erp-omd'), ['status' => 422]);
-                }
-
-                try {
-                    $result = $this->period_service->transition_month($month, $to_status, $this->readiness_signals_for_month($month));
-                } catch (InvalidArgumentException $exception) {
-                    return new WP_Error('erp_omd_period_transition_blocked', $exception->getMessage(), ['status' => 422]);
-                } catch (RuntimeException $exception) {
-                    return new WP_Error('erp_omd_period_transition_failed', $exception->getMessage(), ['status' => 500]);
-                }
-
-                return rest_ensure_response($result);
-            }, 'permission_callback' => [$this, 'can_manage_settings']],
-        ]);
         register_rest_route('erp-omd/v1', '/adjustments', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => function (WP_REST_Request $request) {
                 $limit = (int) $request->get_param('limit');
@@ -226,8 +172,8 @@ class ERP_OMD_REST_API
                     $scope = 'project';
                 }
                 $mode = sanitize_text_field((string) $request->get_param('mode'));
-                if (! in_array($mode, [ERP_OMD_Period_Service::STATUS_LIVE, ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, ERP_OMD_Period_Service::STATUS_ZAMKNIETY], true)) {
-                    $mode = ERP_OMD_Period_Service::STATUS_LIVE;
+                if (! in_array($mode, ['LIVE', 'DO_ROZLICZENIA', 'ZAMKNIETY'], true)) {
+                    $mode = 'LIVE';
                 }
                 $adjustments_limit = (int) $request->get_param('adjustments_limit');
                 if ($adjustments_limit <= 0) {
@@ -251,9 +197,9 @@ class ERP_OMD_REST_API
                     $profitability_limit = 20;
                 }
 
-                $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
                 $readiness_signals = $this->readiness_signals_for_month($month);
-                $readiness_checklist = $this->period_service->build_readiness_checklist($readiness_signals);
+                $period = ['month' => $month, 'status' => 'LIVE'];
+                $readiness_checklist = ['ready' => true, 'items' => []];
                 $trend = $this->reporting_service->build_report('omd_rozliczenia', ['month' => $month, 'report_type' => 'omd_rozliczenia', 'mode' => $mode]);
                 $trend_3m = array_slice((array) $trend, -3);
                 $project_rows = $this->reporting_service->build_project_report(['month' => $month, 'report_type' => 'projects', 'mode' => $mode]);
@@ -308,8 +254,8 @@ class ERP_OMD_REST_API
                     ],
                     'month' => $month,
                     'mode' => $mode,
-                    'period_status' => (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE),
-                    'period_status_label' => $this->format_period_status_label((string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE)),
+                    'period_status' => (string) ($period['status'] ?? 'LIVE'),
+                    'period_status_label' => 'LIVE',
                     'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,
                     'readiness_meta' => $readiness_meta,
@@ -320,7 +266,7 @@ class ERP_OMD_REST_API
                             ? __('Dashboard data loaded from current reporting sources.', 'erp-omd')
                             : __('No operational data found for this month. Add time entries/project costs or switch month/mode.', 'erp-omd'),
                     ],
-                    'status_actions' => $this->dashboard_status_actions($period, $readiness_checklist),
+                    'status_actions' => [],
                     'metric_definitions' => $this->dashboard_metric_definitions(),
                     'drilldown_links' => $this->dashboard_drilldown_links($month),
                     'trend_3m' => $trend_3m,
@@ -493,53 +439,6 @@ class ERP_OMD_REST_API
                 'drilldown_link' => $drilldown_link,
             ];
         }, array_slice($rows, 0, max(1, (int) $limit)));
-    }
-
-    private function dashboard_status_actions(array $period, array $checklist)
-    {
-        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
-        $can_manage_settings = $this->can_manage_settings();
-        $targets = [
-            ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA,
-            ERP_OMD_Period_Service::STATUS_ZAMKNIETY,
-        ];
-
-        $actions = [];
-        foreach ($targets as $target_status) {
-            $can_transition = $this->period_service->can_transition($status, $target_status);
-            if (! $can_transition) {
-                continue;
-            }
-
-            $enabled = true;
-            $reason = '';
-            if (! $can_manage_settings) {
-                $enabled = false;
-                $reason = __('Status transition requires erp_omd_manage_settings capability.', 'erp-omd');
-            }
-            if (
-                $status === ERP_OMD_Period_Service::STATUS_LIVE
-                && $target_status === ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA
-                && ! (bool) ($checklist['ready'] ?? false)
-            ) {
-                $enabled = false;
-                $reason = __('LIVE -> DO ROZLICZENIA requires readiness checklist == ready.', 'erp-omd');
-            }
-
-            $actions[] = [
-                'to_status' => $target_status,
-                'to_status_label' => $this->format_period_status_label($target_status),
-                'enabled' => $enabled,
-                'reason' => $reason,
-            ];
-        }
-
-        return $actions;
-    }
-
-    private function format_period_status_label($status)
-    {
-        return trim(str_replace('_', ' ', (string) $status));
     }
 
     private function register_role_routes()
@@ -1667,7 +1566,7 @@ class ERP_OMD_REST_API
     private function sanitize_ksef_document_payload($document) { $document = is_array($document) ? $document : []; return ['supplier_id' => (int) ($document['supplier_id'] ?? 0), 'project_id' => (int) ($document['project_id'] ?? 0), 'invoice_number' => sanitize_text_field((string) ($document['invoice_number'] ?? '')), 'issue_date' => sanitize_text_field((string) ($document['issue_date'] ?? '')), 'net_amount' => (float) ($document['net_amount'] ?? 0), 'vat_amount' => (float) ($document['vat_amount'] ?? 0), 'gross_amount' => (float) ($document['gross_amount'] ?? 0), 'items' => $this->sanitize_cost_invoice_items((array) ($document['items'] ?? [])), 'ksef_reference_number' => sanitize_text_field((string) ($document['ksef_reference_number'] ?? '')), 'buyer_nip' => sanitize_text_field((string) ($document['buyer_nip'] ?? $document['nabywca_nip'] ?? '')), 'seller_nip' => sanitize_text_field((string) ($document['seller_nip'] ?? $document['sprzedawca_nip'] ?? '')), 'our_company_nip' => sanitize_text_field((string) ($document['our_company_nip'] ?? $document['company_nip'] ?? get_option('erp_omd_company_nip', '')))]; }
     private function sanitize_estimate_payload(WP_REST_Request $request, array $existing = null) { return ['client_id' => (int) ($request->get_param('client_id') ?: ($existing['client_id'] ?? 0)), 'name' => sanitize_text_field((string) ($request->get_param('name') ?: ($existing['name'] ?? ''))), 'status' => sanitize_text_field((string) ($request->get_param('status') ?: ($existing['status'] ?? 'wstepny'))) ?: 'wstepny', 'accepted_by_user_id' => (int) ($existing['accepted_by_user_id'] ?? 0), 'accepted_at' => $existing['accepted_at'] ?? null]; }
     private function sanitize_estimate_item_payload(WP_REST_Request $request, $estimate_id, array $existing = null) { return ['estimate_id' => (int) $estimate_id, 'name' => sanitize_text_field((string) ($request->get_param('name') ?: ($existing['name'] ?? ''))), 'qty' => (float) ($request->get_param('qty') !== null ? $request->get_param('qty') : ($existing['qty'] ?? 0)), 'price' => (float) ($request->get_param('price') !== null ? $request->get_param('price') : ($existing['price'] ?? 0)), 'cost_internal' => (float) ($request->get_param('cost_internal') !== null ? $request->get_param('cost_internal') : ($existing['cost_internal'] ?? 0)), 'comment' => sanitize_textarea_field((string) ($request->get_param('comment') !== null ? $request->get_param('comment') : ($existing['comment'] ?? '')) )]; }
-    private function sanitize_project_payload(WP_REST_Request $request) { $manager_ids = $request->get_param('manager_ids'); $operational_close_month = sanitize_text_field((string) $request->get_param('operational_close_month')); if (preg_match('/^\\d{4}-\\d{2}$/', $operational_close_month) !== 1) { $operational_close_month = ''; } return ['client_id' => (int) $request->get_param('client_id'), 'name' => sanitize_text_field((string) $request->get_param('name')), 'billing_type' => sanitize_text_field((string) $request->get_param('billing_type')) ?: 'time_material', 'budget' => (float) $request->get_param('budget'), 'retainer_monthly_fee' => (float) $request->get_param('retainer_monthly_fee'), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'do_rozpoczecia', 'start_date' => sanitize_text_field((string) $request->get_param('start_date')), 'end_date' => sanitize_text_field((string) $request->get_param('end_date')), 'deadline_date' => sanitize_text_field((string) $request->get_param('deadline_date')), 'deadline_completed_at' => sanitize_text_field((string) $request->get_param('deadline_completed_at')), 'deadline_completed_by' => (int) $request->get_param('deadline_completed_by'), 'operational_close_month' => $operational_close_month, 'manager_id' => (int) $request->get_param('manager_id'), 'manager_ids' => is_array($manager_ids) ? array_map('intval', $manager_ids) : [], 'estimate_id' => (int) $request->get_param('estimate_id'), 'brief' => sanitize_textarea_field((string) $request->get_param('brief')), 'alert_margin_threshold' => sanitize_text_field((string) $request->get_param('alert_margin_threshold'))]; }
+    private function sanitize_project_payload(WP_REST_Request $request) { $manager_ids = $request->get_param('manager_ids'); return ['client_id' => (int) $request->get_param('client_id'), 'name' => sanitize_text_field((string) $request->get_param('name')), 'billing_type' => sanitize_text_field((string) $request->get_param('billing_type')) ?: 'time_material', 'budget' => (float) $request->get_param('budget'), 'retainer_monthly_fee' => (float) $request->get_param('retainer_monthly_fee'), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'do_rozpoczecia', 'start_date' => sanitize_text_field((string) $request->get_param('start_date')), 'end_date' => sanitize_text_field((string) $request->get_param('end_date')), 'deadline_date' => sanitize_text_field((string) $request->get_param('deadline_date')), 'deadline_completed_at' => sanitize_text_field((string) $request->get_param('deadline_completed_at')), 'deadline_completed_by' => (int) $request->get_param('deadline_completed_by'), 'manager_id' => (int) $request->get_param('manager_id'), 'manager_ids' => is_array($manager_ids) ? array_map('intval', $manager_ids) : [], 'estimate_id' => (int) $request->get_param('estimate_id'), 'brief' => sanitize_textarea_field((string) $request->get_param('brief')), 'alert_margin_threshold' => sanitize_text_field((string) $request->get_param('alert_margin_threshold'))]; }
     private function sanitize_project_cost_payload(WP_REST_Request $request, $project_id) { return ['project_id' => (int) $project_id, 'amount' => (float) $request->get_param('amount'), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'cost_date' => sanitize_text_field((string) $request->get_param('cost_date')), 'created_by_user_id' => get_current_user_id()]; }
     private function sanitize_time_entry_payload(WP_REST_Request $request) { return ['employee_id' => (int) $request->get_param('employee_id'), 'project_id' => (int) $request->get_param('project_id'), 'role_id' => (int) $request->get_param('role_id'), 'hours' => (float) $request->get_param('hours'), 'entry_date' => sanitize_text_field((string) $request->get_param('entry_date')), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'submitted']; }
 
@@ -2077,10 +1976,6 @@ class ERP_OMD_REST_API
             return true;
         }
 
-        if ((string) ($project['operational_close_month'] ?? '') === $month) {
-            return true;
-        }
-
         return $this->project_overlaps_month($project, $month);
     }
 
@@ -2114,24 +2009,7 @@ class ERP_OMD_REST_API
 
     private function resolve_adjustment_type($month)
     {
-        $period = $this->period_service->ensure_month_exists($month);
-        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
-        if ($status !== ERP_OMD_Period_Service::STATUS_ZAMKNIETY) {
-            return 'STANDARD';
-        }
-
-        $window_until = (string) ($period['correction_window_until'] ?? '');
-        if ($window_until === '') {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-
-        try {
-            $now = new DateTimeImmutable(current_time('mysql'));
-            $deadline = new DateTimeImmutable($window_until);
-            return $this->period_service->is_emergency_adjustment_required($now, $deadline) ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD';
-        } catch (Exception $exception) {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
+        return 'STANDARD';
     }
 
     private function log_adjustment_audit($month, $entity_type, $entity_id, $old_value, $new_value, $reason)

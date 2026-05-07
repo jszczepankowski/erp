@@ -179,10 +179,6 @@ class ERP_OMD_Client_Project_Service
             $errors[] = __('Data deadline nie może być późniejsza niż end_date.', 'erp-omd');
         }
 
-        if (($data['operational_close_month'] ?? '') !== '' && preg_match('/^\d{4}-\d{2}$/', (string) $data['operational_close_month']) !== 1) {
-            $errors[] = __('Pole operational_close_month musi mieć format YYYY-MM.', 'erp-omd');
-        }
-
         if (! empty($data['manager_id']) && ! $this->employees->find((int) $data['manager_id'])) {
             $errors[] = __('Manager projektu musi wskazywać istniejącego pracownika.', 'erp-omd');
         }
@@ -236,7 +232,6 @@ class ERP_OMD_Client_Project_Service
             'deadline_date' => trim((string) ($data['deadline_date'] ?? ($existing_project['deadline_date'] ?? ''))),
             'deadline_completed_at' => trim((string) ($data['deadline_completed_at'] ?? ($existing_project['deadline_completed_at'] ?? ''))),
             'deadline_completed_by' => (int) ($data['deadline_completed_by'] ?? ($existing_project['deadline_completed_by'] ?? 0)),
-            'operational_close_month' => trim((string) ($data['operational_close_month'] ?? ($existing_project['operational_close_month'] ?? ''))),
             'manager_id' => $manager_id,
             'manager_ids' => $manager_ids,
             'estimate_id' => (int) ($data['estimate_id'] ?? ($existing_project['estimate_id'] ?? 0)),
