@@ -1218,324 +1218,33 @@ class ERP_OMD_Installer
             WHERE manager_id IS NOT NULL"
         );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
-
-        $current_month = gmdate('Y-m');
-        $wpdb->query(
-            $wpdb->prepare(
-                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
-                VALUES (%s, %s, NULL, NULL, %d)",
-                $current_month,
-                'LIVE',
-                0
-            )
-        );
 
         update_option('erp_omd_db_version', ERP_OMD_DB_VERSION);
         add_option('erp_omd_delete_data_on_uninstall', false);

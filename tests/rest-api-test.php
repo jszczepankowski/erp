@@ -493,61 +493,6 @@ if (! class_exists('ERP_OMD_Reporting_Service')) {
 if (! class_exists('ERP_OMD_Alert_Service')) {
     class ERP_OMD_Alert_Service { public function all_alerts() { return [['severity' => 'warning', 'code' => 'project_low_margin', 'entity_type' => 'project', 'entity_id' => 10, 'message' => 'Low margin']]; } }
 }
-if (! class_exists('ERP_OMD_Period_Service')) {
-    class ERP_OMD_Period_Service {
-        public const STATUS_LIVE = 'LIVE';
-        public const STATUS_DO_ROZLICZENIA = 'DO_ROZLICZENIA';
-        public const STATUS_ZAMKNIETY = 'ZAMKNIETY';
-
-        private $rows = [];
-
-        public function list_periods() { return array_values($this->rows); }
-        public function ensure_month_exists($month, $updated_by = 0)
-        {
-            if (! isset($this->rows[$month])) {
-                $this->rows[$month] = ['month' => $month, 'status' => 'LIVE', 'closed_at' => null, 'correction_window_until' => null, 'updated_by' => (int) $updated_by];
-            }
-
-            return $this->rows[$month];
-        }
-        public function build_readiness_checklist(array $signals)
-        {
-            $checks = [];
-            foreach (['time_entries_finalized', 'project_costs_verified', 'project_client_completeness', 'critical_settlement_locks'] as $key) {
-                $checks[$key] = ! empty($signals[$key]);
-            }
-            $blockers = array_keys(array_filter($checks, static function ($passed) { return ! $passed; }));
-
-            return ['ready' => $blockers === [], 'checks' => $checks, 'blockers' => $blockers];
-        }
-        public function transition_month($month, $status, array $readiness)
-        {
-            $existing = $this->ensure_month_exists($month, get_current_user_id());
-            $checklist = $this->build_readiness_checklist($readiness);
-            if ($existing['status'] === 'LIVE' && $status === 'DO_ROZLICZENIA' && ! $checklist['ready']) {
-                throw new InvalidArgumentException('LIVE -> DO ROZLICZENIA requires readiness checklist == ready.');
-            }
-            $this->rows[$month]['status'] = $status;
-
-            return ['period' => $this->rows[$month], 'checklist' => $checklist];
-        }
-        public function can_transition($from_status, $to_status)
-        {
-            if ($from_status === self::STATUS_LIVE && $to_status === self::STATUS_DO_ROZLICZENIA) {
-                return true;
-            }
-
-            if ($from_status === self::STATUS_DO_ROZLICZENIA && $to_status === self::STATUS_ZAMKNIETY) {
-                return true;
-            }
-
-            return false;
-        }
-        public function is_month_locked_for_regular_user($status) { return in_array((string) $status, ['DO_ROZLICZENIA', 'ZAMKNIETY'], true); }
-        public function resolve_month_status($month) { return (string) ($this->ensure_month_exists($month)['status'] ?? 'LIVE'); }
-        public function is_emergency_adjustment_required(DateTimeImmutable $now, DateTimeImmutable $deadline) { return $now > $deadline; }
-    }
-}
 if (! class_exists('ERP_OMD_Adjustment_Audit_Repository')) {
     class ERP_OMD_Adjustment_Audit_Repository {
         public function create($payload) { return 1; }
