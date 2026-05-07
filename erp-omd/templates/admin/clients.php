@@ -59,7 +59,8 @@
                             </div>
                             <div class="erp-omd-form-field erp-omd-form-field-span-full">
                                 <label for="client-email"><?php esc_html_e('Email', 'erp-omd'); ?></label>
-                                <input id="client-email" class="regular-text" type="email" name="email" value="<?php echo esc_attr($client['email'] ?? ''); ?>" />
+                                <input id="client-email" class="regular-text" type="text" name="email" value="<?php echo esc_attr($client['email'] ?? ''); ?>" />
+                                <p class="description"><?php esc_html_e('Możesz podać wiele adresów e-mail, oddzielając je przecinkiem, średnikiem lub spacją.', 'erp-omd'); ?></p>
                             </div>
                             <div class="erp-omd-form-field">
                                 <label for="client-phone"><?php esc_html_e('Telefon', 'erp-omd'); ?></label>
