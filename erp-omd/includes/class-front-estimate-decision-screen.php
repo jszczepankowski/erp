@@ -198,6 +198,8 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             $estimate_name = (string) ($estimate['name'] ?? ('#' . (int) $estimate_id));
             $client_note = trim((string) ($estimate['client_decision_note'] ?? ''));
             $project_name = trim((string) ($project['name'] ?? ''));
+            $client_repository = new ERP_OMD_Client_Repository();
+            $client = (array) $client_repository->find((int) ($estimate['client_id'] ?? 0));
 
             $mail_defaults = [
                 'subject' => __('[ERP OMD] Klient zaakceptował kosztorys: {estimate_name}', 'erp-omd'),
@@ -209,6 +211,9 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 '{project_name}' => ($project_name !== '' ? $project_name : '—'),
                 '{final_gross}' => number_format_i18n((float) ($totals['gross'] ?? 0), 2),
                 '{client_note}' => ($client_note !== '' ? $client_note : '—'),
+                '{estimate_id}' => (string) ((int) ($estimate['id'] ?? $estimate_id)),
+                '{client_email}' => (string) ($client['email'] ?? '—'),
+                '{client_name}' => (string) ($client['name'] ?? '—'),
             ];
             $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
             $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
