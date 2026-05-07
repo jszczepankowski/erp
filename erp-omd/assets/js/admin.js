@@ -661,6 +661,7 @@ window.erpOmdInitDashboardV1Preview =
       });
   };
   const submitPeriodTransition = (monthValue, toStatus, actionLabel) => {
+    return Promise.resolve(false);
     const safeMonth = String(monthValue || '').trim();
     const safeStatus = String(toStatus || '').trim();
     if (!safeMonth || !safeStatus) {
@@ -1073,6 +1074,7 @@ window.erpOmdInitAdminInteractions =
 window.erpOmdInitSettingsPeriodTransitions =
   window.erpOmdInitSettingsPeriodTransitions ||
   (() => {
+    return;
     const panelNode = document.querySelector('[data-settings-period-transitions="1"]');
     if (!(panelNode instanceof HTMLElement)) {
       return;
