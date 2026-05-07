@@ -47,7 +47,20 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                             $notice_type = 'error';
                             $notice_message = $result->get_error_message();
                         } else {
-                            $estimates->save_client_decision_note($estimate_id, $note);
+                            $client_note_parts = [];
+                            if (trim($note) !== '') {
+                                $client_note_parts[] = trim($note);
+                            }
+                            if ($preferred_delivery_date !== '') {
+                                $client_note_parts[] = sprintf(__('Preferowany termin realizacji: %s', 'erp-omd'), $preferred_delivery_date);
+                            }
+                            if ($delivery_other === 1 && $delivery_address !== '') {
+                                $client_note_parts[] = sprintf(__('Adres do dostawy: %s', 'erp-omd'), $delivery_address);
+                            }
+                            if ($invoice_other_entity === 1 && $invoice_nip !== '') {
+                                $client_note_parts[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), $invoice_nip);
+                            }
+                            $estimates->save_client_decision_note($estimate_id, implode("\n", $client_note_parts));
                             self::append_accept_note_to_project_history($estimate_id, $note, $result);
                             self::send_thank_you_mail($estimate_id, $estimates, $estimate_items, $estimate_service);
                             update_option('erp_omd_estimate_acceptance_meta_' . $estimate_id, [
@@ -158,7 +171,8 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 $accept_meta_lines[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), (string) $accept_meta['invoice_nip']);
             }
             if ($accept_meta_lines !== []) {
-                $body .= '<br><br><strong>' . esc_html__('Dodatkowe dane z akceptacji:', 'erp-omd') . '</strong><br>' . esc_html(implode(' | ', $accept_meta_lines));
+                $body .= '<br><br><strong>' . esc_html__('Dodatkowe dane z akceptacji:', 'erp-omd') . '</strong><br>'
+                    . implode('<br>', array_map('esc_html', $accept_meta_lines)) . '<br>';
             }
             $body .= self::build_summary_table_html($items, $totals, true);
             $headers = ['Content-Type: text/html; charset=UTF-8'];
@@ -210,7 +224,16 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 }
             }
 
-            foreach ($project_manager_ids as $manager_user_id) {
+            $employees_repo = class_exists('ERP_OMD_Employee_Repository') ? new ERP_OMD_Employee_Repository() : null;
+            foreach ($project_manager_ids as $manager_employee_id) {
+                $manager_user_id = 0;
+                if ($employees_repo && method_exists($employees_repo, 'find')) {
+                    $manager_employee = (array) $employees_repo->find((int) $manager_employee_id);
+                    $manager_user_id = (int) ($manager_employee['user_id'] ?? 0);
+                }
+                if ($manager_user_id <= 0) {
+                    continue;
+                }
                 $manager_email = sanitize_email((string) get_the_author_meta('user_email', $manager_user_id));
                 if (is_email($manager_email)) {
                     $recipients[$manager_email] = $manager_email;
@@ -257,7 +280,8 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 $accept_meta_lines[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), (string) $accept_meta['invoice_nip']);
             }
             if ($accept_meta_lines !== []) {
-                $body .= '<br><br><strong>' . esc_html__('Dodatkowe dane z akceptacji:', 'erp-omd') . '</strong><br>' . esc_html(implode(' | ', $accept_meta_lines));
+                $body .= '<br><br><strong>' . esc_html__('Dodatkowe dane z akceptacji:', 'erp-omd') . '</strong><br>'
+                    . implode('<br>', array_map('esc_html', $accept_meta_lines)) . '<br>';
             }
             $body .= self::build_summary_table_html((array) $items, $totals, true);
 
