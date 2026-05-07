@@ -224,7 +224,7 @@ class ERP_OMD_Estimate_Service
             'budget' => $project_budget,
             'retainer_monthly_fee' => 0,
             'status' => 'w_realizacji',
-            'start_date' => '',
+            'start_date' => (string) ($estimate['accepted_at'] ?? '') !== '' ? substr((string) $estimate['accepted_at'], 0, 10) : current_time('Y-m-d'),
             'end_date' => '',
             'manager_id' => $manager_id,
             'manager_ids' => $manager_ids,
