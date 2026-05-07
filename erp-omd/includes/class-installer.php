@@ -558,15 +558,23 @@ class ERP_OMD_Installer
         );
 
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -591,26 +599,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -635,26 +641,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -679,26 +683,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -723,26 +725,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -767,26 +767,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -811,26 +809,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -855,26 +851,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -899,26 +893,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -943,26 +935,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -987,26 +977,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1031,26 +1019,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1075,26 +1061,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1119,26 +1103,24 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
         dbDelta(
-            "CREATE TABLE {$periods_table} (
+            "CREATE TABLE {$adjustment_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
+                entity_type VARCHAR(64) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL,
+                field_name VARCHAR(128) NOT NULL,
+                old_value LONGTEXT NULL,
+                new_value LONGTEXT NULL,
+                reason TEXT NOT NULL,
+                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
+                changed_by BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY  (id),
+                KEY month (month),
+                KEY entity_lookup (entity_type, entity_id),
+                KEY adjustment_type (adjustment_type),
+                KEY changed_by (changed_by)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
@@ -1163,29 +1145,6 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
-            )
-        );
-
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
         dbDelta(
             "CREATE TABLE {$adjustment_audit_table} (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1207,629 +1166,523 @@ class ERP_OMD_Installer
             ) ENGINE=InnoDB {$charset_collate};"
         );
 
+        self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_employees_default_role', "ALTER TABLE {$employees_table} ADD CONSTRAINT fk_erp_omd_employees_default_role FOREIGN KEY (default_role_id) REFERENCES {$roles_table}(id) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_employees_user', "ALTER TABLE {$employees_table} ADD CONSTRAINT fk_erp_omd_employees_user FOREIGN KEY (user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_employee_roles_employee', "ALTER TABLE {$employee_roles_table} ADD CONSTRAINT fk_erp_omd_employee_roles_employee FOREIGN KEY (employee_id) REFERENCES {$employees_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_employee_roles_role', "ALTER TABLE {$employee_roles_table} ADD CONSTRAINT fk_erp_omd_employee_roles_role FOREIGN KEY (role_id) REFERENCES {$roles_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_salary_history_employee', "ALTER TABLE {$salary_table} ADD CONSTRAINT fk_erp_omd_salary_history_employee FOREIGN KEY (employee_id) REFERENCES {$employees_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_clients_account_manager', "ALTER TABLE {$clients_table} ADD CONSTRAINT fk_erp_omd_clients_account_manager FOREIGN KEY (account_manager_id) REFERENCES {$employees_table}(id) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($clients_table, 'fk_erp_omd_client_rates_client', "ALTER TABLE {$client_rates_table} ADD CONSTRAINT fk_erp_omd_client_rates_client FOREIGN KEY (client_id) REFERENCES {$clients_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_client_rates_role', "ALTER TABLE {$client_rates_table} ADD CONSTRAINT fk_erp_omd_client_rates_role FOREIGN KEY (role_id) REFERENCES {$roles_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($clients_table, 'fk_erp_omd_client_rate_history_client', "ALTER TABLE {$client_rate_history_table} ADD CONSTRAINT fk_erp_omd_client_rate_history_client FOREIGN KEY (client_id) REFERENCES {$clients_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_client_rate_history_role', "ALTER TABLE {$client_rate_history_table} ADD CONSTRAINT fk_erp_omd_client_rate_history_role FOREIGN KEY (role_id) REFERENCES {$roles_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($clients_table, 'fk_erp_omd_estimates_client', "ALTER TABLE {$estimates_table} ADD CONSTRAINT fk_erp_omd_estimates_client FOREIGN KEY (client_id) REFERENCES {$clients_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_estimates_accepted_by', "ALTER TABLE {$estimates_table} ADD CONSTRAINT fk_erp_omd_estimates_accepted_by FOREIGN KEY (accepted_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($estimates_table, 'fk_erp_omd_estimate_items_estimate', "ALTER TABLE {$estimate_items_table} ADD CONSTRAINT fk_erp_omd_estimate_items_estimate FOREIGN KEY (estimate_id) REFERENCES {$estimates_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($clients_table, 'fk_erp_omd_projects_client', "ALTER TABLE {$projects_table} ADD CONSTRAINT fk_erp_omd_projects_client FOREIGN KEY (client_id) REFERENCES {$clients_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_managers_project', "ALTER TABLE {$project_managers_table} ADD CONSTRAINT fk_erp_omd_project_managers_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_project_managers_employee', "ALTER TABLE {$project_managers_table} ADD CONSTRAINT fk_erp_omd_project_managers_employee FOREIGN KEY (employee_id) REFERENCES {$employees_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_projects_manager', "ALTER TABLE {$projects_table} ADD CONSTRAINT fk_erp_omd_projects_manager FOREIGN KEY (manager_id) REFERENCES {$employees_table}(id) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($estimates_table, 'fk_erp_omd_projects_estimate', "ALTER TABLE {$projects_table} ADD CONSTRAINT fk_erp_omd_projects_estimate FOREIGN KEY (estimate_id) REFERENCES {$estimates_table}(id) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_notes_project', "ALTER TABLE {$project_notes_table} ADD CONSTRAINT fk_erp_omd_project_notes_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_project_notes_author', "ALTER TABLE {$project_notes_table} ADD CONSTRAINT fk_erp_omd_project_notes_author FOREIGN KEY (author_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_rates_project', "ALTER TABLE {$project_rates_table} ADD CONSTRAINT fk_erp_omd_project_rates_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_project_rates_role', "ALTER TABLE {$project_rates_table} ADD CONSTRAINT fk_erp_omd_project_rates_role FOREIGN KEY (role_id) REFERENCES {$roles_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_rate_history_project', "ALTER TABLE {$project_rate_history_table} ADD CONSTRAINT fk_erp_omd_project_rate_history_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_project_rate_history_role', "ALTER TABLE {$project_rate_history_table} ADD CONSTRAINT fk_erp_omd_project_rate_history_role FOREIGN KEY (role_id) REFERENCES {$roles_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_costs_project', "ALTER TABLE {$project_costs_table} ADD CONSTRAINT fk_erp_omd_project_costs_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_project_costs_created_by', "ALTER TABLE {$project_costs_table} ADD CONSTRAINT fk_erp_omd_project_costs_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_revenues_project', "ALTER TABLE {$project_revenues_table} ADD CONSTRAINT fk_erp_omd_project_revenues_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_project_revenues_created_by', "ALTER TABLE {$project_revenues_table} ADD CONSTRAINT fk_erp_omd_project_revenues_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_financials_project', "ALTER TABLE {$project_financials_table} ADD CONSTRAINT fk_erp_omd_project_financials_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_time_entries_employee', "ALTER TABLE {$time_entries_table} ADD CONSTRAINT fk_erp_omd_time_entries_employee FOREIGN KEY (employee_id) REFERENCES {$employees_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_time_entries_project', "ALTER TABLE {$time_entries_table} ADD CONSTRAINT fk_erp_omd_time_entries_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_time_entries_role', "ALTER TABLE {$time_entries_table} ADD CONSTRAINT fk_erp_omd_time_entries_role FOREIGN KEY (role_id) REFERENCES {$roles_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_time_entries_created_by', "ALTER TABLE {$time_entries_table} ADD CONSTRAINT fk_erp_omd_time_entries_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_time_entries_approved_by', "ALTER TABLE {$time_entries_table} ADD CONSTRAINT fk_erp_omd_time_entries_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_project_requests_requester_user', "ALTER TABLE {$project_requests_table} ADD CONSTRAINT fk_erp_omd_project_requests_requester_user FOREIGN KEY (requester_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_project_requests_requester_employee', "ALTER TABLE {$project_requests_table} ADD CONSTRAINT fk_erp_omd_project_requests_requester_employee FOREIGN KEY (requester_employee_id) REFERENCES {$employees_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($clients_table, 'fk_erp_omd_project_requests_client', "ALTER TABLE {$project_requests_table} ADD CONSTRAINT fk_erp_omd_project_requests_client FOREIGN KEY (client_id) REFERENCES {$clients_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($employees_table, 'fk_erp_omd_project_requests_preferred_manager', "ALTER TABLE {$project_requests_table} ADD CONSTRAINT fk_erp_omd_project_requests_preferred_manager FOREIGN KEY (preferred_manager_id) REFERENCES {$employees_table}(id) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($estimates_table, 'fk_erp_omd_project_requests_estimate', "ALTER TABLE {$project_requests_table} ADD CONSTRAINT fk_erp_omd_project_requests_estimate FOREIGN KEY (estimate_id) REFERENCES {$estimates_table}(id) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_project_requests_reviewed_by', "ALTER TABLE {$project_requests_table} ADD CONSTRAINT fk_erp_omd_project_requests_reviewed_by FOREIGN KEY (reviewed_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_requests_converted_project', "ALTER TABLE {$project_requests_table} ADD CONSTRAINT fk_erp_omd_project_requests_converted_project FOREIGN KEY (converted_project_id) REFERENCES {$projects_table}(id) ON DELETE SET NULL");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_attachments_created_by', "ALTER TABLE {$attachments_table} ADD CONSTRAINT fk_erp_omd_attachments_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($estimates_table, 'fk_erp_omd_estimate_audit_estimate', "ALTER TABLE {$estimate_audit_table} ADD CONSTRAINT fk_erp_omd_estimate_audit_estimate FOREIGN KEY (estimate_id) REFERENCES {$estimates_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_estimate_audit_user', "ALTER TABLE {$estimate_audit_table} ADD CONSTRAINT fk_erp_omd_estimate_audit_user FOREIGN KEY (changed_by_user_id) REFERENCES {$users_table}(ID) ON DELETE SET NULL");
+
+        $wpdb->query(
+            "INSERT IGNORE INTO {$project_managers_table} (project_id, employee_id, assigned_at)
+            SELECT id, manager_id, updated_at
+            FROM {$projects_table}
+            WHERE manager_id IS NOT NULL"
+        );
+
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
-        dbDelta(
-            "CREATE TABLE {$periods_table} (
-                month CHAR(7) NOT NULL,
-                status VARCHAR(32) NOT NULL DEFAULT 'LIVE',
-                closed_at DATETIME NULL,
-                correction_window_until DATETIME NULL,
-                updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY  (month),
-                KEY status (status),
-                KEY correction_window_until (correction_window_until)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
-        dbDelta(
-            "CREATE TABLE {$adjustment_audit_table} (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                month CHAR(7) NOT NULL,
-                entity_type VARCHAR(64) NOT NULL,
-                entity_id BIGINT UNSIGNED NOT NULL,
-                field_name VARCHAR(128) NOT NULL,
-                old_value LONGTEXT NULL,
-                new_value LONGTEXT NULL,
-                reason TEXT NOT NULL,
-                adjustment_type VARCHAR(32) NOT NULL DEFAULT 'STANDARD',
-                changed_by BIGINT UNSIGNED NOT NULL,
-                changed_at DATETIME NOT NULL,
-                PRIMARY KEY  (id),
-                KEY month (month),
-                KEY entity_lookup (entity_type, entity_id),
-                KEY adjustment_type (adjustment_type),
-                KEY changed_by (changed_by)
-            ) ENGINE=InnoDB {$charset_collate};"
-        );
-
+        $current_month = gmdate('Y-m');
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$projects_table}
-                SET status = %s
-                WHERE status = %s",
-                'archiwum',
-                'inactive'
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
             )
         );
 
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        $current_month = gmdate('Y-m');
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO {$periods_table} (month, status, closed_at, correction_window_until, updated_by)
+                VALUES (%s, %s, NULL, NULL, %d)",
+                $current_month,
+                'LIVE',
+                0
+            )
+        );
+
+        update_option('erp_omd_db_version', ERP_OMD_DB_VERSION);
+        add_option('erp_omd_delete_data_on_uninstall', false);
+        add_option('erp_omd_alert_margin_threshold', 10);
+        add_option('erp_omd_front_login_logo_id', 0);
+        add_option('erp_omd_front_login_cover_id', 0);
+        add_option('erp_omd_notification_sender_email', '');
+        add_option('erp_omd_fixed_monthly_cost', 0);
+        add_option('erp_omd_fixed_monthly_cost_items', []);
+        self::maybe_cleanup_legacy_time_entry_indexes();
+        self::maybe_allow_nullable_project_request_requester_employee_id();
+    }
+
+    private static function maybe_cleanup_legacy_time_entry_indexes()
+    {
+        if (get_option('erp_omd_time_entries_index_cleanup_done') === '1') {
+            return;
+        }
+
+        global $wpdb;
+        $time_entries_table = $wpdb->prefix . 'erp_omd_time_entries';
+        self::drop_legacy_time_entry_unique_indexes($time_entries_table);
+        update_option('erp_omd_time_entries_index_cleanup_done', '1');
+    }
+
+    private static function maybe_allow_nullable_project_request_requester_employee_id()
+    {
+        if (get_option('erp_omd_project_request_requester_employee_nullable_done') === '1') {
+            return;
+        }
+
+        global $wpdb;
+        $project_requests_table = $wpdb->prefix . 'erp_omd_project_requests';
+        $is_nullable = $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s LIMIT 1',
+                DB_NAME,
+                $project_requests_table,
+                'requester_employee_id'
+            )
+        );
+
+        if ($is_nullable === 'NO') {
+            $wpdb->query("ALTER TABLE {$project_requests_table} MODIFY requester_employee_id BIGINT UNSIGNED NULL");
+        }
+
+        update_option('erp_omd_project_request_requester_employee_nullable_done', '1');
+    }
+
+    private static function drop_legacy_time_entry_unique_indexes($time_entries_table)
+    {
+        global $wpdb;
+
+        $indexes = $wpdb->get_results("SHOW INDEX FROM {$time_entries_table}", ARRAY_A);
+        if (! is_array($indexes) || $indexes === []) {
+            return;
+        }
+
+        $unique_indexes = [];
+        foreach ($indexes as $index_row) {
+            $index_name = (string) ($index_row['Key_name'] ?? '');
+            if ($index_name === '' || $index_name === 'PRIMARY') {
+                continue;
+            }
+            if ((int) ($index_row['Non_unique'] ?? 1) !== 0) {
+                continue;
+            }
+
+            $sequence = (int) ($index_row['Seq_in_index'] ?? 0);
+            $column_name = (string) ($index_row['Column_name'] ?? '');
+            if ($sequence <= 0 || $column_name === '') {
+                continue;
+            }
+
+            if (! isset($unique_indexes[$index_name])) {
+                $unique_indexes[$index_name] = [];
+            }
+
+            $unique_indexes[$index_name][$sequence] = $column_name;
+        }
+
+        foreach ($unique_indexes as $index_name => $index_columns_by_seq) {
+            ksort($index_columns_by_seq);
+            $index_columns = array_values($index_columns_by_seq);
+            $contains_legacy_columns = count(array_intersect($index_columns, ['employee_id', 'project_id', 'role_id', 'hours'])) === 4;
+            $contains_entry_date = in_array('entry_date', $index_columns, true);
+
+            if (! $contains_legacy_columns || $contains_entry_date) {
+                continue;
+            }
+
+            $safe_index_name = str_replace('`', '``', $index_name);
+            $wpdb->query("ALTER TABLE {$time_entries_table} DROP INDEX `{$safe_index_name}`");
+        }
+    }
+
+    private static function add_foreign_key_if_missing($referenced_table, $constraint_name, $sql)
+    {
+        global $wpdb;
+
+        $existing = $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = %s AND REFERENCED_TABLE_NAME = %s AND CONSTRAINT_NAME = %s LIMIT 1',
+                DB_NAME,
+                $referenced_table,
+                $constraint_name
+            )
+        );
+
+        if (! $existing) {
+            $wpdb->query($sql);
+        }
+    }
+
+    private static function add_column_if_missing($table_name, $column_name, $sql)
+    {
+        global $wpdb;
+
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s LIMIT 1',
+                DB_NAME,
+                $table_name,
+                $column_name
+            )
+        );
+
+        if (! $exists) {
+            $wpdb->query($sql);
+        }
+    }
+
+    private static function add_index_if_missing($table_name, $index_name, $sql)
+    {
+        global $wpdb;
+
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s LIMIT 1',
+                DB_NAME,
+                $table_name,
+                $index_name
+            )
+        );
+
+        if (! $exists) {
+            $wpdb->query($sql);
+        }
+    }
+}
