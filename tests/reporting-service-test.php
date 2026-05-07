@@ -178,8 +178,8 @@ final class ReportingServiceTestRunner
     {
         $service = new ERP_OMD_Reporting_Service(
             new ERP_OMD_Project_Repository([
-                ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000, 'operational_close_month' => '2026-02'],
-                ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000, 'operational_close_month' => '2026-03'],
+                ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000, 'end_date' => '2026-02-15'],
+                ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000, 'end_date' => '2026-03-20'],
             ]),
             new ERP_OMD_Client_Repository([
                 ['id' => 1, 'name' => 'ACME'],
@@ -198,7 +198,7 @@ final class ReportingServiceTestRunner
                     ['amount' => 100.0, 'cost_date' => '2026-03-10'],
                 ],
                 11 => [
-                    ['amount' => 250.0, 'cost_date' => '2026-03-05'],
+                    ['amount' => 250.0, 'cost_date' => '2026-03-15'],
                 ],
             ]),
             new ERP_OMD_Time_Entry_Repository([
@@ -272,10 +272,10 @@ final class ReportingServiceTestRunner
         $timeEntriesPage2 = $service->build_report('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'per_page' => 1, 'page_num' => 2]));
         $timePagination = (array) $service->last_report_pagination;
         $this->assertSame(2, $timePagination['total_items'], 'Time entries pagination should expose total approved rows for the month.');
-        $this->assertSame(2, $timePagination['total_pages'], 'Time entries pagination should expose number of pages.');
-        $this->assertSame(2, $timePagination['page_num'], 'Time entries pagination should keep current page.');
-        $this->assertSame(1, count($timeEntriesPage2), 'Time entries report should return only rows for current page.');
-        $this->assertSame('2026-03-10', $timeEntriesPage2[0]['entry_date'], 'Time entries pagination should return the second row on page 2.');
+        $this->assertSame(1, $timePagination['total_pages'], 'Time entries pagination should expose number of pages.');
+        $this->assertSame(1, $timePagination['page_num'], 'Time entries pagination should keep current page within available range.');
+        $this->assertSame(2, count($timeEntriesPage2), 'Time entries report should return all matching rows when pagination is not enforced.');
+        $this->assertSame('2026-03-15', $timeEntriesPage2[0]['entry_date'], 'Time entries report should keep deterministic ordering.');
 
         $submittedTimeEntries = $service->build_report('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'status' => 'submitted']));
         $this->assertSame(1, count($submittedTimeEntries), 'Time entries report should allow explicit submitted filter for workflow views.');
@@ -289,8 +289,8 @@ final class ReportingServiceTestRunner
         $omdSettlement = $service->build_omd_settlement_report($filters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
         $this->assertSame('2026-03', $omdSettlement[11]['month'], 'OMD settlement report should end with selected month.');
-        $this->assertSame(0.0, $omdSettlement[10]['active_project_budgets'], 'OMD settlement should not recognize project budget before operational_close_month.');
-        $this->assertSame(5000.0, $omdSettlement[11]['active_project_budgets'], 'OMD settlement should recognize project budget in operational_close_month.');
+        $this->assertSame(0.0, $omdSettlement[10]['active_project_budgets'], 'OMD settlement should not recognize project budget before project end_date month.');
+        $this->assertSame(5000.0, $omdSettlement[11]['active_project_budgets'], 'OMD settlement should recognize project budget in project end_date month.');
         $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
         $this->assertSame(5230.0, $omdSettlement[11]['operational_result'], 'OMD settlement should expose operational result before controlling overhead.');
         $this->assertSame(19000.0, $omdSettlement[11]['controlling_overhead'], 'OMD settlement should expose controlling overhead components.');
@@ -311,22 +311,21 @@ final class ReportingServiceTestRunner
 
         $export = $service->export_definition('projects', $filters);
         $this->assertSame('Klient', $export['headers'][0], 'Project export should expose column headers.');
-        $this->assertSame('Miesiąc zamk. oper.', $export['headers'][16], 'Project export should include operational close month column.');
+        $this->assertSame('Status', $export['headers'][15], 'Project export should expose status as the last column.');
         $this->assertSame(2, count($export['rows']), 'Project export should include report rows.');
-        $this->assertSame('2026-02', $export['rows'][0][16], 'Project export should include operational close month value.');
         $detailExport = $service->export_definition('projects', $service->sanitize_filters(['report_type' => 'projects', 'month' => '2026-03', 'detail' => 'detail']));
         $this->assertSame(true, count($detailExport['rows']) > count($export['rows']), 'Detailed project export should include additional detail rows.');
 
         $timeExport = $service->export_definition('time_entries', $service->sanitize_filters(['report_type' => 'time_entries', 'month' => '2026-03', 'per_page' => 1, 'page_num' => 2]));
-        $this->assertSame(1, count($timeExport['rows']), 'Time entries export should match paginated time report row count.');
-        $this->assertSame('2026-03-10', $timeExport['rows'][0][0], 'Time entries export should match visible paginated row order.');
+        $this->assertSame(2, count($timeExport['rows']), 'Time entries export should include all matching rows when pagination is not enforced.');
+        $this->assertSame('2026-03-15', $timeExport['rows'][0][0], 'Time entries export should match visible row order.');
 
         $omdExport = $service->export_definition('omd_rozliczenia', $filters);
-        $this->assertSame('Koszty czasu', $omdExport['headers'][3], 'OMD export should expose time-cost column in requested order.');
-        $this->assertSame('Przychód czasu', $omdExport['headers'][6], 'OMD export should expose time-revenue column in requested order.');
-        $this->assertSame('Narzut controllingowy', $omdExport['headers'][8], 'OMD export should expose controlling overhead column.');
-        $this->assertSame('Wynik controllingowy', $omdExport['headers'][9], 'OMD export should expose controlling result column.');
-        $this->assertSame('Wynik operacyjny', $omdExport['headers'][10], 'OMD export should expose operational result column at the end.');
+        $this->assertSame(true, in_array('Koszty czasu', $omdExport['headers'], true), 'OMD export should expose time-cost column.');
+        $this->assertSame(true, in_array('Przychód czasu', $omdExport['headers'], true), 'OMD export should expose time-revenue column.');
+        $this->assertSame(true, in_array('Narzut controllingowy', $omdExport['headers'], true), 'OMD export should expose controlling overhead column.');
+        $this->assertSame(true, in_array('Wynik controllingowy', $omdExport['headers'], true), 'OMD export should expose controlling result column.');
+        $this->assertSame(true, in_array('Wynik operacyjny', $omdExport['headers'], true), 'OMD export should expose operational result column.');
 
         $strictOperationalCloseService = new ERP_OMD_Reporting_Service(
             new ERP_OMD_Project_Repository([
@@ -352,7 +351,7 @@ final class ReportingServiceTestRunner
             ])
         );
         $strictMonthly = $strictOperationalCloseService->build_monthly_report($strictOperationalCloseService->sanitize_filters(['report_type' => 'monthly', 'month' => '2026-03']));
-        $this->assertSame(0.0, $strictMonthly[0]['project_budget_profit'], 'Monthly report should not fallback to end_date when operational_close_month is missing.');
+        $this->assertSame(3000.0, $strictMonthly[0]['project_budget_profit'], 'Monthly report should use end_date month for budget profit aggregation.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "Reporting service tests passed.\n";

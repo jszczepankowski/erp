@@ -140,7 +140,6 @@ for ($p = 1; $p <= 80; $p++) {
         'billing_type' => 'time_material',
         'manager_login' => 'm' . $p,
         'budget' => 15000 + $p,
-        'operational_close_month' => $month,
         'start_date' => $month . '-01',
         'end_date' => $month . '-28',
     ];
