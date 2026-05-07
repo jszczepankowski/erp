@@ -1,0 +1,35 @@
+Zmiany v_4.1
+
+1. Dodać opcjonalne pola przy akceptacji kosztorysu przez klienta:
+   - Adres do dostawy (wywoływany checkboxem „inne miejsce dostawy”).
+   - Preferowany termin realizacji (date picker).
+   - NIP do faktury (wywoływany checkboxem „faktura na inny podmiot”).
+   - Zapisywać te dane w panelu administracyjnym w szczegółach kosztorysu.
+
+2. Umożliwić przypisanie więcej niż jednego adresu e-mail do klienta
+   do wysyłki wiadomości z systemu i akceptacji kosztorysów.
+
+3. Przy imporcie manualnym faktury sprzedażowej, jeśli klienta nie ma w bazie,
+   podawać numer NIP z importowanej faktury w komunikacie.
+
+4. Dodać sekcję „Twoje kosztorysy” w panelu klienta na froncie
+   oraz w szczegółach klienta w panelu administracyjnym
+   po boxie „Projekty klienta”.
+
+5. Dodać możliwość łączenia/scalenia projektów w jeden
+   z zachowaniem godzin pracowników, kosztów bezpośrednich i przychodów
+   oraz przeniesieniem ich do nowego projektu,
+   z możliwością wybrania nowego klienta i nadania nowej nazwy projektu.
+
+
+7. Na etapie tworzenia kosztorysu dodać pole „Marża” (wpisywane ręcznie)
+   oraz przycisk „Zasugeruj cenę”, który automatycznie przeliczy
+   „Koszt wewnętrzny” przez „marżę” (np. 20%) i zasugeruje wartość w polu „Cena”.
+   Pole tylko dla agencji — niepokazywane w kosztorysie wysyłanym
+   i akceptowanym przez klienta.
+
+Sprinty (aktualizacja):
+- Sprint 1 (szybki): punkty 1, 2, 3 (w komunikacie także: „Utwórz klienta i ponów przypięcie”).
+- Sprint 2: punkt 4.
+- Sprint 3 (pricing/UX): punkt 7.
+- Sprint 4 (architektoniczny): dyskusja nad punktem 5.

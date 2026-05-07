@@ -272,6 +272,12 @@
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Akceptacja', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['accepted_at'] ?? '—'); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Wysłano do klienta', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['sent_to_client_at'] ?? '—'); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Uwaga klienta', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['client_decision_note'] ?? '—'); ?></span></div>
+                                    <?php $estimate_accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) ($selected_estimate['id'] ?? 0), []); ?>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Inne miejsce dostawy', 'erp-omd'); ?></strong><span><?php echo ! empty($estimate_accept_meta['delivery_other']) ? esc_html__('Tak', 'erp-omd') : esc_html__('Nie', 'erp-omd'); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Adres do dostawy', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($estimate_accept_meta['delivery_address'] ?? '—')); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Preferowany termin realizacji', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($estimate_accept_meta['preferred_delivery_date'] ?? '—')); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Faktura na inny podmiot', 'erp-omd'); ?></strong><span><?php echo ! empty($estimate_accept_meta['invoice_other_entity']) ? esc_html__('Tak', 'erp-omd') : esc_html__('Nie', 'erp-omd'); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('NIP do faktury', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($estimate_accept_meta['invoice_nip'] ?? '—')); ?></span></div>
                                 </div>
                             </div>
                             <div class="erp-omd-detail-card">
