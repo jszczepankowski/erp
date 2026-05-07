@@ -429,6 +429,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     </select>
                     <button type="submit" class="button button-secondary" form="erp-omd-bulk-cost-invoices-form"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
                 </p>
+            </form>
             <table class="widefat striped">
                 <thead>
                     <tr>
@@ -467,7 +468,6 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            </form>
         </section>
     </section>
     <?php endif; ?>
@@ -603,14 +603,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                         <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php if (! empty($final_invoice_project_ids[$project_id]) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
-                                        <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($sales_row['project_id'] ?? 0), $project_id); ?>>
-                                            <?php
-                                            $project_start_label = (string) ($project['start_date'] ?? '');
-                                            $project_end_label = (string) ($project['end_date'] ?? '');
-                                            $project_date_range = trim(($project_start_label !== '' ? $project_start_label : '??') . ' - ' . ($project_end_label !== '' ? $project_end_label : '??'));
-                                            echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '') . ' (' . $project_date_range . ' | ' . (string) ($project['billing_type'] ?? '') . ')');
-                                        ?>
-                                        </option>
+                                        <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($sales_row['project_id'] ?? 0), $project_id); ?>><?php echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '')); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <label style="display:flex;gap:3px;align-items:center;">
