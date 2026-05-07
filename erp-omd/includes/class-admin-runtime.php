@@ -920,6 +920,7 @@ class ERP_OMD_Admin
         $client_rates = [];
         $selected_client_projects = [];
         $selected_client_project_financials = [];
+        $selected_client_estimates = [];
         $editing_client_rate = null;
         $is_editing_client = ! empty($_GET['edit']) || ! empty($_GET['rate_id']);
         if (! empty($_GET['id'])) {
@@ -1010,6 +1011,14 @@ class ERP_OMD_Admin
             $selected_client_projects = $this->projects->all(['client_id' => (int) ($selected_client['id'] ?? 0)]);
             $selected_client_project_financials = $this->project_financial_service->get_project_financials(
                 wp_list_pluck($selected_client_projects, 'id')
+            );
+            $selected_client_estimates = array_values(
+                array_filter(
+                    (array) $this->estimates->all(),
+                    static function ($estimate_row) use ($selected_client) {
+                        return (int) ($estimate_row['client_id'] ?? 0) === (int) ($selected_client['id'] ?? 0);
+                    }
+                )
             );
         }
         include ERP_OMD_PATH . 'templates/admin/clients.php';

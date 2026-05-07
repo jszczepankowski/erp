@@ -138,6 +138,36 @@
 
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
+                    <h2><?php esc_html_e('Twoje kosztorysy', 'erp-omd'); ?></h2>
+                </div>
+                <div class="erp-omd-front-table-wrap">
+                    <table class="erp-omd-front-table">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Akceptacja', 'erp-omd'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (! empty($client_estimates)) : ?>
+                                <?php foreach ($client_estimates as $client_estimate_item) : ?>
+                                    <tr>
+                                        <td><?php echo esc_html((string) ($client_estimate_item['name'] ?? ('#' . (int) ($client_estimate_item['id'] ?? 0)))); ?></td>
+                                        <td><?php echo esc_html((string) ($client_estimate_item['status'] ?? '—')); ?></td>
+                                        <td><?php echo esc_html((string) ($client_estimate_item['accepted_at'] ?? '—')); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else : ?>
+                                <tr><td colspan="3"><?php esc_html_e('Brak kosztorysów do wyświetlenia.', 'erp-omd'); ?></td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article class="erp-omd-front-panel">
+                <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Twoje projekty', 'erp-omd'); ?></h2>
                 </div>
                 <div class="erp-omd-front-inline-actions">
@@ -262,6 +292,36 @@
                                 <tr>
                                     <td colspan="8"><?php esc_html_e('Brak projektów do wyświetlenia.', 'erp-omd'); ?></td>
                                 </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article class="erp-omd-front-panel">
+                <div class="erp-omd-front-section-heading">
+                    <h2><?php esc_html_e('Twoje kosztorysy', 'erp-omd'); ?></h2>
+                </div>
+                <div class="erp-omd-front-table-wrap">
+                    <table class="erp-omd-front-table">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Akceptacja', 'erp-omd'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (! empty($client_estimates)) : ?>
+                                <?php foreach ($client_estimates as $client_estimate_item) : ?>
+                                    <tr>
+                                        <td><?php echo esc_html((string) ($client_estimate_item['name'] ?? ('#' . (int) ($client_estimate_item['id'] ?? 0)))); ?></td>
+                                        <td><?php echo esc_html((string) ($client_estimate_item['status'] ?? '—')); ?></td>
+                                        <td><?php echo esc_html((string) ($client_estimate_item['accepted_at'] ?? '—')); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else : ?>
+                                <tr><td colspan="3"><?php esc_html_e('Brak kosztorysów do wyświetlenia.', 'erp-omd'); ?></td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

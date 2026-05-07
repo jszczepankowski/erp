@@ -316,6 +316,39 @@
                         </tbody>
                     </table>
                 </section>
+                <section class="erp-omd-form-section" style="margin-top:16px;">
+                    <div class="erp-omd-section-header">
+                        <div>
+                            <h2><?php esc_html_e('Twoje kosztorysy', 'erp-omd'); ?></h2>
+                        </div>
+                    </div>
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('Nazwa kosztorysu', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
+                                <th><?php esc_html_e('Akceptacja', 'erp-omd'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($selected_client_estimates)) : ?>
+                                <tr><td colspan="3"><?php esc_html_e('Brak kosztorysów dla tego klienta.', 'erp-omd'); ?></td></tr>
+                            <?php else : ?>
+                                <?php foreach ($selected_client_estimates as $client_estimate_row) : ?>
+                                    <tr>
+                                        <td>
+                                            <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-estimates', 'id' => (int) ($client_estimate_row['id'] ?? 0)], admin_url('admin.php'))); ?>">
+                                                <?php echo esc_html((string) ($client_estimate_row['name'] ?? ('#' . (int) ($client_estimate_row['id'] ?? 0)))); ?>
+                                            </a>
+                                        </td>
+                                        <td><?php echo esc_html((string) ($client_estimate_row['status'] ?? '—')); ?></td>
+                                        <td><?php echo esc_html((string) ($client_estimate_row['accepted_at'] ?? '—')); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </section>
             <?php endif; ?>
     </section>
 

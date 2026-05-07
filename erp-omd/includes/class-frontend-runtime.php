@@ -373,6 +373,16 @@ class ERP_OMD_Frontend
         $client_project_requests = $client_id > 0
             ? (array) $this->project_requests->all(['client_id' => $client_id])
             : [];
+        $client_estimates = $client_id > 0
+            ? array_values(
+                array_filter(
+                    (array) $this->estimates->all(),
+                    static function ($estimate_row) use ($client_id) {
+                        return (int) ($estimate_row['client_id'] ?? 0) === (int) $client_id;
+                    }
+                )
+            )
+            : [];
         $selected_client_request_id = (int) ($_GET['request_id'] ?? 0);
         $selected_client_request = null;
         if ($selected_client_request_id > 0) {
