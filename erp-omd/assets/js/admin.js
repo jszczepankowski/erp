@@ -1480,13 +1480,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTableTools();
   initFixedCosts();
   initInlineAutoSave();
-  if (typeof window.erpOmdInitDashboardV1Preview === 'function') {
-    window.erpOmdInitDashboardV1Preview();
-  }
   if (typeof window.erpOmdInitAdminInteractions === 'function') {
     window.erpOmdInitAdminInteractions(currentPage);
-  }
-  if (typeof window.erpOmdInitSettingsAdminCorrection === 'function') {
-    window.erpOmdInitSettingsAdminCorrection();
   }
 });

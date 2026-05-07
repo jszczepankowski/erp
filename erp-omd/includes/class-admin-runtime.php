@@ -4320,7 +4320,7 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_save_settings');
         $this->require_capability('erp_omd_manage_settings');
         $settings_tab = sanitize_key((string) ($_POST['settings_tab'] ?? 'fixed_costs'));
-        $allowed_settings_tabs = ['fixed_costs', 'missing_hours', 'estimate_mail_templates', 'front_login', 'lifecycle_alerts', 'google_calendar', 'ksef', 'reports_v1_monitoring'];
+        $allowed_settings_tabs = ['fixed_costs', 'missing_hours', 'estimate_mail_templates', 'front_login', 'lifecycle_alerts', 'google_calendar', 'ksef'];
         if (! in_array($settings_tab, $allowed_settings_tabs, true)) {
             $settings_tab = 'fixed_costs';
         }
@@ -4443,61 +4443,6 @@ class ERP_OMD_Admin
             }
         } elseif ($settings_tab === 'ksef') {
             update_option(ERP_OMD_KSeF_Import_Service::OPTION_AUTO_CREATE_SUPPLIER, ! empty($_POST['ksef_auto_create_supplier']));
-        } elseif ($settings_tab === 'reports_v1_monitoring') {
-            update_option('erp_omd_reports_v1_metrics_freshness_minutes', max(5, (int) ($_POST['reports_v1_metrics_freshness_minutes'] ?? 1440)));
-            $reports_v1_slo_generation_p95_max = max(100, min(30000, (int) ($_POST['reports_v1_slo_generation_p95_max'] ?? 2500)));
-            if (! empty($_POST['apply_reports_v1_recommended_p95_max'])) {
-                $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
-                $reports_v1_samples = array_values(array_map(static function ($row) {
-                    return (int) ($row['generation_ms'] ?? 0);
-                }, $reports_v1_metrics_log));
-                sort($reports_v1_samples);
-                $reports_v1_sample_count = count($reports_v1_samples);
-                if ($reports_v1_sample_count > 0) {
-                    $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_sample_count) - 1;
-                    $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
-                    $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
-                    $reports_v1_slo_generation_p95_max = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
-                    $reports_v1_slo_generation_p95_max = max(100, min(30000, $reports_v1_slo_generation_p95_max));
-                }
-            }
-            update_option('erp_omd_reports_v1_slo_generation_p95_max', $reports_v1_slo_generation_p95_max);
-            if (! empty($_POST['confirm_reports_v1_slo_calibration_decision'])) {
-                $reports_v1_metrics_log = (array) get_option('erp_omd_reports_v1_metrics_log', []);
-                $reports_v1_sample_count = count($reports_v1_metrics_log);
-                $recommended_threshold = $reports_v1_slo_generation_p95_max;
-                if ($reports_v1_sample_count > 0) {
-                    $reports_v1_samples = array_values(array_map(static function ($row) {
-                        return (int) ($row['generation_ms'] ?? 0);
-                    }, $reports_v1_metrics_log));
-                    sort($reports_v1_samples);
-                    $reports_v1_p95_index = (int) ceil(0.95 * $reports_v1_sample_count) - 1;
-                    $reports_v1_p95_index = max(0, min($reports_v1_sample_count - 1, $reports_v1_p95_index));
-                    $reports_v1_generation_p95 = (int) ($reports_v1_samples[$reports_v1_p95_index] ?? 0);
-                    $recommended_threshold = (int) ceil(max(500, $reports_v1_generation_p95 * 1.2) / 50) * 50;
-                    $recommended_threshold = max(100, min(30000, $recommended_threshold));
-                }
-                update_option('erp_omd_reports_v1_slo_calibration_decision', [
-                    'decided_at' => gmdate('c'),
-                    'decided_by_user_id' => (int) get_current_user_id(),
-                    'threshold_ms' => (int) $reports_v1_slo_generation_p95_max,
-                    'recommended_threshold_ms' => (int) $recommended_threshold,
-                    'sample_count' => (int) $reports_v1_sample_count,
-                ]);
-            }
-            if (! empty($_POST['confirm_reports_v1_slo_calibration_closure'])) {
-                $reports_v1_slo_decision = (array) get_option('erp_omd_reports_v1_slo_calibration_decision', []);
-                $decided_at = (string) ($reports_v1_slo_decision['decided_at'] ?? '');
-                $threshold_ms = (int) ($reports_v1_slo_decision['threshold_ms'] ?? 0);
-                if ($decided_at !== '' && $threshold_ms > 0) {
-                    update_option('erp_omd_reports_v1_slo_calibration_closure', [
-                        'closed_at' => gmdate('c'),
-                        'closed_by_user_id' => (int) get_current_user_id(),
-                        'decision_decided_at' => $decided_at,
-                        'decision_threshold_ms' => $threshold_ms,
-                    ]);
-                }
-            }
         }
 
         $this->redirect_with_notice('erp-omd-settings', 'success', __('Ustawienia zostały zapisane.', 'erp-omd'), ['tab' => $settings_tab]);
