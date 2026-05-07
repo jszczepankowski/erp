@@ -770,11 +770,8 @@ final class RestApiTestRunner
         $this->assertSame(1, $dashboardPayload['applied_limits']['profitability_items'], 'Dashboard endpoint should expose applied profitability item limit.');
         $this->assertSame('2026-03', $dashboardPayload['month'], 'Dashboard endpoint should preserve explicit month filter.');
         $this->assertSame('ZAMKNIETY', $dashboardPayload['mode'], 'Dashboard endpoint should expose applied reporting mode.');
-        $this->assertSame('LIVE', $dashboardPayload['period_status'], 'Dashboard endpoint should expose raw period status value.');
-        $this->assertSame('LIVE', $dashboardPayload['period_status_label'], 'Dashboard endpoint should expose user-facing period status label without underscores.');
         $this->assertSame(true, $dashboardPayload['readiness_checklist']['ready'], 'Dashboard endpoint should expose readiness checklist snapshot for selected month.');
         $this->assertSame(1, $dashboardPayload['readiness_meta']['submitted_or_rejected_entries'], 'Dashboard readiness meta should expose submitted/rejected entry counter.');
-        $this->assertSame(0, count((array) ($dashboardPayload['status_actions'] ?? [])), 'Dashboard endpoint should not expose period status actions.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['trend_3m']), 'Dashboard endpoint should expose metric definitions for frontend tooltip rendering.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['readiness_checklist.ready']), 'Dashboard endpoint should expose readiness definition tooltip key.');
         $this->assertSame(true, isset($dashboardPayload['metric_definitions']['data_health.has_operational_data']), 'Dashboard endpoint should expose data_health definition tooltip key.');

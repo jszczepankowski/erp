@@ -721,8 +721,7 @@ window.erpOmdInitDashboardV1Preview =
       debugNode.textContent = '';
       setStatusState('Dane LIVE zostały odświeżone.', 'success', false);
 
-      const periodStatusLabel = String(safeGet(safePayload.period_status_label, '—'));
-      monthStatusNode.textContent = `${periodStatusLabel || '—'} (${safeGet(safePayload.month, monthNode.value || fallbackMonth)})`;
+      monthStatusNode.textContent = `${safeGet(safePayload.month, monthNode.value || fallbackMonth)}`;
       updatedAtNode.textContent = `Ostatnia aktualizacja: ${safeGet(safePayload.generated_at, '—')}`;
       setSourceState('LIVE', 'live');
       const hasOperationalData = Boolean(dataHealth.has_operational_data);
@@ -907,8 +906,7 @@ window.erpOmdInitDashboardV1Preview =
             const payload = JSON.parse(cached);
             const safePayload = isObject(payload) ? payload : {};
             const dataHealth = isObject(safePayload.data_health) ? safePayload.data_health : {};
-            const cachedPeriodStatusLabel = String(safeGet(safePayload.period_status_label, '—'));
-            monthStatusNode.textContent = `${cachedPeriodStatusLabel || '—'} (${safeGet(safePayload.month, monthNode.value || fallbackMonth)})`;
+            monthStatusNode.textContent = `${safeGet(safePayload.month, monthNode.value || fallbackMonth)}`;
             updatedAtNode.textContent = `Tryb offline (cache): ${safeGet(safePayload.generated_at, '—')}`;
             setSourceState('CACHE', 'cache');
             const counters = isObject(dataHealth.counters) ? dataHealth.counters : {};

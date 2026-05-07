@@ -254,9 +254,6 @@ class ERP_OMD_REST_API
                     ],
                     'month' => $month,
                     'mode' => $mode,
-                    'period_status' => (string) ($period['status'] ?? 'LIVE'),
-                    'period_status_label' => 'LIVE',
-                    'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,
                     'readiness_meta' => $readiness_meta,
                     'data_health' => [
@@ -266,7 +263,6 @@ class ERP_OMD_REST_API
                             ? __('Dashboard data loaded from current reporting sources.', 'erp-omd')
                             : __('No operational data found for this month. Add time entries/project costs or switch month/mode.', 'erp-omd'),
                     ],
-                    'status_actions' => [],
                     'metric_definitions' => $this->dashboard_metric_definitions(),
                     'drilldown_links' => $this->dashboard_drilldown_links($month),
                     'trend_3m' => $trend_3m,
