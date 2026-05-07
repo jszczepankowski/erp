@@ -47,7 +47,20 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                             $notice_type = 'error';
                             $notice_message = $result->get_error_message();
                         } else {
-                            $estimates->save_client_decision_note($estimate_id, $note);
+                            $client_note_parts = [];
+                            if (trim($note) !== '') {
+                                $client_note_parts[] = trim($note);
+                            }
+                            if ($preferred_delivery_date !== '') {
+                                $client_note_parts[] = sprintf(__('Preferowany termin realizacji: %s', 'erp-omd'), $preferred_delivery_date);
+                            }
+                            if ($delivery_other === 1 && $delivery_address !== '') {
+                                $client_note_parts[] = sprintf(__('Adres do dostawy: %s', 'erp-omd'), $delivery_address);
+                            }
+                            if ($invoice_other_entity === 1 && $invoice_nip !== '') {
+                                $client_note_parts[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), $invoice_nip);
+                            }
+                            $estimates->save_client_decision_note($estimate_id, implode("\n", $client_note_parts));
                             self::append_accept_note_to_project_history($estimate_id, $note, $result);
                             self::send_thank_you_mail($estimate_id, $estimates, $estimate_items, $estimate_service);
                             update_option('erp_omd_estimate_acceptance_meta_' . $estimate_id, [
