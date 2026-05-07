@@ -24,7 +24,6 @@ class ERP_OMD_REST_API
     private $project_financial_service;
     private $reporting_service;
     private $alert_service;
-    private $period_service;
     private $adjustment_audit;
     private $suppliers;
     private $cost_invoices;
@@ -58,7 +57,6 @@ class ERP_OMD_REST_API
         ERP_OMD_Project_Financial_Service $project_financial_service,
         ERP_OMD_Reporting_Service $reporting_service,
         ERP_OMD_Alert_Service $alert_service,
-        $period_service = null,
         $adjustment_audit_repository = null
 
     ) {
@@ -84,7 +82,6 @@ class ERP_OMD_REST_API
         $this->project_financial_service = $project_financial_service;
         $this->reporting_service = $reporting_service;
         $this->alert_service = $alert_service;
-        $this->period_service = $period_service ?: new ERP_OMD_Period_Service(new ERP_OMD_Period_Repository());
         $this->adjustment_audit = $adjustment_audit_repository ?: new ERP_OMD_Adjustment_Audit_Repository();
         $this->suppliers = class_exists('ERP_OMD_Supplier_Repository') ? new ERP_OMD_Supplier_Repository() : null;
         $this->cost_invoices = class_exists('ERP_OMD_Cost_Invoice_Repository') ? new ERP_OMD_Cost_Invoice_Repository() : null;
@@ -175,8 +172,8 @@ class ERP_OMD_REST_API
                     $scope = 'project';
                 }
                 $mode = sanitize_text_field((string) $request->get_param('mode'));
-                if (! in_array($mode, [ERP_OMD_Period_Service::STATUS_LIVE, ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA, ERP_OMD_Period_Service::STATUS_ZAMKNIETY], true)) {
-                    $mode = ERP_OMD_Period_Service::STATUS_LIVE;
+                if (! in_array($mode, ['LIVE', 'DO_ROZLICZENIA', 'ZAMKNIETY'], true)) {
+                    $mode = 'LIVE';
                 }
                 $adjustments_limit = (int) $request->get_param('adjustments_limit');
                 if ($adjustments_limit <= 0) {
@@ -200,9 +197,9 @@ class ERP_OMD_REST_API
                     $profitability_limit = 20;
                 }
 
-                $period = $this->period_service->ensure_month_exists($month, get_current_user_id());
                 $readiness_signals = $this->readiness_signals_for_month($month);
-                $readiness_checklist = $this->period_service->build_readiness_checklist($readiness_signals);
+                $period = ['month' => $month, 'status' => 'LIVE'];
+                $readiness_checklist = ['ready' => true, 'items' => []];
                 $trend = $this->reporting_service->build_report('omd_rozliczenia', ['month' => $month, 'report_type' => 'omd_rozliczenia', 'mode' => $mode]);
                 $trend_3m = array_slice((array) $trend, -3);
                 $project_rows = $this->reporting_service->build_project_report(['month' => $month, 'report_type' => 'projects', 'mode' => $mode]);
@@ -257,8 +254,8 @@ class ERP_OMD_REST_API
                     ],
                     'month' => $month,
                     'mode' => $mode,
-                    'period_status' => (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE),
-                    'period_status_label' => $this->format_period_status_label((string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE)),
+                    'period_status' => (string) ($period['status'] ?? 'LIVE'),
+                    'period_status_label' => 'LIVE',
                     'status_month' => $period,
                     'readiness_checklist' => $readiness_checklist,
                     'readiness_meta' => $readiness_meta,
@@ -269,7 +266,7 @@ class ERP_OMD_REST_API
                             ? __('Dashboard data loaded from current reporting sources.', 'erp-omd')
                             : __('No operational data found for this month. Add time entries/project costs or switch month/mode.', 'erp-omd'),
                     ],
-                    'status_actions' => $this->dashboard_status_actions($period, $readiness_checklist),
+                    'status_actions' => [],
                     'metric_definitions' => $this->dashboard_metric_definitions(),
                     'drilldown_links' => $this->dashboard_drilldown_links($month),
                     'trend_3m' => $trend_3m,
@@ -442,53 +439,6 @@ class ERP_OMD_REST_API
                 'drilldown_link' => $drilldown_link,
             ];
         }, array_slice($rows, 0, max(1, (int) $limit)));
-    }
-
-    private function dashboard_status_actions(array $period, array $checklist)
-    {
-        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
-        $can_manage_settings = $this->can_manage_settings();
-        $targets = [
-            ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA,
-            ERP_OMD_Period_Service::STATUS_ZAMKNIETY,
-        ];
-
-        $actions = [];
-        foreach ($targets as $target_status) {
-            $can_transition = $this->period_service->can_transition($status, $target_status);
-            if (! $can_transition) {
-                continue;
-            }
-
-            $enabled = true;
-            $reason = '';
-            if (! $can_manage_settings) {
-                $enabled = false;
-                $reason = __('Status transition requires erp_omd_manage_settings capability.', 'erp-omd');
-            }
-            if (
-                $status === ERP_OMD_Period_Service::STATUS_LIVE
-                && $target_status === ERP_OMD_Period_Service::STATUS_DO_ROZLICZENIA
-                && ! (bool) ($checklist['ready'] ?? false)
-            ) {
-                $enabled = false;
-                $reason = __('LIVE -> DO ROZLICZENIA requires readiness checklist == ready.', 'erp-omd');
-            }
-
-            $actions[] = [
-                'to_status' => $target_status,
-                'to_status_label' => $this->format_period_status_label($target_status),
-                'enabled' => $enabled,
-                'reason' => $reason,
-            ];
-        }
-
-        return $actions;
-    }
-
-    private function format_period_status_label($status)
-    {
-        return trim(str_replace('_', ' ', (string) $status));
     }
 
     private function register_role_routes()
@@ -2059,24 +2009,7 @@ class ERP_OMD_REST_API
 
     private function resolve_adjustment_type($month)
     {
-        $period = $this->period_service->ensure_month_exists($month);
-        $status = (string) ($period['status'] ?? ERP_OMD_Period_Service::STATUS_LIVE);
-        if ($status !== ERP_OMD_Period_Service::STATUS_ZAMKNIETY) {
-            return 'STANDARD';
-        }
-
-        $window_until = (string) ($period['correction_window_until'] ?? '');
-        if ($window_until === '') {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
-
-        try {
-            $now = new DateTimeImmutable(current_time('mysql'));
-            $deadline = new DateTimeImmutable($window_until);
-            return $this->period_service->is_emergency_adjustment_required($now, $deadline) ? 'EMERGENCY_ADJUSTMENT' : 'STANDARD';
-        } catch (Exception $exception) {
-            return 'EMERGENCY_ADJUSTMENT';
-        }
+        return 'STANDARD';
     }
 
     private function log_adjustment_audit($month, $entity_type, $entity_id, $old_value, $new_value, $reason)
