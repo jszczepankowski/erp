@@ -225,8 +225,8 @@ class ERP_OMD_Admin
                         continue;
                     }
 
-                    $selected_month_summary['revenue'] = (float) ($trend_row['active_project_budgets'] ?? 0.0) + (float) ($trend_row['time_revenue'] ?? 0.0);
-                    $selected_month_summary['cost'] = (float) ($trend_row['salary_cost'] ?? 0.0) + (float) ($trend_row['project_direct_cost'] ?? 0.0) + (float) ($trend_row['time_cost'] ?? 0.0) + (float) ($trend_row['fixed_cost'] ?? 0.0);
+                    $selected_month_summary['revenue'] = (float) ($trend_row['project_revenue'] ?? 0.0);
+                    $selected_month_summary['cost'] = (float) ($trend_row['salary_cost'] ?? 0.0) + (float) ($trend_row['project_direct_cost'] ?? 0.0) + (float) ($trend_row['fixed_cost'] ?? 0.0);
                     $selected_month_summary['salary_cost'] = (float) ($trend_row['salary_cost'] ?? 0.0);
                     $selected_month_summary['project_direct_cost'] = (float) ($trend_row['project_direct_cost'] ?? 0.0);
                     $selected_month_summary['time_cost'] = (float) ($trend_row['time_cost'] ?? 0.0);

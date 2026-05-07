@@ -183,6 +183,7 @@ class ERP_OMD_Reporting_Service
                     }
 
                     $fixed_cost = (float) ($fixed_cost_by_month[$month] ?? 0.0);
+                    $hourly_profit = $time_revenue - $time_cost;
                     $project_revenue = $active_budgets + $time_revenue;
                     $operational_result = $project_revenue - $direct_cost;
                     $controlling_overhead = $salary_cost + $fixed_cost;
@@ -192,6 +193,7 @@ class ERP_OMD_Reporting_Service
                         'salary_cost' => round($salary_cost, 2),
                         'project_direct_cost' => round($direct_cost, 2),
                         'project_revenue' => round($project_revenue, 2),
+                        'hourly_profit' => round($hourly_profit, 2),
                         'active_project_budgets' => round($active_budgets, 2),
                         'fixed_cost' => round($fixed_cost, 2),
                         'operational_result' => round($operational_result, 2),
@@ -866,11 +868,12 @@ class ERP_OMD_Reporting_Service
             case 'omd_rozliczenia':
                 return [
                     'filename' => sprintf('erp-omd-rozliczenie-omd-%s.csv', $month),
-                    'headers' => ['Miesiąc', 'Przychód projektów', 'Koszt bezpośredni projektów', 'Koszt pensji', 'Stałe koszty', 'Wynik operacyjny', 'Narzut controllingowy', 'Wynik controllingowy'],
+                    'headers' => ['Miesiąc', 'Przychód projektów', 'Zysk godzinowy', 'Koszt bezpośredni projektów', 'Koszt pensji', 'Stałe koszty', 'Wynik operacyjny', 'Narzut controllingowy', 'Wynik controllingowy'],
                     'rows' => array_map(static function ($row) {
                         return [
                             $row['month'],
                             number_format((float) $row['project_revenue'], 2, '.', ''),
+                            number_format((float) $row['hourly_profit'], 2, '.', ''),
                             number_format((float) $row['project_direct_cost'], 2, '.', ''),
                             number_format((float) $row['salary_cost'], 2, '.', ''),
                             number_format((float) $row['fixed_cost'], 2, '.', ''),
