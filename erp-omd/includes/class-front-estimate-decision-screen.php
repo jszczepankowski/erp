@@ -126,6 +126,7 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
 
             $items = $estimate_items->for_estimate((int) $estimate_id);
             $totals = $estimate_service->calculate_totals($items);
+            $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
             $mail_defaults = [
                 'subject' => __('[ERP OMD] Dziękujemy za akceptację kosztorysu {estimate_name}', 'erp-omd'),
                 'body' => __('Dziękujemy za akceptację kosztorysu <strong>{estimate_name}</strong>.<br><br>Poniżej przesyłamy podsumowanie pozycji i finalnej kwoty.', 'erp-omd'),
@@ -141,6 +142,19 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
 
             $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
             $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
+            $accept_meta_lines = [];
+            if (! empty($accept_meta['preferred_delivery_date'])) {
+                $accept_meta_lines[] = sprintf(__('Preferowany termin realizacji: %s', 'erp-omd'), (string) $accept_meta['preferred_delivery_date']);
+            }
+            if (! empty($accept_meta['delivery_address'])) {
+                $accept_meta_lines[] = sprintf(__('Adres do dostawy: %s', 'erp-omd'), (string) $accept_meta['delivery_address']);
+            }
+            if (! empty($accept_meta['invoice_nip'])) {
+                $accept_meta_lines[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), (string) $accept_meta['invoice_nip']);
+            }
+            if ($accept_meta_lines !== []) {
+                $body .= '<br><br><strong>' . esc_html__('Dodatkowe dane z akceptacji:', 'erp-omd') . '</strong><br>' . esc_html(implode(' | ', $accept_meta_lines));
+            }
             $body .= self::build_summary_table_html($items, $totals, true);
             $headers = ['Content-Type: text/html; charset=UTF-8'];
             $sender_name = sanitize_text_field((string) get_option('erp_omd_estimate_mail_sender_name', ''));
@@ -209,6 +223,7 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             $project_name = trim((string) ($project['name'] ?? ''));
             $client_repository = new ERP_OMD_Client_Repository();
             $client = (array) $client_repository->find((int) ($estimate['client_id'] ?? 0));
+            $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
 
             $mail_defaults = [
                 'subject' => __('[ERP OMD] Klient zaakceptował kosztorys: {estimate_name}', 'erp-omd'),
@@ -226,6 +241,19 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             ];
             $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
             $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);
+            $accept_meta_lines = [];
+            if (! empty($accept_meta['preferred_delivery_date'])) {
+                $accept_meta_lines[] = sprintf(__('Preferowany termin realizacji: %s', 'erp-omd'), (string) $accept_meta['preferred_delivery_date']);
+            }
+            if (! empty($accept_meta['delivery_address'])) {
+                $accept_meta_lines[] = sprintf(__('Adres do dostawy: %s', 'erp-omd'), (string) $accept_meta['delivery_address']);
+            }
+            if (! empty($accept_meta['invoice_nip'])) {
+                $accept_meta_lines[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), (string) $accept_meta['invoice_nip']);
+            }
+            if ($accept_meta_lines !== []) {
+                $body .= '<br><br><strong>' . esc_html__('Dodatkowe dane z akceptacji:', 'erp-omd') . '</strong><br>' . esc_html(implode(' | ', $accept_meta_lines));
+            }
             $body .= self::build_summary_table_html((array) $items, $totals, true);
 
             $headers = ['Content-Type: text/html; charset=UTF-8'];
@@ -240,7 +268,19 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
         private static function append_accept_note_to_project_history($estimate_id, $note, array $accept_result = [])
         {
             $clean_note = trim((string) $note);
-            if ($clean_note === '' || ! class_exists('ERP_OMD_Project_Note_Repository')) {
+            $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
+            $meta_lines = [];
+            if (! empty($accept_meta['preferred_delivery_date'])) {
+                $meta_lines[] = sprintf(__('Preferowany termin realizacji: %s', 'erp-omd'), (string) $accept_meta['preferred_delivery_date']);
+            }
+            if (! empty($accept_meta['delivery_other']) && ! empty($accept_meta['delivery_address'])) {
+                $meta_lines[] = sprintf(__('Adres do dostawy: %s', 'erp-omd'), (string) $accept_meta['delivery_address']);
+            }
+            if (! empty($accept_meta['invoice_other_entity']) && ! empty($accept_meta['invoice_nip'])) {
+                $meta_lines[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), (string) $accept_meta['invoice_nip']);
+            }
+
+            if (($clean_note === '' && $meta_lines === []) || ! class_exists('ERP_OMD_Project_Note_Repository')) {
                 return;
             }
 
@@ -262,9 +302,16 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             }
 
             $project_notes = new ERP_OMD_Project_Note_Repository();
+            $note_parts = [];
+            if ($clean_note !== '') {
+                $note_parts[] = sprintf(__('Akceptacja klienta (uwaga): %s', 'erp-omd'), $clean_note);
+            }
+            if ($meta_lines !== []) {
+                $note_parts[] = __('Dane z akceptacji kosztorysu:', 'erp-omd') . "\n- " . implode("\n- ", $meta_lines);
+            }
             $project_notes->create(
                 $project_id,
-                sprintf(__('Akceptacja klienta (uwaga): %s', 'erp-omd'), $clean_note),
+                implode("\n\n", $note_parts),
                 $author_user_id
             );
         }
