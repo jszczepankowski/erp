@@ -48,7 +48,7 @@
                             </div>
                             <div class="erp-omd-estimate-create-items" data-admin-initial-items>
                                 <div class="erp-omd-form-grid erp-omd-estimate-create-item-row" data-admin-initial-item-row>
-                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-row erp-omd-form-field erp-omd-form-field-span-2">
+                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-row erp-omd-form-grid-estimate-item-row-with-suggest erp-omd-form-field erp-omd-form-field-span-2" data-admin-price-row>
                                         <div class="erp-omd-form-field">
                                             <label><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
                                             <input name="initial_item_name[]" type="text" class="regular-text" required>
@@ -59,18 +59,27 @@
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
-                                            <input name="initial_item_price[]" type="number" step="0.01" min="0" value="0" required>
+                                            <input name="initial_item_price[]" type="number" step="0.01" min="0" value="0" required data-price-input>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-inline-action">
+                                            <label>&nbsp;</label>
+                                            <button type="button" class="button button-secondary" data-admin-suggest-price><?php esc_html_e('Zasugeruj cenę', 'erp-omd'); ?></button>
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
-                                            <input name="initial_item_cost_internal[]" type="number" step="0.01" min="0" value="0" required>
+                                            <input name="initial_item_cost_internal[]" type="number" step="0.01" min="0" value="0" required data-cost-input>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label><?php esc_html_e('Marża (%)', 'erp-omd'); ?></label>
+                                            <input name="initial_item_margin_percent[]" type="number" step="0.01" min="0" max="500" value="0" required data-margin-input>
                                         </div>
                                     </div>
+                                    <input type="hidden" name="initial_item_price_source[]" value="manual">
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
                                         <textarea name="initial_item_comment[]" rows="3" class="large-text"></textarea>
                                     </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-span-2 erp-omd-estimate-create-item-actions">
+                                        <div class="erp-omd-form-field erp-omd-form-field-span-2 erp-omd-estimate-create-item-actions">
                                         <button type="button" class="button button-link-delete" data-admin-remove-item><?php esc_html_e('Usuń pozycję', 'erp-omd'); ?></button>
                                     </div>
                                 </div>
@@ -88,11 +97,12 @@
                                             <th><?php esc_html_e('Cena', 'erp-omd'); ?></th>
                                             <th><?php esc_html_e('Wartość', 'erp-omd'); ?></th>
                                             <th><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></th>
+                                            <th><?php esc_html_e('Marża', 'erp-omd'); ?></th>
                                             <th><?php esc_html_e('Komentarz', 'erp-omd'); ?></th>
                                         </tr>
                                     </thead>
                                     <tbody data-admin-preview-items>
-                                        <tr><td colspan="6"><?php esc_html_e('Brak pozycji do podglądu.', 'erp-omd'); ?></td></tr>
+                                        <tr><td colspan="7"><?php esc_html_e('Brak pozycji do podglądu.', 'erp-omd'); ?></td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -143,10 +153,12 @@
                         var priceRaw = (row.querySelector('input[name="initial_item_price[]"]') || {}).value || '0';
                         var internalRaw = (row.querySelector('input[name="initial_item_cost_internal[]"]') || {}).value || '0';
                         var comment = (row.querySelector('textarea[name="initial_item_comment[]"]') || {}).value || '';
+                        var marginRaw = (row.querySelector('input[name="initial_item_margin_percent[]"]') || {}).value || '0';
                         var qty = parseFloat(qtyRaw) || 0;
                         var price = parseFloat(priceRaw) || 0;
                         var internalCost = parseFloat(internalRaw) || 0;
                         var total = qty * price;
+                        var margin = parseFloat(marginRaw) || 0;
                         if (name === '' && qty === 0 && price === 0 && internalCost === 0 && comment === '') {
                             return;
                         }
@@ -157,6 +169,7 @@
                             '<td>' + escapeHtml(price.toFixed(2)) + '</td>' +
                             '<td>' + escapeHtml(total.toFixed(2)) + '</td>' +
                             '<td>' + escapeHtml(internalCost.toFixed(2)) + '</td>' +
+                            '<td>' + escapeHtml(margin.toFixed(2)) + '%</td>' +
                             '<td>' + escapeHtml(comment || '—') + '</td>' +
                             '</tr>'
                         );
@@ -164,7 +177,7 @@
 
                     previewBody.innerHTML = previewRows.length > 0
                         ? previewRows.join('')
-                        : '<tr><td colspan="6"><?php echo esc_js(__('Brak pozycji do podglądu.', 'erp-omd')); ?></td></tr>';
+                        : '<tr><td colspan="7"><?php echo esc_js(__('Brak pozycji do podglądu.', 'erp-omd')); ?></td></tr>';
                 };
 
                 var updateRemoveButtons = function () {
@@ -193,6 +206,10 @@
                             field.value = '1';
                         } else if (field.name === 'initial_item_price[]' || field.name === 'initial_item_cost_internal[]') {
                             field.value = '0';
+                        } else if (field.name === 'initial_item_margin_percent[]') {
+                            field.value = '0';
+                        } else if (field.name === 'initial_item_price_source[]') {
+                            field.value = 'manual';
                         } else {
                             field.value = '';
                         }
@@ -204,6 +221,29 @@
                 });
 
                 root.addEventListener('click', function (event) {
+                    var suggestButton = event.target.closest('[data-admin-suggest-price]');
+                    if (suggestButton) {
+                        var suggestRow = suggestButton.closest('[data-admin-initial-item-row]');
+                        if (!suggestRow) {
+                            return;
+                        }
+                        var costInput = suggestRow.querySelector('input[name="initial_item_cost_internal[]"]');
+                        var marginInput = suggestRow.querySelector('input[name="initial_item_margin_percent[]"]');
+                        var priceInput = suggestRow.querySelector('input[name="initial_item_price[]"]');
+                        var priceSourceInput = suggestRow.querySelector('input[name="initial_item_price_source[]"]');
+                        var cost = parseFloat((costInput || {}).value || '0');
+                        var margin = parseFloat((marginInput || {}).value || '0');
+                        if (!isFinite(cost) || cost < 0 || !isFinite(margin) || margin < 0 || margin > 500 || !priceInput) {
+                            return;
+                        }
+                        var suggestedPrice = Math.round((cost * (1 + (margin / 100))) * 100) / 100;
+                        priceInput.value = suggestedPrice.toFixed(2);
+                        if (priceSourceInput) {
+                            priceSourceInput.value = 'suggested';
+                        }
+                        renderPreview();
+                        return;
+                    }
                     var button = event.target.closest('[data-admin-remove-item]');
                     if (!button) {
                         return;
@@ -221,7 +261,15 @@
                     renderPreview();
                 });
 
-                root.addEventListener('input', function () {
+                root.addEventListener('input', function (event) {
+                    var priceField = event.target.closest('input[name="initial_item_price[]"]');
+                    if (priceField) {
+                        var row = priceField.closest('[data-admin-initial-item-row]');
+                        var sourceField = row ? row.querySelector('input[name="initial_item_price_source[]"]') : null;
+                        if (sourceField) {
+                            sourceField.value = 'manual';
+                        }
+                    }
                     renderPreview();
                 });
 
@@ -230,6 +278,55 @@
             }());
         </script>
     <?php endif; ?>
+    <script>
+        (function () {
+            var rows = document.querySelectorAll('[data-admin-price-row]');
+            if (!rows.length) {
+                return;
+            }
+
+            var suggest = function (row) {
+                var costInput = row.querySelector('[data-cost-input]');
+                var marginInput = row.querySelector('[data-margin-input]');
+                var priceInput = row.querySelector('[data-price-input]');
+                var sourceInput = row.parentElement ? row.parentElement.querySelector('input[name="price_source"],input[name="initial_item_price_source[]"]') : null;
+                var cost = parseFloat((costInput || {}).value || '0');
+                var margin = parseFloat((marginInput || {}).value || '0');
+                if (!isFinite(cost) || cost < 0 || !isFinite(margin) || margin < 0 || margin > 500 || !priceInput) {
+                    return;
+                }
+                var suggestedPrice = Math.round((cost * (1 + (margin / 100))) * 100) / 100;
+                priceInput.value = suggestedPrice.toFixed(2);
+                if (sourceInput) {
+                    sourceInput.value = 'suggested';
+                }
+            };
+
+            document.addEventListener('click', function (event) {
+                var button = event.target.closest('[data-admin-suggest-price]');
+                if (!button) {
+                    return;
+                }
+                var row = button.closest('[data-admin-price-row]');
+                if (!row) {
+                    return;
+                }
+                suggest(row);
+            });
+
+            document.addEventListener('input', function (event) {
+                var priceInput = event.target.closest('[data-price-input]');
+                if (!priceInput) {
+                    return;
+                }
+                var row = priceInput.closest('[data-admin-price-row]');
+                var sourceInput = row && row.parentElement ? row.parentElement.querySelector('input[name="price_source"],input[name="initial_item_price_source[]"]') : null;
+                if (sourceInput) {
+                    sourceInput.value = 'manual';
+                }
+            });
+        }());
+    </script>
 
     <section class="erp-omd-card">
             <?php if ($selected_estimate) : ?>
@@ -311,7 +408,7 @@
                                 <input type="hidden" name="estimate_id" value="<?php echo esc_attr($selected_estimate['id']); ?>">
                                 <input type="hidden" name="item_id" value="<?php echo esc_attr($editing_estimate_item['id'] ?? 0); ?>">
                                 <div class="erp-omd-form-grid">
-                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-row erp-omd-form-field erp-omd-form-field-span-2">
+                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-row erp-omd-form-grid-estimate-item-row-with-suggest erp-omd-form-field erp-omd-form-field-span-2" data-admin-price-row>
                                         <div class="erp-omd-form-field">
                                             <label for="estimate-item-name"><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
                                             <input id="estimate-item-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($editing_estimate_item['name'] ?? ''); ?>" required>
@@ -322,13 +419,22 @@
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label for="estimate-item-price"><?php esc_html_e('Cena', 'erp-omd'); ?></label>
-                                            <input id="estimate-item-price" name="price" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['price'] ?? '0'); ?>" required>
+                                            <input id="estimate-item-price" name="price" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['price'] ?? '0'); ?>" required data-price-input>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-inline-action">
+                                            <label>&nbsp;</label>
+                                            <button type="button" class="button button-secondary" data-admin-suggest-price><?php esc_html_e('Zasugeruj cenę', 'erp-omd'); ?></button>
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label for="estimate-item-cost-internal"><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
-                                            <input id="estimate-item-cost-internal" name="cost_internal" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['cost_internal'] ?? '0'); ?>" required>
+                                            <input id="estimate-item-cost-internal" name="cost_internal" type="number" step="0.01" min="0" value="<?php echo esc_attr($editing_estimate_item['cost_internal'] ?? '0'); ?>" required data-cost-input>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label for="estimate-item-margin-percent"><?php esc_html_e('Marża (%)', 'erp-omd'); ?></label>
+                                            <input id="estimate-item-margin-percent" name="margin_percent" type="number" step="0.01" min="0" max="500" value="<?php echo esc_attr($editing_estimate_item['margin_percent'] ?? '0'); ?>" required data-margin-input>
                                         </div>
                                     </div>
+                                    <input type="hidden" name="price_source" value="<?php echo esc_attr((string) ($editing_estimate_item['price_source'] ?? 'manual')); ?>">
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label for="estimate-item-comment"><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
                                         <textarea id="estimate-item-comment" name="comment" rows="3" class="large-text"><?php echo esc_textarea($editing_estimate_item['comment'] ?? ''); ?></textarea>
@@ -348,7 +454,7 @@
                                 <input type="hidden" name="estimate_id" value="<?php echo esc_attr($selected_estimate['id']); ?>">
                                 <input type="hidden" name="item_id" value="0">
                                 <div class="erp-omd-form-grid">
-                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-row erp-omd-form-field erp-omd-form-field-span-2">
+                                    <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-row erp-omd-form-grid-estimate-item-row-with-suggest erp-omd-form-field erp-omd-form-field-span-2" data-admin-price-row>
                                         <div class="erp-omd-form-field">
                                             <label><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
                                             <input name="name" type="text" class="regular-text" required>
@@ -359,13 +465,22 @@
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
-                                            <input name="price" type="number" step="0.01" min="0" value="0" required>
+                                            <input name="price" type="number" step="0.01" min="0" value="0" required data-price-input>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-inline-action">
+                                            <label>&nbsp;</label>
+                                            <button type="button" class="button button-secondary" data-admin-suggest-price><?php esc_html_e('Zasugeruj cenę', 'erp-omd'); ?></button>
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
-                                            <input name="cost_internal" type="number" step="0.01" min="0" value="0" required>
+                                            <input name="cost_internal" type="number" step="0.01" min="0" value="0" required data-cost-input>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label><?php esc_html_e('Marża (%)', 'erp-omd'); ?></label>
+                                            <input name="margin_percent" type="number" step="0.01" min="0" max="500" value="0" required data-margin-input>
                                         </div>
                                     </div>
+                                    <input type="hidden" name="price_source" value="manual">
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
                                         <input name="comment" type="text" class="regular-text">
@@ -384,6 +499,8 @@
                                     <th><?php esc_html_e('Ilość', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Cena', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Marża', 'erp-omd'); ?></th>
+                                    <th><?php esc_html_e('Źródło ceny', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Komentarz', 'erp-omd'); ?></th>
                                     <th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                                 </tr>
@@ -391,7 +508,7 @@
                             <tbody>
                                 <?php if (empty($estimate_items)) : ?>
                                     <tr>
-                                        <td colspan="6"><?php esc_html_e('Brak pozycji kosztorysu.', 'erp-omd'); ?></td>
+                                        <td colspan="8"><?php esc_html_e('Brak pozycji kosztorysu.', 'erp-omd'); ?></td>
                                     </tr>
                                 <?php endif; ?>
                                 <?php foreach ($estimate_items as $item_row) : ?>
@@ -400,6 +517,8 @@
                                         <td><?php echo esc_html(number_format_i18n((float) $item_row['qty'], 2)); ?></td>
                                         <td><?php echo esc_html(number_format_i18n((float) $item_row['price'], 2)); ?></td>
                                         <td><?php echo esc_html(number_format_i18n((float) $item_row['cost_internal'], 2)); ?></td>
+                                        <td><?php echo esc_html(number_format_i18n((float) ($item_row['margin_percent'] ?? 0), 2)); ?>%</td>
+                                        <td><?php echo esc_html((string) ($item_row['price_source'] ?? 'manual')); ?></td>
                                         <td><?php echo esc_html($item_row['comment']); ?></td>
                                         <td>
                                             <?php if (($selected_estimate['status'] ?? '') !== 'zaakceptowany') : ?>
