@@ -280,11 +280,6 @@
     <?php endif; ?>
     <script>
         (function () {
-            var rows = document.querySelectorAll('[data-admin-price-row]');
-            if (!rows.length) {
-                return;
-            }
-
             var suggest = function (row) {
                 var costInput = row.querySelector('[data-cost-input]');
                 var marginInput = row.querySelector('[data-margin-input]');
