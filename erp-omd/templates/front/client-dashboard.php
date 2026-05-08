@@ -135,139 +135,7 @@
                     </div>
                 </form>
             </article>
-
-            <article class="erp-omd-front-panel">
-                <div class="erp-omd-front-section-heading">
-                    <h2><?php esc_html_e('Twoje projekty', 'erp-omd'); ?></h2>
-                </div>
-                <div class="erp-omd-front-inline-actions">
-                    <?php
-                    $scope_base_args = [
-                        'sort_by' => $project_sort_by,
-                        'sort_order' => $project_sort_order,
-                    ];
-                    if (! empty($history_month_filter)) {
-                        $scope_base_args['history_month'] = $history_month_filter;
-                    }
-                    ?>
-                    <a
-                        class="erp-omd-front-button <?php echo $project_scope === 'current' ? 'erp-omd-front-button-primary' : 'erp-omd-front-button-ghost'; ?>"
-                        href="<?php echo esc_url(add_query_arg(array_merge($scope_base_args, ['project_scope' => 'current']), $front_client_url)); ?>"
-                    >
-                        <?php esc_html_e('Bieżące', 'erp-omd'); ?>
-                    </a>
-                    <a
-                        class="erp-omd-front-button <?php echo $project_scope === 'archive' ? 'erp-omd-front-button-primary' : 'erp-omd-front-button-ghost'; ?>"
-                        href="<?php echo esc_url(add_query_arg(array_merge($scope_base_args, ['project_scope' => 'archive']), $front_client_url)); ?>"
-                    >
-                        <?php esc_html_e('Archiwum', 'erp-omd'); ?>
-                    </a>
-                </div>
-                <?php if (! empty($history_month_filter)) : ?>
-                    <div class="erp-omd-front-inline-actions">
-                        <span class="erp-omd-front-eyebrow">
-                            <?php
-                            echo esc_html(
-                                sprintf(
-                                    /* translators: %s: month filter */
-                                    __('Aktywny filtr miesiąca: %s', 'erp-omd'),
-                                    $history_month_filter
-                                )
-                            );
-                            ?>
-                        </span>
-                        <?php
-                        $history_clear_args = ['project_scope' => $project_scope, 'sort_by' => $project_sort_by, 'sort_order' => $project_sort_order];
-                        ?>
-                        <a class="erp-omd-front-button erp-omd-front-button-ghost" href="<?php echo esc_url(add_query_arg($history_clear_args, $front_client_url)); ?>">
-                            <?php esc_html_e('Wyczyść filtr miesiąca', 'erp-omd'); ?>
-                        </a>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ($client_id <= 0) : ?>
-                    <div class="erp-omd-front-notice erp-omd-front-notice-warning">
-                        <?php esc_html_e('Brak przypisanego `erp_omd_client_id` dla tego użytkownika. Skontaktuj się z administratorem.', 'erp-omd'); ?>
-                    </div>
-                <?php endif; ?>
-
-                <div class="erp-omd-front-table-wrap">
-                    <?php
-                    $sort_base_args = [];
-                    $sort_base_args['project_scope'] = $project_scope;
-                    if (! empty($history_month_filter)) {
-                        $sort_base_args['history_month'] = $history_month_filter;
-                    }
-                    if (! empty($_GET['project_id'])) {
-                        $sort_base_args['project_id'] = (int) $_GET['project_id'];
-                    }
-                    $render_sort_label = static function ($column_key, $label) use ($project_sort_by, $project_sort_order) {
-                        if ($project_sort_by !== $column_key) {
-                            return $label;
-                        }
-
-                        return $label . ' ' . ($project_sort_order === 'asc' ? '↑' : '↓');
-                    };
-                    $render_sort_url = static function ($column_key) use ($project_sort_by, $project_sort_order, $sort_base_args, $front_client_url) {
-                        $next_order = ($project_sort_by === $column_key && $project_sort_order === 'asc') ? 'desc' : 'asc';
-
-                        return add_query_arg(array_merge($sort_base_args, ['sort_by' => $column_key, 'sort_order' => $next_order]), $front_client_url);
-                    };
-                    ?>
-                    <table class="erp-omd-front-table">
-                        <thead>
-                            <tr>
-                                <th><a href="<?php echo esc_url($render_sort_url('name')); ?>"><?php echo esc_html($render_sort_label('name', __('Projekt', 'erp-omd'))); ?></a></th>
-                                <th><a href="<?php echo esc_url($render_sort_url('status')); ?>"><?php echo esc_html($render_sort_label('status', __('Status', 'erp-omd'))); ?></a></th>
-                                <th><a href="<?php echo esc_url($render_sort_url('budget')); ?>"><?php echo esc_html($render_sort_label('budget', __('Budżet projektu', 'erp-omd'))); ?></a></th>
-                                <th><a href="<?php echo esc_url($render_sort_url('start_date')); ?>"><?php echo esc_html($render_sort_label('start_date', __('Data rozpoczęcia', 'erp-omd'))); ?></a></th>
-                                <th><a href="<?php echo esc_url($render_sort_url('end_date')); ?>"><?php echo esc_html($render_sort_label('end_date', __('Data zakończenia', 'erp-omd'))); ?></a></th>
-                                <th><a href="<?php echo esc_url($render_sort_url('billing_type')); ?>"><?php echo esc_html($render_sort_label('billing_type', __('Typ projektu', 'erp-omd'))); ?></a></th>
-                                <th><a href="<?php echo esc_url($render_sort_url('deadline')); ?>"><?php echo esc_html($render_sort_label('deadline', __('Deadline', 'erp-omd'))); ?></a></th>
-                                <th><?php esc_html_e('Szczegóły', 'erp-omd'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if ($projects) : ?>
-                                <?php foreach ($projects as $project_item) : ?>
-                                    <tr>
-                                        <td><?php echo esc_html($project_item['name'] ?? '—'); ?></td>
-                                        <td>
-                                            <?php
-                                            $project_status = (string) ($project_item['status'] ?? '');
-                                            echo esc_html($project_status_labels[$project_status] ?? ($project_status !== '' ? $project_status : '—'));
-                                            ?>
-                                        </td>
-                                        <td><?php echo esc_html(number_format_i18n((float) ($project_item['budget'] ?? 0), 2)); ?></td>
-                                        <td><?php echo esc_html((string) ($project_item['start_date'] ?? '—')); ?></td>
-                                        <td><?php echo esc_html((string) ($project_item['end_date'] ?? '—')); ?></td>
-                                        <td>
-                                            <?php
-                                            $billing_type = (string) ($project_item['billing_type'] ?? '');
-                                            echo esc_html($project_billing_type_labels[$billing_type] ?? ($billing_type !== '' ? $billing_type : '—'));
-                                            ?>
-                                        </td>
-                                        <td><?php echo esc_html($project_item['deadline'] ?? '—'); ?></td>
-                                        <td>
-                                            <a
-                                                class="erp-omd-front-button erp-omd-front-button-small"
-                                                href="<?php echo esc_url(add_query_arg(['project_id' => (int) ($project_item['id'] ?? 0)], $front_client_url)); ?>"
-                                            >
-                                                <?php esc_html_e('Otwórz', 'erp-omd'); ?>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else : ?>
-                                <tr>
-                                    <td colspan="8"><?php esc_html_e('Brak projektów do wyświetlenia.', 'erp-omd'); ?></td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </article>
-
+            
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Twoje kosztorysy', 'erp-omd'); ?></h2>
@@ -406,6 +274,138 @@
                     <?php endif; ?>
                 </article>
             <?php endif; ?>
+          
+            <article class="erp-omd-front-panel">
+                <div class="erp-omd-front-section-heading">
+                    <h2><?php esc_html_e('Twoje projekty', 'erp-omd'); ?></h2>
+                </div>
+                <div class="erp-omd-front-inline-actions">
+                    <?php
+                    $scope_base_args = [
+                        'sort_by' => $project_sort_by,
+                        'sort_order' => $project_sort_order,
+                    ];
+                    if (! empty($history_month_filter)) {
+                        $scope_base_args['history_month'] = $history_month_filter;
+                    }
+                    ?>
+                    <a
+                        class="erp-omd-front-button <?php echo $project_scope === 'current' ? 'erp-omd-front-button-primary' : 'erp-omd-front-button-ghost'; ?>"
+                        href="<?php echo esc_url(add_query_arg(array_merge($scope_base_args, ['project_scope' => 'current']), $front_client_url)); ?>"
+                    >
+                        <?php esc_html_e('Bieżące', 'erp-omd'); ?>
+                    </a>
+                    <a
+                        class="erp-omd-front-button <?php echo $project_scope === 'archive' ? 'erp-omd-front-button-primary' : 'erp-omd-front-button-ghost'; ?>"
+                        href="<?php echo esc_url(add_query_arg(array_merge($scope_base_args, ['project_scope' => 'archive']), $front_client_url)); ?>"
+                    >
+                        <?php esc_html_e('Archiwum', 'erp-omd'); ?>
+                    </a>
+                </div>
+                <?php if (! empty($history_month_filter)) : ?>
+                    <div class="erp-omd-front-inline-actions">
+                        <span class="erp-omd-front-eyebrow">
+                            <?php
+                            echo esc_html(
+                                sprintf(
+                                    /* translators: %s: month filter */
+                                    __('Aktywny filtr miesiąca: %s', 'erp-omd'),
+                                    $history_month_filter
+                                )
+                            );
+                            ?>
+                        </span>
+                        <?php
+                        $history_clear_args = ['project_scope' => $project_scope, 'sort_by' => $project_sort_by, 'sort_order' => $project_sort_order];
+                        ?>
+                        <a class="erp-omd-front-button erp-omd-front-button-ghost" href="<?php echo esc_url(add_query_arg($history_clear_args, $front_client_url)); ?>">
+                            <?php esc_html_e('Wyczyść filtr miesiąca', 'erp-omd'); ?>
+                        </a>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($client_id <= 0) : ?>
+                    <div class="erp-omd-front-notice erp-omd-front-notice-warning">
+                        <?php esc_html_e('Brak przypisanego `erp_omd_client_id` dla tego użytkownika. Skontaktuj się z administratorem.', 'erp-omd'); ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="erp-omd-front-table-wrap">
+                    <?php
+                    $sort_base_args = [];
+                    $sort_base_args['project_scope'] = $project_scope;
+                    if (! empty($history_month_filter)) {
+                        $sort_base_args['history_month'] = $history_month_filter;
+                    }
+                    if (! empty($_GET['project_id'])) {
+                        $sort_base_args['project_id'] = (int) $_GET['project_id'];
+                    }
+                    $render_sort_label = static function ($column_key, $label) use ($project_sort_by, $project_sort_order) {
+                        if ($project_sort_by !== $column_key) {
+                            return $label;
+                        }
+
+                        return $label . ' ' . ($project_sort_order === 'asc' ? '↑' : '↓');
+                    };
+                    $render_sort_url = static function ($column_key) use ($project_sort_by, $project_sort_order, $sort_base_args, $front_client_url) {
+                        $next_order = ($project_sort_by === $column_key && $project_sort_order === 'asc') ? 'desc' : 'asc';
+
+                        return add_query_arg(array_merge($sort_base_args, ['sort_by' => $column_key, 'sort_order' => $next_order]), $front_client_url);
+                    };
+                    ?>
+                    <table class="erp-omd-front-table">
+                        <thead>
+                            <tr>
+                                <th><a href="<?php echo esc_url($render_sort_url('name')); ?>"><?php echo esc_html($render_sort_label('name', __('Projekt', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('status')); ?>"><?php echo esc_html($render_sort_label('status', __('Status', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('budget')); ?>"><?php echo esc_html($render_sort_label('budget', __('Budżet projektu', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('start_date')); ?>"><?php echo esc_html($render_sort_label('start_date', __('Data rozpoczęcia', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('end_date')); ?>"><?php echo esc_html($render_sort_label('end_date', __('Data zakończenia', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('billing_type')); ?>"><?php echo esc_html($render_sort_label('billing_type', __('Typ projektu', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('deadline')); ?>"><?php echo esc_html($render_sort_label('deadline', __('Deadline', 'erp-omd'))); ?></a></th>
+                                <th><?php esc_html_e('Szczegóły', 'erp-omd'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if ($projects) : ?>
+                                <?php foreach ($projects as $project_item) : ?>
+                                    <tr>
+                                        <td><?php echo esc_html($project_item['name'] ?? '—'); ?></td>
+                                        <td>
+                                            <?php
+                                            $project_status = (string) ($project_item['status'] ?? '');
+                                            echo esc_html($project_status_labels[$project_status] ?? ($project_status !== '' ? $project_status : '—'));
+                                            ?>
+                                        </td>
+                                        <td><?php echo esc_html(number_format_i18n((float) ($project_item['budget'] ?? 0), 2)); ?></td>
+                                        <td><?php echo esc_html((string) ($project_item['start_date'] ?? '—')); ?></td>
+                                        <td><?php echo esc_html((string) ($project_item['end_date'] ?? '—')); ?></td>
+                                        <td>
+                                            <?php
+                                            $billing_type = (string) ($project_item['billing_type'] ?? '');
+                                            echo esc_html($project_billing_type_labels[$billing_type] ?? ($billing_type !== '' ? $billing_type : '—'));
+                                            ?>
+                                        </td>
+                                        <td><?php echo esc_html($project_item['deadline'] ?? '—'); ?></td>
+                                        <td>
+                                            <a
+                                                class="erp-omd-front-button erp-omd-front-button-small"
+                                                href="<?php echo esc_url(add_query_arg(['project_id' => (int) ($project_item['id'] ?? 0)], $front_client_url)); ?>"
+                                            >
+                                                <?php esc_html_e('Otwórz', 'erp-omd'); ?>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else : ?>
+                                <tr>
+                                    <td colspan="8"><?php esc_html_e('Brak projektów do wyświetlenia.', 'erp-omd'); ?></td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
 
             <?php if ($selected_project_id > 0 && ! empty($selected_project)) : ?>
                 <article class="erp-omd-front-panel">
