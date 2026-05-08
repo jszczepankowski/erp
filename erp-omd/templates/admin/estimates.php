@@ -97,11 +97,12 @@
                                             <th><?php esc_html_e('Cena', 'erp-omd'); ?></th>
                                             <th><?php esc_html_e('Wartość', 'erp-omd'); ?></th>
                                             <th><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></th>
+                                            <th><?php esc_html_e('Marża', 'erp-omd'); ?></th>
                                             <th><?php esc_html_e('Komentarz', 'erp-omd'); ?></th>
                                         </tr>
                                     </thead>
                                     <tbody data-admin-preview-items>
-                                        <tr><td colspan="6"><?php esc_html_e('Brak pozycji do podglądu.', 'erp-omd'); ?></td></tr>
+                                        <tr><td colspan="7"><?php esc_html_e('Brak pozycji do podglądu.', 'erp-omd'); ?></td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -168,6 +169,7 @@
                             '<td>' + escapeHtml(price.toFixed(2)) + '</td>' +
                             '<td>' + escapeHtml(total.toFixed(2)) + '</td>' +
                             '<td>' + escapeHtml(internalCost.toFixed(2)) + '</td>' +
+                            '<td>' + escapeHtml(margin.toFixed(2)) + '%</td>' +
                             '<td>' + escapeHtml(comment || '—') + '</td>' +
                             '</tr>'
                         );
@@ -175,7 +177,7 @@
 
                     previewBody.innerHTML = previewRows.length > 0
                         ? previewRows.join('')
-                        : '<tr><td colspan="6"><?php echo esc_js(__('Brak pozycji do podglądu.', 'erp-omd')); ?></td></tr>';
+                        : '<tr><td colspan="7"><?php echo esc_js(__('Brak pozycji do podglądu.', 'erp-omd')); ?></td></tr>';
                 };
 
                 var updateRemoveButtons = function () {
