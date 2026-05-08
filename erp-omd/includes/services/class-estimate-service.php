@@ -104,6 +104,16 @@ class ERP_OMD_Estimate_Service
             $errors[] = __('Koszt wewnętrzny pozycji kosztorysu nie może być ujemny.', 'erp-omd');
         }
 
+        $margin_percent = isset($data['margin_percent']) ? (float) $data['margin_percent'] : 0.0;
+        if ($margin_percent < 0 || $margin_percent > 500) {
+            $errors[] = __('Marża pozycji kosztorysu musi mieścić się w zakresie 0-500%.', 'erp-omd');
+        }
+
+        $price_source = (string) ($data['price_source'] ?? 'manual');
+        if (! in_array($price_source, ['manual', 'suggested'], true)) {
+            $errors[] = __('Źródło ceny pozycji kosztorysu jest niepoprawne.', 'erp-omd');
+        }
+
         return $errors;
     }
 

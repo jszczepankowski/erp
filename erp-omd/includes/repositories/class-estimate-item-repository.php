@@ -42,11 +42,13 @@ class ERP_OMD_Estimate_Item_Repository
                 'qty' => $data['qty'],
                 'price' => $data['price'],
                 'cost_internal' => $data['cost_internal'],
+                'margin_percent' => isset($data['margin_percent']) ? (float) $data['margin_percent'] : 0.0,
+                'price_source' => isset($data['price_source']) && in_array((string) $data['price_source'], ['manual', 'suggested'], true) ? (string) $data['price_source'] : 'manual',
                 'comment' => $data['comment'],
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%d', '%s', '%f', '%f', '%f', '%s', '%s', '%s']
+            ['%d', '%s', '%f', '%f', '%f', '%s', '%s', '%s', '%s', '%s']
         );
 
         return (int) $wpdb->insert_id;
@@ -63,11 +65,13 @@ class ERP_OMD_Estimate_Item_Repository
                 'qty' => $data['qty'],
                 'price' => $data['price'],
                 'cost_internal' => $data['cost_internal'],
+                'margin_percent' => isset($data['margin_percent']) ? (float) $data['margin_percent'] : 0.0,
+                'price_source' => isset($data['price_source']) && in_array((string) $data['price_source'], ['manual', 'suggested'], true) ? (string) $data['price_source'] : 'manual',
                 'comment' => $data['comment'],
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => $id],
-            ['%s', '%f', '%f', '%f', '%s', '%s'],
+            ['%s', '%f', '%f', '%f', '%s', '%s', '%s', '%s'],
             ['%d']
         );
     }

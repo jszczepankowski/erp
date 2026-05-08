@@ -214,6 +214,8 @@ class ERP_OMD_Installer
                 qty DECIMAL(12,2) NOT NULL DEFAULT 0.00,
                 price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
                 cost_internal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                margin_percent DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+                price_source VARCHAR(16) NOT NULL DEFAULT 'manual',
                 comment TEXT NULL,
                 created_at DATETIME NOT NULL,
                 updated_at DATETIME NOT NULL,
@@ -221,6 +223,8 @@ class ERP_OMD_Installer
                 KEY estimate_id (estimate_id)
             ) ENGINE=InnoDB {$charset_collate};"
         );
+        self::add_column_if_missing($estimate_items_table, 'margin_percent', "ALTER TABLE {$estimate_items_table} ADD COLUMN margin_percent DECIMAL(8,2) NOT NULL DEFAULT 0.00 AFTER cost_internal");
+        self::add_column_if_missing($estimate_items_table, 'price_source', "ALTER TABLE {$estimate_items_table} ADD COLUMN price_source VARCHAR(16) NOT NULL DEFAULT 'manual' AFTER margin_percent");
 
         dbDelta(
             "CREATE TABLE {$projects_table} (
