@@ -73,6 +73,10 @@
                                             <label>&nbsp;</label>
                                             <button type="button" class="button button-secondary" data-admin-suggest-price><?php esc_html_e('Zasugeruj cenę', 'erp-omd'); ?></button>
                                         </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label><?php esc_html_e('Marża (%)', 'erp-omd'); ?></label>
+                                            <input name="initial_item_margin_percent[]" type="number" step="0.01" min="0" max="500" value="0" required>
+                                        </div>
                                     </div>
                                     <input type="hidden" name="initial_item_price_source[]" value="manual">
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
@@ -433,6 +437,10 @@
                                             <label>&nbsp;</label>
                                             <button type="button" class="button button-secondary" data-admin-suggest-price><?php esc_html_e('Zasugeruj cenę', 'erp-omd'); ?></button>
                                         </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label for="estimate-item-margin-percent"><?php esc_html_e('Marża (%)', 'erp-omd'); ?></label>
+                                            <input id="estimate-item-margin-percent" name="margin_percent" type="number" step="0.01" min="0" max="500" value="<?php echo esc_attr($editing_estimate_item['margin_percent'] ?? '0'); ?>" required>
+                                        </div>
                                     </div>
                                     <input type="hidden" name="price_source" value="<?php echo esc_attr((string) ($editing_estimate_item['price_source'] ?? 'manual')); ?>">
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
@@ -478,6 +486,10 @@
                                         <div class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-inline-action">
                                             <label>&nbsp;</label>
                                             <button type="button" class="button button-secondary" data-admin-suggest-price><?php esc_html_e('Zasugeruj cenę', 'erp-omd'); ?></button>
+                                        </div>
+                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                            <label><?php esc_html_e('Marża (%)', 'erp-omd'); ?></label>
+                                            <input name="margin_percent" type="number" step="0.01" min="0" max="500" value="0" required>
                                         </div>
                                     </div>
                                     <input type="hidden" name="price_source" value="manual">
