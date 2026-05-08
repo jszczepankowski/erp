@@ -135,8 +135,8 @@
                     </div>
                 </form>
             </article>
-
-<article class="erp-omd-front-panel">
+            
+            <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Twoje kosztorysy', 'erp-omd'); ?></h2>
                 </div>
@@ -163,7 +163,7 @@
                                                 class="erp-omd-front-button erp-omd-front-button-small"
                                                 href="<?php echo esc_url(add_query_arg(['estimate_id' => (int) ($client_estimate_item['id'] ?? 0)], $front_client_url)); ?>"
                                             >
-                                                <?php esc_html_e('Pokaż szczegóły', 'erp-omd'); ?>
+                                                <?php esc_html_e('Otwórz', 'erp-omd'); ?>
                                             </a>
                                         </td>
                                     </tr>
@@ -274,8 +274,7 @@
                     <?php endif; ?>
                 </article>
             <?php endif; ?>
-
-            
+          
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Twoje projekty', 'erp-omd'); ?></h2>
@@ -407,8 +406,6 @@
                     </table>
                 </div>
             </article>
-
-            
 
             <?php if ($selected_project_id > 0 && ! empty($selected_project)) : ?>
                 <article class="erp-omd-front-panel">
