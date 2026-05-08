@@ -73,10 +73,6 @@
                                             <label>&nbsp;</label>
                                             <button type="button" class="button button-secondary" data-admin-suggest-price><?php esc_html_e('Zasugeruj cenę', 'erp-omd'); ?></button>
                                         </div>
-                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                            <label><?php esc_html_e('Marża (%)', 'erp-omd'); ?></label>
-                                            <input name="initial_item_margin_percent[]" type="number" step="0.01" min="0" max="500" value="0" required>
-                                        </div>
                                     </div>
                                     <input type="hidden" name="initial_item_price_source[]" value="manual">
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
@@ -293,9 +289,13 @@
                 var costInput = row.querySelector('[data-cost-input]');
                 var marginInput = row.querySelector('[data-margin-input]');
                 var priceInput = row.querySelector('[data-price-input]');
-                var sourceInput = row.parentElement ? row.parentElement.querySelector('input[name="price_source"],input[name="initial_item_price_source[]"]') : null;
-                var cost = parseFloat((costInput || {}).value || '0');
-                var margin = parseFloat((marginInput || {}).value || '0');
+                var rowForm = row.closest('form');
+                var sourceInput = rowForm ? rowForm.querySelector('input[name="price_source"],input[name="initial_item_price_source[]"]') : null;
+                var normalizeNumber = function (value) {
+                    return parseFloat(String(value || '0').replace(',', '.'));
+                };
+                var cost = normalizeNumber((costInput || {}).value || '0');
+                var margin = normalizeNumber((marginInput || {}).value || '0');
                 if (!isFinite(cost) || cost < 0 || !isFinite(margin) || margin < 0 || margin > 500 || !priceInput) {
                     return;
                 }
@@ -324,7 +324,8 @@
                     return;
                 }
                 var row = priceInput.closest('[data-admin-price-row]');
-                var sourceInput = row && row.parentElement ? row.parentElement.querySelector('input[name="price_source"],input[name="initial_item_price_source[]"]') : null;
+                var rowForm = row ? row.closest('form') : null;
+                var sourceInput = rowForm ? rowForm.querySelector('input[name="price_source"],input[name="initial_item_price_source[]"]') : null;
                 if (sourceInput) {
                     sourceInput.value = 'manual';
                 }
@@ -437,10 +438,6 @@
                                             <label>&nbsp;</label>
                                             <button type="button" class="button button-secondary" data-admin-suggest-price><?php esc_html_e('Zasugeruj cenę', 'erp-omd'); ?></button>
                                         </div>
-                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                            <label for="estimate-item-margin-percent"><?php esc_html_e('Marża (%)', 'erp-omd'); ?></label>
-                                            <input id="estimate-item-margin-percent" name="margin_percent" type="number" step="0.01" min="0" max="500" value="<?php echo esc_attr($editing_estimate_item['margin_percent'] ?? '0'); ?>" required>
-                                        </div>
                                     </div>
                                     <input type="hidden" name="price_source" value="<?php echo esc_attr((string) ($editing_estimate_item['price_source'] ?? 'manual')); ?>">
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
@@ -486,10 +483,6 @@
                                         <div class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-inline-action">
                                             <label>&nbsp;</label>
                                             <button type="button" class="button button-secondary" data-admin-suggest-price><?php esc_html_e('Zasugeruj cenę', 'erp-omd'); ?></button>
-                                        </div>
-                                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                            <label><?php esc_html_e('Marża (%)', 'erp-omd'); ?></label>
-                                            <input name="margin_percent" type="number" step="0.01" min="0" max="500" value="0" required>
                                         </div>
                                     </div>
                                     <input type="hidden" name="price_source" value="manual">
