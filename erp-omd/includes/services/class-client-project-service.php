@@ -34,6 +34,11 @@ class ERP_OMD_Client_Project_Service
         $data['company'] = trim((string) ($data['company'] ?? ''));
         $data['nip'] = $this->normalize_nip((string) ($data['nip'] ?? ''));
         $data['email'] = trim((string) ($data['email'] ?? ''));
+        if ($data['email'] !== '') {
+            $emails = preg_split('/[,;\s]+/', $data['email']) ?: [];
+            $emails = array_values(array_filter(array_map('sanitize_email', $emails)));
+            $data['email'] = implode(', ', array_values(array_unique($emails)));
+        }
         $data['phone'] = $this->normalize_phone((string) ($data['phone'] ?? ''));
         $data['contact_person_name'] = trim((string) ($data['contact_person_name'] ?? ''));
         $data['contact_person_email'] = trim((string) ($data['contact_person_email'] ?? ''));
@@ -67,8 +72,14 @@ class ERP_OMD_Client_Project_Service
             $errors[] = __('NIP klienta musi być unikalny.', 'erp-omd');
         }
 
-        if ($data['email'] !== '' && ! is_email($data['email'])) {
-            $errors[] = __('Adres e-mail klienta jest niepoprawny.', 'erp-omd');
+        if ($data['email'] !== '') {
+            $client_emails = preg_split('/[,;\s]+/', (string) $data['email']) ?: [];
+            $client_emails = array_values(array_filter(array_map('sanitize_email', $client_emails)));
+            if ($client_emails === [] || count($client_emails) !== count(array_filter($client_emails, 'is_email'))) {
+                $errors[] = __('Adres e-mail klienta jest niepoprawny.', 'erp-omd');
+            } else {
+                $data['email'] = implode(', ', array_values(array_unique($client_emails)));
+            }
         }
 
         if ($data['contact_person_email'] !== '' && ! is_email($data['contact_person_email'])) {
@@ -220,6 +231,14 @@ class ERP_OMD_Client_Project_Service
             $retainer_monthly_fee = 0.0;
         }
 
+        $start_date = trim((string) ($data['start_date'] ?? ($existing_project['start_date'] ?? '')));
+        $end_date = trim((string) ($data['end_date'] ?? ($existing_project['end_date'] ?? '')));
+        $is_new_project = $existing_project === null || (int) ($existing_project['id'] ?? 0) <= 0;
+        if ($billing_type === 'retainer' && $is_new_project && $start_date === '' && $end_date === '') {
+            $start_date = current_time('Y-m-01');
+            $end_date = current_time('Y-m-t');
+        }
+
         return [
             'client_id' => (int) ($data['client_id'] ?? ($existing_project['client_id'] ?? 0)),
             'name' => trim((string) ($data['name'] ?? ($existing_project['name'] ?? ''))),
@@ -227,8 +246,8 @@ class ERP_OMD_Client_Project_Service
             'budget' => $budget,
             'retainer_monthly_fee' => $retainer_monthly_fee,
             'status' => trim((string) ($data['status'] ?? ($existing_project['status'] ?? 'do_rozpoczecia'))) ?: 'do_rozpoczecia',
-            'start_date' => trim((string) ($data['start_date'] ?? ($existing_project['start_date'] ?? ''))),
-            'end_date' => trim((string) ($data['end_date'] ?? ($existing_project['end_date'] ?? ''))),
+            'start_date' => $start_date,
+            'end_date' => $end_date,
             'deadline_date' => trim((string) ($data['deadline_date'] ?? ($existing_project['deadline_date'] ?? ''))),
             'deadline_completed_at' => trim((string) ($data['deadline_completed_at'] ?? ($existing_project['deadline_completed_at'] ?? ''))),
             'deadline_completed_by' => (int) ($data['deadline_completed_by'] ?? ($existing_project['deadline_completed_by'] ?? 0)),

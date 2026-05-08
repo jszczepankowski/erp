@@ -920,6 +920,7 @@ class ERP_OMD_Admin
         $client_rates = [];
         $selected_client_projects = [];
         $selected_client_project_financials = [];
+        $selected_client_estimates = [];
         $editing_client_rate = null;
         $is_editing_client = ! empty($_GET['edit']) || ! empty($_GET['rate_id']);
         if (! empty($_GET['id'])) {
@@ -1010,6 +1011,14 @@ class ERP_OMD_Admin
             $selected_client_projects = $this->projects->all(['client_id' => (int) ($selected_client['id'] ?? 0)]);
             $selected_client_project_financials = $this->project_financial_service->get_project_financials(
                 wp_list_pluck($selected_client_projects, 'id')
+            );
+            $selected_client_estimates = array_values(
+                array_filter(
+                    (array) $this->estimates->all(),
+                    static function ($estimate_row) use ($selected_client) {
+                        return (int) ($estimate_row['client_id'] ?? 0) === (int) ($selected_client['id'] ?? 0);
+                    }
+                )
             );
         }
         include ERP_OMD_PATH . 'templates/admin/clients.php';
@@ -2021,7 +2030,7 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_save_client');
         $this->require_capability('erp_omd_manage_clients');
         $id = empty($_POST['id']) ? 0 : (int) $_POST['id'];
-        $payload = $this->client_project_service->prepare_client(['name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')), 'company' => sanitize_text_field(wp_unslash($_POST['company'] ?? '')), 'nip' => sanitize_text_field(wp_unslash($_POST['nip'] ?? '')), 'email' => sanitize_email(wp_unslash($_POST['email'] ?? '')), 'phone' => sanitize_text_field(wp_unslash($_POST['phone'] ?? '')), 'contact_person_name' => sanitize_text_field(wp_unslash($_POST['contact_person_name'] ?? '')), 'contact_person_email' => sanitize_email(wp_unslash($_POST['contact_person_email'] ?? '')), 'contact_person_phone' => sanitize_text_field(wp_unslash($_POST['contact_person_phone'] ?? '')), 'city' => sanitize_text_field(wp_unslash($_POST['city'] ?? '')), 'street' => sanitize_text_field(wp_unslash($_POST['street'] ?? '')), 'apartment_number' => sanitize_text_field(wp_unslash($_POST['apartment_number'] ?? '')), 'postal_code' => sanitize_text_field(wp_unslash($_POST['postal_code'] ?? '')), 'country' => sanitize_text_field(wp_unslash($_POST['country'] ?? 'PL')), 'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? 'active')), 'account_manager_id' => (int) ($_POST['account_manager_id'] ?? 0), 'alert_margin_threshold' => sanitize_text_field(wp_unslash($_POST['alert_margin_threshold'] ?? ''))]);
+        $payload = $this->client_project_service->prepare_client(['name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')), 'company' => sanitize_text_field(wp_unslash($_POST['company'] ?? '')), 'nip' => sanitize_text_field(wp_unslash($_POST['nip'] ?? '')), 'email' => sanitize_text_field(wp_unslash($_POST['email'] ?? '')), 'phone' => sanitize_text_field(wp_unslash($_POST['phone'] ?? '')), 'contact_person_name' => sanitize_text_field(wp_unslash($_POST['contact_person_name'] ?? '')), 'contact_person_email' => sanitize_email(wp_unslash($_POST['contact_person_email'] ?? '')), 'contact_person_phone' => sanitize_text_field(wp_unslash($_POST['contact_person_phone'] ?? '')), 'city' => sanitize_text_field(wp_unslash($_POST['city'] ?? '')), 'street' => sanitize_text_field(wp_unslash($_POST['street'] ?? '')), 'apartment_number' => sanitize_text_field(wp_unslash($_POST['apartment_number'] ?? '')), 'postal_code' => sanitize_text_field(wp_unslash($_POST['postal_code'] ?? '')), 'country' => sanitize_text_field(wp_unslash($_POST['country'] ?? 'PL')), 'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? 'active')), 'account_manager_id' => (int) ($_POST['account_manager_id'] ?? 0), 'alert_margin_threshold' => sanitize_text_field(wp_unslash($_POST['alert_margin_threshold'] ?? ''))]);
         $client_front_user_id = (int) ($_POST['client_front_user_id'] ?? 0);
         $errors = $this->client_project_service->validate_client($payload, $id ?: null);
         if ($errors) { $this->redirect_with_notice('erp-omd-clients', 'error', implode(' ', $errors), $id ? ['id' => $id, 'edit' => 1] : []); }
@@ -2591,7 +2600,15 @@ class ERP_OMD_Admin
             if ((int) ($result['imported'] ?? 0) < 1) {
                 $errors = (array) (($result['errors'][0]['errors'] ?? []) ?: []);
                 if ($errors !== []) {
-                    $all_errors[] = implode(' ', $errors);
+                    $error_message = implode(' ', $errors);
+                    $buyer_nip = '';
+                    if (preg_match('/\b(?:NIP|TIN)[:\s]*([0-9\-]{8,})/iu', (string) $xml_content, $matches) === 1) {
+                        $buyer_nip = trim((string) ($matches[1] ?? ''));
+                    }
+                    if ($buyer_nip !== '' && stripos($error_message, 'klient') !== false) {
+                        $error_message .= ' ' . sprintf(__('NIP z faktury: %s. Utwórz klienta i ponów przypięcie.', 'erp-omd'), $buyer_nip);
+                    }
+                    $all_errors[] = $error_message;
                 }
             }
         }
@@ -2673,7 +2690,15 @@ class ERP_OMD_Admin
             if ((int) ($result['imported'] ?? 0) < 1) {
                 $errors = (array) (($result['errors'][0]['errors'] ?? []) ?: []);
                 if ($errors !== []) {
-                    $all_errors[] = implode(' ', $errors);
+                    $error_message = implode(' ', $errors);
+                    $buyer_nip = '';
+                    if (preg_match('/\b(?:NIP|TIN)[:\s]*([0-9\-]{8,})/iu', (string) $xml_content, $matches) === 1) {
+                        $buyer_nip = trim((string) ($matches[1] ?? ''));
+                    }
+                    if ($buyer_nip !== '' && stripos($error_message, 'klient') !== false) {
+                        $error_message .= ' ' . sprintf(__('NIP z faktury: %s. Utwórz klienta i ponów przypięcie.', 'erp-omd'), $buyer_nip);
+                    }
+                    $all_errors[] = $error_message;
                 }
             }
         }
@@ -3046,8 +3071,10 @@ class ERP_OMD_Admin
         }
 
         $client = $this->clients->find((int) ($estimate['client_id'] ?? 0));
-        $client_email = sanitize_email((string) ($client['email'] ?? ''));
-        if (! is_email($client_email)) {
+        $client_email_raw = (string) ($client['email'] ?? '');
+        $client_emails = preg_split('/[,;\s]+/', $client_email_raw) ?: [];
+        $client_emails = array_values(array_unique(array_filter(array_map('sanitize_email', $client_emails), 'is_email')));
+        if ($client_emails === []) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Klient nie ma poprawnego adresu e-mail.', 'erp-omd'), ['id' => $estimate_id]);
         }
 
@@ -3088,11 +3115,11 @@ class ERP_OMD_Admin
             };
             add_filter('wp_mail_from', $from_email_filter);
             add_filter('wp_mail_from_name', $from_name_filter);
-            $sent = wp_mail($client_email, $subject, wpautop($body), $headers);
+            $sent = wp_mail($client_emails, $subject, wpautop($body), $headers);
             remove_filter('wp_mail_from', $from_email_filter);
             remove_filter('wp_mail_from_name', $from_name_filter);
         } else {
-            $sent = wp_mail($client_email, $subject, wpautop($body), $headers);
+            $sent = wp_mail($client_emails, $subject, wpautop($body), $headers);
         }
         if (! $sent) {
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie udało się wysłać e-maila do klienta.', 'erp-omd'), ['id' => $estimate_id]);
