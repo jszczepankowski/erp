@@ -290,7 +290,7 @@
                                 'media_buttons' => false,
                                 'teeny' => false,
                             ]); ?>
-                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {project_name}, {final_gross}, {client_note}.', 'erp-omd'); ?></p>
+                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_id}, {estimate_name}, {project_name}, {final_gross}, {client_note}, {client_email}, {client_name}.', 'erp-omd'); ?></p>
                         </div>
                     </div>
                 </section>
