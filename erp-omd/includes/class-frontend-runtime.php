@@ -378,7 +378,9 @@ class ERP_OMD_Frontend
                 array_filter(
                     (array) $this->estimates->all(),
                     static function ($estimate_row) use ($client_id) {
-                        return (int) ($estimate_row['client_id'] ?? 0) === (int) $client_id;
+                        $status = strtolower((string) ($estimate_row['status'] ?? ''));
+                        return (int) ($estimate_row['client_id'] ?? 0) === (int) $client_id
+                            && $status !== 'wstepny';
                     }
                 )
             )
@@ -718,6 +720,11 @@ class ERP_OMD_Frontend
         if ($action === 'accept_client_estimate') {
             $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
             $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+            $delivery_other = ! empty($_POST['delivery_other']) ? 1 : 0;
+            $delivery_address = sanitize_textarea_field((string) wp_unslash($_POST['delivery_address'] ?? ''));
+            $preferred_delivery_date = sanitize_text_field((string) wp_unslash($_POST['preferred_delivery_date'] ?? ''));
+            $invoice_other_entity = ! empty($_POST['invoice_other_entity']) ? 1 : 0;
+            $invoice_nip = sanitize_text_field((string) wp_unslash($_POST['invoice_nip'] ?? ''));
             $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
             if (! $estimate || (int) ($estimate['client_id'] ?? 0) !== $client_id) {
                 $this->redirect_client_with_notice('error', __('Nie znaleziono kosztorysu przypisanego do Twojego konta.', 'erp-omd'));
@@ -729,6 +736,21 @@ class ERP_OMD_Frontend
             if ($result instanceof WP_Error) {
                 $this->redirect_client_with_notice('error', $result->get_error_message());
             }
+            ERP_OMD_Front_Estimate_Decision_Screen::finalize_acceptance(
+                $estimate_id,
+                '',
+                [
+                    'delivery_other' => $delivery_other,
+                    'delivery_address' => $delivery_address,
+                    'preferred_delivery_date' => $preferred_delivery_date,
+                    'invoice_other_entity' => $invoice_other_entity,
+                    'invoice_nip' => $invoice_nip,
+                ],
+                $this->estimates,
+                $this->estimate_items,
+                $this->estimate_service,
+                (array) $result
+            );
             $this->redirect_client_with_notice('success', __('Kosztorys został zaakceptowany.', 'erp-omd'));
             return;
         }

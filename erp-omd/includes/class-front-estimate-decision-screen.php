@@ -47,30 +47,21 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                             $notice_type = 'error';
                             $notice_message = $result->get_error_message();
                         } else {
-                            $client_note_parts = [];
-                            if (trim($note) !== '') {
-                                $client_note_parts[] = trim($note);
-                            }
-                            if ($preferred_delivery_date !== '') {
-                                $client_note_parts[] = sprintf(__('Preferowany termin realizacji: %s', 'erp-omd'), $preferred_delivery_date);
-                            }
-                            if ($delivery_other === 1 && $delivery_address !== '') {
-                                $client_note_parts[] = sprintf(__('Adres do dostawy: %s', 'erp-omd'), $delivery_address);
-                            }
-                            if ($invoice_other_entity === 1 && $invoice_nip !== '') {
-                                $client_note_parts[] = sprintf(__('NIP do faktury: %s', 'erp-omd'), $invoice_nip);
-                            }
-                            $estimates->save_client_decision_note($estimate_id, implode("\n", $client_note_parts));
-                            self::append_accept_note_to_project_history($estimate_id, $note, $result);
-                            self::send_thank_you_mail($estimate_id, $estimates, $estimate_items, $estimate_service);
-                            update_option('erp_omd_estimate_acceptance_meta_' . $estimate_id, [
-                                'delivery_other' => $delivery_other,
-                                'delivery_address' => $delivery_other ? $delivery_address : '',
-                                'preferred_delivery_date' => $preferred_delivery_date,
-                                'invoice_other_entity' => $invoice_other_entity,
-                                'invoice_nip' => $invoice_other_entity ? $invoice_nip : '',
-                            ], false);
-                            self::send_acceptance_notification_to_agency($estimate_id, $estimates, $estimate_items, $estimate_service, (array) $result);
+                            self::finalize_acceptance(
+                                $estimate_id,
+                                $note,
+                                [
+                                    'delivery_other' => $delivery_other,
+                                    'delivery_address' => $delivery_address,
+                                    'preferred_delivery_date' => $preferred_delivery_date,
+                                    'invoice_other_entity' => $invoice_other_entity,
+                                    'invoice_nip' => $invoice_nip,
+                                ],
+                                $estimates,
+                                $estimate_items,
+                                $estimate_service,
+                                (array) $result
+                            );
                             $notice_type = 'success';
                             $notice_message = __('Dziękujemy. Kosztorys został zaakceptowany.', 'erp-omd');
                             $decision_done = true;
@@ -121,6 +112,32 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
             nocache_headers();
             include ERP_OMD_PATH . 'templates/front/estimate-decision.php';
             exit;
+        }
+
+        public static function finalize_acceptance(
+            $estimate_id,
+            $note,
+            array $acceptance_meta,
+            ERP_OMD_Estimate_Repository $estimates,
+            ERP_OMD_Estimate_Item_Repository $estimate_items,
+            ERP_OMD_Estimate_Service $estimate_service,
+            array $accept_result = []
+        ) {
+            $estimate_id = (int) $estimate_id;
+            $delivery_other = ! empty($acceptance_meta['delivery_other']) ? 1 : 0;
+            $invoice_other_entity = ! empty($acceptance_meta['invoice_other_entity']) ? 1 : 0;
+            $normalized_meta = [
+                'delivery_other' => $delivery_other,
+                'delivery_address' => $delivery_other ? sanitize_textarea_field((string) ($acceptance_meta['delivery_address'] ?? '')) : '',
+                'preferred_delivery_date' => sanitize_text_field((string) ($acceptance_meta['preferred_delivery_date'] ?? '')),
+                'invoice_other_entity' => $invoice_other_entity,
+                'invoice_nip' => $invoice_other_entity ? sanitize_text_field((string) ($acceptance_meta['invoice_nip'] ?? '')) : '',
+            ];
+            $estimates->save_client_decision_note($estimate_id, sanitize_textarea_field((string) $note));
+            update_option('erp_omd_estimate_acceptance_meta_' . $estimate_id, $normalized_meta, false);
+            self::append_accept_note_to_project_history($estimate_id, $note, $accept_result);
+            self::send_thank_you_mail($estimate_id, $estimates, $estimate_items, $estimate_service);
+            self::send_acceptance_notification_to_agency($estimate_id, $estimates, $estimate_items, $estimate_service, $accept_result);
         }
 
         private static function send_thank_you_mail($estimate_id, ERP_OMD_Estimate_Repository $estimates, ERP_OMD_Estimate_Item_Repository $estimate_items, ERP_OMD_Estimate_Service $estimate_service)
