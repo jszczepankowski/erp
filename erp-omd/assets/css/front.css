@@ -1214,6 +1214,13 @@ background-image: none !important;
     padding: 24px;
 }
 
+.erp-omd-front-modal-overlay-close {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+}
+
 .erp-omd-front-modal {
     background: #fff;
     border-radius: 16px;
@@ -1221,6 +1228,7 @@ background-image: none !important;
     margin: 20px auto;
     padding: 20px;
     position: relative;
+    z-index: 1;
 }
 
 .erp-omd-front-modal-close {
