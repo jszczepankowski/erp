@@ -1007,6 +1007,9 @@ class ERP_OMD_Admin
             $selected_client['account_manager_login'] = $employee_logins[(int) ($selected_client['account_manager_id'] ?? 0)] ?? '';
             $selected_client['front_user_login'] = $client_front_user_logins_by_client_id[(int) ($selected_client['id'] ?? 0)] ?? '';
             $selected_client['front_user_id'] = (int) ($client_front_user_ids_by_client_id[(int) ($selected_client['id'] ?? 0)] ?? 0);
+            if ($is_editing_client) {
+                $client = $selected_client;
+            }
             $selected_client['total_profit'] = (float) ($client_profit_totals[(int) ($selected_client['id'] ?? 0)] ?? 0.0);
             $selected_client_projects = $this->projects->all(['client_id' => (int) ($selected_client['id'] ?? 0)]);
             $selected_client_project_financials = $this->project_financial_service->get_project_financials(
