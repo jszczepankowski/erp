@@ -313,6 +313,20 @@
                 suggest(row);
             });
 
+
+            document.addEventListener('input', function (event) {
+                var marginInput = event.target.closest('[data-margin-input]');
+                if (!marginInput) {
+                    return;
+                }
+                var marginValue = parseFloat(String(marginInput.value || '0').replace(',', '.'));
+                if (isFinite(marginValue) && marginValue > 500) {
+                    marginInput.setCustomValidity('<?php echo esc_js(__('Marża jest za wysoka. Maksymalna wartość to 500%.', 'erp-omd')); ?>');
+                } else {
+                    marginInput.setCustomValidity('');
+                }
+            });
+
             document.addEventListener('input', function (event) {
                 var priceInput = event.target.closest('[data-price-input]');
                 if (!priceInput) {
