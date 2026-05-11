@@ -1033,6 +1033,8 @@ class ERP_OMD_Admin
         $estimate_attachments = [];
         $editing_estimate_item = null;
         $linked_project = null;
+        $estimate_decision_url = '';
+        $estimate_accept_meta = [];
         $is_editing_estimate = ! empty($_GET['edit']) || ! empty($_GET['item_id']);
         if (! empty($_GET['id'])) {
             $selected_estimate = $this->estimates->find((int) $_GET['id']);
@@ -1041,6 +1043,12 @@ class ERP_OMD_Admin
                 $estimate_totals = $this->estimate_service->calculate_totals($estimate_items);
                 $linked_project = $this->projects->find_by_estimate_id((int) $selected_estimate['id']);
                 $estimate_attachments = $this->attachments->for_entity('estimate', (int) $selected_estimate['id']);
+                $estimate_accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $selected_estimate['id'], []);
+                $link_state = $this->estimate_client_link_state();
+                $link_row = (array) ($link_state[(int) $selected_estimate['id']] ?? []);
+                if (! empty($link_row['token'])) {
+                    $estimate_decision_url = (string) add_query_arg(['token' => rawurlencode((string) $link_row['token'])], home_url('/erp-front/estimate-decision/'));
+                }
                 if (! empty($_GET['item_id'])) {
                     $editing_estimate_item = $this->estimate_items->find((int) $_GET['item_id']);
                     if (! $editing_estimate_item || (int) ($editing_estimate_item['estimate_id'] ?? 0) !== (int) $selected_estimate['id']) {
@@ -2887,6 +2895,12 @@ class ERP_OMD_Admin
             'accepted_by_user_id' => (int) ($existing['accepted_by_user_id'] ?? 0),
             'accepted_at' => $existing['accepted_at'] ?? null,
         ];
+        $estimate_accept_meta_payload = [
+            'preferred_delivery_date' => sanitize_text_field(wp_unslash($_POST['preferred_delivery_date'] ?? '')),
+            'delivery_other' => ! empty($_POST['delivery_other']) ? 1 : 0,
+            'invoice_other_entity' => ! empty($_POST['invoice_other_entity']) ? 1 : 0,
+            'note' => sanitize_textarea_field(wp_unslash($_POST['estimate_note'] ?? '')),
+        ];
         $errors = $this->estimate_service->validate_estimate($payload, $existing);
         $initial_items_payload = $this->collect_initial_estimate_items();
         if (! $existing) {
@@ -2913,6 +2927,7 @@ class ERP_OMD_Admin
             } else {
                 $this->estimates->update($id, $payload);
             }
+            update_option('erp_omd_estimate_acceptance_meta_' . (int) $id, $estimate_accept_meta_payload, false);
             $message = __('Kosztorys został zaktualizowany.', 'erp-omd');
         } else {
             $id = $this->estimates->create($payload);
@@ -2920,6 +2935,7 @@ class ERP_OMD_Admin
                 $initial_item_payload['estimate_id'] = $id;
                 $this->estimate_items->create($initial_item_payload);
             }
+            update_option('erp_omd_estimate_acceptance_meta_' . (int) $id, $estimate_accept_meta_payload, false);
             if ($payload['status'] === 'zaakceptowany') {
                 $result = $this->estimate_service->accept($id);
                 if ($result instanceof WP_Error) {
@@ -2937,6 +2953,8 @@ class ERP_OMD_Admin
         $qtys = wp_unslash($_POST['initial_item_qty'] ?? []);
         $prices = wp_unslash($_POST['initial_item_price'] ?? []);
         $costs = wp_unslash($_POST['initial_item_cost_internal'] ?? []);
+        $margins = wp_unslash($_POST['initial_item_margin_percent'] ?? []);
+        $price_sources = wp_unslash($_POST['initial_item_price_source'] ?? []);
         $comments = wp_unslash($_POST['initial_item_comment'] ?? []);
 
         if (! is_array($names)) {
@@ -2951,17 +2969,25 @@ class ERP_OMD_Admin
         if (! is_array($costs)) {
             $costs = [$costs];
         }
+        if (! is_array($margins)) {
+            $margins = [$margins];
+        }
+        if (! is_array($price_sources)) {
+            $price_sources = [$price_sources];
+        }
         if (! is_array($comments)) {
             $comments = [$comments];
         }
 
-        $count = max(count($names), count($qtys), count($prices), count($costs), count($comments));
+        $count = max(count($names), count($qtys), count($prices), count($costs), count($margins), count($price_sources), count($comments));
         $items = [];
         for ($index = 0; $index < $count; $index++) {
             $name = sanitize_text_field((string) ($names[$index] ?? ''));
             $qty = (float) ($qtys[$index] ?? 0);
             $price = (float) ($prices[$index] ?? 0);
             $cost = (float) ($costs[$index] ?? 0);
+            $margin_percent = (float) ($margins[$index] ?? 0);
+            $price_source = sanitize_key((string) ($price_sources[$index] ?? 'manual'));
             $comment = sanitize_textarea_field((string) ($comments[$index] ?? ''));
 
             if ($name === '' && $qty <= 0 && $price <= 0 && $cost <= 0 && $comment === '') {
@@ -2974,6 +3000,8 @@ class ERP_OMD_Admin
                 'qty' => $qty,
                 'price' => $price,
                 'cost_internal' => $cost,
+                'margin_percent' => $margin_percent,
+                'price_source' => in_array($price_source, ['manual', 'suggested'], true) ? $price_source : 'manual',
                 'comment' => $comment,
             ];
         }
@@ -3011,6 +3039,8 @@ class ERP_OMD_Admin
             'qty' => (float) ($_POST['qty'] ?? 0),
             'price' => (float) ($_POST['price'] ?? 0),
             'cost_internal' => (float) ($_POST['cost_internal'] ?? 0),
+            'margin_percent' => (float) ($_POST['margin_percent'] ?? 0),
+            'price_source' => sanitize_key((string) ($_POST['price_source'] ?? 'manual')),
             'comment' => sanitize_textarea_field(wp_unslash($_POST['comment'] ?? '')),
         ];
         $errors = $this->estimate_service->validate_item($payload, $estimate, $existing_item);
@@ -3091,11 +3121,15 @@ class ERP_OMD_Admin
         $decision_url = add_query_arg(['token' => rawurlencode($token)], home_url('/erp-front/estimate-decision/'));
         $estimate_mail_defaults = $this->estimate_client_mail_defaults();
         $estimate_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_client_mail_settings', []), $estimate_mail_defaults);
+        $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
         $mail_tokens = [
             '{estimate_name}' => (string) ($estimate['name'] ?? ('#' . $estimate_id)),
             '{client_name}' => (string) ($client['name'] ?? ($estimate['client_name'] ?? '')),
             '{decision_url}' => (string) $decision_url,
             '{expires_at}' => wp_date('d.m.Y H:i', time() + (5 * DAY_IN_SECONDS)),
+            '{preferred_delivery_date}' => (string) ($accept_meta['preferred_delivery_date'] ?? '—'),
+            '{delivery_other}' => ! empty($accept_meta['delivery_other']) ? __('Tak', 'erp-omd') : __('Nie', 'erp-omd'),
+            '{invoice_other_entity}' => ! empty($accept_meta['invoice_other_entity']) ? __('Tak', 'erp-omd') : __('Nie', 'erp-omd'),
         ];
         $subject = $this->replace_mail_tokens((string) ($estimate_mail_settings['subject'] ?? $estimate_mail_defaults['subject']), $mail_tokens);
         $body = $this->replace_mail_tokens((string) ($estimate_mail_settings['body'] ?? $estimate_mail_defaults['body']), $mail_tokens);
