@@ -31,5 +31,80 @@ Zmiany v_4.1
 Sprinty (aktualizacja):
 - Sprint 1 (szybki): ✅ GOTOWE — punkty 1, 2, 3 (w komunikacie także: „Utwórz klienta i ponów przypięcie”).
 - Sprint 2: ✅ GOTOWE — punkt 4.
-- Sprint 3 (pricing/UX): punkt 7.
-- Sprint 4 (architektoniczny): dyskusja nad punktem 5.
+- Sprint 3 (pricing/UX): ✅ GOTOWE — punkt 7.
+- Sprint 4 (architektoniczny): 🔄 W TRAKCIE DYSKUSJI — punkt 5 (scalanie projektów).
+
+Sprint 4 (architektoniczny) — propozycja etapów do uzgodnienia (bez developmentu):
+
+Etap 1 — Definicja biznesowa „scalenia”
+- Ustalić kiedy wolno scalać (np. tylko projekty aktywne? czy także archiwalne?).
+- Ustalić czy scalanie jest nieodwracalne czy wspieramy „cofnięcie” (rollback logiczny).
+- Zdefiniować status źródłowych projektów po scaleniu (np. `merged`, `archiwum`, `inactive`).
+
+Etap 2 — Model danych i relacje
+- Zaprojektować tabelę/mapowanie relacji merge:
+  - `source_project_id` -> `target_project_id`,
+  - kto wykonał scalenie, kiedy, z jakim uzasadnieniem.
+- Ustalić czy przenosimy rekordy fizycznie, czy robimy „wirtualne scalenie” przez mapowanie.
+- Zidentyfikować wszystkie encje zależne: time entries, koszty bezpośrednie, przychody, faktury, załączniki, notatki, workflowy.
+
+Etap 3 — Reguły finansowe i księgowe
+- Zasady przenoszenia budżetu, retainera, przychodów i kosztów.
+- Zasady dla dokumentów już wystawionych / zaksięgowanych.
+- Ustalić jak liczyć KPI historyczne po scaleniu (przed/po merge).
+
+Etap 4 — Workflow i uprawnienia
+- Kto może scalać (rola, poziom akceptacji, 4-eyes principle?).
+- Czy wymagana jest akceptacja właściciela klienta / admina finansowego.
+- Jak wygląda proces: podgląd skutków -> potwierdzenie -> wykonanie -> raport końcowy.
+
+Etap 5 — UX i komunikacja zmian
+- Ekran „podglądu skutków scalania” (ile rekordów i jakie typy danych zostaną przeniesione).
+- Komunikaty dla użytkowników, którzy pracowali na projektach źródłowych.
+- Widoczność historii scalenia w panelu admina i ewentualnie managera.
+
+Etap 6 — Audyt, zgodność i bezpieczeństwo
+- Pełny log audytowy przed/po (snapshot pól krytycznych).
+- Mechanizm blokady scalania, gdy wykryto konflikty (np. niespójne waluty, różni klienci, statusy zamknięte).
+- Zasady retencji danych i ścieżki dowodowej dla kontroli.
+
+Etap 7 — Plan wdrożenia
+- Pilotaż na środowisku testowym z realnymi kopiami danych.
+- Checklista migracyjna i plan awaryjny.
+- Kryteria „go live” i harmonogram.
+
+Główne zagrożenia Sprintu 4:
+- Ryzyko utraty spójności finansowej (podwójne liczenie przychodów/kosztów).
+- Ryzyko utraty referencji historycznych (raporty, faktury, eksporty, integracje).
+- Ryzyko błędów uprawnień (scalenie wykonane przez niewłaściwą rolę).
+- Ryzyko nieodwracalnej operacji bez pełnego audytu.
+- Ryzyko regresji w raportowaniu i dashboardach.
+
+Pytania do uzupełnienia przed implementacją:
+1. Czy scalamy projekty tylko w obrębie tego samego klienta, czy dopuszczamy zmianę klienta docelowego?
+2. Czy rekordy źródłowe mają być fizycznie przenoszone, czy logicznie mapowane do projektu docelowego?
+3. Jak traktujemy faktury i dokumenty księgowe już zamknięte?
+4. Czy po scaleniu projekt źródłowy ma być tylko „read-only”, czy całkowicie ukryty?
+5. Czy dopuszczamy częściowe scalanie (np. tylko time entries bez kosztów)?
+6. Czy potrzebny jest mechanizm cofnięcia scalenia? Jeśli tak, w jakim oknie czasowym?
+7. Czy wymagamy podwójnej autoryzacji (np. manager + admin finansowy)?
+8. Jak mają wyglądać raporty historyczne: przepisywać historię pod projekt docelowy czy zachować kontekst źródłowy?
+
+Sprint 4 — tabela decyzyjna (USTALONE / DO DECYZJI / REKOMENDACJA):
+
+| Obszar | Status | Co już ustalone | Do decyzji | Rekomendacja robocza |
+|---|---|---|---|---|
+| Zakres Sprintu 4 | USTALONE | Dotyczy punktu 5: scalanie projektów. | — | Utrzymać scope bez rozszerzania na inne obszary. |
+| Definicja scalenia | DO DECYZJI | Scalanie ma zachować godziny, koszty, przychody i umożliwić zmianę klienta/nazwy. | Warunki kiedy merge jest dozwolony; status projektów źródłowych. | MVP: merge tylko dla projektów aktywnych i bez konfliktów biznesowych. |
+| Model techniczny merge | DO DECYZJI | Rozważane: przenoszenie fizyczne vs mapowanie logiczne. | Wybór modelu docelowego. | Start od mapowania logicznego + audyt (mniejsze ryzyko utraty danych). |
+| Finanse i KPI | DO DECYZJI | Trzeba zachować spójność przychodów/kosztów/budżetów. | Jak liczyć KPI historyczne po merge. | Raport „as-was” + „as-is” (widoki historyczne i aktualne oddzielnie). |
+| Dokumenty księgowe | DO DECYZJI | Wskazany obszar ryzyka i potrzeba zasad dla dokumentów zamkniętych. | Czy przepinać dokumenty zamknięte czy tylko linkować relacyjnie. | Dokumentów zamkniętych nie przepinać fizycznie; utrzymać referencje i relację merge. |
+| Uprawnienia i akceptacje | DO DECYZJI | Potrzebne role i możliwa podwójna akceptacja. | Czy 4-eyes principle jest wymagany w MVP. | Dla MVP: minimum 2 role (manager + admin finansowy) dla merge produkcyjnego. |
+| UX podglądu skutków | DO DECYZJI | Potrzebny ekran podglądu wpływu scalenia. | Zakres podglądu (agregaty vs pełna lista rekordów). | MVP: agregaty + najważniejsze ostrzeżenia + liczniki rekordów per typ. |
+| Audyt i bezpieczeństwo | DO DECYZJI | Pełny log i blokady konfliktów są wymagane. | Zakres snapshotu i lista twardych blokad. | Snapshot pól krytycznych + blokada merge przy konfliktach klient/waluta/status. |
+| Rollback / odwracalność | DO DECYZJI | Temat cofnięcia jest otwarty. | Czy wprowadzamy rollback i na jakich zasadach. | MVP bez pełnego rollbacku, ale z trybem „dry-run” i potwierdzeniem skutków. |
+| Plan wdrożenia | DO DECYZJI | Pilotaż + checklista + kryteria go-live są wymagane. | Zakres pilotażu i metryki akceptacji. | Pilotaż na kopii danych produkcyjnych + testy regresji raportów finansowych. |
+
+Legenda statusów:
+- USTALONE — decyzja zaakceptowana.
+- DO DECYZJI — temat wymaga potwierdzenia biznes/tech.
