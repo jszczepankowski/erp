@@ -160,7 +160,9 @@
             </article>
             <?php $show_selected_estimate_details = (int) ($_GET['estimate_id'] ?? 0) > 0; ?>
             <?php if ($show_selected_estimate_details && ! empty($selected_client_estimate)) : ?>
-            <div class="erp-omd-front-modal-overlay"><div class="erp-omd-front-modal"><a class="erp-omd-front-modal-close" href="<?php echo esc_url(remove_query_arg(['estimate_id'], $front_client_url)); ?>">×</a>
+            <div class="erp-omd-front-modal-overlay">
+                <a class="erp-omd-front-modal-overlay-close" href="<?php echo esc_url(remove_query_arg(['estimate_id'], $front_client_url)); ?>" aria-label="<?php echo esc_attr__('Zamknij', 'erp-omd'); ?>"></a>
+                <div class="erp-omd-front-modal"><a class="erp-omd-front-modal-close" href="<?php echo esc_url(remove_query_arg(['estimate_id'], $front_client_url)); ?>">×</a>
                 <?php $selected_estimate_status = (string) ($selected_client_estimate['status'] ?? ''); ?>
                 <?php $selected_estimate_items = (array) ($selected_client_estimate['items'] ?? []); ?>
                 <?php $selected_estimate_totals = (array) ($selected_client_estimate['totals'] ?? []); ?>
@@ -257,9 +259,8 @@
                         </script>
                     <?php endif; ?>
                 </article>
-            <?php endif; ?>
-            <?php if ($show_selected_estimate_details && ! empty($selected_client_estimate)) : ?>
-                </div></div>
+                </div>
+            </div>
             <?php endif; ?>
 
             <article class="erp-omd-front-panel">
