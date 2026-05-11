@@ -214,12 +214,12 @@ background-image: none !important;
 }
 
 .erp-omd-front-grid-client-account {
-    grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 
 .erp-omd-front-grid-client-request-row {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
     align-items: end;
 }
 
@@ -348,7 +348,7 @@ background-image: none !important;
 .erp-omd-front-template-list {
     display: grid;
     gap: 10px;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
     margin-top: 10px;
 }
 
@@ -1202,4 +1202,31 @@ background-image: none !important;
 
 .erp-omd-front-panel-collapsed {
     opacity: 0.95;
+}
+
+
+.erp-omd-front-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 9999;
+    overflow: auto;
+    padding: 24px;
+}
+
+.erp-omd-front-modal {
+    background: #fff;
+    border-radius: 16px;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    position: relative;
+}
+
+.erp-omd-front-modal-close {
+    position: absolute;
+    right: 14px;
+    top: 8px;
+    font-size: 28px;
+    text-decoration: none;
 }

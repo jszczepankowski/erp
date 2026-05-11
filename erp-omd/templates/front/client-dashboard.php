@@ -87,8 +87,8 @@
                     <?php wp_nonce_field('erp_omd_front_client'); ?>
                     <input type="hidden" name="erp_omd_front_action" value="create_project_request" />
                     <div class="erp-omd-front-grid erp-omd-front-grid-client-request-row">
-                        <div class="erp-omd-front-field">
-                            <label for="erp-omd-client-request-project-name"><?php esc_html_e('Zgłoś nowy projekt', 'erp-omd'); ?></label>
+                        <div class="erp-omd-front-field erp-omd-front-field-project-name">
+                            <label for="erp-omd-client-request-project-name"><?php esc_html_e('Nazwa projektu', 'erp-omd'); ?></label>
                             <input id="erp-omd-client-request-project-name" type="text" name="project_name" required />
                         </div>
                         <input type="hidden" name="billing_type" value="mixed">
@@ -160,6 +160,7 @@
             </article>
             <?php $show_selected_estimate_details = (int) ($_GET['estimate_id'] ?? 0) > 0; ?>
             <?php if ($show_selected_estimate_details && ! empty($selected_client_estimate)) : ?>
+            <div class="erp-omd-front-modal-overlay"><div class="erp-omd-front-modal"><a class="erp-omd-front-modal-close" href="<?php echo esc_url(remove_query_arg(['estimate_id'], $front_client_url)); ?>">×</a>
                 <?php $selected_estimate_status = (string) ($selected_client_estimate['status'] ?? ''); ?>
                 <?php $selected_estimate_items = (array) ($selected_client_estimate['items'] ?? []); ?>
                 <?php $selected_estimate_totals = (array) ($selected_client_estimate['totals'] ?? []); ?>
@@ -391,6 +392,7 @@
             </article>
 
             <?php if ($selected_project_id > 0 && ! empty($selected_project)) : ?>
+            <div class="erp-omd-front-modal-overlay"><div class="erp-omd-front-modal"><a class="erp-omd-front-modal-close" href="<?php echo esc_url(remove_query_arg(['project_id'], $front_client_url)); ?>">×</a>
                 <article class="erp-omd-front-panel">
                     <div class="erp-omd-front-section-heading">
                         <h2><?php esc_html_e('Szczegóły projektu', 'erp-omd'); ?></h2>
@@ -407,10 +409,12 @@
                     </div>
                 </article>
             <?php endif; ?>
+            </div></div>
             <?php if ($selected_project_id <= 0) : ?>
                 <div class="erp-omd-front-notice erp-omd-front-notice-info">
                     <?php esc_html_e('Wybierz projekt z listy i kliknij „Otwórz”, aby zobaczyć szczegóły projektu, finanse, czas pracy, historię budżetu, załączniki i uwagi.', 'erp-omd'); ?>
                 </div>
+            </div></div>
             <?php endif; ?>
 
             <article class="erp-omd-front-panel">
