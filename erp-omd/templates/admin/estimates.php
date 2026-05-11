@@ -42,10 +42,18 @@
                         <div class="erp-omd-form-grid" style="margin-top:12px;">
                             <div class="erp-omd-form-field">
                                 <label for="estimate-preferred-delivery-date"><?php esc_html_e('Preferowany termin realizacji', 'erp-omd'); ?></label>
-                                <input id="estimate-preferred-delivery-date" name="preferred_delivery_date" type="text" value="<?php echo esc_attr((string) ($estimate_accept_meta['preferred_delivery_date'] ?? '')); ?>">
+                                <input id="estimate-preferred-delivery-date" name="preferred_delivery_date" type="date" value="<?php echo esc_attr((string) ($estimate_accept_meta['preferred_delivery_date'] ?? '')); ?>">
                             </div>
-                            <div class="erp-omd-form-field"><label><input type="checkbox" name="delivery_other" value="1" <?php checked(! empty($estimate_accept_meta['delivery_other'])); ?>> <?php esc_html_e('Inne miejsce dostawy', 'erp-omd'); ?></label></div>
-                            <div class="erp-omd-form-field"><label><input type="checkbox" name="invoice_other_entity" value="1" <?php checked(! empty($estimate_accept_meta['invoice_other_entity'])); ?>> <?php esc_html_e('Faktura na inny podmiot', 'erp-omd'); ?></label></div>
+                            <div class="erp-omd-form-field"><label><input type="checkbox" name="delivery_other" value="1" data-estimate-toggle="delivery-address" <?php checked(! empty($estimate_accept_meta['delivery_other'])); ?>> <?php esc_html_e('Inne miejsce dostawy', 'erp-omd'); ?></label></div>
+                            <div class="erp-omd-form-field" data-estimate-toggle-field="delivery-address" <?php echo ! empty($estimate_accept_meta['delivery_other']) ? '' : 'hidden'; ?>>
+                                <label for="estimate-delivery-address"><?php esc_html_e('Szczegóły miejsca dostawy', 'erp-omd'); ?></label>
+                                <textarea id="estimate-delivery-address" name="delivery_address" rows="2" class="large-text"><?php echo esc_textarea((string) ($estimate_accept_meta['delivery_address'] ?? '')); ?></textarea>
+                            </div>
+                            <div class="erp-omd-form-field"><label><input type="checkbox" name="invoice_other_entity" value="1" data-estimate-toggle="invoice-nip" <?php checked(! empty($estimate_accept_meta['invoice_other_entity'])); ?>> <?php esc_html_e('Faktura na inny podmiot', 'erp-omd'); ?></label></div>
+                            <div class="erp-omd-form-field" data-estimate-toggle-field="invoice-nip" <?php echo ! empty($estimate_accept_meta['invoice_other_entity']) ? '' : 'hidden'; ?>>
+                                <label for="estimate-invoice-nip"><?php esc_html_e('NIP / dane podmiotu do faktury', 'erp-omd'); ?></label>
+                                <input id="estimate-invoice-nip" name="invoice_nip" type="text" value="<?php echo esc_attr((string) ($estimate_accept_meta['invoice_nip'] ?? '')); ?>">
+                            </div>
                             <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                 <label for="estimate-note"><?php esc_html_e('Uwagi do kosztorysu', 'erp-omd'); ?></label>
                                 <textarea id="estimate-note" name="estimate_note" rows="3" class="large-text"><?php echo esc_textarea((string) ($estimate_accept_meta['note'] ?? '')); ?></textarea>
@@ -349,6 +357,19 @@
                     sourceInput.value = 'manual';
                 }
             });
+            
+            document.addEventListener('change', function (event) {
+                var toggle = event.target.closest('[data-estimate-toggle]');
+                if (!toggle) {
+                    return;
+                }
+                var key = toggle.getAttribute('data-estimate-toggle');
+                var field = document.querySelector('[data-estimate-toggle-field="' + key + '"]');
+                if (field) {
+                    field.hidden = !toggle.checked;
+                }
+            });
+
         }());
     </script>
 

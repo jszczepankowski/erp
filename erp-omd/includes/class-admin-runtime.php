@@ -2899,6 +2899,8 @@ class ERP_OMD_Admin
             'preferred_delivery_date' => sanitize_text_field(wp_unslash($_POST['preferred_delivery_date'] ?? '')),
             'delivery_other' => ! empty($_POST['delivery_other']) ? 1 : 0,
             'invoice_other_entity' => ! empty($_POST['invoice_other_entity']) ? 1 : 0,
+            'delivery_address' => sanitize_textarea_field(wp_unslash($_POST['delivery_address'] ?? '')),
+            'invoice_nip' => sanitize_text_field(wp_unslash($_POST['invoice_nip'] ?? '')),
             'note' => sanitize_textarea_field(wp_unslash($_POST['estimate_note'] ?? '')),
         ];
         $errors = $this->estimate_service->validate_estimate($payload, $existing);
@@ -2928,6 +2930,7 @@ class ERP_OMD_Admin
                 $this->estimates->update($id, $payload);
             }
             update_option('erp_omd_estimate_acceptance_meta_' . (int) $id, $estimate_accept_meta_payload, false);
+            $this->ensure_estimate_decision_token((int) $id);
             $message = __('Kosztorys został zaktualizowany.', 'erp-omd');
         } else {
             $id = $this->estimates->create($payload);
@@ -2936,6 +2939,7 @@ class ERP_OMD_Admin
                 $this->estimate_items->create($initial_item_payload);
             }
             update_option('erp_omd_estimate_acceptance_meta_' . (int) $id, $estimate_accept_meta_payload, false);
+            $this->ensure_estimate_decision_token((int) $id);
             if ($payload['status'] === 'zaakceptowany') {
                 $result = $this->estimate_service->accept($id);
                 if ($result instanceof WP_Error) {
@@ -3108,17 +3112,8 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Klient nie ma poprawnego adresu e-mail.', 'erp-omd'), ['id' => $estimate_id]);
         }
 
-        $token = wp_generate_password(48, false, false);
+        $decision_url = $this->ensure_estimate_decision_token((int) $estimate_id);
         $state = $this->estimate_client_link_state();
-        $state[$estimate_id] = [
-            'token' => $token,
-            'expires_at' => time() + (5 * DAY_IN_SECONDS),
-            'created_at' => current_time('mysql'),
-            'created_by' => (int) get_current_user_id(),
-        ];
-        update_option('erp_omd_estimate_client_link_tokens', $state, false);
-
-        $decision_url = add_query_arg(['token' => rawurlencode($token)], home_url('/erp-front/estimate-decision/'));
         $estimate_mail_defaults = $this->estimate_client_mail_defaults();
         $estimate_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_client_mail_settings', []), $estimate_mail_defaults);
         $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
@@ -5000,6 +4995,29 @@ class ERP_OMD_Admin
         }
 
         return $prepared;
+    }
+
+    private function ensure_estimate_decision_token($estimate_id)
+    {
+        $estimate_id = (int) $estimate_id;
+        if ($estimate_id <= 0) {
+            return '';
+        }
+        $state = $this->estimate_client_link_state();
+        $row = (array) ($state[$estimate_id] ?? []);
+        $token = (string) ($row['token'] ?? '');
+        if ($token === '') {
+            $token = wp_generate_password(48, false, false);
+            $state[$estimate_id] = [
+                'token' => $token,
+                'expires_at' => time() + (5 * DAY_IN_SECONDS),
+                'created_at' => current_time('mysql'),
+                'created_by' => (int) get_current_user_id(),
+            ];
+            update_option('erp_omd_estimate_client_link_tokens', $state, false);
+        }
+
+        return (string) add_query_arg(['token' => rawurlencode($token)], home_url('/erp-front/estimate-decision/'));
     }
 
     private function estimate_client_link_state()
