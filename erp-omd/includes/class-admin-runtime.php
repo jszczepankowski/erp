@@ -2937,6 +2937,8 @@ class ERP_OMD_Admin
         $qtys = wp_unslash($_POST['initial_item_qty'] ?? []);
         $prices = wp_unslash($_POST['initial_item_price'] ?? []);
         $costs = wp_unslash($_POST['initial_item_cost_internal'] ?? []);
+        $margins = wp_unslash($_POST['initial_item_margin_percent'] ?? []);
+        $price_sources = wp_unslash($_POST['initial_item_price_source'] ?? []);
         $comments = wp_unslash($_POST['initial_item_comment'] ?? []);
 
         if (! is_array($names)) {
@@ -2951,17 +2953,25 @@ class ERP_OMD_Admin
         if (! is_array($costs)) {
             $costs = [$costs];
         }
+        if (! is_array($margins)) {
+            $margins = [$margins];
+        }
+        if (! is_array($price_sources)) {
+            $price_sources = [$price_sources];
+        }
         if (! is_array($comments)) {
             $comments = [$comments];
         }
 
-        $count = max(count($names), count($qtys), count($prices), count($costs), count($comments));
+        $count = max(count($names), count($qtys), count($prices), count($costs), count($margins), count($price_sources), count($comments));
         $items = [];
         for ($index = 0; $index < $count; $index++) {
             $name = sanitize_text_field((string) ($names[$index] ?? ''));
             $qty = (float) ($qtys[$index] ?? 0);
             $price = (float) ($prices[$index] ?? 0);
             $cost = (float) ($costs[$index] ?? 0);
+            $margin_percent = (float) ($margins[$index] ?? 0);
+            $price_source = sanitize_key((string) ($price_sources[$index] ?? 'manual'));
             $comment = sanitize_textarea_field((string) ($comments[$index] ?? ''));
 
             if ($name === '' && $qty <= 0 && $price <= 0 && $cost <= 0 && $comment === '') {
@@ -2974,6 +2984,8 @@ class ERP_OMD_Admin
                 'qty' => $qty,
                 'price' => $price,
                 'cost_internal' => $cost,
+                'margin_percent' => $margin_percent,
+                'price_source' => in_array($price_source, ['manual', 'suggested'], true) ? $price_source : 'manual',
                 'comment' => $comment,
             ];
         }
@@ -3011,6 +3023,8 @@ class ERP_OMD_Admin
             'qty' => (float) ($_POST['qty'] ?? 0),
             'price' => (float) ($_POST['price'] ?? 0),
             'cost_internal' => (float) ($_POST['cost_internal'] ?? 0),
+            'margin_percent' => (float) ($_POST['margin_percent'] ?? 0),
+            'price_source' => sanitize_key((string) ($_POST['price_source'] ?? 'manual')),
             'comment' => sanitize_textarea_field(wp_unslash($_POST['comment'] ?? '')),
         ];
         $errors = $this->estimate_service->validate_item($payload, $estimate, $existing_item);
