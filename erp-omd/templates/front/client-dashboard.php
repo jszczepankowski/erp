@@ -412,10 +412,12 @@
                     </div>
                 </article>
             <?php endif; ?>
+            </div></div>
             <?php if ($selected_project_id <= 0) : ?>
                 <div class="erp-omd-front-notice erp-omd-front-notice-info">
                     <?php esc_html_e('Wybierz projekt z listy i kliknij „Otwórz”, aby zobaczyć szczegóły projektu, finanse, czas pracy, historię budżetu, załączniki i uwagi.', 'erp-omd'); ?>
                 </div>
+            </div></div>
             <?php endif; ?>
 
             <article class="erp-omd-front-panel">
