@@ -262,7 +262,7 @@
                                 'media_buttons' => false,
                                 'teeny' => false,
                             ]); ?>
-                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {client_name}, {decision_url}, {expires_at}.', 'erp-omd'); ?></p>
+                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {client_name}, {decision_url}, {expires_at}, {preferred_delivery_date}, {delivery_other}, {invoice_other_entity}.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-estimate-thank-you-mail-subject"><?php esc_html_e('E-mail podziękowania po akceptacji kosztorysu — temat podziękowania', 'erp-omd'); ?></label>
@@ -276,7 +276,7 @@
                                 'media_buttons' => false,
                                 'teeny' => false,
                             ]); ?>
-                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {client_name}, {final_gross}, {final_net}, {client_note}. Tabela pozycji jest dodawana automatycznie pod treścią.', 'erp-omd'); ?></p>
+                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_name}, {client_name}, {final_gross}, {final_net}, {client_note}, {preferred_delivery_date}, {delivery_other}, {invoice_other_entity}. Tabela pozycji jest dodawana automatycznie pod treścią.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="erp-omd-estimate-internal-accept-mail-subject"><?php esc_html_e('E-mail do admina/managera po akceptacji — temat', 'erp-omd'); ?></label>
@@ -290,7 +290,7 @@
                                 'media_buttons' => false,
                                 'teeny' => false,
                             ]); ?>
-                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_id}, {estimate_name}, {project_name}, {final_gross}, {client_note}, {client_email}, {client_name}.', 'erp-omd'); ?></p>
+                            <p class="description"><?php esc_html_e('Dostępne tokeny: {estimate_id}, {estimate_name}, {project_name}, {final_gross}, {client_note}, {client_email}, {client_name}, {preferred_delivery_date}, {delivery_other}, {invoice_other_entity}.', 'erp-omd'); ?></p>
                         </div>
                     </div>
                 </section>
