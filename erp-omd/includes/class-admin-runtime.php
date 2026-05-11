@@ -2895,12 +2895,14 @@ class ERP_OMD_Admin
             'accepted_by_user_id' => (int) ($existing['accepted_by_user_id'] ?? 0),
             'accepted_at' => $existing['accepted_at'] ?? null,
         ];
+        $delivery_address = sanitize_textarea_field(wp_unslash($_POST['delivery_address'] ?? ''));
+        $invoice_nip = sanitize_text_field(wp_unslash($_POST['invoice_nip'] ?? ''));
         $estimate_accept_meta_payload = [
             'preferred_delivery_date' => sanitize_text_field(wp_unslash($_POST['preferred_delivery_date'] ?? '')),
-            'delivery_other' => ! empty($_POST['delivery_other']) ? 1 : 0,
-            'invoice_other_entity' => ! empty($_POST['invoice_other_entity']) ? 1 : 0,
-            'delivery_address' => sanitize_textarea_field(wp_unslash($_POST['delivery_address'] ?? '')),
-            'invoice_nip' => sanitize_text_field(wp_unslash($_POST['invoice_nip'] ?? '')),
+            'delivery_other' => $delivery_address !== '' ? 1 : 0,
+            'invoice_other_entity' => $invoice_nip !== '' ? 1 : 0,
+            'delivery_address' => $delivery_address,
+            'invoice_nip' => $invoice_nip,
             'note' => sanitize_textarea_field(wp_unslash($_POST['estimate_note'] ?? '')),
         ];
         $errors = $this->estimate_service->validate_estimate($payload, $existing);
