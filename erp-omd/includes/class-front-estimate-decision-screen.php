@@ -173,6 +173,9 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 '{final_net}' => number_format_i18n((float) ($totals['net'] ?? 0), 2),
                 '{final_gross}' => number_format_i18n((float) ($totals['gross'] ?? 0), 2),
                 '{client_note}' => (string) ($estimate['client_decision_note'] ?? ''),
+                '{preferred_delivery_date}' => (string) ($accept_meta['preferred_delivery_date'] ?? '—'),
+                '{delivery_other}' => ! empty($accept_meta['delivery_other']) ? __('Tak', 'erp-omd') : __('Nie', 'erp-omd'),
+                '{invoice_other_entity}' => ! empty($accept_meta['invoice_other_entity']) ? __('Tak', 'erp-omd') : __('Nie', 'erp-omd'),
             ];
 
             $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
@@ -283,6 +286,9 @@ if (! class_exists('ERP_OMD_Front_Estimate_Decision_Screen')) {
                 '{estimate_id}' => (string) ((int) ($estimate['id'] ?? $estimate_id)),
                 '{client_email}' => (string) ($client['email'] ?? '—'),
                 '{client_name}' => (string) ($client['name'] ?? '—'),
+                '{preferred_delivery_date}' => (string) ($accept_meta['preferred_delivery_date'] ?? '—'),
+                '{delivery_other}' => ! empty($accept_meta['delivery_other']) ? __('Tak', 'erp-omd') : __('Nie', 'erp-omd'),
+                '{invoice_other_entity}' => ! empty($accept_meta['invoice_other_entity']) ? __('Tak', 'erp-omd') : __('Nie', 'erp-omd'),
             ];
             $subject = strtr((string) ($mail_settings['subject'] ?? $mail_defaults['subject']), $tokens);
             $body = strtr((string) ($mail_settings['body'] ?? $mail_defaults['body']), $tokens);

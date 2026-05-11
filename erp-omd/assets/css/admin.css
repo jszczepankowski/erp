@@ -1001,6 +1001,15 @@
     grid-template-columns: minmax(260px, 2fr) minmax(120px, 1fr) minmax(140px, 1fr) minmax(160px, 1fr);
 }
 
+.erp-omd-admin .erp-omd-form-grid-estimate-item-row-with-suggest {
+    grid-template-columns: minmax(280px, 2.4fr) minmax(100px, 0.8fr) minmax(130px, 0.9fr) minmax(132px, auto) minmax(140px, 1fr) minmax(120px, 0.8fr);
+    align-items: end;
+}
+
+.erp-omd-admin .erp-omd-form-field-inline-action .button {
+    width: 100%;
+}
+
 .erp-omd-admin .erp-omd-form-grid-estimate-basics-lifecycle {
     grid-template-columns: minmax(220px, 1.4fr) minmax(220px, 1.2fr) minmax(180px, 0.8fr);
 }

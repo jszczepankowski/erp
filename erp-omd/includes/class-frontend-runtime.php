@@ -2016,7 +2016,7 @@ class ERP_OMD_Frontend
             'requester_employee_id' => (int) $employee['id'],
             'client_id' => (int) ($_POST['client_id'] ?? 0),
             'project_name' => sanitize_text_field(wp_unslash($_POST['project_name'] ?? '')),
-            'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')),
+            'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'mixed')),
             'preferred_manager_id' => (int) ($_POST['preferred_manager_id'] ?? (int) $employee['id']),
             'estimate_id' => (int) ($_POST['estimate_id'] ?? 0),
             'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')),
@@ -2048,7 +2048,7 @@ class ERP_OMD_Frontend
             'project_name' => sanitize_text_field(wp_unslash($_POST['project_name'] ?? '')),
             'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')),
             'budget' => (float) ($_POST['budget'] ?? 0),
-            'preferred_manager_id' => (int) ($_POST['preferred_manager_id'] ?? 0),
+            'preferred_manager_id' => $this->resolve_default_admin_manager_employee_id(),
             'estimate_id' => 0,
             'brief' => sanitize_textarea_field(wp_unslash($_POST['brief'] ?? '')),
             'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')),
@@ -2604,6 +2604,31 @@ class ERP_OMD_Frontend
         }
     }
 
+    private function resolve_default_admin_manager_employee_id()
+    {
+        $admins = get_users([
+            'role' => 'administrator',
+            'orderby' => 'ID',
+            'order' => 'ASC',
+            'fields' => ['ID'],
+            'number' => 50,
+        ]);
+
+        foreach ((array) $admins as $admin_user) {
+            $admin_user_id = (int) ($admin_user->ID ?? 0);
+            if ($admin_user_id <= 0) {
+                continue;
+            }
+            $employee = (array) $this->employees->find_by_user_id($admin_user_id);
+            $employee_id = (int) ($employee['id'] ?? 0);
+            if ($employee_id > 0) {
+                return $employee_id;
+            }
+        }
+
+        return 0;
+    }
+
     private function billing_type_label($billing_type)
     {
         switch ((string) $billing_type) {
@@ -2734,9 +2759,9 @@ class ERP_OMD_Frontend
             'requester_employee_id' => 0,
             'client_id' => $client_id,
             'project_name' => sanitize_text_field(wp_unslash($_POST['project_name'] ?? '')),
-            'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'time_material')),
+            'billing_type' => sanitize_text_field(wp_unslash($_POST['billing_type'] ?? 'mixed')),
             'budget' => (float) ($_POST['budget'] ?? 0),
-            'preferred_manager_id' => (int) ($_POST['preferred_manager_id'] ?? 0),
+            'preferred_manager_id' => $this->resolve_default_admin_manager_employee_id(),
             'estimate_id' => 0,
             'brief' => $brief,
             'start_date' => sanitize_text_field(wp_unslash($_POST['start_date'] ?? '')),

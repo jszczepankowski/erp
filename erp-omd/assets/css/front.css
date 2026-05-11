@@ -217,6 +217,12 @@ background-image: none !important;
     grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr);
 }
 
+
+.erp-omd-front-grid-client-request-row {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: end;
+}
+
 .erp-omd-front-grid-manager {
     grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
     margin-bottom: 24px;
@@ -680,6 +686,10 @@ background-image: none !important;
     }
 
     .erp-omd-front-grid-client-account {
+        grid-template-columns: 1fr;
+    }
+
+    .erp-omd-front-grid-client-request-row {
         grid-template-columns: 1fr;
     }
 
