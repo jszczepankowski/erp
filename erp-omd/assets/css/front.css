@@ -214,7 +214,7 @@ background-image: none !important;
 }
 
 .erp-omd-front-grid-client-account {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
 
@@ -329,7 +329,7 @@ background-image: none !important;
 }
 
 .erp-omd-front-form-row-time-context {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .erp-omd-front-filter-form {

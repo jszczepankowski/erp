@@ -258,7 +258,10 @@
                     <?php endif; ?>
                 </article>
             <?php endif; ?>
-          
+            <?php if ($show_selected_estimate_details && ! empty($selected_client_estimate)) : ?>
+                </div></div>
+            <?php endif; ?>
+
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Twoje projekty', 'erp-omd'); ?></h2>
