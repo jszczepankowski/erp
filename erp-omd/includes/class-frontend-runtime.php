@@ -422,7 +422,7 @@ class ERP_OMD_Frontend
         if (! in_array($project_scope, ['current', 'archive'], true)) {
             $project_scope = 'current';
         }
-        $archived_statuses = ['archiwum', 'zakonczony', 'zamkniete', 'closed'];
+        $archived_statuses = ['archiwum', 'zakonczony', 'merged', 'zamkniete', 'closed'];
         $projects = array_values(
             array_filter(
                 $projects,
@@ -2599,6 +2599,8 @@ class ERP_OMD_Frontend
                 return __('Zakończony', 'erp-omd');
             case 'inactive':
                 return __('Nieaktywny', 'erp-omd');
+            case 'merged':
+                return __('Scalony (merged)', 'erp-omd');
             default:
                 return $status ?: '—';
         }

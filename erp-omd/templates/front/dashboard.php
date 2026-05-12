@@ -302,7 +302,7 @@
                                             $project_start_short = ! empty($project['start_date']) ? wp_date('d/m/y', strtotime((string) $project['start_date'])) : '??';
                                             $project_end_short = ! empty($project['end_date']) ? wp_date('d/m/y', strtotime((string) $project['end_date'])) : '??';
                                             ?>
-                                            <td><?php echo esc_html($project_start_short . '–' . $project_end_short . ' | ' . $this->billing_type_label($project['billing_type'] ?? '')); ?></td>
+                                            <td><?php echo esc_html($this->billing_type_label($project['billing_type'] ?? '')); ?></td>
                                             <td><?php echo esc_html(number_format_i18n((float) ($project_financial['cost'] ?? 0), 2)); ?></td>
                                             <td><?php echo esc_html(number_format_i18n((float) ($project_financial['revenue'] ?? 0), 2)); ?></td>
                                             <td><?php echo esc_html(number_format_i18n((float) ($project_financial['profit'] ?? 0), 2)); ?></td>
