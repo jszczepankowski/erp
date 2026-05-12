@@ -158,6 +158,18 @@ class ERP_OMD_Project_Merge_Service
         $preview = $this->build_merge_preview($source_project_ids, $target_client_id);
         $base = (array) $source_projects[0];
         $target_payload = $this->build_target_project_payload($source_projects, $target_client_id, $target_project_name);
+        $source_estimate_ids = array_values(array_unique(array_filter(array_map(static function ($project) {
+            return (int) ($project['estimate_id'] ?? 0);
+        }, $source_projects))));
+        $target_estimate_id = count($source_estimate_ids) === 1 ? (int) $source_estimate_ids[0] : 0;
+        $brief = __('Projekt utworzony automatycznie przez scalenie.', 'erp-omd');
+        if (count($source_estimate_ids) > 1) {
+            $brief .= "
+" . sprintf(
+                __('Powiązane kosztorysy projektów źródłowych: %s. Wybierz docelowy kosztorys ręcznie.', 'erp-omd'),
+                implode(', ', $source_estimate_ids)
+            );
+        }
 
         $create_payload = [
             'client_id' => (int) $target_payload['client_id'],
@@ -174,7 +186,7 @@ class ERP_OMD_Project_Merge_Service
             'manager_id' => 0,
             'manager_ids' => [],
             'estimate_id' => 0,
-            'brief' => __('Projekt utworzony automatycznie przez scalenie.', 'erp-omd'),
+            'brief' => $brief,
             'alert_margin_threshold' => null,
         ];
 
@@ -191,6 +203,11 @@ class ERP_OMD_Project_Merge_Service
 
         $wpdb->query('START TRANSACTION');
         try {
+            if (count($source_estimate_ids) > 1) {
+                $target_estimate_id = (int) $this->create_merged_estimate($source_estimate_ids, (int) $target_payload['client_id'], (string) $target_payload['name']);
+            }
+            $create_payload['estimate_id'] = $target_estimate_id;
+
             $target_project_id = (int) $this->projects->create($create_payload);
             if ($target_project_id <= 0) {
                 throw new RuntimeException(__('Nie udało się utworzyć projektu docelowego.', 'erp-omd'));
@@ -258,5 +275,62 @@ class ERP_OMD_Project_Merge_Service
         update_option($option_key, $entries, false);
 
         return $log_id;
+    }
+
+    /**
+     * @param int[] $source_estimate_ids
+     * @return int
+     */
+    private function create_merged_estimate(array $source_estimate_ids, $target_client_id, $target_project_name)
+    {
+        global $wpdb;
+
+        $estimate_ids = array_values(array_unique(array_filter(array_map('intval', $source_estimate_ids))));
+        if ($estimate_ids === []) {
+            return 0;
+        }
+
+        $estimates_table = $wpdb->prefix . 'erp_omd_estimates';
+        $estimate_items_table = $wpdb->prefix . 'erp_omd_estimate_items';
+        $in = implode(',', $estimate_ids);
+        $name = sprintf(__('Scalony kosztorys — %s', 'erp-omd'), $target_project_name !== '' ? $target_project_name : __('Projekt docelowy', 'erp-omd'));
+
+        $wpdb->insert(
+            $estimates_table,
+            [
+                'client_id' => max(1, (int) $target_client_id),
+                'name' => $name,
+                'status' => 'wstepny',
+                'created_at' => current_time('mysql'),
+                'updated_at' => current_time('mysql'),
+            ],
+            ['%d', '%s', '%s', '%s', '%s']
+        );
+        $merged_estimate_id = (int) $wpdb->insert_id;
+        if ($merged_estimate_id <= 0) {
+            throw new RuntimeException(__('Nie udało się utworzyć scalonego kosztorysu.', 'erp-omd'));
+        }
+
+        $source_items = (array) $wpdb->get_results("SELECT name, qty, price, cost_internal, comment, margin_percent, price_source FROM {$estimate_items_table} WHERE estimate_id IN ({$in}) ORDER BY id ASC", ARRAY_A);
+        foreach ($source_items as $item) {
+            $wpdb->insert(
+                $estimate_items_table,
+                [
+                    'estimate_id' => $merged_estimate_id,
+                    'name' => (string) ($item['name'] ?? ''),
+                    'qty' => (float) ($item['qty'] ?? 0),
+                    'price' => (float) ($item['price'] ?? 0),
+                    'cost_internal' => (float) ($item['cost_internal'] ?? 0),
+                    'comment' => (string) ($item['comment'] ?? ''),
+                    'margin_percent' => (float) ($item['margin_percent'] ?? 0),
+                    'price_source' => in_array((string) ($item['price_source'] ?? 'manual'), ['manual', 'suggested'], true) ? (string) $item['price_source'] : 'manual',
+                    'created_at' => current_time('mysql'),
+                    'updated_at' => current_time('mysql'),
+                ],
+                ['%d', '%s', '%f', '%f', '%f', '%s', '%f', '%s', '%s', '%s']
+            );
+        }
+
+        return $merged_estimate_id;
     }
 }
