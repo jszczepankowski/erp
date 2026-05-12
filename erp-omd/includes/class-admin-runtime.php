@@ -4156,6 +4156,19 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-projects', 'error', __('Niepoprawna akcja masowa dla projektów.', 'erp-omd'));
         }
 
+        if ($bulk_action === 'merge') {
+            if (count($project_ids) < 2) {
+                $this->redirect_with_notice('erp-omd-projects', 'error', __('Aby scalić projekty, zaznacz co najmniej dwa projekty.', 'erp-omd'));
+            }
+
+            $this->redirect_with_notice(
+                'erp-omd-projects',
+                'success',
+                __('Wybrane projekty zostały przygotowane do scalenia. Uzupełnij klienta docelowego i wygeneruj podgląd.', 'erp-omd'),
+                ['source_project_ids' => implode(',', $project_ids)]
+            );
+        }
+
         foreach ($project_ids as $project_id) {
             if ($bulk_action === 'activate') {
                 $this->projects->set_status($project_id, 'do_rozpoczecia');
