@@ -853,24 +853,20 @@ class ERP_OMD_Admin
 
     private function count_dashboard_active_projects_for_month(array $projects, $reporting_month)
     {
-        $active_statuses = ['archiwum', 'zakonczony'];
+        $inactive_statuses = ['archiwum', 'zakonczony', 'merged'];
         $count = 0;
 
         foreach ($projects as $project) {
             $status = (string) ($project['status'] ?? '');
-            if (in_array($status, $active_statuses, true)) {
+            if (in_array($status, $inactive_statuses, true)) {
                 continue;
             }
-
-            $end_date = (string) ($project['end_date'] ?? '');
-            if ($end_date === '') {
-                $count++;
+            $start = (string) ($project['start_date'] ?? '');
+            $end = (string) ($project['end_date'] ?? '');
+            if (substr($start, 0, 7) !== (string) $reporting_month || substr($end, 0, 7) !== (string) $reporting_month) {
                 continue;
             }
-
-            if (substr($end_date, 0, 7) === (string) $reporting_month) {
-                $count++;
-            }
+            $count++;
         }
 
         return $count;
