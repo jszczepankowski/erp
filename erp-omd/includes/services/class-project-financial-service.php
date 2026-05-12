@@ -149,7 +149,8 @@ class ERP_OMD_Project_Financial_Service
         $profit = round($revenue - $cost, 2);
         $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 2) : 0.0;
         $budget = (float) ($project['budget'] ?? 0);
-        $budget_usage = $budget > 0 ? round(($cost / $budget) * 100, 2) : 0.0;
+        $effective_budget = $budget > 0 ? $budget + max(0.0, $extra_revenue) : $budget;
+        $budget_usage = $effective_budget > 0 ? round(($cost / $effective_budget) * 100, 2) : 0.0;
 
         $data = [
             'revenue' => round($revenue, 2),

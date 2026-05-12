@@ -210,9 +210,12 @@ class ERP_OMD_Client_Project_Service
     public function prepare_project(array $data, array $existing_project = null)
     {
         $manager_ids = $this->prepare_manager_ids($data, $existing_project);
-        $manager_id = (int) ($data['manager_id'] ?? ($existing_project['manager_id'] ?? 0));
-        if ($manager_id <= 0 && ! empty($manager_ids)) {
-            $manager_id = (int) $manager_ids[0];
+        $manager_id = $this->resolve_default_main_manager_id();
+        if ($manager_id <= 0) {
+            $manager_id = (int) ($existing_project['manager_id'] ?? 0);
+            if ($manager_id <= 0 && ! empty($manager_ids)) {
+                $manager_id = (int) $manager_ids[0];
+            }
         }
 
         $billing_type = trim((string) ($data['billing_type'] ?? ($existing_project['billing_type'] ?? 'time_material'))) ?: 'time_material';
@@ -267,7 +270,10 @@ class ERP_OMD_Client_Project_Service
             $incoming_manager_ids = [];
         }
 
-        $manager_id = (int) ($data['manager_id'] ?? ($existing_project['manager_id'] ?? 0));
+        $manager_id = $this->resolve_default_main_manager_id();
+        if ($manager_id <= 0) {
+            $manager_id = (int) ($existing_project['manager_id'] ?? 0);
+        }
         $manager_ids = array_values(array_unique(array_filter(array_map('intval', $incoming_manager_ids))));
 
         if ($manager_id > 0 && ! in_array($manager_id, $manager_ids, true)) {
@@ -283,6 +289,22 @@ class ERP_OMD_Client_Project_Service
         }
 
         return array_values(array_unique(array_filter($manager_ids)));
+    }
+
+    private function resolve_default_main_manager_id()
+    {
+        if (! function_exists('get_user_by')) {
+            return 0;
+        }
+
+        $omd_user = get_user_by('login', 'OMD');
+        if (! $omd_user || ! user_can($omd_user, 'administrator')) {
+            return 0;
+        }
+
+        $employee = $this->employees->find_by_user_id((int) $omd_user->ID);
+
+        return (int) ($employee['id'] ?? 0);
     }
 
     private function validate_billing_policy(array $data)
