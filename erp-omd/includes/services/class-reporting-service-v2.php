@@ -914,6 +914,9 @@ class ERP_OMD_Reporting_Service
             if ((string) ($project['status'] ?? '') === 'merged') {
                 return false;
             }
+            if ($report_type === 'omd_rozliczenia' && ! $this->matches_omd_operational_status_group((string) ($project['status'] ?? ''), (string) ($filters['status'] ?? ''))) {
+                return false;
+            }
             if ($filters['project_id'] > 0 && (int) ($project['id'] ?? 0) !== $filters['project_id']) {
                 return false;
             }
@@ -1516,6 +1519,10 @@ class ERP_OMD_Reporting_Service
             'submitted',
             'approved',
             'rejected',
+            'omd_zakonczone',
+            'omd_do_zamkniecia',
+            'omd_biezace',
+            'omd_wszystkie',
         ];
     }
 
@@ -1527,6 +1534,30 @@ class ERP_OMD_Reporting_Service
     private function isTimeEntryStatusFilter($status)
     {
         return in_array($status, ['submitted', 'approved', 'rejected'], true);
+    }
+
+    private function matches_omd_operational_status_group($project_status, $status_filter)
+    {
+        $project_status = (string) $project_status;
+        $status_filter = (string) $status_filter;
+        if ($status_filter === '') {
+            return in_array($project_status, ['archiwum', 'zakonczony'], true);
+        }
+        if ($status_filter === 'omd_wszystkie') {
+            return $project_status !== 'do_rozpoczecia';
+        }
+
+        if ($status_filter === 'omd_zakonczone') {
+            return in_array($project_status, ['archiwum', 'zakonczony'], true);
+        }
+        if ($status_filter === 'omd_do_zamkniecia') {
+            return in_array($project_status, ['do_faktury', 'w_akceptacji'], true);
+        }
+        if ($status_filter === 'omd_biezace') {
+            return $project_status === 'w_realizacji';
+        }
+
+        return true;
     }
 
     private function billing_type_label($billing_type)

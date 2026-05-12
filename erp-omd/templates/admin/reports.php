@@ -40,7 +40,7 @@
                                     $show_client_field = false;
                                     $show_project_field = false;
                                     $show_employee_field = false;
-                                    $show_status_field = false;
+                                    $show_status_field = true;
                                     $show_detail_field = false;
                                     $show_per_page_field = false;
                                 } elseif ($selected_report_type === 'invoice') {
