@@ -215,20 +215,30 @@ class ERP_OMD_Reporting_Service
         $filters = $this->sanitize_filters($filters);
         $projects = $this->get_filtered_projects($filters);
         $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
-        $financials = $this->project_financial_service->get_project_financials($project_ids);
         $entry_index = $this->get_entry_metrics_by_project($project_ids, $filters);
         $cost_index = $this->get_direct_cost_metrics_by_project($project_ids, $filters['month']);
         $rows = [];
 
         foreach ($projects as $project) {
             $project_id = (int) $project['id'];
-            $financial = $financials[$project_id] ?? [];
             $entry_metrics = $entry_index[$project_id] ?? $this->emptyEntryMetrics();
             $direct_cost = (float) ($cost_index[$project_id] ?? 0.0);
 
             if ($filters['employee_id'] > 0 && (int) $entry_metrics['entries_count'] === 0) {
                 continue;
             }
+
+            $billing_type = (string) ($project['billing_type'] ?? '');
+            $time_revenue = (float) $entry_metrics['time_revenue'];
+            $time_cost = (float) $entry_metrics['time_cost'];
+            $fixed_component = in_array($billing_type, ['fixed_price', 'mixed'], true) ? (float) ($project['budget'] ?? 0.0) : 0.0;
+            $retainer_component = $billing_type === 'retainer' ? (float) ($project['retainer_monthly_fee'] ?? ($project['budget'] ?? 0.0)) : 0.0;
+            $revenue = $time_revenue + $fixed_component + $retainer_component;
+            $cost = $time_cost + $direct_cost;
+            $profit = $revenue - $cost;
+            $margin = $revenue > 0 ? ($profit / $revenue) * 100 : 0.0;
+            $budget_value = (float) ($project['budget'] ?? 0.0);
+            $budget_usage = $budget_value > 0 ? ($cost / $budget_value) * 100 : 0.0;
 
             $rows[] = [
                 'client_id' => (int) ($project['client_id'] ?? 0),
@@ -241,14 +251,14 @@ class ERP_OMD_Reporting_Service
                 'budget' => (float) ($project['budget'] ?? 0),
                 'reported_hours' => (float) $entry_metrics['hours'],
                 'entries_count' => (int) $entry_metrics['entries_count'],
-                'filtered_time_revenue' => (float) $entry_metrics['time_revenue'],
-                'filtered_time_cost' => (float) $entry_metrics['time_cost'],
+                'filtered_time_revenue' => $time_revenue,
+                'filtered_time_cost' => $time_cost,
                 'filtered_direct_cost' => $direct_cost,
-                'revenue' => (float) ($financial['revenue'] ?? 0),
-                'cost' => (float) ($financial['cost'] ?? 0),
-                'profit' => (float) ($financial['profit'] ?? 0),
-                'margin' => (float) ($financial['margin'] ?? 0),
-                'budget_usage' => (float) ($financial['budget_usage'] ?? 0),
+                'revenue' => $revenue,
+                'cost' => $cost,
+                'profit' => $profit,
+                'margin' => $margin,
+                'budget_usage' => $budget_usage,
                 'drilldown_link' => $this->build_reports_link([
                     'report_type' => 'time_entries',
                     'month' => (string) $filters['month'],
@@ -277,10 +287,9 @@ class ERP_OMD_Reporting_Service
                     return (string) ($left['cost_date'] ?? '') <=> (string) ($right['cost_date'] ?? '');
                 });
 
-                $billing_type = (string) ($project['billing_type'] ?? '');
                 $hourly_component = round((float) ($entry_metrics['time_revenue'] ?? 0.0), 2);
                 $fixed_component = in_array($billing_type, ['fixed_price', 'mixed'], true) ? round((float) ($project['budget'] ?? 0.0), 2) : 0.0;
-                $retainer_component = $billing_type === 'retainer' ? round((float) ($project['retainer_monthly_fee'] ?? 0.0), 2) : 0.0;
+                $retainer_component = $billing_type === 'retainer' ? round((float) ($project['retainer_monthly_fee'] ?? ($project['budget'] ?? 0.0)), 2) : 0.0;
                 $rows[count($rows) - 1]['detail'] = [
                     'time_entries' => array_values(array_map(static function ($entry) {
                         $hours = (float) ($entry['hours'] ?? 0);
@@ -307,9 +316,9 @@ class ERP_OMD_Reporting_Service
                         'fixed_component' => $fixed_component,
                         'retainer_component' => $retainer_component,
                         'direct_cost_component' => round((float) $direct_cost, 2),
-                        'recognized_revenue' => round((float) ($financial['revenue'] ?? 0.0), 2),
-                        'recognized_profit' => round((float) ($financial['profit'] ?? 0.0), 2),
-                        'budget_usage' => round((float) ($financial['budget_usage'] ?? 0.0), 2),
+                        'recognized_revenue' => round((float) $revenue, 2),
+                        'recognized_profit' => round((float) $profit, 2),
+                        'budget_usage' => round((float) $budget_usage, 2),
                     ],
                 ];
             }
