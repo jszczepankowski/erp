@@ -783,6 +783,9 @@ class ERP_OMD_Admin
         $dashboard_employee_hourly_profit = round((float) ($omd_month_row['hourly_profit'] ?? 0.0), 2);
         $dashboard_controlling_result = $this->resolve_dashboard_controlling_result($omd_month_row);
         $dashboard_active_projects_count = $this->count_dashboard_active_projects_for_month($projects, $reporting_month);
+        $dashboard_projects_in_progress = $this->count_dashboard_projects_by_status_for_month($projects, $reporting_month, 'w_realizacji');
+        $dashboard_projects_to_invoice = $this->count_dashboard_projects_by_status_for_month($projects, $reporting_month, 'do_faktury');
+        $dashboard_projects_done = $this->count_dashboard_projects_by_status_for_month($projects, $reporting_month, 'zakonczony');
         $dashboard_monthly_finance_metrics = [
             [
                 'key' => 'project_cost',
@@ -850,24 +853,38 @@ class ERP_OMD_Admin
 
     private function count_dashboard_active_projects_for_month(array $projects, $reporting_month)
     {
-        $active_statuses = ['archiwum', 'zakonczony'];
+        $inactive_statuses = ['archiwum', 'zakonczony', 'merged'];
         $count = 0;
 
         foreach ($projects as $project) {
             $status = (string) ($project['status'] ?? '');
-            if (in_array($status, $active_statuses, true)) {
+            if (in_array($status, $inactive_statuses, true)) {
                 continue;
             }
-
-            $end_date = (string) ($project['end_date'] ?? '');
-            if ($end_date === '') {
-                $count++;
+            $start = (string) ($project['start_date'] ?? '');
+            $end = (string) ($project['end_date'] ?? '');
+            if (substr($start, 0, 7) !== (string) $reporting_month || substr($end, 0, 7) !== (string) $reporting_month) {
                 continue;
             }
+            $count++;
+        }
 
-            if (substr($end_date, 0, 7) === (string) $reporting_month) {
-                $count++;
+        return $count;
+    }
+
+    private function count_dashboard_projects_by_status_for_month(array $projects, $reporting_month, $status_filter)
+    {
+        $count = 0;
+        foreach ($projects as $project) {
+            if ((string) ($project['status'] ?? '') !== (string) $status_filter) {
+                continue;
             }
+            $start = (string) ($project['start_date'] ?? '');
+            $end = (string) ($project['end_date'] ?? '');
+            if (substr($start, 0, 7) !== (string) $reporting_month || substr($end, 0, 7) !== (string) $reporting_month) {
+                continue;
+            }
+            $count++;
         }
 
         return $count;

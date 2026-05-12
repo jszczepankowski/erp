@@ -167,7 +167,7 @@
 .erp-omd-admin .erp-omd-metric-strip {
     display: grid;
     gap: 16px;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .erp-omd-admin .erp-omd-metric-tile {
@@ -572,6 +572,10 @@
 }
 
 @media (max-width: 960px) {
+    .erp-omd-admin .erp-omd-metric-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .erp-omd-admin .erp-omd-dashboard-visuals {
         grid-template-columns: 1fr;
     }
@@ -587,6 +591,12 @@
 
     .erp-omd-admin .erp-omd-finance-top-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .erp-omd-admin .erp-omd-metric-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
