@@ -142,17 +142,6 @@
                                 </p>
                             </div>
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="project-manager"><?php esc_html_e('Główny manager projektu', 'erp-omd'); ?></label>
-                            <select id="project-manager" name="manager_id">
-                                <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
-                                <?php foreach ($employees_for_select as $employee_item) : ?>
-                                    <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($project['manager_id'] ?? 0), (int) $employee_item['id']); ?>>
-                                        <?php echo esc_html($employee_item['user_login'] . ' (' . $this->account_type_label($employee_item['account_type']) . ')'); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="project-managers"><?php esc_html_e('Dodatkowi managerowie projektu', 'erp-omd'); ?></label>
                             <select id="project-managers" name="manager_ids[]" multiple size="5" class="erp-omd-multiselect">
