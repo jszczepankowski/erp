@@ -8,6 +8,7 @@ class ERP_OMD_Reporting_Service
     private $employees;
     private $salary_history;
     private $project_costs;
+    private $project_revenues;
     private $time_entries;
     private $project_financial_service;
     private $estimate_items;
@@ -19,6 +20,7 @@ class ERP_OMD_Reporting_Service
         ERP_OMD_Employee_Repository $employees,
         ERP_OMD_Salary_History_Repository $salary_history,
         ERP_OMD_Project_Cost_Repository $project_costs,
+        ERP_OMD_Project_Revenue_Repository $project_revenues,
         ERP_OMD_Time_Entry_Repository $time_entries,
         ERP_OMD_Project_Financial_Service $project_financial_service,
         $estimate_items = null
@@ -28,6 +30,7 @@ class ERP_OMD_Reporting_Service
         $this->employees = $employees;
         $this->salary_history = $salary_history;
         $this->project_costs = $project_costs;
+        $this->project_revenues = $project_revenues;
         $this->time_entries = $time_entries;
         $this->project_financial_service = $project_financial_service;
         $this->estimate_items = $estimate_items;
@@ -161,30 +164,32 @@ class ERP_OMD_Reporting_Service
                         $all_project_ids[$project_id] = true;
                     }
                 }
-                $active_budget_metrics_by_month = $this->build_active_budget_metrics_index_by_month($projects, $months);
                 $prefetched_entries = $this->prefetch_entries_for_months($filters, $months, $month_ranges);
                 $entry_metrics_by_month = $this->build_entry_metrics_index_by_month($prefetched_entries, $filters, $months);
                 $direct_cost_index = $this->build_direct_cost_index_by_month_and_project(array_keys($all_project_ids), $months);
+                $project_revenue_index = $this->build_project_revenue_index_by_month($projects, $months);
                 foreach ($months as $month) {
                     $salary_cost = (float) ($salary_cost_by_month[$month] ?? 0.0);
                     $direct_cost = 0.0;
-                    $active_budget_metrics = (array) ($active_budget_metrics_by_month[$month] ?? []);
-                    $active_budgets = (float) ($active_budget_metrics['active_budgets'] ?? 0.0);
-                    $active_budget_project_ids = (array) ($active_budget_metrics['project_ids'] ?? []);
+                    $direct_cost_project_ids = [];
                     $entry_metrics = (array) ($entry_metrics_by_month[$month] ?? []);
                     $time_revenue = (float) ($entry_metrics['time_revenue'] ?? 0.0);
                     $time_cost = (float) ($entry_metrics['time_cost'] ?? 0.0);
-
-                    $direct_cost_project_ids = array_values(array_unique(array_filter($active_budget_project_ids, static function ($project_id) {
-                        return (int) $project_id > 0;
-                    })));
+                    $project_revenue = (float) ($project_revenue_index[$month] ?? 0.0);
+                    foreach ($projects as $project_row) {
+                        $project_id = (int) ($project_row['id'] ?? 0);
+                        if ($project_id <= 0) {
+                            continue;
+                        }
+                        $direct_cost_project_ids[] = $project_id;
+                    }
+                    $direct_cost_project_ids = array_values(array_unique($direct_cost_project_ids));
                     foreach ($direct_cost_project_ids as $project_id) {
                         $direct_cost += (float) ($direct_cost_index[$month][(int) $project_id] ?? 0.0);
                     }
 
                     $fixed_cost = (float) ($fixed_cost_by_month[$month] ?? 0.0);
                     $hourly_profit = $time_revenue - $time_cost;
-                    $project_revenue = $active_budgets + $time_revenue;
                     $operational_result = $project_revenue - $direct_cost;
                     $controlling_overhead = $salary_cost + $fixed_cost;
                     $controlling_result = $operational_result - $controlling_overhead;
@@ -194,7 +199,7 @@ class ERP_OMD_Reporting_Service
                         'project_direct_cost' => round($direct_cost, 2),
                         'project_revenue' => round($project_revenue, 2),
                         'hourly_profit' => round($hourly_profit, 2),
-                        'active_project_budgets' => round($active_budgets, 2),
+                        'active_project_budgets' => 0.0,
                         'fixed_cost' => round($fixed_cost, 2),
                         'operational_result' => round($operational_result, 2),
                         'controlling_overhead' => round($controlling_overhead, 2),
@@ -217,6 +222,7 @@ class ERP_OMD_Reporting_Service
         $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
         $entry_index = $this->get_entry_metrics_by_project($project_ids, $filters);
         $cost_index = $this->get_direct_cost_metrics_by_project($project_ids, $filters['month']);
+        $project_revenue_index = $this->get_revenue_metrics_by_project($project_ids, $filters['month']);
         $rows = [];
 
         foreach ($projects as $project) {
@@ -231,10 +237,11 @@ class ERP_OMD_Reporting_Service
             $billing_type = (string) ($project['billing_type'] ?? '');
             $time_revenue = (float) $entry_metrics['time_revenue'];
             $time_cost = (float) $entry_metrics['time_cost'];
-            $fixed_component = in_array($billing_type, ['fixed_price', 'mixed'], true) ? (float) ($project['budget'] ?? 0.0) : 0.0;
-            $retainer_component = $billing_type === 'retainer' ? (float) ($project['retainer_monthly_fee'] ?? ($project['budget'] ?? 0.0)) : 0.0;
-            $revenue = $time_revenue + $fixed_component + $retainer_component;
-            $cost = $time_cost + $direct_cost;
+            $project_revenue = (float) ($project_revenue_index[$project_id] ?? 0.0);
+            $time_revenue_component = in_array($billing_type, ['time_material', 'mixed'], true) ? $time_revenue : 0.0;
+            $time_cost_component = in_array($billing_type, ['time_material', 'mixed'], true) ? $time_cost : 0.0;
+            $revenue = $project_revenue + $time_revenue_component;
+            $cost = $direct_cost + $time_cost_component;
             $profit = $revenue - $cost;
             $margin = $revenue > 0 ? ($profit / $revenue) * 100 : 0.0;
             $budget_value = (float) ($project['budget'] ?? 0.0);
@@ -254,6 +261,7 @@ class ERP_OMD_Reporting_Service
                 'filtered_time_revenue' => $time_revenue,
                 'filtered_time_cost' => $time_cost,
                 'filtered_direct_cost' => $direct_cost,
+                'project_revenue' => $project_revenue,
                 'revenue' => $revenue,
                 'cost' => $cost,
                 'profit' => $profit,
@@ -1157,6 +1165,61 @@ class ERP_OMD_Reporting_Service
         }
 
         return $metrics;
+    }
+
+    private function get_revenue_metrics_by_project(array $project_ids, $month)
+    {
+        $metrics = [];
+
+        foreach ($project_ids as $project_id) {
+            $project = $this->projects->find((int) $project_id);
+            if (! $project) {
+                continue;
+            }
+
+            $billing_type = (string) ($project['billing_type'] ?? '');
+            $base_revenue = 0.0;
+            if ($billing_type === 'fixed_price' || $billing_type === 'mixed') {
+                $base_revenue = (float) ($project['budget'] ?? 0.0);
+            } elseif ($billing_type === 'retainer') {
+                $base_revenue = (float) ($project['retainer_monthly_fee'] ?? ($project['budget'] ?? 0.0));
+            }
+
+            $extra_revenue = 0.0;
+            foreach ($this->project_revenues->for_project((int) $project_id) as $revenue_row) {
+                $revenue_month = substr((string) ($revenue_row['revenue_date'] ?? ''), 0, 7);
+                if ($month !== '' && $revenue_month !== $month) {
+                    continue;
+                }
+                $extra_revenue += (float) ($revenue_row['amount'] ?? 0.0);
+            }
+
+            $metrics[(int) $project_id] = round($base_revenue + $extra_revenue, 2);
+        }
+
+        return $metrics;
+    }
+
+    private function build_project_revenue_index_by_month(array $projects, array $months)
+    {
+        $index = array_fill_keys(array_map('strval', $months), 0.0);
+        foreach ($months as $month) {
+            $month_rows = $this->build_project_report([
+                'month' => (string) $month,
+                'detail' => 'simple',
+                'client_id' => 0,
+                'project_id' => 0,
+                'employee_id' => 0,
+                'status' => '',
+                'report_type' => 'projects',
+                'tab' => 'reports',
+            ]);
+            $index[(string) $month] = round(array_sum(array_map(static function ($row) {
+                return (float) ($row['project_revenue'] ?? 0.0);
+            }, $month_rows)), 2);
+        }
+
+        return $index;
     }
 
     private function build_direct_cost_index_by_month_and_project(array $project_ids, array $months)
