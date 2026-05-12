@@ -1042,12 +1042,9 @@ class ERP_OMD_Reporting_Service
 
         $allowed_months = array_fill_keys(array_map('strval', $months), true);
         foreach ($projects as $project) {
-            if (! in_array((string) ($project['status'] ?? ''), ['do_faktury', 'zakonczony', 'archiwum'], true)) {
-                continue;
-            }
-
-            $close_month = $this->resolve_project_close_month($project);
-            if (preg_match('/^\d{4}-\d{2}$/', $close_month) !== 1 || ! isset($allowed_months[$close_month])) {
+            $start_date = (string) ($project['start_date'] ?? '');
+            $start_month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date) === 1 ? substr($start_date, 0, 7) : '';
+            if ($start_month === '' || ! isset($allowed_months[$start_month])) {
                 continue;
             }
 
@@ -1056,8 +1053,11 @@ class ERP_OMD_Reporting_Service
                 continue;
             }
 
-            $index[$close_month]['project_ids'][] = $project_id;
-            $index[$close_month]['active_budgets'] += (float) ($project['budget'] ?? 0.0);
+            $index[$start_month]['project_ids'][] = $project_id;
+            $billing_type = (string) ($project['billing_type'] ?? '');
+            $budget_component = in_array($billing_type, ['fixed_price', 'mixed'], true) ? (float) ($project['budget'] ?? 0.0) : 0.0;
+            $retainer_component = $billing_type === 'retainer' ? (float) ($project['retainer_monthly_fee'] ?? ($project['budget'] ?? 0.0)) : 0.0;
+            $index[$start_month]['active_budgets'] += $budget_component + $retainer_component;
         }
 
         return $index;
