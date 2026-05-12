@@ -177,8 +177,19 @@ class ERP_OMD_Client_Project_Service
             $errors[] = __('Data end_date jest niepoprawna.', 'erp-omd');
         }
 
+        if ($data['start_date'] === '' || $data['end_date'] === '') {
+            $errors[] = __('Projekt musi mieć ustawione daty start_date i end_date.', 'erp-omd');
+        }
+
         if ($data['start_date'] !== '' && $data['end_date'] !== '' && $data['end_date'] < $data['start_date']) {
             $errors[] = __('Data end_date nie może być wcześniejsza niż start_date.', 'erp-omd');
+        }
+        if (
+            $data['start_date'] !== ''
+            && $data['end_date'] !== ''
+            && substr((string) $data['start_date'], 0, 7) !== substr((string) $data['end_date'], 0, 7)
+        ) {
+            $errors[] = __('Projekt musi mieć start_date i end_date w tym samym miesiącu.', 'erp-omd');
         }
         if (($data['deadline_date'] ?? '') !== '' && ! $this->valid_date((string) $data['deadline_date'])) {
             $errors[] = __('Data deadline jest niepoprawna.', 'erp-omd');

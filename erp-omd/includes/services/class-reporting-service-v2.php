@@ -911,7 +911,7 @@ class ERP_OMD_Reporting_Service
                 return false;
             }
 
-            if (in_array($report_type, ['projects', 'clients'], true) && ! $this->is_project_from_reporting_month($project, (string) ($filters['month'] ?? ''))) {
+            if ($report_type !== 'calendar' && ! $this->is_project_from_reporting_month($project, (string) ($filters['month'] ?? ''))) {
                 return false;
             }
 
@@ -930,15 +930,15 @@ class ERP_OMD_Reporting_Service
         $start_month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date) === 1 ? substr($start_date, 0, 7) : '';
         $end_month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date) === 1 ? substr($end_date, 0, 7) : '';
 
-        if ($start_month === '') {
-            return true;
-        }
-
-        if ($start_month !== (string) $month) {
+        if ($start_month === '' || $end_month === '') {
             return false;
         }
 
-        return $end_month === '' || $end_month === (string) $month;
+        if ($start_month !== (string) $month || $end_month !== (string) $month) {
+            return false;
+        }
+
+        return true;
     }
 
     private function get_filtered_entries(array $project_ids, array $filters)
