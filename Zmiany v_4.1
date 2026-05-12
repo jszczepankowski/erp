@@ -95,15 +95,15 @@ Sprint 4 — tabela decyzyjna (USTALONE / DO DECYZJI / REKOMENDACJA):
 | Obszar | Status | Co już ustalone | Do decyzji | Rekomendacja robocza |
 |---|---|---|---|---|
 | Zakres Sprintu 4 | USTALONE | Dotyczy punktu 5: scalanie projektów. | — | Utrzymać scope bez rozszerzania na inne obszary. |
-| Definicja scalenia | DO DECYZJI | Scalanie ma zachować godziny, koszty, przychody i umożliwić zmianę klienta/nazwy. | Warunki kiedy merge jest dozwolony; status projektów źródłowych. | MVP: merge tylko dla projektów aktywnych i bez konfliktów biznesowych. |
-| Model techniczny merge | DO DECYZJI | Rozważane: przenoszenie fizyczne vs mapowanie logiczne. | Wybór modelu docelowego. | Start od mapowania logicznego + audyt (mniejsze ryzyko utraty danych). |
-| Finanse i KPI | DO DECYZJI | Trzeba zachować spójność przychodów/kosztów/budżetów. | Jak liczyć KPI historyczne po merge. | Raport „as-was” + „as-is” (widoki historyczne i aktualne oddzielnie). |
-| Dokumenty księgowe | DO DECYZJI | Wskazany obszar ryzyka i potrzeba zasad dla dokumentów zamkniętych. | Czy przepinać dokumenty zamknięte czy tylko linkować relacyjnie. | Dokumentów zamkniętych nie przepinać fizycznie; utrzymać referencje i relację merge. |
-| Uprawnienia i akceptacje | DO DECYZJI | Potrzebne role i możliwa podwójna akceptacja. | Czy 4-eyes principle jest wymagany w MVP. | Dla MVP: minimum 2 role (manager + admin finansowy) dla merge produkcyjnego. |
-| UX podglądu skutków | DO DECYZJI | Potrzebny ekran podglądu wpływu scalenia. | Zakres podglądu (agregaty vs pełna lista rekordów). | MVP: agregaty + najważniejsze ostrzeżenia + liczniki rekordów per typ. |
-| Audyt i bezpieczeństwo | DO DECYZJI | Pełny log i blokady konfliktów są wymagane. | Zakres snapshotu i lista twardych blokad. | Snapshot pól krytycznych + blokada merge przy konfliktach klient/waluta/status. |
-| Rollback / odwracalność | DO DECYZJI | Temat cofnięcia jest otwarty. | Czy wprowadzamy rollback i na jakich zasadach. | MVP bez pełnego rollbacku, ale z trybem „dry-run” i potwierdzeniem skutków. |
-| Plan wdrożenia | DO DECYZJI | Pilotaż + checklista + kryteria go-live są wymagane. | Zakres pilotażu i metryki akceptacji. | Pilotaż na kopii danych produkcyjnych + testy regresji raportów finansowych. |
+| Definicja scalenia | USTALONE | Scalanie ma zachować godziny, koszty, przychody, budżety i umożliwia zmianę klienta/nazwy; projekt docelowy zawsze z nowym numerem. | — | Merge tylko dla statusów `w_realizacji` i `do_faktury`; projekty źródłowe po scaleniu oznaczane jako `merged`. |
+| Model techniczny merge | USTALONE | Rekordy źródłowe są przenoszone/przepisywane do nowego projektu docelowego. | — | Przenosimy pełny zestaw danych (bez częściowego merge). |
+| Finanse i KPI | USTALONE | Raportowanie po scaleniu w modelu `as-is`; projekty `merged` nie mogą trafiać do raportów i zestawień finansowych. | — | Filtr globalny: status `merged` wykluczony z raportów finansowych/operacyjnych. |
+| Dokumenty księgowe | USTALONE | Do merge dopuszczamy tylko projekty `w_realizacji` i `do_faktury`; przypięte faktury kosztowe przenosimy do nowego projektu. | — | Migracja relacji faktur kosztowych do projektu docelowego w ramach jednej operacji scalania. |
+| Uprawnienia i akceptacje | USTALONE | Brak wymogu podwójnej autoryzacji. | — | Wymagany mocny monit ostrzegawczy o nieodwracalności akcji przed potwierdzeniem merge. |
+| UX podglądu skutków | USTALONE | Potrzebny ekran automatycznego raportu po scaleniu (liczniki + sumy). | — | Raport obejmuje: liczbę wpisów/sumę godzin, liczbę kosztów/sumę kosztów, liczbę pozycji przychodowych/sumę przychodów, liczbę budżetów i ich sumę, listę projektów źródłowych + klient docelowy. |
+| Audyt i bezpieczeństwo | USTALONE | Konflikt stawek/roli czasu pracy nie występuje (spółki córki mają wspólny standard). | — | Pozostawić log audytowy operacji merge (kto/kiedy/jakie projekty -> jaki projekt docelowy). |
+| Rollback / odwracalność | USTALONE | Nie dopuszczamy cofnięcia scalenia. | — | Operacja nieodwracalna; po statusie `merged` możliwość trwałego usunięcia projektu źródłowego. |
+| Plan wdrożenia | DO DECYZJI | Zakres biznesowy jest ustalony. | Kolejność wdrożenia (admin only vs manager), kryteria odbioru i scenariusze UAT. | Start od wdrożenia admin-only + UAT na danych staging przed otwarciem na managerów. |
 
 Legenda statusów:
 - USTALONE — decyzja zaakceptowana.
