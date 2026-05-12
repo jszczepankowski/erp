@@ -1,5 +1,56 @@
 <div class="wrap erp-omd-admin">
     <h1><?php esc_html_e('ERP OMD — Projekty', 'erp-omd'); ?></h1>
+    <?php $merge_preview = get_transient('erp_omd_merge_preview_' . get_current_user_id()); ?>
+    <div class="erp-omd-card">
+        <h2><?php esc_html_e('Scal projekty (preview + potwierdzenie)', 'erp-omd'); ?></h2>
+        <form method="post">
+            <?php wp_nonce_field('erp_omd_save_project'); ?>
+            <input type="hidden" name="erp_omd_action" value="merge_projects_preview" />
+            <p>
+                <label><?php esc_html_e('ID projektów źródłowych (oddzielone przecinkami)', 'erp-omd'); ?></label><br />
+                <input type="text" class="regular-text" name="source_project_ids" placeholder="12,15,19" required />
+            </p>
+            <p>
+                <label><?php esc_html_e('Klient docelowy', 'erp-omd'); ?></label><br />
+                <select name="target_client_id" required>
+                    <option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
+                    <?php foreach ($clients as $client_item) : ?>
+                        <option value="<?php echo esc_attr((string) $client_item['id']); ?>"><?php echo esc_html((string) $client_item['name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </p>
+            <p><button type="submit" class="button button-secondary"><?php esc_html_e('Generuj podgląd scalenia', 'erp-omd'); ?></button></p>
+        </form>
+        <?php if (is_array($merge_preview) && ! empty($merge_preview)) : ?>
+            <hr />
+            <h3><?php esc_html_e('Podgląd metryk scalenia', 'erp-omd'); ?></h3>
+            <ul>
+                <li><?php echo esc_html(sprintf(__('Wpisy czasu: %1$d | godziny: %2$s', 'erp-omd'), (int) ($merge_preview['time_entries_count'] ?? 0), number_format_i18n((float) ($merge_preview['time_entries_hours_sum'] ?? 0), 2))); ?></li>
+                <li><?php echo esc_html(sprintf(__('Koszty: %1$d | suma: %2$s', 'erp-omd'), (int) ($merge_preview['project_costs_count'] ?? 0), number_format_i18n((float) ($merge_preview['project_costs_amount_sum'] ?? 0), 2))); ?></li>
+                <li><?php echo esc_html(sprintf(__('Przychody: %1$d | suma: %2$s', 'erp-omd'), (int) ($merge_preview['project_revenues_count'] ?? 0), number_format_i18n((float) ($merge_preview['project_revenues_amount_sum'] ?? 0), 2))); ?></li>
+                <li><?php echo esc_html(sprintf(__('Budżety: %1$d | suma: %2$s', 'erp-omd'), (int) ($merge_preview['project_budgets_count'] ?? 0), number_format_i18n((float) ($merge_preview['project_budgets_amount_sum'] ?? 0), 2))); ?></li>
+            </ul>
+            <form method="post">
+                <?php wp_nonce_field('erp_omd_save_project'); ?>
+                <input type="hidden" name="erp_omd_action" value="merge_projects_execute" />
+                <p>
+                    <label><?php esc_html_e('ID projektów źródłowych', 'erp-omd'); ?></label><br />
+                    <input type="text" class="regular-text" name="source_project_ids" required />
+                </p>
+                <p>
+                    <label><?php esc_html_e('ID klienta docelowego', 'erp-omd'); ?></label><br />
+                    <input type="number" min="1" name="target_client_id" required />
+                </p>
+                <p>
+                    <label><?php esc_html_e('Nazwa nowego projektu docelowego', 'erp-omd'); ?></label><br />
+                    <input type="text" class="regular-text" name="target_project_name" required />
+                </p>
+                <p><label><input type="checkbox" name="delete_sources_permanently" value="1" /> <?php esc_html_e('Usuń trwale projekty źródłowe po scaleniu', 'erp-omd'); ?></label></p>
+                <p><label><input type="checkbox" name="merge_confirmed" value="1" required /> <?php esc_html_e('Potwierdzam nieodwracalność tej operacji.', 'erp-omd'); ?></label></p>
+                <p><button type="submit" class="button button-primary"><?php esc_html_e('Wykonaj scalenie', 'erp-omd'); ?></button></p>
+            </form>
+        <?php endif; ?>
+    </div>
     <div class="erp-omd-card">
         <h2><?php echo $project ? esc_html__('Edytuj projekt', 'erp-omd') : esc_html__('Nowy projekt', 'erp-omd'); ?></h2>
         <form method="post">

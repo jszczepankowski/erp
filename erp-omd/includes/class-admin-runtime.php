@@ -604,6 +604,8 @@ class ERP_OMD_Admin
             case 'import_ksef_cost_xml': $this->handle_import_ksef_cost_xml_action(); break;
             case 'attach_ksef_sales_invoice': $this->handle_attach_ksef_sales_invoice_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
+            case 'merge_projects_preview': $this->handle_project_merge_preview_action(); break;
+            case 'merge_projects_execute': $this->handle_project_merge_execute_action(); break;
             case 'mark_project_deadline_completed': $this->handle_mark_project_deadline_completed_action(); break;
             case 'duplicate_project': $this->handle_project_duplicate(); break;
             case 'toggle_project_active': $this->handle_project_active_toggle(); break;
@@ -1473,7 +1475,7 @@ class ERP_OMD_Admin
         foreach ($projects as $project_row) {
             $project_name_by_id[(int) ($project_row['id'] ?? 0)] = (string) ($project_row['name'] ?? '');
         }
-        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'];
+        $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum', 'merged'];
         if ($report_filters['report_type'] === 'time_entries') {
             $status_options = ['submitted', 'approved', 'rejected'];
         }
@@ -1484,6 +1486,7 @@ class ERP_OMD_Admin
             'do_faktury' => $this->project_status_label('do_faktury'),
             'zakonczony' => $this->project_status_label('zakonczony'),
             'archiwum' => $this->project_status_label('archiwum'),
+            'merged' => $this->project_status_label('merged'),
             'submitted' => $this->time_status_label('submitted'),
             'approved' => $this->time_status_label('approved'),
             'rejected' => $this->time_status_label('rejected'),
@@ -3345,6 +3348,38 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-projects', 'success', __('Projekt został zaktualizowany inline.', 'erp-omd'));
     }
 
+    private function handle_project_merge_preview_action()
+    {
+        check_admin_referer('erp_omd_save_project');
+        $source_project_ids = array_filter(array_map('intval', preg_split('/[\s,;]+/', (string) wp_unslash($_POST['source_project_ids'] ?? ''))));
+        $target_client_id = (int) ($_POST['target_client_id'] ?? 0);
+        $service = new ERP_OMD_Project_Merge_Service($this->projects);
+        $validation = $service->validate_source_projects($source_project_ids);
+        if (! ($validation['ok'] ?? false)) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', (array) ($validation['errors'] ?? [])));
+        }
+        $preview = $service->build_merge_preview($source_project_ids, $target_client_id);
+        set_transient('erp_omd_merge_preview_' . get_current_user_id(), $preview, 15 * MINUTE_IN_SECONDS);
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Podgląd scalania został przygotowany. Zweryfikuj metryki i potwierdź operację.', 'erp-omd'));
+    }
+
+    private function handle_project_merge_execute_action()
+    {
+        check_admin_referer('erp_omd_save_project');
+        $source_project_ids = array_filter(array_map('intval', preg_split('/[\s,;]+/', (string) wp_unslash($_POST['source_project_ids'] ?? ''))));
+        $target_client_id = (int) ($_POST['target_client_id'] ?? 0);
+        $target_project_name = sanitize_text_field((string) wp_unslash($_POST['target_project_name'] ?? ''));
+        $confirmed = (string) ($_POST['merge_confirmed'] ?? '') === '1';
+        $delete_sources = (string) ($_POST['delete_sources_permanently'] ?? '') === '1';
+        $service = new ERP_OMD_Project_Merge_Service($this->projects);
+        $result = $service->execute_merge($source_project_ids, $target_client_id, $target_project_name, $confirmed, $delete_sources);
+        if (! ($result['ok'] ?? false)) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', (array) ($result['errors'] ?? [])));
+        }
+        delete_transient('erp_omd_merge_preview_' . get_current_user_id());
+        $this->redirect_with_notice('erp-omd-projects', 'success', __('Scalenie projektów zostało wykonane poprawnie.', 'erp-omd'));
+    }
+
     private function handle_mark_project_deadline_completed_action()
     {
         check_admin_referer('erp_omd_mark_project_deadline_completed');
@@ -4116,7 +4151,7 @@ class ERP_OMD_Admin
         if ($target_status === 'inactive') {
             $target_status = 'archiwum';
         }
-        $allowed_statuses = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'];
+        $allowed_statuses = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum', 'merged'];
         if ($target_status !== '' && ! in_array($target_status, $allowed_statuses, true)) {
             $this->redirect_with_notice('erp-omd-projects', 'error', __('Niepoprawna akcja masowa dla projektów.', 'erp-omd'));
         }
@@ -4802,6 +4837,8 @@ class ERP_OMD_Admin
             case 'archiwum':
             case 'inactive':
                 return __('Archiwum', 'erp-omd');
+            case 'merged':
+                return __('Scalony (merged)', 'erp-omd');
             default:
                 return (string) $status;
         }

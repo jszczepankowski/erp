@@ -894,6 +894,9 @@ class ERP_OMD_Reporting_Service
         $report_type = (string) ($filters['report_type'] ?? '');
 
         return array_values(array_filter($projects, function ($project) use ($filters, $report_type) {
+            if ((string) ($project['status'] ?? '') === 'merged') {
+                return false;
+            }
             if ($filters['project_id'] > 0 && (int) ($project['id'] ?? 0) !== $filters['project_id']) {
                 return false;
             }
