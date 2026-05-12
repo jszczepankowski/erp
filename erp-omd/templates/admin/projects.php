@@ -91,17 +91,6 @@
                                 </p>
                             </div>
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
-                            <label for="project-manager"><?php esc_html_e('Główny manager projektu', 'erp-omd'); ?></label>
-                            <select id="project-manager" name="manager_id">
-                                <option value="0"><?php esc_html_e('Brak', 'erp-omd'); ?></option>
-                                <?php foreach ($employees_for_select as $employee_item) : ?>
-                                    <option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($project['manager_id'] ?? 0), (int) $employee_item['id']); ?>>
-                                        <?php echo esc_html($employee_item['user_login'] . ' (' . $this->account_type_label($employee_item['account_type']) . ')'); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
                         <div class="erp-omd-form-field erp-omd-form-field-span-2">
                             <label for="project-managers"><?php esc_html_e('Dodatkowi managerowie projektu', 'erp-omd'); ?></label>
                             <select id="project-managers" name="manager_ids[]" multiple size="5" class="erp-omd-multiselect">
@@ -678,7 +667,7 @@
         <form method="post" id="erp-omd-bulk-projects-form">
             <?php wp_nonce_field('erp_omd_bulk_projects'); ?>
             <input type="hidden" name="erp_omd_action" value="bulk_projects" />
-            <div class="tablenav top"><div class="alignleft actions"><select name="bulk_action"><option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option><option value="activate"><?php esc_html_e('Aktywuj', 'erp-omd'); ?></option><option value="deactivate"><?php esc_html_e('Przenieś do archiwum', 'erp-omd'); ?></option><option value="duplicate"><?php esc_html_e('Duplikuj', 'erp-omd'); ?></option><option value="set_status_do_rozpoczecia"><?php esc_html_e('Status: Do rozpoczęcia', 'erp-omd'); ?></option><option value="set_status_w_realizacji"><?php esc_html_e('Status: W realizacji', 'erp-omd'); ?></option><option value="set_status_w_akceptacji"><?php esc_html_e('Status: W akceptacji', 'erp-omd'); ?></option><option value="set_status_do_faktury"><?php esc_html_e('Status: Do faktury', 'erp-omd'); ?></option><option value="set_status_zakonczony"><?php esc_html_e('Status: Zakończony', 'erp-omd'); ?></option><option value="set_status_archiwum"><?php esc_html_e('Status: Archiwum', 'erp-omd'); ?></option></select><button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button></div></div>
+            <div class="tablenav top"><div class="alignleft actions"><select name="bulk_action"><option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option><option value="activate"><?php esc_html_e('Aktywuj', 'erp-omd'); ?></option><option value="deactivate"><?php esc_html_e('Przenieś do archiwum', 'erp-omd'); ?></option><option value="duplicate"><?php esc_html_e('Duplikuj', 'erp-omd'); ?></option><option value="merge"><?php esc_html_e('Scal projekty', 'erp-omd'); ?></option><option value="set_status_do_rozpoczecia"><?php esc_html_e('Status: Do rozpoczęcia', 'erp-omd'); ?></option><option value="set_status_w_realizacji"><?php esc_html_e('Status: W realizacji', 'erp-omd'); ?></option><option value="set_status_w_akceptacji"><?php esc_html_e('Status: W akceptacji', 'erp-omd'); ?></option><option value="set_status_do_faktury"><?php esc_html_e('Status: Do faktury', 'erp-omd'); ?></option><option value="set_status_zakonczony"><?php esc_html_e('Status: Zakończony', 'erp-omd'); ?></option><option value="set_status_archiwum"><?php esc_html_e('Status: Archiwum', 'erp-omd'); ?></option></select><button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button></div></div>
         </form>
         <table class="widefat striped">
             <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-project-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Typ', 'erp-omd'); ?></th><th><?php esc_html_e('Managerowie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Deadline', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>

@@ -4121,6 +4121,18 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-projects', 'error', __('Niepoprawna akcja masowa dla projektów.', 'erp-omd'));
         }
 
+        if ($bulk_action === 'merge') {
+            if (count($project_ids) < 2) {
+                $this->redirect_with_notice('erp-omd-projects', 'error', __('Aby scalić projekty, wybierz co najmniej dwa projekty.', 'erp-omd'));
+            }
+
+            $merged_project_id = $this->merge_projects_into_new_project($project_ids);
+            if ($merged_project_id <= 0) {
+                $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie udało się scalić projektów.', 'erp-omd'));
+            }
+            $this->redirect_with_notice('erp-omd-projects', 'success', __('Scalanie projektów zostało wykonane.', 'erp-omd'), ['id' => $merged_project_id]);
+        }
+
         foreach ($project_ids as $project_id) {
             if ($bulk_action === 'activate') {
                 $this->projects->set_status($project_id, 'do_rozpoczecia');
@@ -4128,6 +4140,8 @@ class ERP_OMD_Admin
                 $this->projects->set_status($project_id, 'archiwum');
             } elseif ($bulk_action === 'duplicate') {
                 $this->duplicate_project_and_rebuild($project_id);
+            } elseif ($bulk_action === 'merge') {
+                // handled after loop
             } elseif ($target_status !== '') {
                 $project = $this->projects->find($project_id);
                 if (! $project) {
@@ -4142,6 +4156,79 @@ class ERP_OMD_Admin
             }
         }
         $this->redirect_with_notice('erp-omd-projects', 'success', __('Akcja masowa dla projektów została wykonana.', 'erp-omd'));
+    }
+
+
+    private function merge_projects_into_new_project(array $project_ids)
+    {
+        global $wpdb;
+
+        $project_ids = array_values(array_unique(array_filter(array_map('intval', $project_ids))));
+        if (count($project_ids) < 2) {
+            return 0;
+        }
+
+        $seed_project = $this->projects->find((int) $project_ids[0]);
+        if (! $seed_project) {
+            return 0;
+        }
+
+        $project_names = [];
+        foreach ($project_ids as $project_id) {
+            $project_row = $this->projects->find((int) $project_id);
+            if ($project_row) {
+                $project_names[] = (string) ($project_row['name'] ?? ('#' . (int) $project_id));
+            }
+        }
+
+        $merged_name_suffix = implode(' + ', array_slice($project_names, 0, 3));
+        if (count($project_names) > 3) {
+            $merged_name_suffix .= sprintf(' +%d', count($project_names) - 3);
+        }
+
+        $new_project_payload = $this->client_project_service->prepare_project([
+            'client_id' => (int) ($seed_project['client_id'] ?? 0),
+            'name' => sprintf(__('Scalony projekt: %s', 'erp-omd'), $merged_name_suffix !== '' ? $merged_name_suffix : ('#' . (int) $project_ids[0])),
+            'billing_type' => (string) ($seed_project['billing_type'] ?? 'time_material'),
+            'budget' => (float) ($seed_project['budget'] ?? 0),
+            'retainer_monthly_fee' => (float) ($seed_project['retainer_monthly_fee'] ?? 0),
+            'status' => 'do_rozpoczecia',
+            'start_date' => (string) ($seed_project['start_date'] ?? ''),
+            'end_date' => (string) ($seed_project['end_date'] ?? ''),
+            'deadline_date' => (string) ($seed_project['deadline_date'] ?? ''),
+            'estimate_id' => (int) ($seed_project['estimate_id'] ?? 0),
+            'brief' => (string) ($seed_project['brief'] ?? ''),
+            'alert_margin_threshold' => $seed_project['alert_margin_threshold'] ?? null,
+            'manager_ids' => array_map('intval', (array) ($seed_project['manager_ids'] ?? [])),
+        ]);
+
+        $new_project_id = (int) $this->projects->create($new_project_payload);
+        if ($new_project_id <= 0) {
+            return 0;
+        }
+
+        $tables_to_reassign = [
+            $wpdb->prefix . 'erp_omd_time_entries',
+            $wpdb->prefix . 'erp_omd_project_costs',
+            $wpdb->prefix . 'erp_omd_project_revenues',
+            $wpdb->prefix . 'erp_omd_project_notes',
+            $wpdb->prefix . 'erp_omd_attachments',
+            $wpdb->prefix . 'erp_omd_project_rates',
+            $wpdb->prefix . 'erp_omd_cost_invoices',
+            $wpdb->prefix . 'erp_omd_project_calendar_sync',
+        ];
+
+        foreach ($project_ids as $source_project_id) {
+            foreach ($tables_to_reassign as $table_name) {
+                $wpdb->query($wpdb->prepare("UPDATE {$table_name} SET project_id = %d WHERE project_id = %d", $new_project_id, (int) $source_project_id));
+            }
+
+            $this->project_financial_service->rebuild_for_project((int) $source_project_id);
+        }
+
+        $this->project_financial_service->rebuild_for_project($new_project_id);
+
+        return $new_project_id;
     }
 
     private function handle_estimates_bulk_action()
