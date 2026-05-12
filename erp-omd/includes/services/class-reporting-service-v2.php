@@ -944,18 +944,24 @@ class ERP_OMD_Reporting_Service
 
         $start_date = (string) ($project['start_date'] ?? '');
         $end_date = (string) ($project['end_date'] ?? '');
-        $start_month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date) === 1 ? substr($start_date, 0, 7) : '';
-        $end_month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date) === 1 ? substr($end_date, 0, 7) : '';
-
-        if ($start_month === '' || $end_month === '') {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date) !== 1 || preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date) !== 1) {
             return false;
         }
 
-        if ($start_month !== (string) $month || $end_month !== (string) $month) {
+        try {
+            $month_start = new DateTimeImmutable((string) $month . '-01');
+            $month_end = $month_start->modify('last day of this month');
+            $project_start = new DateTimeImmutable($start_date);
+            $project_end = new DateTimeImmutable($end_date);
+        } catch (Exception $exception) {
             return false;
         }
 
-        return true;
+        if ($project_end < $project_start) {
+            return false;
+        }
+
+        return $project_start <= $month_end && $project_end >= $month_start;
     }
 
     private function get_filtered_entries(array $project_ids, array $filters)
