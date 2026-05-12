@@ -2,6 +2,15 @@
     <h1><?php esc_html_e('ERP OMD — Projekty', 'erp-omd'); ?></h1>
     <?php $merge_preview = get_transient('erp_omd_merge_preview_' . get_current_user_id()); ?>
     <?php $merge_source_project_ids = sanitize_text_field((string) ($_GET['source_project_ids'] ?? '')); ?>
+    <?php
+    $merge_preview_source_project_ids = '';
+    if (is_array($merge_preview) && ! empty($merge_preview['source_projects']) && is_array($merge_preview['source_projects'])) {
+        $merge_preview_source_project_ids = implode(',', array_filter(array_map(static function ($project_item) {
+            return (int) ($project_item['id'] ?? 0);
+        }, $merge_preview['source_projects'])));
+    }
+    $merge_preview_target_client_id = (int) ($merge_preview['target_client_id'] ?? 0);
+    ?>
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Scal projekty (preview + potwierdzenie)', 'erp-omd'); ?></h2>
         <form method="post">
@@ -36,11 +45,11 @@
                 <input type="hidden" name="erp_omd_action" value="merge_projects_execute" />
                 <p>
                     <label><?php esc_html_e('ID projektów źródłowych', 'erp-omd'); ?></label><br />
-                    <input type="text" class="regular-text" name="source_project_ids" required />
+                    <input type="text" class="regular-text" name="source_project_ids" value="<?php echo esc_attr($merge_preview_source_project_ids); ?>" required />
                 </p>
                 <p>
                     <label><?php esc_html_e('ID klienta docelowego', 'erp-omd'); ?></label><br />
-                    <input type="number" min="1" name="target_client_id" required />
+                    <input type="number" min="1" name="target_client_id" value="<?php echo esc_attr((string) $merge_preview_target_client_id); ?>" required />
                 </p>
                 <p>
                     <label><?php esc_html_e('Nazwa nowego projektu docelowego', 'erp-omd'); ?></label><br />

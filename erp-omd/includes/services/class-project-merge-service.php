@@ -163,7 +163,7 @@ class ERP_OMD_Project_Merge_Service
             'client_id' => (int) $target_payload['client_id'],
             'name' => (string) $target_payload['name'],
             'billing_type' => (string) ($base['billing_type'] ?? 'time_material'),
-            'budget' => 0,
+            'budget' => (float) ($preview['project_budgets_amount_sum'] ?? 0),
             'retainer_monthly_fee' => 0,
             'status' => (string) $target_payload['status'],
             'start_date' => '',
