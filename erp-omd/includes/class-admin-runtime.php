@@ -4191,6 +4191,8 @@ class ERP_OMD_Admin
                 $this->projects->set_status($project_id, 'do_rozpoczecia');
             } elseif ($bulk_action === 'deactivate') {
                 $this->projects->set_status($project_id, 'archiwum');
+            } elseif ($bulk_action === 'delete') {
+                $this->projects->delete($project_id);
             } elseif ($bulk_action === 'duplicate') {
                 $this->duplicate_project_and_rebuild($project_id);
             } elseif ($target_status !== '') {
