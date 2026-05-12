@@ -167,7 +167,7 @@
 .erp-omd-admin .erp-omd-metric-strip {
     display: grid;
     gap: 16px;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .erp-omd-admin .erp-omd-metric-tile {

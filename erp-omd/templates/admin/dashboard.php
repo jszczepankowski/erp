@@ -28,12 +28,6 @@
     $dashboard_alert_warning_end = (int) round((((int) $alert_summary['error'] + (int) $alert_summary['warning']) / $dashboard_alert_total) * 100);
     $dashboard_metric_tiles = [
         [
-            'icon' => 'groups',
-            'value' => count($employees),
-            'label' => __('Pracownicy', 'erp-omd'),
-            'variant' => '',
-        ],
-        [
             'icon' => 'businessman',
             'value' => count($clients),
             'label' => __('Klienci', 'erp-omd'),
