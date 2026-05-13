@@ -40,7 +40,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="erp-omd-form-grid" style="margin-top:12px;">
+                        <div class="erp-omd-form-grid erp-omd-estimate-basics-grid">
                             <div class="erp-omd-form-field">
                                 <label for="estimate-preferred-delivery-date"><?php esc_html_e('Preferowany termin realizacji', 'erp-omd'); ?></label>
                                 <input id="estimate-preferred-delivery-date" name="preferred_delivery_date" type="date" value="<?php echo esc_attr((string) ($estimate_accept_meta['preferred_delivery_date'] ?? '')); ?>">
@@ -381,7 +381,7 @@
                     </div>
                     <div class="erp-omd-action-group">
                         <?php if (! empty($estimate_decision_url)) : ?>
-                            <input type="text" readonly value="<?php echo esc_attr($estimate_decision_url); ?>" style="min-width:320px;" onclick="this.select();">
+                            <input type="text" readonly value="<?php echo esc_attr($estimate_decision_url); ?>" class="erp-omd-estimate-decision-url" onclick="this.select();">
                         <?php endif; ?>
                         <form method="post" class="erp-omd-inline-form">
                             <?php wp_nonce_field('erp_omd_export_estimate'); ?>
@@ -406,7 +406,7 @@
                             <p><?php esc_html_e('Najważniejsze informacje i wartości finansowe w układzie zgodnym z innymi ekranami administracyjnymi.', 'erp-omd'); ?></p>
                         </div>
                         <div>
-                            <div class="erp-omd-detail-card" style="width:100%;margin-bottom:12px;">
+                            <div class="erp-omd-detail-card erp-omd-estimate-summary-card erp-omd-estimate-summary-card-spaced">
                                 <h3><?php esc_html_e('Status i kontekst', 'erp-omd'); ?></h3>
                                 <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Klient', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['client_name'] ?? '—'); ?></span></div>
@@ -422,7 +422,7 @@
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('NIP do faktury', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($estimate_accept_meta['invoice_nip'] ?? '—')); ?></span></div>
                                 </div>
                             </div>
-                            <div class="erp-omd-detail-card" style="width:100%;">
+                            <div class="erp-omd-detail-card erp-omd-estimate-summary-card">
                                 <h3><?php esc_html_e('Wartości finansowe', 'erp-omd'); ?></h3>
                                 <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Netto', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) $estimate_totals['net'], 2)); ?></span></div>
