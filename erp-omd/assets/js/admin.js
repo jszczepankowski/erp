@@ -1267,7 +1267,7 @@ window.erpOmdInitSettingsAdminCorrection =
         visibility.client = false;
         visibility.project = false;
         visibility.employee = false;
-        visibility.status = false;
+        visibility.status = true;
         visibility.detail = false;
         visibility.per_page = false;
       } else if (reportType === 'invoice') {
