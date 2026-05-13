@@ -222,6 +222,7 @@ class ERP_OMD_Reporting_Service
         $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
         $entry_index = $this->get_entry_metrics_by_project($project_ids, $filters);
         $cost_index = $this->get_direct_cost_metrics_by_project($project_ids, $filters['month']);
+        $additional_revenue_index = $this->get_additional_revenue_metrics_by_project($project_ids, $filters['month']);
         $project_revenue_index = $this->get_revenue_metrics_by_project($project_ids, $filters['month']);
         $rows = [];
 
@@ -237,6 +238,8 @@ class ERP_OMD_Reporting_Service
             $billing_type = (string) ($project['billing_type'] ?? '');
             $time_revenue = (float) $entry_metrics['time_revenue'];
             $time_cost = (float) $entry_metrics['time_cost'];
+            $retainer_amount = $billing_type === 'retainer' ? (float) ($project['retainer_monthly_fee'] ?? ($project['budget'] ?? 0.0)) : 0.0;
+            $additional_revenue = (float) ($additional_revenue_index[$project_id] ?? 0.0);
             $project_revenue = (float) ($project_revenue_index[$project_id] ?? 0.0);
             $time_revenue_component = in_array($billing_type, ['time_material', 'mixed'], true) ? $time_revenue : 0.0;
             $time_cost_component = in_array($billing_type, ['time_material', 'mixed'], true) ? $time_cost : 0.0;
@@ -261,6 +264,8 @@ class ERP_OMD_Reporting_Service
                 'filtered_time_revenue' => $time_revenue,
                 'filtered_time_cost' => $time_cost,
                 'filtered_direct_cost' => $direct_cost,
+                'retainer_amount' => $retainer_amount,
+                'additional_revenue' => $additional_revenue,
                 'project_revenue' => $project_revenue,
                 'revenue' => $revenue,
                 'cost' => $cost,
@@ -1204,6 +1209,24 @@ class ERP_OMD_Reporting_Service
             }
 
             $metrics[(int) $project_id] = round($base_revenue + $extra_revenue, 2);
+        }
+
+        return $metrics;
+    }
+
+    private function get_additional_revenue_metrics_by_project(array $project_ids, $month)
+    {
+        $metrics = [];
+        foreach ($project_ids as $project_id) {
+            $extra_revenue = 0.0;
+            foreach ($this->project_revenues->for_project((int) $project_id) as $revenue_row) {
+                $revenue_month = substr((string) ($revenue_row['revenue_date'] ?? ''), 0, 7);
+                if ($month !== '' && $revenue_month !== $month) {
+                    continue;
+                }
+                $extra_revenue += (float) ($revenue_row['amount'] ?? 0.0);
+            }
+            $metrics[(int) $project_id] = round($extra_revenue, 2);
         }
 
         return $metrics;
