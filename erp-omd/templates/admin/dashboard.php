@@ -40,16 +40,28 @@
             'variant' => '',
         ],
         [
-            'icon' => 'clock',
-            'value' => number_format_i18n((float) $monthly_totals['reported_hours'], 2),
-            'label' => sprintf(__('Godziny · %s', 'erp-omd'), $reporting_month_label),
+            'icon' => 'yes-alt',
+            'value' => (int) ($dashboard_projects_in_progress ?? 0),
+            'label' => sprintf(__('Projekty w realizacji · %s', 'erp-omd'), $reporting_month_label),
             'variant' => '',
         ],
         [
-            'icon' => 'money-alt',
-            'value' => number_format_i18n((float) $monthly_totals['hourly_cost_total'], 2),
-            'label' => sprintf(__('Koszt pracy · %s', 'erp-omd'), $reporting_month_label),
-            'variant' => 'erp-omd-metric-tile-muted',
+            'icon' => 'media-spreadsheet',
+            'value' => (int) ($dashboard_projects_to_invoice ?? 0),
+            'label' => sprintf(__('Projekty do faktury · %s', 'erp-omd'), $reporting_month_label),
+            'variant' => '',
+        ],
+        [
+            'icon' => 'saved',
+            'value' => (int) ($dashboard_projects_done ?? 0),
+            'label' => sprintf(__('Projekty zakończone · %s', 'erp-omd'), $reporting_month_label),
+            'variant' => '',
+        ],
+        [
+            'icon' => 'clock',
+            'value' => number_format_i18n((float) $monthly_totals['reported_hours'], 2),
+            'label' => sprintf(__('Godziny zatwierdzonych · %s', 'erp-omd'), $reporting_month_label),
+            'variant' => '',
         ],
         [
             'icon' => 'chart-line',
@@ -70,22 +82,10 @@
             'variant' => 'erp-omd-metric-tile-accent',
         ],
         [
-            'icon' => 'yes-alt',
-            'value' => (int) ($dashboard_projects_in_progress ?? 0),
-            'label' => sprintf(__('Projekty w realizacji · %s', 'erp-omd'), $reporting_month_label),
-            'variant' => '',
-        ],
-        [
-            'icon' => 'media-spreadsheet',
-            'value' => (int) ($dashboard_projects_to_invoice ?? 0),
-            'label' => sprintf(__('Projekty do faktury · %s', 'erp-omd'), $reporting_month_label),
-            'variant' => '',
-        ],
-        [
-            'icon' => 'saved',
-            'value' => (int) ($dashboard_projects_done ?? 0),
-            'label' => sprintf(__('Projekty zakończone · %s', 'erp-omd'), $reporting_month_label),
-            'variant' => '',
+            'icon' => 'awards',
+            'value' => number_format_i18n((float) ($dashboard_projects_profit_sum ?? 0), 2),
+            'label' => sprintf(__('Zysk (suma zysków projektów) · %s', 'erp-omd'), $reporting_month_label),
+            'variant' => 'erp-omd-metric-tile-accent',
         ],
     ];
     $dashboard_shortcut_icons = [

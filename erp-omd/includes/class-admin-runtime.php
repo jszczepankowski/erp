@@ -768,6 +768,14 @@ class ERP_OMD_Admin
             'month' => $reporting_month,
             'report_type' => 'omd_rozliczenia',
         ]);
+        $project_report_rows = $this->reporting_service->build_report('projects', [
+            'month' => $reporting_month,
+            'report_type' => 'projects',
+            'detail' => 'simple',
+        ]);
+        $dashboard_projects_profit_sum = round(array_sum(array_map(static function ($row) {
+            return (float) ($row['profit'] ?? 0.0);
+        }, (array) $project_report_rows)), 2);
         $omd_month_row = null;
         foreach ((array) $omd_report_rows as $report_row) {
             if ((string) ($report_row['month'] ?? '') === $reporting_month) {
@@ -1495,6 +1503,8 @@ class ERP_OMD_Admin
         $status_options = ['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum', 'merged'];
         if ($report_filters['report_type'] === 'time_entries') {
             $status_options = ['submitted', 'approved', 'rejected'];
+        } elseif ($report_filters['report_type'] === 'omd_rozliczenia') {
+            $status_options = ['omd_wszystkie', 'omd_biezace', 'omd_do_zamkniecia', 'omd_zakonczone'];
         }
         $status_labels = [
             'do_rozpoczecia' => $this->project_status_label('do_rozpoczecia'),
@@ -1507,6 +1517,10 @@ class ERP_OMD_Admin
             'submitted' => $this->time_status_label('submitted'),
             'approved' => $this->time_status_label('approved'),
             'rejected' => $this->time_status_label('rejected'),
+            'omd_zakonczone' => __('Zamknięte (zakończone / archiwum)', 'erp-omd'),
+            'omd_do_zamkniecia' => __('Do zamknięcia (w akceptacji / do faktury)', 'erp-omd'),
+            'omd_biezace' => __('Bieżące', 'erp-omd'),
+            'omd_wszystkie' => __('Wszystkie', 'erp-omd'),
         ];
         $report_titles = [
             'projects' => __('Raport projektów', 'erp-omd'),
@@ -4191,6 +4205,8 @@ class ERP_OMD_Admin
                 $this->projects->set_status($project_id, 'do_rozpoczecia');
             } elseif ($bulk_action === 'deactivate') {
                 $this->projects->set_status($project_id, 'archiwum');
+            } elseif ($bulk_action === 'delete') {
+                $this->projects->delete($project_id);
             } elseif ($bulk_action === 'duplicate') {
                 $this->duplicate_project_and_rebuild($project_id);
             } elseif ($target_status !== '') {
