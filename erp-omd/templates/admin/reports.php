@@ -223,7 +223,7 @@
                     </table>
                 <?php elseif ($report_filters['report_type'] === 'omd_rozliczenia') : ?>
                     <p class="description">
-                        <?php esc_html_e('Legenda OMD: raport obejmuje projekty aktywne w raportowanym miesiącu (zakres dat projektu przecina się z miesiącem raportowym). Przychód projektów = suma pola „Przychód” z raportu projektów; koszt bezpośredni projektów = suma pola „Koszt bezpośredni” z raportu projektów; wynik operacyjny = przychód projektów - koszt bezpośredni projektów; narzut controllingowy = koszt pensji + koszty stałe; wynik controllingowy = wynik operacyjny - narzut controllingowy.', 'erp-omd'); ?>
+                        <?php esc_html_e('Opis raportu: Przychód projektów = suma pola „Przychód” z raportu projektów; Koszt bezpośredni projektów = suma pola „Koszt bezpośredni” z raportu projektów; Wynik operacyjny = przychód projektów - koszt bezpośredni projektów; Narzut controllingowy = koszt pensji + koszty stałe; Wynik controllingowy = wynik operacyjny - narzut controllingowy.', 'erp-omd'); ?>
                     </p>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk godzinowy (info)', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt pensji', 'erp-omd'); ?></th><th><?php esc_html_e('Stałe koszty', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></th><th><?php esc_html_e('Narzut controllingowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik controllingowy', 'erp-omd'); ?></th></tr></thead>

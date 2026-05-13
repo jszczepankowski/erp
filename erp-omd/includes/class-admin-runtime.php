@@ -768,6 +768,14 @@ class ERP_OMD_Admin
             'month' => $reporting_month,
             'report_type' => 'omd_rozliczenia',
         ]);
+        $project_report_rows = $this->reporting_service->build_report('projects', [
+            'month' => $reporting_month,
+            'report_type' => 'projects',
+            'detail' => 'simple',
+        ]);
+        $dashboard_projects_profit_sum = round(array_sum(array_map(static function ($row) {
+            return (float) ($row['profit'] ?? 0.0);
+        }, (array) $project_report_rows)), 2);
         $omd_month_row = null;
         foreach ((array) $omd_report_rows as $report_row) {
             if ((string) ($report_row['month'] ?? '') === $reporting_month) {
