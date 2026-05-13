@@ -238,9 +238,9 @@
                                 <label><input type="checkbox" name="invoice_other_entity" value="1" data-client-estimate-toggle="invoice-nip"> <?php esc_html_e('Faktura na inny podmiot', 'erp-omd'); ?></label>
                                 <input type="text" name="invoice_nip" placeholder="<?php echo esc_attr__('NIP do faktury', 'erp-omd'); ?>" data-client-estimate-target="invoice-nip" hidden />
                             </div>
-                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Akceptuj kosztorys', 'erp-omd'); ?></button>
-                                <button type="button" class="erp-omd-front-button erp-omd-front-button-small" id="erp-omd-show-reject-form"><?php esc_html_e('Odrzuć kosztorys', 'erp-omd'); ?></button>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-button-primary" style="flex:1 1 50%;width:50%;"><?php esc_html_e('Akceptuj kosztorys', 'erp-omd'); ?></button>
+                                <button type="button" class="erp-omd-front-button erp-omd-front-button-small" id="erp-omd-show-reject-form" style="flex:1 1 50%;width:50%;"><?php esc_html_e('Odrzuć kosztorys', 'erp-omd'); ?></button>
                             </div>
                         </form>
                         <form method="post" class="erp-omd-front-form" style="margin-top:8px;" id="erp-omd-client-estimate-reject-form" hidden>
