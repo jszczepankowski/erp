@@ -405,8 +405,8 @@
                             <h3><?php esc_html_e('Podsumowanie kosztorysu', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Najważniejsze informacje i wartości finansowe w układzie zgodnym z innymi ekranami administracyjnymi.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-detail-grid">
-                            <div class="erp-omd-detail-card">
+                        <div>
+                            <div class="erp-omd-detail-card" style="width:100%;margin-bottom:12px;">
                                 <h3><?php esc_html_e('Status i kontekst', 'erp-omd'); ?></h3>
                                 <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Klient', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate['client_name'] ?? '—'); ?></span></div>
@@ -422,7 +422,7 @@
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('NIP do faktury', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($estimate_accept_meta['invoice_nip'] ?? '—')); ?></span></div>
                                 </div>
                             </div>
-                            <div class="erp-omd-detail-card">
+                            <div class="erp-omd-detail-card" style="width:100%;">
                                 <h3><?php esc_html_e('Wartości finansowe', 'erp-omd'); ?></h3>
                                 <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Netto', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) $estimate_totals['net'], 2)); ?></span></div>
