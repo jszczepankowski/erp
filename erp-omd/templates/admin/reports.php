@@ -40,7 +40,7 @@
                                     $show_client_field = false;
                                     $show_project_field = false;
                                     $show_employee_field = false;
-                                    $show_status_field = false;
+                                    $show_status_field = true;
                                     $show_detail_field = false;
                                     $show_per_page_field = false;
                                 } elseif ($selected_report_type === 'invoice') {
@@ -223,7 +223,7 @@
                     </table>
                 <?php elseif ($report_filters['report_type'] === 'omd_rozliczenia') : ?>
                     <p class="description">
-                        <?php esc_html_e('Legenda OMD: raport obejmuje wyłącznie projekty z datami start/end w tym samym raportowanym miesiącu. Przychód projektów = przychód czasu + komponent budżetowy (fixed/mixed) + komponent retainer; wynik operacyjny = przychód projektów - koszt bezpośredni projektów; narzut controllingowy = koszt pensji + koszty stałe; wynik controllingowy = wynik operacyjny - narzut controllingowy.', 'erp-omd'); ?>
+                        <?php esc_html_e('Opis raportu: Przychód projektów = suma pola „Przychód” z raportu projektów; Koszt bezpośredni projektów = suma pola „Koszt bezpośredni” z raportu projektów; Wynik operacyjny = przychód projektów - koszt bezpośredni projektów; Narzut controllingowy = koszt pensji + koszty stałe; Wynik controllingowy = wynik operacyjny - narzut controllingowy.', 'erp-omd'); ?>
                     </p>
                     <table class="widefat striped">
                         <thead><tr><th><?php esc_html_e('Miesiąc', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk godzinowy (info)', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni projektów', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt pensji', 'erp-omd'); ?></th><th><?php esc_html_e('Stałe koszty', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik operacyjny', 'erp-omd'); ?></th><th><?php esc_html_e('Narzut controllingowy', 'erp-omd'); ?></th><th><?php esc_html_e('Wynik controllingowy', 'erp-omd'); ?></th></tr></thead>
@@ -267,24 +267,25 @@
                     </table>
                 <?php else : ?>
                     <table class="widefat striped">
-                        <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet %', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><?php if ($report_filters['report_type'] === 'invoice') : ?><th><?php esc_html_e('Pozycje do faktury', 'erp-omd'); ?></th><?php endif; ?></tr></thead>
+                        <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet', 'erp-omd'); ?></th><th><?php esc_html_e('Abonament', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód dodatkowy', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><?php if ($report_filters['report_type'] === 'invoice') : ?><th><?php esc_html_e('Pozycje do faktury', 'erp-omd'); ?></th><?php endif; ?></tr></thead>
                         <tbody>
-                        <?php if (empty($report_rows)) : ?><tr><td colspan="<?php echo $report_filters['report_type'] === 'invoice' ? '15' : '14'; ?>"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
+                        <?php if (empty($report_rows)) : ?><tr><td colspan="<?php echo $report_filters['report_type'] === 'invoice' ? '16' : '15'; ?>"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
                         <?php foreach ($report_rows as $row) : ?>
                             <tr>
                                 <td><?php echo esc_html($row['client_name']); ?></td>
                                 <td><?php echo esc_html($row['project_name']); ?></td>
                                 <td><?php echo esc_html($this->billing_type_label($row['billing_type'])); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['budget'], 2)); ?></td>
+                                <td><?php echo esc_html($row['billing_type'] === 'retainer' ? number_format_i18n((float) ($row['retainer_amount'] ?? 0), 2) : '—'); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['reported_hours'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['filtered_time_revenue'], 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) ($row['additional_revenue'] ?? 0), 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['revenue'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['filtered_time_cost'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['filtered_direct_cost'], 2)); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['revenue'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['cost'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['profit'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['margin'], 2)); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['budget_usage'], 2)); ?></td>
                                 <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($row['status'], 'project')); ?>"><?php echo esc_html($this->project_status_label($row['status'])); ?></span></td>
                                 <?php if ($report_filters['report_type'] === 'invoice') : ?>
                                     <td><?php echo esc_html((string) ((int) ($row['invoice_items_count'] ?? 0))); ?></td>
@@ -296,7 +297,7 @@
                                 $detail_direct_cost_count = count((array) (($row['detail']['direct_cost_items'] ?? [])));
                                 ?>
                                 <tr>
-                                    <td colspan="<?php echo $report_filters['report_type'] === 'invoice' ? '15' : '14'; ?>">
+                                    <td colspan="<?php echo $report_filters['report_type'] === 'invoice' ? '16' : '15'; ?>">
                                         <?php
                                         echo esc_html(
                                             sprintf(
@@ -314,6 +315,8 @@
                             <?php
                             $summary_hours = array_sum(array_map(static function ($item) { return (float) ($item['reported_hours'] ?? 0); }, $report_rows));
                             $summary_time_revenue = array_sum(array_map(static function ($item) { return (float) ($item['filtered_time_revenue'] ?? 0); }, $report_rows));
+                            $summary_revenue_additional = array_sum(array_map(static function ($item) { return (float) ($item['additional_revenue'] ?? 0); }, $report_rows));
+                            $summary_retainer = array_sum(array_map(static function ($item) { return (float) ($item['retainer_amount'] ?? 0); }, $report_rows));
                             $summary_time_cost = array_sum(array_map(static function ($item) { return (float) ($item['filtered_time_cost'] ?? 0); }, $report_rows));
                             $summary_direct_cost = array_sum(array_map(static function ($item) { return (float) ($item['filtered_direct_cost'] ?? 0); }, $report_rows));
                             $summary_revenue = array_sum(array_map(static function ($item) { return (float) ($item['revenue'] ?? 0); }, $report_rows));
@@ -322,14 +325,16 @@
                             ?>
                             <tr>
                                 <td colspan="4"><strong><?php esc_html_e('Podsumowanie', 'erp-omd'); ?></strong></td>
+                                <td><strong><?php echo esc_html(number_format_i18n($summary_retainer, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_hours, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_time_revenue, 2)); ?></strong></td>
+                                <td><strong><?php echo esc_html(number_format_i18n($summary_revenue_additional, 2)); ?></strong></td>
+                                <td><strong><?php echo esc_html(number_format_i18n($summary_revenue, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_time_cost, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_direct_cost, 2)); ?></strong></td>
-                                <td><strong><?php echo esc_html(number_format_i18n($summary_revenue, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_cost, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_profit, 2)); ?></strong></td>
-                                <td colspan="3">—</td>
+                                <td colspan="2">—</td>
                             </tr>
                         <?php endif; ?>
                         </tbody>

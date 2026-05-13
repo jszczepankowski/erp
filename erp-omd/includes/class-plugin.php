@@ -96,6 +96,7 @@ class ERP_OMD_Plugin
             $this->employee_repository,
             $this->salary_repository,
             $this->project_cost_repository,
+            $this->project_revenue_repository,
             $this->time_entry_repository,
             $this->project_financial_service,
             $this->estimate_item_repository
