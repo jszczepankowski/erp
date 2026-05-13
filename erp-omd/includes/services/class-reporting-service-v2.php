@@ -766,16 +766,15 @@ class ERP_OMD_Reporting_Service
                         $row['client_name'],
                         $row['project_name'],
                         $this->billing_type_label((string) ($row['billing_type'] ?? '')),
-                        $row['manager_login'],
                         number_format((float) $row['budget'], 2, '.', ''),
                         number_format((float) ($row['retainer_amount'] ?? 0), 2, '.', ''),
                         number_format((float) $row['reported_hours'], 2, '.', ''),
                         $row['entries_count'],
                         number_format((float) $row['filtered_time_revenue'], 2, '.', ''),
                         number_format((float) ($row['additional_revenue'] ?? 0), 2, '.', ''),
+                        number_format((float) $row['revenue'], 2, '.', ''),
                         number_format((float) $row['filtered_time_cost'], 2, '.', ''),
                         number_format((float) $row['filtered_direct_cost'], 2, '.', ''),
-                        number_format((float) $row['revenue'], 2, '.', ''),
                         number_format((float) $row['cost'], 2, '.', ''),
                         number_format((float) $row['profit'], 2, '.', ''),
                         number_format((float) $row['margin'], 2, '.', ''),
@@ -795,7 +794,7 @@ class ERP_OMD_Reporting_Service
 
                 return [
                     'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
-                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Abonament', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Przychód dodatkowy', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Status'],
+                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Budżet', 'Abonament', 'Godziny', 'Ilość wpisów', 'Przychód czasu', 'Przychód dodatkowy', 'Przychód łącznie', 'Koszt czasu', 'Koszt bezpośredni', 'Koszt łącznie', 'Zysk', 'Marża', 'Status'],
                     'rows' => $invoice_rows,
                 ];
             case 'projects':
@@ -804,16 +803,15 @@ class ERP_OMD_Reporting_Service
                         $row['client_name'],
                         $row['project_name'],
                         $this->billing_type_label((string) ($row['billing_type'] ?? '')),
-                        $row['manager_login'],
                         number_format((float) $row['budget'], 2, '.', ''),
                         number_format((float) ($row['retainer_amount'] ?? 0), 2, '.', ''),
                         number_format((float) $row['reported_hours'], 2, '.', ''),
                         $row['entries_count'],
                         number_format((float) $row['filtered_time_revenue'], 2, '.', ''),
                         number_format((float) ($row['additional_revenue'] ?? 0), 2, '.', ''),
+                        number_format((float) $row['revenue'], 2, '.', ''),
                         number_format((float) $row['filtered_time_cost'], 2, '.', ''),
                         number_format((float) $row['filtered_direct_cost'], 2, '.', ''),
-                        number_format((float) $row['revenue'], 2, '.', ''),
                         number_format((float) $row['cost'], 2, '.', ''),
                         number_format((float) $row['profit'], 2, '.', ''),
                         number_format((float) $row['margin'], 2, '.', ''),
@@ -826,7 +824,6 @@ class ERP_OMD_Reporting_Service
                                 (string) ($row['client_name'] ?? ''),
                                 (string) ($row['project_name'] ?? ''),
                                 'Szczegóły wpisu czasu',
-                                (string) ($entry['employee_login'] ?? ''),
                                 '',
                                 number_format((float) ($entry['hours'] ?? 0), 2, '.', ''),
                                 '',
@@ -846,7 +843,7 @@ class ERP_OMD_Reporting_Service
                 }, []);
                 return [
                     'filename' => sprintf('erp-omd-raport-%s-%s.csv', $report_type, $month),
-                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Manager', 'Budżet', 'Abonament', 'Godziny', 'Wpisy', 'Przychód czasu (filtrowany)', 'Przychód dodatkowy', 'Koszt czasu (filtrowany)', 'Koszt bezpośredni (filtrowany)', 'Przychód łącznie', 'Koszt łącznie', 'Zysk', 'Marża %', 'Status'],
+                    'headers' => ['Klient', 'Projekt', 'Typ rozliczenia', 'Budżet', 'Abonament', 'Godziny', 'Ilość wpisów', 'Przychód czasu', 'Przychód dodatkowy', 'Przychód łącznie', 'Koszt czasu', 'Koszt bezpośredni', 'Koszt łącznie', 'Zysk', 'Marża', 'Status'],
                     'rows' => $project_rows,
                 ];
             case 'monthly':
