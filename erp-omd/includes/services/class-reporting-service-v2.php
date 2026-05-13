@@ -166,27 +166,15 @@ class ERP_OMD_Reporting_Service
                 }
                 $prefetched_entries = $this->prefetch_entries_for_months($filters, $months, $month_ranges);
                 $entry_metrics_by_month = $this->build_entry_metrics_index_by_month($prefetched_entries, $filters, $months);
-                $direct_cost_index = $this->build_direct_cost_index_by_month_and_project(array_keys($all_project_ids), $months);
+                $project_direct_cost_index = $this->build_project_direct_cost_index_by_month($months);
                 $project_revenue_index = $this->build_project_revenue_index_by_month($projects, $months);
                 foreach ($months as $month) {
                     $salary_cost = (float) ($salary_cost_by_month[$month] ?? 0.0);
-                    $direct_cost = 0.0;
-                    $direct_cost_project_ids = [];
+                    $direct_cost = (float) ($project_direct_cost_index[$month] ?? 0.0);
                     $entry_metrics = (array) ($entry_metrics_by_month[$month] ?? []);
                     $time_revenue = (float) ($entry_metrics['time_revenue'] ?? 0.0);
                     $time_cost = (float) ($entry_metrics['time_cost'] ?? 0.0);
                     $project_revenue = (float) ($project_revenue_index[$month] ?? 0.0);
-                    foreach ($projects as $project_row) {
-                        $project_id = (int) ($project_row['id'] ?? 0);
-                        if ($project_id <= 0) {
-                            continue;
-                        }
-                        $direct_cost_project_ids[] = $project_id;
-                    }
-                    $direct_cost_project_ids = array_values(array_unique($direct_cost_project_ids));
-                    foreach ($direct_cost_project_ids as $project_id) {
-                        $direct_cost += (float) ($direct_cost_index[$month][(int) $project_id] ?? 0.0);
-                    }
 
                     $fixed_cost = (float) ($fixed_cost_by_month[$month] ?? 0.0);
                     $hourly_profit = $time_revenue - $time_cost;
@@ -1261,6 +1249,28 @@ class ERP_OMD_Reporting_Service
             ]);
             $index[(string) $month] = round(array_sum(array_map(static function ($row) {
                 return (float) ($row['revenue'] ?? 0.0);
+            }, $month_rows)), 2);
+        }
+
+        return $index;
+    }
+
+    private function build_project_direct_cost_index_by_month(array $months)
+    {
+        $index = array_fill_keys(array_map('strval', $months), 0.0);
+        foreach ($months as $month) {
+            $month_rows = $this->build_project_report([
+                'month' => (string) $month,
+                'detail' => 'simple',
+                'client_id' => 0,
+                'project_id' => 0,
+                'employee_id' => 0,
+                'status' => '',
+                'report_type' => 'projects',
+                'tab' => 'reports',
+            ]);
+            $index[(string) $month] = round(array_sum(array_map(static function ($row) {
+                return (float) ($row['filtered_direct_cost'] ?? 0.0);
             }, $month_rows)), 2);
         }
 
