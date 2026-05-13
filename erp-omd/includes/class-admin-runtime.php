@@ -1504,7 +1504,7 @@ class ERP_OMD_Admin
         if ($report_filters['report_type'] === 'time_entries') {
             $status_options = ['submitted', 'approved', 'rejected'];
         } elseif ($report_filters['report_type'] === 'omd_rozliczenia') {
-            $status_options = ['omd_zakonczone', 'omd_do_zamkniecia', 'omd_biezace', 'omd_wszystkie'];
+            $status_options = ['omd_wszystkie', 'omd_biezace', 'omd_do_zamkniecia', 'omd_zakonczone'];
         }
         $status_labels = [
             'do_rozpoczecia' => $this->project_status_label('do_rozpoczecia'),
@@ -1517,10 +1517,10 @@ class ERP_OMD_Admin
             'submitted' => $this->time_status_label('submitted'),
             'approved' => $this->time_status_label('approved'),
             'rejected' => $this->time_status_label('rejected'),
-            'omd_zakonczone' => __('Zakończone', 'erp-omd'),
-            'omd_do_zamkniecia' => __('Do zamknięcia', 'erp-omd'),
+            'omd_zakonczone' => __('Zamknięte (zakończone / archiwum)', 'erp-omd'),
+            'omd_do_zamkniecia' => __('Do zamknięcia (w akceptacji / do faktury)', 'erp-omd'),
             'omd_biezace' => __('Bieżące', 'erp-omd'),
-            'omd_wszystkie' => __('Wszystkie (bez Do rozpoczęcia)', 'erp-omd'),
+            'omd_wszystkie' => __('Wszystkie', 'erp-omd'),
         ];
         $report_titles = [
             'projects' => __('Raport projektów', 'erp-omd'),
