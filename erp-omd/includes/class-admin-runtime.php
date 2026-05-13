@@ -147,13 +147,14 @@ class ERP_OMD_Admin
         add_submenu_page('erp-omd', __('Kalendarz', 'erp-omd'), __('Kalendarz', 'erp-omd'), 'erp_omd_access', 'erp-omd-calendar', [$this, 'render_calendar']);
         add_submenu_page('erp-omd', __('Faktury/KSEF', 'erp-omd'), __('Faktury/KSEF', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
         add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
-        add_submenu_page(
-            'erp-omd',
-            __('Finanse', 'erp-omd'),
-            __('Finanse', 'erp-omd'),
-            'erp_omd_access',
-            'erp-omd-finances',
-            function () {
+        if (false) {
+            add_submenu_page(
+                'erp-omd',
+                __('Finanse', 'erp-omd'),
+                __('Finanse', 'erp-omd'),
+                'erp_omd_access',
+                'erp-omd-finances',
+                function () {
                 $month = sanitize_text_field(wp_unslash($_GET['month'] ?? current_time('Y-m')));
                 if (preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) !== 1) {
                     $month = current_time('Y-m');
@@ -235,8 +236,9 @@ class ERP_OMD_Admin
                 }
 
                 include ERP_OMD_PATH . 'templates/admin/finances.php';
-            }
-        );
+                }
+            );
+        }
         add_submenu_page('erp-omd', __('Alerty', 'erp-omd'), __('Alerty', 'erp-omd'), 'erp_omd_access', 'erp-omd-alerts', [$this, 'render_alerts']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-settings');
         add_submenu_page('erp-omd', __('Ustawienia', 'erp-omd'), __('Ustawienia', 'erp-omd'), 'erp_omd_manage_settings', 'erp-omd-settings', [$this, 'render_settings']);
@@ -526,6 +528,7 @@ class ERP_OMD_Admin
             case 'delete_client_rate': $this->handle_client_rate_delete(); break;
             case 'save_estimate': $this->handle_estimate_save(); break;
             case 'delete_estimate': $this->handle_estimate_delete(); break;
+            case 'duplicate_estimate': $this->handle_estimate_duplicate(); break;
             case 'save_estimate_item': $this->handle_estimate_item_save(); break;
             case 'delete_estimate_item': $this->handle_estimate_item_delete(); break;
             case 'accept_estimate': $this->handle_estimate_accept(); break;
@@ -3068,6 +3071,37 @@ class ERP_OMD_Admin
         }
         $this->estimates->delete($id);
         $this->redirect_with_notice('erp-omd-estimates', 'success', __('Kosztorys został usunięty.', 'erp-omd'));
+    }
+
+    private function handle_estimate_duplicate()
+    {
+        check_admin_referer('erp_omd_duplicate_estimate');
+        $this->require_capability('erp_omd_manage_projects');
+        $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+        $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
+        if (! $estimate) {
+            $this->redirect_with_notice('erp-omd-estimates', 'error', __('Nie znaleziono kosztorysu do powielenia.', 'erp-omd'));
+        }
+        $new_estimate_id = (int) $this->estimates->create([
+            'client_id' => (int) ($estimate['client_id'] ?? 0),
+            'name' => sprintf(__('Kopia — %s', 'erp-omd'), (string) ($estimate['name'] ?? '')),
+            'status' => 'wstepny',
+            'note' => (string) ($estimate['note'] ?? ''),
+        ]);
+        $items = (array) $this->estimate_items->for_estimate($estimate_id);
+        foreach ($items as $item) {
+            $this->estimate_items->create([
+                'estimate_id' => $new_estimate_id,
+                'name' => (string) ($item['name'] ?? ''),
+                'qty' => (float) ($item['qty'] ?? 0),
+                'price' => (float) ($item['price'] ?? 0),
+                'cost_internal' => (float) ($item['cost_internal'] ?? 0),
+                'margin_percent' => (float) ($item['margin_percent'] ?? 0),
+                'price_source' => (string) ($item['price_source'] ?? 'manual'),
+                'comment' => (string) ($item['comment'] ?? ''),
+            ]);
+        }
+        $this->redirect_with_notice('erp-omd-estimates', 'success', __('Kosztorys został powielony.', 'erp-omd'), ['id' => $new_estimate_id]);
     }
 
     private function handle_estimate_item_save()
