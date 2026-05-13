@@ -79,6 +79,7 @@
                 </article>
             </div>
 
+            <?php $estimate_status_labels = ['wstepny' => __('Wstępny', 'erp-omd'), 'do_akceptacji' => __('Do akceptacji', 'erp-omd'), 'odrzucony' => __('Odrzucony', 'erp-omd'), 'zaakceptowany' => __('Zaakceptowany', 'erp-omd')]; ?>
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Zgłoś nowy projekt', 'erp-omd'); ?></h2>
@@ -139,7 +140,7 @@
                                     <?php $estimate_status = (string) ($client_estimate_item['status'] ?? ''); ?>
                                     <tr>
                                         <td><?php echo esc_html((string) ($client_estimate_item['name'] ?? ('#' . (int) ($client_estimate_item['id'] ?? 0)))); ?></td>
-                                        <td><?php echo esc_html($estimate_status !== '' ? $estimate_status : '—'); ?></td>
+                                        <td><?php echo esc_html($estimate_status_labels[$estimate_status] ?? ($estimate_status !== '' ? $estimate_status : '—')); ?></td>
                                         <td><?php echo esc_html((string) ($client_estimate_item['accepted_at'] ?? '—')); ?></td>
                                         <td>
                                             <a
@@ -172,7 +173,7 @@
                     </div>
                     <div class="erp-omd-front-detail-grid">
                         <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Nazwa', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_estimate['name'] ?? ('#' . (int) ($selected_client_estimate['id'] ?? 0)))); ?></span></div>
-                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate_status !== '' ? $selected_estimate_status : '—'); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><?php echo esc_html($estimate_status_labels[$selected_estimate_status] ?? ($selected_estimate_status !== '' ? $selected_estimate_status : '—')); ?></span></div>
                         <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Akceptacja', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_estimate['accepted_at'] ?? '—')); ?></span></div>
                         <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Pozycje', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ((int) ($selected_client_estimate['items_count'] ?? count($selected_estimate_items)))); ?></span></div>
                     </div>
@@ -237,7 +238,17 @@
                                 <label><input type="checkbox" name="invoice_other_entity" value="1" data-client-estimate-toggle="invoice-nip"> <?php esc_html_e('Faktura na inny podmiot', 'erp-omd'); ?></label>
                                 <input type="text" name="invoice_nip" placeholder="<?php echo esc_attr__('NIP do faktury', 'erp-omd'); ?>" data-client-estimate-target="invoice-nip" hidden />
                             </div>
-                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Akceptuj kosztorys', 'erp-omd'); ?></button>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-button-primary" style="flex:1 1 50%;width:50%;"><?php esc_html_e('Akceptuj kosztorys', 'erp-omd'); ?></button>
+                                <button type="button" class="erp-omd-front-button erp-omd-front-button-small" id="erp-omd-show-reject-form" style="flex:1 1 50%;width:50%;"><?php esc_html_e('Odrzuć kosztorys', 'erp-omd'); ?></button>
+                            </div>
+                        </form>
+                        <form method="post" class="erp-omd-front-form" style="margin-top:8px;" id="erp-omd-client-estimate-reject-form" hidden>
+                            <?php wp_nonce_field('erp_omd_front_client'); ?><input type="hidden" name="erp_omd_front_action" value="reject_client_estimate" /><input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ((int) ($selected_client_estimate['id'] ?? 0))); ?>" />
+                            <div class="erp-omd-front-form-field">
+                                <textarea id="erp-omd-client-estimate-reject-note" name="client_comment" rows="3" placeholder="<?php echo esc_attr__('Uwagi do odrzucenia kosztorysu', 'erp-omd'); ?>" required></textarea>
+                            </div>
+                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Odrzuć kosztorys', 'erp-omd'); ?></button>
                         </form>
                         <script>
                             (function () {
@@ -255,6 +266,13 @@
                                     checkbox.addEventListener('change', syncConditionalFields);
                                 });
                                 syncConditionalFields();
+                                var rejectButton = document.getElementById('erp-omd-show-reject-form');
+                                var rejectForm = document.getElementById('erp-omd-client-estimate-reject-form');
+                                if (rejectButton && rejectForm) {
+                                    rejectButton.addEventListener('click', function () {
+                                        rejectForm.hidden = !rejectForm.hidden;
+                                    });
+                                }
                             }());
                         </script>
                     <?php endif; ?>

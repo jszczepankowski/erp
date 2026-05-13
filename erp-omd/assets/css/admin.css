@@ -1721,3 +1721,19 @@
 .erp-omd-admin table.widefat td select[multiple] {
     min-width: 180px;
 }
+
+.erp-omd-admin .erp-omd-estimate-summary-card {
+    width: 97.5%;
+}
+
+.erp-omd-admin .erp-omd-estimate-summary-card-spaced {
+    margin-bottom: 12px;
+}
+
+.erp-omd-admin .erp-omd-estimate-basics-grid {
+    margin-top: 12px;
+}
+
+.erp-omd-admin .erp-omd-estimate-decision-url {
+    min-width: 320px;
+}
