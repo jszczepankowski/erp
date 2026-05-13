@@ -1244,7 +1244,7 @@ class ERP_OMD_Reporting_Service
                 'project_id' => (int) ($filters['project_id'] ?? 0),
                 'employee_id' => (int) ($filters['employee_id'] ?? 0),
                 'status' => (string) ($filters['status'] ?? ''),
-                'report_type' => 'projects',
+                'report_type' => 'omd_rozliczenia',
                 'tab' => 'reports',
             ]);
             $index[(string) $month] = round(array_sum(array_map(static function ($row) {
@@ -1266,7 +1266,7 @@ class ERP_OMD_Reporting_Service
                 'project_id' => (int) ($filters['project_id'] ?? 0),
                 'employee_id' => (int) ($filters['employee_id'] ?? 0),
                 'status' => (string) ($filters['status'] ?? ''),
-                'report_type' => 'projects',
+                'report_type' => 'omd_rozliczenia',
                 'tab' => 'reports',
             ]);
             $index[(string) $month] = round(array_sum(array_map(static function ($row) {
