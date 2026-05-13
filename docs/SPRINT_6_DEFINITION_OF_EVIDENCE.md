@@ -28,7 +28,7 @@ Statusy sugerowane:
 
 ## Minimalny pakiet artefaktów do jednego „closure PR”
 
-1. Aktualizacja `docs/SPRINT_6_TICKETS_DOD.md` (odhaczenie DoD po ticketach).  
+1. Aktualizacja `docs/archiwum/2026-Q2/SPRINT_6_TICKETS_DOD.md` (odhaczenie DoD po ticketach).  
 2. Uzupełniona tabela DoE (ten dokument) ze statusem `DONE` oraz linkami do dowodów.  
 3. `docs/RELEASE_CLOSURE_SPRINT_6_<YYYY-MM-DD>.md` z:
    - listą wdrożonych ticketów,

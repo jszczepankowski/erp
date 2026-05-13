@@ -58,6 +58,6 @@ Status globalny: **PASS**
 
 ## 5) Co dalej (następna iteracja)
 
-1. Oznaczyć ETAP 1 / KROK 1.3 jako DONE w `docs/WDROZENIE_V1_DZIENNIK.md`.
+1. Oznaczyć ETAP 1 / KROK 1.3 jako DONE w `docs/archiwum/2026-Q2/WDROZENIE_V1_DZIENNIK.md`.
 2. Rozpocząć ETAP 2 / KROK 2.1 (benchmark wydajności raportów).
 3. Przygotować plan wykonania ETAP 2 / KROK 2.2 (testy bezpieczeństwa endpointów krytycznych).
