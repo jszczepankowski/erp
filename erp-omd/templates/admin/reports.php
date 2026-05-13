@@ -267,7 +267,7 @@
                     </table>
                 <?php else : ?>
                     <table class="widefat striped">
-                        <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Abonament', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód dodatkowy', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><?php if ($report_filters['report_type'] === 'invoice') : ?><th><?php esc_html_e('Pozycje do faktury', 'erp-omd'); ?></th><?php endif; ?></tr></thead>
+                        <thead><tr><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></th><th><?php esc_html_e('Budżet', 'erp-omd'); ?></th><th><?php esc_html_e('Abonament', 'erp-omd'); ?></th><th><?php esc_html_e('Godziny', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód dodatkowy', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt czasu', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt bezpośredni', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt łącznie', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><?php if ($report_filters['report_type'] === 'invoice') : ?><th><?php esc_html_e('Pozycje do faktury', 'erp-omd'); ?></th><?php endif; ?></tr></thead>
                         <tbody>
                         <?php if (empty($report_rows)) : ?><tr><td colspan="<?php echo $report_filters['report_type'] === 'invoice' ? '16' : '15'; ?>"><?php esc_html_e('Brak danych dla wybranych filtrów.', 'erp-omd'); ?></td></tr><?php endif; ?>
                         <?php foreach ($report_rows as $row) : ?>
@@ -276,11 +276,11 @@
                                 <td><?php echo esc_html($row['project_name']); ?></td>
                                 <td><?php echo esc_html($this->billing_type_label($row['billing_type'])); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['budget'], 2)); ?></td>
+                                <td><?php echo esc_html($row['billing_type'] === 'retainer' ? number_format_i18n((float) ($row['retainer_amount'] ?? 0), 2) : '—'); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['reported_hours'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['filtered_time_revenue'], 2)); ?></td>
-                                <td><?php echo esc_html(number_format_i18n((float) $row['revenue'], 2)); ?></td>
-                                <td><?php echo esc_html($row['billing_type'] === 'retainer' ? number_format_i18n((float) ($row['retainer_amount'] ?? 0), 2) : '—'); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) ($row['additional_revenue'] ?? 0), 2)); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((float) $row['revenue'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['filtered_time_cost'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['filtered_direct_cost'], 2)); ?></td>
                                 <td><?php echo esc_html(number_format_i18n((float) $row['cost'], 2)); ?></td>
@@ -325,11 +325,11 @@
                             ?>
                             <tr>
                                 <td colspan="4"><strong><?php esc_html_e('Podsumowanie', 'erp-omd'); ?></strong></td>
+                                <td><strong><?php echo esc_html(number_format_i18n($summary_retainer, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_hours, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_time_revenue, 2)); ?></strong></td>
-                                <td><strong><?php echo esc_html(number_format_i18n($summary_revenue, 2)); ?></strong></td>
-                                <td><strong><?php echo esc_html(number_format_i18n($summary_retainer, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_revenue_additional, 2)); ?></strong></td>
+                                <td><strong><?php echo esc_html(number_format_i18n($summary_revenue, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_time_cost, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_direct_cost, 2)); ?></strong></td>
                                 <td><strong><?php echo esc_html(number_format_i18n($summary_cost, 2)); ?></strong></td>
