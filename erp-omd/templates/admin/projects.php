@@ -10,7 +10,9 @@
         }, $merge_preview['source_projects'])));
     }
     $merge_preview_target_client_id = (int) ($merge_preview['target_client_id'] ?? 0);
+    $show_merge_panel = $merge_source_project_ids !== '' || (is_array($merge_preview) && ! empty($merge_preview));
     ?>
+    <?php if ($show_merge_panel) : ?>
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Scal projekty (preview + potwierdzenie)', 'erp-omd'); ?></h2>
         <form method="post">
@@ -61,6 +63,7 @@
             </form>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
     <div class="erp-omd-card">
         <h2><?php echo $project ? esc_html__('Edytuj projekt', 'erp-omd') : esc_html__('Nowy projekt', 'erp-omd'); ?></h2>
         <form method="post">
