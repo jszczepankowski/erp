@@ -844,7 +844,7 @@ class ERP_OMD_Admin
             ['label' => __('Dodaj klienta', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-clients', 'edit' => 1], admin_url('admin.php'))],
             ['label' => __('Dodaj projekt', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-projects'], admin_url('admin.php'))],
             ['label' => __('Dodaj wpis czasu', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-time'], admin_url('admin.php'))],
-            ['label' => __('Raport miesięczny', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-reports', 'tab' => 'reports', 'report_type' => 'monthly'], admin_url('admin.php'))],
+            ['label' => __('Dodaj nowy kosztorys', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-estimates'], admin_url('admin.php'))],
         ];
         include ERP_OMD_PATH . 'templates/admin/dashboard.php';
     }

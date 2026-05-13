@@ -72,18 +72,18 @@
         [
             'icon' => 'money',
             'value' => number_format_i18n((float) ($omd_month_row['project_direct_cost'] ?? 0), 2),
-            'label' => sprintf(__('Suma kosztów projektowych · %s', 'erp-omd'), $reporting_month_label),
+            'label' => sprintf(__('Kosztów projektów · %s', 'erp-omd'), $reporting_month_label),
             'variant' => 'erp-omd-metric-tile-muted',
         ],
         [
             'icon' => 'chart-bar',
             'value' => number_format_i18n((float) ($omd_month_row['project_revenue'] ?? 0), 2),
-            'label' => sprintf(__('Suma przychodu projektów · %s', 'erp-omd'), $reporting_month_label),
+            'label' => sprintf(__('Przychody projektów · %s', 'erp-omd'), $reporting_month_label),
             'variant' => 'erp-omd-metric-tile-accent',
         ],
         [
             'icon' => 'awards',
-            'value' => number_format_i18n((float) ($dashboard_projects_profit_sum ?? 0), 2),
+            'value' => number_format_i18n((float) ($omd_month_row['operational_result'] ?? 0), 2),
             'label' => sprintf(__('Zysk projektów · %s', 'erp-omd'), $reporting_month_label),
             'variant' => 'erp-omd-metric-tile-accent',
         ],
@@ -92,7 +92,7 @@
         __('Dodaj klienta', 'erp-omd') => 'plus-alt2',
         __('Dodaj projekt', 'erp-omd') => 'portfolio',
         __('Dodaj wpis czasu', 'erp-omd') => 'clock',
-        __('Raport miesięczny', 'erp-omd') => 'media-spreadsheet',
+        __('Dodaj nowy kosztorys', 'erp-omd') => 'media-spreadsheet',
     ];
     ?>
     <div class="erp-omd-dashboard-sections" data-dashboard-sections="1">
