@@ -166,8 +166,8 @@ class ERP_OMD_Reporting_Service
                 }
                 $prefetched_entries = $this->prefetch_entries_for_months($filters, $months, $month_ranges);
                 $entry_metrics_by_month = $this->build_entry_metrics_index_by_month($prefetched_entries, $filters, $months);
-                $project_direct_cost_index = $this->build_project_direct_cost_index_by_month($months);
-                $project_revenue_index = $this->build_project_revenue_index_by_month($projects, $months);
+                $project_direct_cost_index = $this->build_project_direct_cost_index_by_month($months, $filters);
+                $project_revenue_index = $this->build_project_revenue_index_by_month($projects, $months, $filters);
                 foreach ($months as $month) {
                     $salary_cost = (float) ($salary_cost_by_month[$month] ?? 0.0);
                     $direct_cost = (float) ($project_direct_cost_index[$month] ?? 0.0);
@@ -1233,18 +1233,18 @@ class ERP_OMD_Reporting_Service
         return $metrics;
     }
 
-    private function build_project_revenue_index_by_month(array $projects, array $months)
+    private function build_project_revenue_index_by_month(array $projects, array $months, array $filters = [])
     {
         $index = array_fill_keys(array_map('strval', $months), 0.0);
         foreach ($months as $month) {
             $month_rows = $this->build_project_report([
                 'month' => (string) $month,
                 'detail' => 'simple',
-                'client_id' => 0,
-                'project_id' => 0,
-                'employee_id' => 0,
-                'status' => '',
-                'report_type' => 'projects',
+                'client_id' => (int) ($filters['client_id'] ?? 0),
+                'project_id' => (int) ($filters['project_id'] ?? 0),
+                'employee_id' => (int) ($filters['employee_id'] ?? 0),
+                'status' => (string) ($filters['status'] ?? ''),
+                'report_type' => 'omd_rozliczenia',
                 'tab' => 'reports',
             ]);
             $index[(string) $month] = round(array_sum(array_map(static function ($row) {
@@ -1255,18 +1255,18 @@ class ERP_OMD_Reporting_Service
         return $index;
     }
 
-    private function build_project_direct_cost_index_by_month(array $months)
+    private function build_project_direct_cost_index_by_month(array $months, array $filters = [])
     {
         $index = array_fill_keys(array_map('strval', $months), 0.0);
         foreach ($months as $month) {
             $month_rows = $this->build_project_report([
                 'month' => (string) $month,
                 'detail' => 'simple',
-                'client_id' => 0,
-                'project_id' => 0,
-                'employee_id' => 0,
-                'status' => '',
-                'report_type' => 'projects',
+                'client_id' => (int) ($filters['client_id'] ?? 0),
+                'project_id' => (int) ($filters['project_id'] ?? 0),
+                'employee_id' => (int) ($filters['employee_id'] ?? 0),
+                'status' => (string) ($filters['status'] ?? ''),
+                'report_type' => 'omd_rozliczenia',
                 'tab' => 'reports',
             ]);
             $index[(string) $month] = round(array_sum(array_map(static function ($row) {
