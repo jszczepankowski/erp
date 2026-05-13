@@ -632,7 +632,8 @@
                                 <?php $this->render_alert_icons($estimate_row['alerts'] ?? []); ?>
                             </td>
                             <td><?php echo esc_html($estimate_row['client_name']); ?></td>
-                            <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($estimate_row['status'], 'estimate')); ?>"><?php echo esc_html($estimate_row['status']); ?></span></td>
+                            <?php $estimate_status_labels = ['wstepny' => __('Wstępny', 'erp-omd'), 'do_akceptacji' => __('Do akceptacji', 'erp-omd'), 'odrzucony' => __('Odrzucony', 'erp-omd'), 'zaakceptowany' => __('Zaakceptowany', 'erp-omd')]; ?>
+                            <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($estimate_row['status'], 'estimate')); ?>"><?php echo esc_html($estimate_status_labels[(string) ($estimate_row['status'] ?? '')] ?? (string) ($estimate_row['status'] ?? '—')); ?></span></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($estimate_row['total_net'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($estimate_row['total_gross'] ?? 0), 2)); ?></td>
                             <td>
@@ -655,6 +656,12 @@
                                     <div class="erp-omd-list-actions-menu">
                                         <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-estimates', 'id' => (int) $estimate_row['id']], admin_url('admin.php'))); ?>"><?php esc_html_e('Szczegóły', 'erp-omd'); ?></a>
                                         <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-estimates', 'id' => (int) $estimate_row['id'], 'edit' => 1], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                        <form method="post" class="erp-omd-inline-form">
+                                            <?php wp_nonce_field('erp_omd_duplicate_estimate'); ?>
+                                            <input type="hidden" name="erp_omd_action" value="duplicate_estimate">
+                                            <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ($estimate_row['id'] ?? 0)); ?>">
+                                            <button type="submit" class="button button-small"><?php esc_html_e('Powiel', 'erp-omd'); ?></button>
+                                        </form>
                                         <?php if (($estimate_row['status'] ?? '') === 'do_akceptacji') : ?>
                                             <form method="post" class="erp-omd-inline-form">
                                                 <?php wp_nonce_field('erp_omd_send_estimate_client_link'); ?>

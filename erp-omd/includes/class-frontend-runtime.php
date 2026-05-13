@@ -754,6 +754,29 @@ class ERP_OMD_Frontend
             $this->redirect_client_with_notice('success', __('Kosztorys został zaakceptowany.', 'erp-omd'));
             return;
         }
+        if ($action === 'reject_client_estimate') {
+            $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
+            $estimate_id = (int) ($_POST['estimate_id'] ?? 0);
+            $client_comment = sanitize_textarea_field((string) wp_unslash($_POST['client_comment'] ?? ''));
+            $estimate = $estimate_id > 0 ? $this->estimates->find($estimate_id) : null;
+            if (! $estimate || (int) ($estimate['client_id'] ?? 0) !== $client_id) {
+                $this->redirect_client_with_notice('error', __('Nie znaleziono kosztorysu przypisanego do Twojego konta.', 'erp-omd'));
+            }
+            if (trim($client_comment) === '') {
+                $this->redirect_client_with_notice('error', __('Komentarz jest wymagany przy odrzuceniu kosztorysu.', 'erp-omd'));
+            }
+            if ((string) ($estimate['status'] ?? '') === 'zaakceptowany') {
+                $this->redirect_client_with_notice('info', __('Ten kosztorys jest już zaakceptowany.', 'erp-omd'));
+            }
+            $estimate['status'] = 'odrzucony';
+            $estimate['accepted_by_user_id'] = 0;
+            $estimate['accepted_at'] = null;
+            $estimate['client_decision_note'] = $client_comment;
+            $this->estimates->update($estimate_id, $estimate);
+            update_option('erp_omd_estimate_client_rejection_comment_' . $estimate_id, $client_comment, false);
+            $this->redirect_client_with_notice('success', __('Kosztorys został odrzucony.', 'erp-omd'));
+            return;
+        }
         if ($action === 'delete_project_attachment') {
             $this->delete_client_project_attachment($user);
             return;

@@ -239,6 +239,16 @@
                             </div>
                             <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Akceptuj kosztorys', 'erp-omd'); ?></button>
                         </form>
+                        <form method="post" class="erp-omd-front-form" style="margin-top:8px;">
+                            <?php wp_nonce_field('erp_omd_front_client'); ?>
+                            <input type="hidden" name="erp_omd_front_action" value="reject_client_estimate" />
+                            <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ((int) ($selected_client_estimate['id'] ?? 0))); ?>" />
+                            <div class="erp-omd-front-form-field">
+                                <label for="erp-omd-client-estimate-reject-note"><?php esc_html_e('Uwagi do odrzucenia kosztorysu', 'erp-omd'); ?></label>
+                                <textarea id="erp-omd-client-estimate-reject-note" name="client_comment" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Odrzuć kosztorys', 'erp-omd'); ?></button>
+                        </form>
                         <script>
                             (function () {
                                 var estimateForm = document.getElementById('erp-omd-client-estimate-accept-form');
