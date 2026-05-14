@@ -238,11 +238,12 @@ class ERP_OMD_Project_Repository
                 'manager_id' => $data['manager_id'] ?: null,
                 'estimate_id' => $data['estimate_id'] ?: null,
                 'brief' => $data['brief'],
+                'project_links' => $data['project_links'] ?? '',
                 'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%s', '%s']
+            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s']
         );
 
         $project_id = (int) $wpdb->insert_id;
@@ -276,11 +277,12 @@ class ERP_OMD_Project_Repository
                 'manager_id' => $data['manager_id'] ?: null,
                 'estimate_id' => $data['estimate_id'] ?: null,
                 'brief' => $data['brief'],
+                'project_links' => $data['project_links'] ?? '',
                 'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
                 'updated_at' => current_time('mysql'),
             ],
             ['id' => $id],
-            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%s'],
+            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%s', '%s'],
             ['%d']
         );
 

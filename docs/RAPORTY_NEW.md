@@ -61,12 +61,12 @@ W nowym chacie wklej:
 4. `Po zmianach: testy, commit, PR summary i aktualizacja snapshotu RAPORTY_NEW.`
 
 ## 5) Source of truth
-- `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
-- `docs/POTWIERDZENIE_USTALEŃ_V1_2026-04-01.md`
+- `docs/SPEC_V3_1_FUNKCJONALNOSC_LOGIKA_ZALEZNOSCI.md`
+- `docs/archiwum/2026-Q2/POTWIERDZENIE_USTALEŃ_V1_2026-04-01.md`
 - `docs/WARIANT_B_PROGRESS.md`
 - `docs/RAPORTY_NEW.md` (ten snapshot do wznowienia)
 - `docs/PLAN_PELNE_WDROZENIE_WARIANT_B_V1.md` (plan domknięcia 100% MUST ze specyfikacji)
-- `docs/WDROZENIE_V1_DZIENNIK.md` (bieżący tracker etapów/kroków do wznowienia cross-chat)
+- `docs/archiwum/2026-Q2/WDROZENIE_V1_DZIENNIK.md` (bieżący tracker etapów/kroków do wznowienia cross-chat)
 - `docs/UAT_MASTER_PASS_V1_2026-04-07.md` (artefakt przebiegu UAT Master Pass v1)
 - `docs/archiwum/UAT_EXECUTION_SHEET_2026-04-07.md` (operacyjna checklista manualna UAT ekranów 1–6)
 - `docs/REPORTING_BENCHMARK_BASELINE_2026-04-07.md` (baseline wydajności pod ETAP 2.1)

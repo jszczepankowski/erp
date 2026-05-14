@@ -79,6 +79,7 @@
                 </article>
             </div>
 
+            <?php $estimate_status_labels = ['wstepny' => __('Wstępny', 'erp-omd'), 'do_akceptacji' => __('Do akceptacji', 'erp-omd'), 'odrzucony' => __('Odrzucony', 'erp-omd'), 'zaakceptowany' => __('Zaakceptowany', 'erp-omd')]; ?>
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">
                     <h2><?php esc_html_e('Zgłoś nowy projekt', 'erp-omd'); ?></h2>
@@ -139,7 +140,7 @@
                                     <?php $estimate_status = (string) ($client_estimate_item['status'] ?? ''); ?>
                                     <tr>
                                         <td><?php echo esc_html((string) ($client_estimate_item['name'] ?? ('#' . (int) ($client_estimate_item['id'] ?? 0)))); ?></td>
-                                        <td><?php echo esc_html($estimate_status !== '' ? $estimate_status : '—'); ?></td>
+                                        <td><?php echo esc_html($estimate_status_labels[$estimate_status] ?? ($estimate_status !== '' ? $estimate_status : '—')); ?></td>
                                         <td><?php echo esc_html((string) ($client_estimate_item['accepted_at'] ?? '—')); ?></td>
                                         <td>
                                             <a
@@ -172,7 +173,7 @@
                     </div>
                     <div class="erp-omd-front-detail-grid">
                         <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Nazwa', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_estimate['name'] ?? ('#' . (int) ($selected_client_estimate['id'] ?? 0)))); ?></span></div>
-                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><?php echo esc_html($selected_estimate_status !== '' ? $selected_estimate_status : '—'); ?></span></div>
+                        <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Status', 'erp-omd'); ?></strong><span><?php echo esc_html($estimate_status_labels[$selected_estimate_status] ?? ($selected_estimate_status !== '' ? $selected_estimate_status : '—')); ?></span></div>
                         <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Akceptacja', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ($selected_client_estimate['accepted_at'] ?? '—')); ?></span></div>
                         <div class="erp-omd-front-detail-item"><strong><?php esc_html_e('Pozycje', 'erp-omd'); ?></strong><span><?php echo esc_html((string) ((int) ($selected_client_estimate['items_count'] ?? count($selected_estimate_items)))); ?></span></div>
                     </div>
@@ -237,7 +238,17 @@
                                 <label><input type="checkbox" name="invoice_other_entity" value="1" data-client-estimate-toggle="invoice-nip"> <?php esc_html_e('Faktura na inny podmiot', 'erp-omd'); ?></label>
                                 <input type="text" name="invoice_nip" placeholder="<?php echo esc_attr__('NIP do faktury', 'erp-omd'); ?>" data-client-estimate-target="invoice-nip" hidden />
                             </div>
-                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Akceptuj kosztorys', 'erp-omd'); ?></button>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <button type="submit" class="erp-omd-front-button erp-omd-front-button-small erp-omd-front-button-primary" style="flex:1 1 50%;width:50%;"><?php esc_html_e('Akceptuj kosztorys', 'erp-omd'); ?></button>
+                                <button type="button" class="erp-omd-front-button erp-omd-front-button-small" id="erp-omd-show-reject-form" style="flex:1 1 50%;width:50%;"><?php esc_html_e('Odrzuć kosztorys', 'erp-omd'); ?></button>
+                            </div>
+                        </form>
+                        <form method="post" class="erp-omd-front-form" style="margin-top:8px;" id="erp-omd-client-estimate-reject-form" hidden>
+                            <?php wp_nonce_field('erp_omd_front_client'); ?><input type="hidden" name="erp_omd_front_action" value="reject_client_estimate" /><input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ((int) ($selected_client_estimate['id'] ?? 0))); ?>" />
+                            <div class="erp-omd-front-form-field">
+                                <textarea id="erp-omd-client-estimate-reject-note" name="client_comment" rows="3" placeholder="<?php echo esc_attr__('Uwagi do odrzucenia kosztorysu', 'erp-omd'); ?>" required></textarea>
+                            </div>
+                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-small"><?php esc_html_e('Odrzuć kosztorys', 'erp-omd'); ?></button>
                         </form>
                         <script>
                             (function () {
@@ -255,6 +266,13 @@
                                     checkbox.addEventListener('change', syncConditionalFields);
                                 });
                                 syncConditionalFields();
+                                var rejectButton = document.getElementById('erp-omd-show-reject-form');
+                                var rejectForm = document.getElementById('erp-omd-client-estimate-reject-form');
+                                if (rejectButton && rejectForm) {
+                                    rejectButton.addEventListener('click', function () {
+                                        rejectForm.hidden = !rejectForm.hidden;
+                                    });
+                                }
                             }());
                         </script>
                     <?php endif; ?>
@@ -728,6 +746,90 @@
                     <?php esc_html_e('Wybierz projekt z listy i kliknij „Otwórz”, aby zobaczyć szczegóły projektu, finanse, czas pracy, historię budżetu, załączniki i uwagi.', 'erp-omd'); ?>
                 </div>
             <?php endif; ?>
+
+            <article class="erp-omd-front-panel">
+                <div class="erp-omd-front-section-heading">
+                    <h2><?php esc_html_e('Taski prywatne', 'erp-omd'); ?></h2>
+                </div>
+                <form method="post" class="erp-omd-front-form erp-omd-front-form-inline">
+                    <?php wp_nonce_field('erp_omd_front_client'); ?>
+                    <input type="hidden" name="erp_omd_front_action" value="save_private_task" />
+                    <div class="erp-omd-front-grid erp-omd-front-grid-client-request-row">
+                        <div class="erp-omd-front-field">
+                            <label for="erp-omd-private-task-text"><?php esc_html_e('Task (prywatny)', 'erp-omd'); ?></label>
+                            <textarea id="erp-omd-private-task-text" name="task_text" rows="2" required></textarea>
+                        </div>
+                        <div class="erp-omd-front-field">
+                            <label for="erp-omd-private-task-due"><?php esc_html_e('Na dziś / termin', 'erp-omd'); ?></label>
+                            <input id="erp-omd-private-task-due" type="date" name="task_due_date" value="<?php echo esc_attr(gmdate('Y-m-d')); ?>" />
+                        </div>
+                    </div>
+                    <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Dodaj task', 'erp-omd'); ?></button>
+                </form>
+                <p>
+                    <?php
+                    $task_filter_links = [
+                        'all' => __('Wszystkie', 'erp-omd'),
+                        'today' => __('Na dziś', 'erp-omd'),
+                        'incomplete' => __('Niedokończone', 'erp-omd'),
+                    ];
+                    foreach ($task_filter_links as $task_filter_key => $task_filter_label) {
+                        $task_filter_url = add_query_arg(array_merge($dashboard_args, ['tasks_filter' => $task_filter_key]), $front_client_url);
+                        $is_active_task_filter = $private_tasks_filter === $task_filter_key;
+                        echo $is_active_task_filter ? '<strong>' : '';
+                        echo '<a href="' . esc_url($task_filter_url) . '">' . esc_html($task_filter_label) . '</a>';
+                        echo $is_active_task_filter ? '</strong>' : '';
+                        echo $task_filter_key === 'incomplete' ? '' : ' · ';
+                    }
+                    ?>
+                </p>
+                <div class="erp-omd-front-table-wrap">
+                    <table class="erp-omd-front-table">
+                        <thead><tr><th><?php esc_html_e('Data dodania', 'erp-omd'); ?></th><th><?php esc_html_e('Termin', 'erp-omd'); ?></th><th><?php esc_html_e('Task', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th></tr></thead>
+                        <tbody>
+                        <?php if (! empty($private_tasks)) : foreach ($private_tasks as $private_task_item) : ?>
+                            <tr>
+                                <td><?php echo esc_html((string) ($private_task_item['created_at'] ?? '—')); ?></td>
+                                <td><?php echo esc_html((string) ($private_task_item['due_date'] ?? '—')); ?></td>
+                                <td><?php echo esc_html((string) ($private_task_item['text'] ?? '')); ?></td>
+                                <td>
+                                    <form method="post" class="erp-omd-front-inline-form">
+                                        <?php wp_nonce_field('erp_omd_front_client'); ?>
+                                        <input type="hidden" name="erp_omd_front_action" value="toggle_private_task_completed" />
+                                        <input type="hidden" name="task_created_at" value="<?php echo esc_attr((string) ($private_task_item['created_at'] ?? '')); ?>" />
+                                        <button type="submit" class="erp-omd-front-button erp-omd-front-button-ghost">
+                                            <?php echo ! empty($private_task_item['completed']) ? esc_html__('Zrobione', 'erp-omd') : esc_html__('Niedokończone', 'erp-omd'); ?>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; else : ?>
+                            <tr><td colspan="4"><?php esc_html_e('Brak tasków dla wybranego filtra.', 'erp-omd'); ?></td></tr>
+                        <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article class="erp-omd-front-panel">
+                <div class="erp-omd-front-section-heading"><h2><?php esc_html_e('Sticky notes (prywatne)', 'erp-omd'); ?></h2></div>
+                <form method="post" class="erp-omd-front-form erp-omd-front-form-inline">
+                    <?php wp_nonce_field('erp_omd_front_client'); ?>
+                    <input type="hidden" name="erp_omd_front_action" value="save_private_sticky_note" />
+                    <div class="erp-omd-front-field">
+                        <label for="erp-omd-private-sticky-note"><?php esc_html_e('Nowa sticky note', 'erp-omd'); ?></label>
+                        <textarea id="erp-omd-private-sticky-note" name="sticky_note_text" rows="2" required></textarea>
+                    </div>
+                    <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Dodaj sticky note', 'erp-omd'); ?></button>
+                </form>
+                <ul>
+                    <?php if (! empty($private_sticky_notes)) : foreach ($private_sticky_notes as $private_sticky_note_item) : ?>
+                        <li><strong><?php echo esc_html((string) ($private_sticky_note_item['created_at'] ?? '—')); ?>:</strong> <?php echo esc_html((string) ($private_sticky_note_item['text'] ?? '')); ?></li>
+                    <?php endforeach; else : ?>
+                        <li><?php esc_html_e('Brak prywatnych sticky notes.', 'erp-omd'); ?></li>
+                    <?php endif; ?>
+                </ul>
+            </article>
 
             <article class="erp-omd-front-panel">
                 <div class="erp-omd-front-section-heading">

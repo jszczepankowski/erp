@@ -32,7 +32,7 @@ Przed rozpoczęciem odbioru upewnij się, że:
 ### Komenda główna
 
 ```bash
-./scripts/test-sprint-3.sh
+./scripts/archiwum/2026-Q2/test-sprint-3.sh
 ```
 
 ### Oczekiwany wynik
@@ -199,7 +199,7 @@ Wykonaj poniższe wywołania na środowisku testowym:
 
 Sprint 3 można uznać za **zamknięty i zaakceptowany**, jeżeli spełnione są wszystkie warunki:
 
-- `./scripts/test-sprint-3.sh` przechodzi,
+- `./scripts/archiwum/2026-Q2/test-sprint-3.sh` przechodzi,
 - paczka ZIP instaluje się w WordPress,
 - regresja Sprintów 1–2 nie występuje,
 - stawki projektowe działają jako override,
