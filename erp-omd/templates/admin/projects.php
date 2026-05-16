@@ -10,7 +10,9 @@
         }, $merge_preview['source_projects'])));
     }
     $merge_preview_target_client_id = (int) ($merge_preview['target_client_id'] ?? 0);
+    $show_merge_panel = $merge_source_project_ids !== '' || (is_array($merge_preview) && ! empty($merge_preview));
     ?>
+    <?php if ($show_merge_panel) : ?>
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Scal projekty (preview + potwierdzenie)', 'erp-omd'); ?></h2>
         <form method="post">
@@ -61,6 +63,7 @@
             </form>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
     <div class="erp-omd-card">
         <h2><?php echo $project ? esc_html__('Edytuj projekt', 'erp-omd') : esc_html__('Nowy projekt', 'erp-omd'); ?></h2>
         <form method="post">
@@ -185,6 +188,10 @@
                             <label for="project-brief"><?php esc_html_e('Opis projektu', 'erp-omd'); ?></label>
                             <textarea id="project-brief" class="large-text" rows="5" name="brief"><?php echo esc_textarea($project['brief'] ?? ''); ?></textarea>
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="project-links"><?php esc_html_e('Linki i materiały (1 link na linię: etykieta | URL)', 'erp-omd'); ?></label>
+                            <textarea id="project-links" class="large-text" rows="4" name="project_links"><?php echo esc_textarea($project['project_links'] ?? ''); ?></textarea>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -215,6 +222,7 @@
                             <div class="erp-omd-detail-card">
                                 <h3><?php esc_html_e('Kontekst operacyjny', 'erp-omd'); ?></h3>
                                 <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Linki i materiały', 'erp-omd'); ?></strong><span><?php echo nl2br(esc_html((string) ($project['project_links'] ?? '—'))); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Budżet', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project['budget'] ?? 0), 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Abonament', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project['retainer_monthly_fee'] ?? 0), 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Start', 'erp-omd'); ?></strong><span><?php echo esc_html($project['start_date'] ?? '—'); ?></span></div>
