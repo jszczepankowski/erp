@@ -1,0 +1,202 @@
+ERP v4.2 — Roadmap wdrożeń (2–4 sprinty), priorytety, porządki i dalsze prace
+
+Data: 2026-05-13
+Zakres: ADMIN, PROJEKTY, UX/UI, wydajność, porządki techniczne i dokumentacja domeny.
+
+==================================================
+1) ROADMAPA WDROŻEŃ (4 sprinty)
+==================================================
+
+Sprint 1 (Quick wins / niski koszt, wysoki efekt)
+--------------------------------------------------
+Cele:
+- poprawa czytelności i ergonomii pracy bez dużej przebudowy backendu.
+
+Zakres funkcjonalny:
+1. Powiadomienia UI
+   - wdrożenie toastów (success/info/warning/error) zamiast samych komunikatów na górze.
+   - modal wyłącznie dla komunikatów krytycznych (np. operacje nieodwracalne).
+2. Linki/materiały w projekcie
+   - pole „Linki i materiały” (MVP: lista wpisów URL + opis + typ).
+   - walidacja URL i skrócone etykiety.
+3. Dashboard użytkownika
+   - „Moje zadania na dziś” (MVP) + „sticky notes” prywatne.
+4. Szybkie porządki UI
+   - standaryzacja przycisków, spacingu, układu sekcji summary.
+
+Definicja ukończenia:
+- spójny komponent komunikatów użyty min. w 3 kluczowych flow.
+- nowa sekcja linków projektu działa w CRUD.
+- lista zadań „na dziś” i sticky notes zapisują dane per użytkownik.
+
+Ryzyka:
+- rozjazd UI bez mini design-systemu.
+- przeciążenie dashboardu dodatkowymi widgetami.
+
+
+Sprint 2 (Uprawnienia i bezpieczeństwo)
+----------------------------------------
+Cele:
+- granularne uprawnienia per użytkownik + czytelny model dostępu.
+
+Zakres funkcjonalny:
+1. ACL per użytkownik
+   - zakładka „Uprawnienia użytkownika” (rola bazowa + wyjątki).
+   - per-sekcja panelu admina (widok/edycja/usuwanie/eksport).
+2. Audyt zmian uprawnień
+   - log: kto, kiedy, co zmienił.
+3. Twarde walidacje backend
+   - centralizacja sprawdzania capability i nonce.
+
+Definicja ukończenia:
+- min. 80% ekranów admina respektuje nowe ACL.
+- pełny audyt zmian uprawnień dostępny dla super-admin.
+
+Ryzyka:
+- konflikt rola vs wyjątki per-user.
+- nieczytelna konfiguracja bez presetów uprawnień.
+
+
+Sprint 3 (Asynchroniczny zapis i mini-taski projektowe)
+-------------------------------------------------------
+Cele:
+- skrócenie czasu operacji i większa płynność pracy.
+
+Zakres funkcjonalny:
+1. Zapisy bez przeładowania (AJAX/fetch)
+   - priorytet: kosztorysy, projekty, notatki.
+   - jednolity format odpowiedzi API + centralny handler błędów.
+2. Mini-taski w projekcie
+   - osobna zakładka projektu: etapy/checklista.
+   - MVP: tytuł, status, owner, deadline, komentarz, % postępu.
+
+Definicja ukończenia:
+- min. 3 największe formularze działają async.
+- mini-taski mają pełny CRUD i filtrowanie.
+
+Ryzyka:
+- konflikty edycji równoległej.
+- większa złożoność frontu (stany pośrednie/retry).
+
+
+Sprint 4 (Wydajność + stabilizacja + domknięcie UX)
+----------------------------------------------------
+Cele:
+- optymalizacja pod produkcję, porządki techniczne, finalizacja dokumentacji.
+
+Zakres funkcjonalny:
+1. Profiling i optymalizacja
+   - identyfikacja najwolniejszych zapytań i endpointów.
+   - indeksy DB, paginacja, lazy-loading, cache (transient/object cache).
+2. Porządki kodu i artefaktów
+   - usunięcie martwego kodu, nieużywanych szablonów, duplikatów.
+   - porządki testów i skryptów pomocniczych.
+3. Finalny przegląd UX/UI
+   - poprawki heurystyczne i dostępność (focus, aria-live, kontrasty).
+
+Definicja ukończenia:
+- raport wydajności „przed/po”.
+- uporządkowana struktura repo + zaktualizowana dokumentacja funkcjonalna.
+
+Ryzyka:
+- usunięcie plików używanych pośrednio (regresje).
+- zbyt szeroki zakres refaktoru bez feature freeze.
+
+
+==================================================
+2) PRIORYTETY: QUICK WINS vs BIG ROCKS
+==================================================
+
+Quick wins (realizować najpierw):
+- toasty/powiadomienia centralne,
+- pole linków/materiałów w projekcie,
+- zadania „na dziś” + sticky notes (MVP),
+- poprawki UX drobnych flow (przyciski, layout, komunikaty).
+
+Big rocks (większe tematy):
+- ACL per użytkownik i audyt uprawnień,
+- pełne zapisy async bez przeładowań,
+- mini-taski projektowe jako submoduł,
+- kompleksowa optymalizacja wydajności + porządki techniczne.
+
+
+==================================================
+3) PODSUMOWANIE TEMATÓW DO DALSZYCH PRAC
+==================================================
+
+A. Funkcjonalność i logika
+- doprecyzowanie modelu uprawnień (rola + wyjątki per user),
+- spójny model statusów i lifecycle (projekty/kosztorysy/taski),
+- jedno źródło prawdy dla komunikatów UI i walidacji.
+
+B. Technika
+- normalizacja endpointów (REST/AJAX) i obsługi błędów,
+- ujednolicenie helperów formatowania/statusów,
+- testy regresji dla krytycznych flow: kosztorysy, projekty, uprawnienia.
+
+C. UX/UI
+- mini design-system komponentów,
+- dostępność (WCAG podstawowe),
+- ergonomia dashboardów per rola.
+
+
+==================================================
+4) AUDYT SYSTEMU — plan wykrywania błędów i nieścisłości
+==================================================
+
+Etap 1: Audyt techniczny
+- statyczna analiza (PHPStan/Psalm, PHPCS),
+- przegląd logiki uprawnień i nonce,
+- wykrycie dead code i duplikatów.
+
+Etap 2: Audyt logiczny/domenowy
+- mapowanie przepływów: lead -> kosztorys -> akceptacja -> projekt -> rozliczenie,
+- walidacja reguł statusów i wyjątków,
+- weryfikacja spójności danych między modułami.
+
+Etap 3: Audyt artefaktów repo
+- klasyfikacja plików: produkcyjne / testowe / tymczasowe / historyczne,
+- usunięcie zbędnych plików dopiero po potwierdzeniu zależności,
+- archiwizacja zamiast kasowania „w ciemno”.
+
+Etap 4: Raport i cleanup
+- lista błędów (krytyczne/wysokie/średnie/niskie),
+- plan naprawczy z właścicielem i terminem,
+- finalna lista usuniętych plików i powodów.
+
+
+==================================================
+5) FINALNA WERSJA ROZPISKI: funkcjonalności, zależności, pojęcia
+==================================================
+
+Główne pojęcia domenowe:
+- Klient
+- Kosztorys
+- Pozycja kosztorysu
+- Decyzja klienta (akceptacja/odrzucenie)
+- Projekt
+- Koszty i przychody projektu
+- Zadania projektowe (planowane)
+- Uprawnienia użytkownika
+- Audit log
+
+Zależności funkcjonalne (wysoki poziom):
+1) Klient -> (tworzenie/obsługa) Kosztorys
+2) Kosztorys + decyzja klienta -> Projekt (automatycznie lub ręcznie)
+3) Projekt -> finanse / dokumenty / harmonogram / taski
+4) Użytkownik + uprawnienia -> dostęp do sekcji i akcji
+5) Audit log -> rozliczalność zmian i bezpieczeństwo operacyjne
+
+Warstwy systemu:
+- UI (admin/front)
+- Runtime (obsługa akcji i walidacje)
+- Services (logika biznesowa)
+- Repositories (persistencja danych)
+- Integracje/powiadomienia (mail, linki decyzyjne, eksport)
+
+Minimalny zestaw metryk do stałego monitoringu:
+- czas ładowania ekranów kluczowych,
+- liczba błędów walidacji i 5xx,
+- skuteczność flow akceptacji/odrzucenia kosztorysów,
+- liczba akcji cofniętych/przerwanych przez użytkowników.
+

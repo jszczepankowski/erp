@@ -89,14 +89,14 @@ Następny krok wg planu: **utrzymanie/stabilizacja** (monitoring operacyjny + de
 ## 4) Checklist do wznowienia pracy w nowym chacie
 
 Wklej na start:
-1. "Kontynuujemy Wariant B v1, pracujemy na `docs/WARIANT_B_PROGRESS.md` i `docs/SPECYFIKACJA_V1_WARIANT_B.txt`."
+1. "Kontynuujemy Wariant B v1, pracujemy na `docs/WARIANT_B_PROGRESS.md` i `docs/SPEC_V3_1_FUNKCJONALNOSC_LOGIKA_ZALEZNOSCI.md`."
 2. "Najpierw zrób status git + krótki diff od ostatniego commita."
 3. "Następny cel: [wstaw z sekcji P1/P2/P3/P4]."
 4. "Po zmianach: testy + commit + PR summary + aktualizacja tego pliku progress."
 
 ## 5) Source of truth
-- Spec: `docs/SPECYFIKACJA_V1_WARIANT_B.txt`
-- Potwierdzenie: `docs/POTWIERDZENIE_USTALEŃ_V1_2026-04-01.md`
+- Spec: `docs/SPEC_V3_1_FUNKCJONALNOSC_LOGIKA_ZALEZNOSCI.md`
+- Potwierdzenie: `docs/archiwum/2026-Q2/POTWIERDZENIE_USTALEŃ_V1_2026-04-01.md`
 - Ten snapshot roboczy: `docs/WARIANT_B_PROGRESS.md`
 
 ---

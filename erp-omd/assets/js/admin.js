@@ -1483,4 +1483,35 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof window.erpOmdInitAdminInteractions === 'function') {
     window.erpOmdInitAdminInteractions(currentPage);
   }
+
+  const notices = Array.from(document.querySelectorAll('.wrap .notice.notice-success, .wrap .notice.notice-error, .wrap .notice.notice-warning, .wrap .notice.notice-info'));
+  if (notices.length > 0) {
+    let toastHost = document.querySelector('.erp-omd-toast-host');
+    if (!toastHost) {
+      toastHost = document.createElement('div');
+      toastHost.className = 'erp-omd-toast-host';
+      document.body.appendChild(toastHost);
+    }
+
+    notices.forEach((notice) => {
+      const textNode = notice.querySelector('p');
+      const message = textNode ? textNode.textContent : (notice.textContent || '');
+      const toast = document.createElement('div');
+      toast.className = 'erp-omd-toast';
+      if (notice.classList.contains('notice-success')) toast.classList.add('erp-omd-toast-success');
+      else if (notice.classList.contains('notice-error')) toast.classList.add('erp-omd-toast-error');
+      else if (notice.classList.contains('notice-warning')) toast.classList.add('erp-omd-toast-warning');
+      else toast.classList.add('erp-omd-toast-info');
+
+      toast.textContent = (message || '').trim();
+      toastHost.appendChild(toast);
+      notice.style.display = 'none';
+
+      setTimeout(() => toast.classList.add('erp-omd-toast-visible'), 20);
+      setTimeout(() => {
+        toast.classList.remove('erp-omd-toast-visible');
+        setTimeout(() => toast.remove(), 200);
+      }, 4500);
+    });
+  }
 });

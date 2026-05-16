@@ -1,7 +1,7 @@
 # Plan pełnego wdrożenia ustaleń v1 (Wariant B)
 
 Data: 2026-04-07  
-Wejście: `docs/SPECYFIKACJA_V1_WARIANT_B.txt` + aktualny stan kodu i snapshotów.
+Wejście: `docs/SPEC_V3_1_FUNKCJONALNOSC_LOGIKA_ZALEZNOSCI.md` + aktualny stan kodu i snapshotów.
 
 ## 1) Cel
 
@@ -113,7 +113,7 @@ Wdrożenie uznajemy za pełne, gdy jednocześnie:
 
 ## 7) Potwierdzenie kompletności planu względem SPEC (MUST coverage)
 
-Tak — ten plan jest **kompletny względem MUST baseline** ze `SPECYFIKACJA_V1_WARIANT_B`, bo obejmuje wszystkie obszary wymagane do uzyskania efektu końcowego:
+Tak — ten plan jest **kompletny względem MUST baseline** ze `SPEC_V3_1_FUNKCJONALNOSC_LOGIKA_ZALEZNOSCI`, bo obejmuje wszystkie obszary wymagane do uzyskania efektu końcowego:
 - model okresów + przejścia + blokady,
 - korekty admina 72h/awaryjne + pełny audyt,
 - reguły księgowania (`approved-only`, `operational_close_month`, `archiwum`),
@@ -129,7 +129,7 @@ Dla pełnej jednoznaczności mapujemy finalizację MUST do fal:
 
 ## 8) Sposób prowadzenia prac „na żywo” (cross-chat)
 
-Od teraz postęp prowadzimy w jednym dzienniku: `docs/WDROZENIE_V1_DZIENNIK.md`.
+Od teraz postęp prowadzimy w jednym dzienniku: `docs/archiwum/2026-Q2/WDROZENIE_V1_DZIENNIK.md`.
 
 Zasada aktualizacji po każdym kroku:
 1. aktualny etap i krok (`ETAP`, `KROK`),

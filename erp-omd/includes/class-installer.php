@@ -243,6 +243,7 @@ class ERP_OMD_Installer
                 manager_id BIGINT UNSIGNED NULL,
                 estimate_id BIGINT UNSIGNED NULL,
                 brief LONGTEXT NULL,
+                project_links LONGTEXT NULL,
                 alert_margin_threshold DECIMAL(8,2) NULL,
                 created_at DATETIME NOT NULL,
                 updated_at DATETIME NOT NULL,
@@ -254,6 +255,7 @@ class ERP_OMD_Installer
                 KEY billing_type (billing_type)
             ) ENGINE=InnoDB {$charset_collate};"
         );
+        self::add_column_if_missing($projects_table, 'project_links', "ALTER TABLE {$projects_table} ADD COLUMN project_links LONGTEXT NULL AFTER brief");
 
         dbDelta(
             "CREATE TABLE {$project_managers_table} (
