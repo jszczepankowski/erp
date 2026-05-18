@@ -583,10 +583,24 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         usort($ksef_sales_rows, static function ($left, $right) use ($sales_sort) {
             $left_date = (string) ($left['issue_date'] ?? '');
             $right_date = (string) ($right['issue_date'] ?? '');
-            if ($left_date === $right_date) {
+
+            $left_timestamp = strtotime($left_date);
+            $right_timestamp = strtotime($right_date);
+
+            if ($left_timestamp === false) {
+                $left_timestamp = 0;
+            }
+            if ($right_timestamp === false) {
+                $right_timestamp = 0;
+            }
+
+            if ($left_timestamp === $right_timestamp) {
                 return ((int) ($right['id'] ?? 0)) <=> ((int) ($left['id'] ?? 0));
             }
-            return $sales_sort === 'date_asc' ? strcmp($left_date, $right_date) : strcmp($right_date, $left_date);
+
+            return $sales_sort === 'date_asc'
+                ? ($left_timestamp <=> $right_timestamp)
+                : ($right_timestamp <=> $left_timestamp);
         });
         $sales_date_sort_url = add_query_arg([
             'page' => 'erp-omd-cost-invoices',
@@ -596,7 +610,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         ], admin_url('admin.php'));
         ?>
         <table class="widefat striped">
-            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><a href="<?php echo esc_url($sales_date_sort_url); ?>"><?php esc_html_e('Data', 'erp-omd'); ?></a></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><a href="<?php echo esc_url($sales_date_sort_url); ?>"><?php esc_html_e('Data', 'erp-omd'); ?> <?php echo $sales_sort === 'date_asc' ? '▲' : '▼'; ?></a></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
             <tbody>
             <?php if (empty($ksef_sales_inbox)) : ?>
                 <tr><td colspan="7"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>

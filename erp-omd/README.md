@@ -2,6 +2,9 @@
 
 ERP_OMD V2 — wersja 0.10.6 przygotowana pod wdrożenie Sprintu 10.
 
+## Utrzymanie repozytorium
+- Przed publikacją zmian uruchom przynajmniej test sanity odpowiadający aktywnemu sprintowi.
+
 ## Dokumentacja systemu
 - Pełny opis systemu i propozycje usprawnień: `../docs/ERP_OMD_SYSTEM_OVERVIEW.md`
 - Plan rozwoju frontendu dla pracowników i managerów (`FRONT`): `../docs/FRONT_PLAN.md`
