@@ -445,6 +445,9 @@ class ERP_OMD_Admin
             case 'export_estimate': $this->handle_estimate_export(); break;
             case 'save_admin_private_task': $this->handle_admin_private_task_save(); break;
             case 'toggle_admin_private_task': $this->handle_admin_private_task_toggle(); break;
+            case 'delete_admin_private_task': $this->handle_admin_private_task_delete(); break;
+            case 'update_admin_private_task': $this->handle_admin_private_task_update(); break;
+            case 'bulk_admin_private_tasks': $this->handle_admin_private_tasks_bulk_action(); break;
             case 'export_report': $this->handle_report_export(); break;
             case 'export_adjustments_audit':
                 check_admin_referer('erp_omd_export_adjustments_audit');
@@ -784,6 +787,10 @@ class ERP_OMD_Admin
             if (! is_array($task)) {
                 continue;
             }
+            $task_id = sanitize_text_field((string) ($task['task_id'] ?? ''));
+            if ($task_id === '') {
+                $task_id = md5((string) ($task['created_at'] ?? '') . '|' . (string) ($task['text'] ?? ''));
+            }
             $text = trim((string) ($task['text'] ?? ''));
             if ($text === '') {
                 continue;
@@ -797,6 +804,7 @@ class ERP_OMD_Admin
                 continue;
             }
             $filtered[] = [
+                'task_id' => $task_id,
                 'text' => $text,
                 'due_date' => $due_date,
                 'completed' => $completed,
@@ -817,15 +825,15 @@ class ERP_OMD_Admin
         $text = sanitize_textarea_field((string) wp_unslash($_POST['task_text'] ?? ''));
         $due_date = sanitize_text_field((string) wp_unslash($_POST['task_due_date'] ?? ''));
         if ($text === '') {
-            $this->redirect_with_notice('erp-omd', 'error', __('Treść zadania jest wymagana.', 'erp-omd'));
+            $this->redirect_with_notice('erp-omd-private-tasks', 'error', __('Treść zadania jest wymagana.', 'erp-omd'));
         }
         if ($due_date !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $due_date)) {
-            $this->redirect_with_notice('erp-omd', 'error', __('Data taska ma niepoprawny format.', 'erp-omd'));
+            $this->redirect_with_notice('erp-omd-private-tasks', 'error', __('Data taska ma niepoprawny format.', 'erp-omd'));
         }
         $tasks = (array) get_user_meta($user_id, 'erp_omd_admin_private_tasks', true);
-        array_unshift($tasks, ['text' => $text, 'due_date' => $due_date, 'completed' => 0, 'created_at' => current_time('mysql')]);
+        array_unshift($tasks, ['task_id' => wp_generate_uuid4(), 'text' => $text, 'due_date' => $due_date, 'completed' => 0, 'created_at' => current_time('mysql')]);
         update_user_meta($user_id, 'erp_omd_admin_private_tasks', array_slice($tasks, 0, 100));
-        $this->redirect_with_notice('erp-omd', 'success', __('Task prywatny został zapisany.', 'erp-omd'), ['tasks_filter' => 'all']);
+        $this->redirect_with_notice('erp-omd-private-tasks', 'success', __('Zadanie zostało zapisane.', 'erp-omd'), ['tasks_filter' => 'all']);
     }
 
     private function handle_admin_private_task_toggle()
@@ -833,11 +841,15 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_toggle_admin_private_task');
         $this->require_capability('erp_omd_access');
         $user_id = (int) get_current_user_id();
-        $created_at = sanitize_text_field((string) wp_unslash($_POST['task_created_at'] ?? ''));
+        $task_id = sanitize_text_field((string) wp_unslash($_POST['task_id'] ?? ''));
         $tasks = (array) get_user_meta($user_id, 'erp_omd_admin_private_tasks', true);
         $updated = false;
         foreach ($tasks as &$task) {
-            if (! is_array($task) || (string) ($task['created_at'] ?? '') !== $created_at) {
+            $row_id = sanitize_text_field((string) ($task['task_id'] ?? ''));
+            if ($row_id === '') {
+                $row_id = md5((string) ($task['created_at'] ?? '') . '|' . (string) ($task['text'] ?? ''));
+            }
+            if (! is_array($task) || $row_id !== $task_id) {
                 continue;
             }
             $task['completed'] = empty($task['completed']) ? 1 : 0;
@@ -846,10 +858,90 @@ class ERP_OMD_Admin
         }
         unset($task);
         if (! $updated) {
-            $this->redirect_with_notice('erp-omd', 'error', __('Nie znaleziono taska do aktualizacji.', 'erp-omd'));
+            $this->redirect_with_notice('erp-omd-private-tasks', 'error', __('Nie znaleziono zadania do aktualizacji.', 'erp-omd'));
         }
         update_user_meta($user_id, 'erp_omd_admin_private_tasks', array_slice($tasks, 0, 100));
-        $this->redirect_with_notice('erp-omd', 'success', __('Status taska został zaktualizowany.', 'erp-omd'));
+        $this->redirect_with_notice('erp-omd-private-tasks', 'success', __('Status zadania został zaktualizowany.', 'erp-omd'));
+    }
+
+    private function handle_admin_private_task_delete()
+    {
+        check_admin_referer('erp_omd_delete_admin_private_task');
+        $this->require_capability('erp_omd_access');
+        $user_id = (int) get_current_user_id();
+        $task_id = sanitize_text_field((string) wp_unslash($_POST['task_id'] ?? ''));
+        $tasks = (array) get_user_meta($user_id, 'erp_omd_admin_private_tasks', true);
+        $tasks = array_values(array_filter($tasks, static function ($task) use ($task_id) {
+            $row_id = sanitize_text_field((string) ($task['task_id'] ?? ''));
+            if ($row_id === '') {
+                $row_id = md5((string) ($task['created_at'] ?? '') . '|' . (string) ($task['text'] ?? ''));
+            }
+            return $row_id !== $task_id;
+        }));
+        update_user_meta($user_id, 'erp_omd_admin_private_tasks', array_slice($tasks, 0, 100));
+        $this->redirect_with_notice('erp-omd-private-tasks', 'success', __('Zadanie zostało usunięte.', 'erp-omd'));
+    }
+
+    private function handle_admin_private_task_update()
+    {
+        check_admin_referer('erp_omd_update_admin_private_task');
+        $this->require_capability('erp_omd_access');
+        $user_id = (int) get_current_user_id();
+        $task_id = sanitize_text_field((string) wp_unslash($_POST['task_id'] ?? ''));
+        $text = sanitize_textarea_field((string) wp_unslash($_POST['task_text'] ?? ''));
+        $due_date = sanitize_text_field((string) wp_unslash($_POST['task_due_date'] ?? ''));
+        if ($text === '') {
+            $this->redirect_with_notice('erp-omd-private-tasks', 'error', __('Treść zadania jest wymagana.', 'erp-omd'));
+        }
+        $tasks = (array) get_user_meta($user_id, 'erp_omd_admin_private_tasks', true);
+        foreach ($tasks as &$task) {
+            $row_id = sanitize_text_field((string) ($task['task_id'] ?? ''));
+            if ($row_id === '') {
+                $row_id = md5((string) ($task['created_at'] ?? '') . '|' . (string) ($task['text'] ?? ''));
+            }
+            if ($row_id !== $task_id) { continue; }
+            $task['text'] = $text;
+            $task['due_date'] = $due_date;
+            break;
+        }
+        unset($task);
+        update_user_meta($user_id, 'erp_omd_admin_private_tasks', array_slice($tasks, 0, 100));
+        $this->redirect_with_notice('erp-omd-private-tasks', 'success', __('Zadanie zostało zaktualizowane.', 'erp-omd'));
+    }
+
+    private function handle_admin_private_tasks_bulk_action()
+    {
+        check_admin_referer('erp_omd_bulk_admin_private_tasks');
+        $this->require_capability('erp_omd_access');
+        $action = sanitize_text_field((string) wp_unslash($_POST['bulk_action'] ?? ''));
+        $ids = array_values(array_filter(array_map('sanitize_text_field', (array) wp_unslash($_POST['task_ids'] ?? []))));
+        if ($action === '' || $ids === []) {
+            $this->redirect_with_notice('erp-omd-private-tasks', 'error', __('Wybierz akcję masową i co najmniej jedno zadanie.', 'erp-omd'));
+        }
+        $user_id = (int) get_current_user_id();
+        $tasks = (array) get_user_meta($user_id, 'erp_omd_admin_private_tasks', true);
+        if ($action === 'delete') {
+            $tasks = array_values(array_filter($tasks, static function ($task) use ($ids) {
+                $row_id = sanitize_text_field((string) ($task['task_id'] ?? ''));
+                if ($row_id === '') { $row_id = md5((string) ($task['created_at'] ?? '') . '|' . (string) ($task['text'] ?? '')); }
+                return ! in_array($row_id, $ids, true);
+            }));
+        } else {
+            $to_completed = $action === 'mark_done' ? 1 : ($action === 'mark_todo' ? 0 : null);
+            if ($to_completed === null) {
+                $this->redirect_with_notice('erp-omd-private-tasks', 'error', __('Nieobsługiwana akcja masowa.', 'erp-omd'));
+            }
+            foreach ($tasks as &$task) {
+                $row_id = sanitize_text_field((string) ($task['task_id'] ?? ''));
+                if ($row_id === '') { $row_id = md5((string) ($task['created_at'] ?? '') . '|' . (string) ($task['text'] ?? '')); }
+                if (in_array($row_id, $ids, true)) {
+                    $task['completed'] = $to_completed;
+                }
+            }
+            unset($task);
+        }
+        update_user_meta($user_id, 'erp_omd_admin_private_tasks', array_slice($tasks, 0, 100));
+        $this->redirect_with_notice('erp-omd-private-tasks', 'success', __('Akcja masowa została wykonana.', 'erp-omd'));
     }
 
     private function resolve_dashboard_controlling_result(array $omd_month_row)
