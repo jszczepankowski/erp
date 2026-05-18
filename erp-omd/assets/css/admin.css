@@ -710,6 +710,7 @@
     gap: 18px;
 }
 
+
 .erp-omd-admin .erp-omd-dashboard-section {
     border-radius: 12px;
 }
@@ -725,6 +726,18 @@
 .erp-omd-admin .erp-omd-filter-form input[type="date"],
 .erp-omd-admin .erp-omd-filter-form input[type="month"] {
     min-width: 150px;
+}
+
+.erp-omd-admin .erp-omd-form-field-align-end {
+    align-self: end;
+}
+
+.erp-omd-admin .erp-omd-task-field-main {
+    grid-column: 1 / span 3;
+}
+
+.erp-omd-admin .erp-omd-task-field-side {
+    grid-column: span 1;
 }
 
 .erp-omd-admin .erp-omd-nav-tabs {
