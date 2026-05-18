@@ -430,17 +430,45 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                     <button type="submit" class="button button-secondary" form="erp-omd-bulk-cost-invoices-form"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
                 </p>
             </form>
+            <?php
+            $invoice_sort = sanitize_key((string) ($_GET['invoice_sort'] ?? 'date_desc'));
+            if (! in_array($invoice_sort, ['date_asc', 'date_desc'], true)) {
+                $invoice_sort = 'date_desc';
+            }
+            $invoice_rows = (array) $cost_invoices;
+            usort($invoice_rows, static function ($left, $right) use ($invoice_sort) {
+                $left_timestamp = strtotime((string) ($left['issue_date'] ?? '')) ?: 0;
+                $right_timestamp = strtotime((string) ($right['issue_date'] ?? '')) ?: 0;
+
+                if ($left_timestamp === $right_timestamp) {
+                    return ((int) ($right['id'] ?? 0)) <=> ((int) ($left['id'] ?? 0));
+                }
+
+                return $invoice_sort === 'date_asc'
+                    ? ($left_timestamp <=> $right_timestamp)
+                    : ($right_timestamp <=> $left_timestamp);
+            });
+            $invoice_date_sort_url = add_query_arg([
+                'page' => 'erp-omd-cost-invoices',
+                'tab' => 'invoices',
+                'invoice_id' => $selected_invoice_id,
+                'invoice_supplier_id' => (int) ($invoice_list_filters['supplier_id'] ?? 0),
+                'invoice_project_id' => (int) ($invoice_list_filters['project_id'] ?? 0),
+                'invoice_status' => (string) ($invoice_list_filters['status'] ?? ''),
+                'invoice_sort' => $invoice_sort === 'date_asc' ? 'date_desc' : 'date_asc',
+            ], admin_url('admin.php'));
+            ?>
             <table class="widefat striped">
                 <thead>
                     <tr>
-                        <th><input type="checkbox" id="cost-invoice-select-all" /></th><th>ID</th><th><?php esc_html_e('Data wystawienia', 'erp-omd'); ?></th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
+                        <th><input type="checkbox" id="cost-invoice-select-all" /></th><th>ID</th><th class="sortable <?php echo $invoice_sort === 'date_asc' ? 'asc' : 'desc'; ?>"><a href="<?php echo esc_url($invoice_date_sort_url); ?>"><span><?php esc_html_e('Data wystawienia', 'erp-omd'); ?></span></a></th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><?php esc_html_e('Dostawca', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Brutto', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if ($cost_invoices === []) : ?>
                         <tr><td colspan="10"><?php esc_html_e('Brak faktur kosztowych.', 'erp-omd'); ?></td></tr>
                     <?php endif; ?>
-                    <?php foreach ($cost_invoices as $invoice) : ?>
+                    <?php foreach ($invoice_rows as $invoice) : ?>
                         <?php $invoice_id = (int) ($invoice['id'] ?? 0); ?>
                         <tr>
                             <td><input type="checkbox" class="cost-invoice-checkbox" name="cost_invoice_ids[]" value="<?php echo esc_attr((string) $invoice_id); ?>" form="erp-omd-bulk-cost-invoices-form" /></td>
@@ -610,7 +638,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         ], admin_url('admin.php'));
         ?>
         <table class="widefat striped">
-            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th><a href="<?php echo esc_url($sales_date_sort_url); ?>"><?php esc_html_e('Data', 'erp-omd'); ?> <?php echo $sales_sort === 'date_asc' ? '▲' : '▼'; ?></a></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th>ID</th><th><?php esc_html_e('Numer', 'erp-omd'); ?></th><th class="sortable <?php echo $sales_sort === 'date_asc' ? 'asc' : 'desc'; ?>"><a href="<?php echo esc_url($sales_date_sort_url); ?>"><span><?php esc_html_e('Data', 'erp-omd'); ?></span></a></th><th><?php esc_html_e('Nabywca', 'erp-omd'); ?></th><th><?php esc_html_e('NIP nabywcy', 'erp-omd'); ?></th><th><?php esc_html_e('Projekt', 'erp-omd'); ?></th><th><?php esc_html_e('Akcja', 'erp-omd'); ?></th></tr></thead>
             <tbody>
             <?php if (empty($ksef_sales_inbox)) : ?>
                 <tr><td colspan="7"><?php esc_html_e('Brak sprzedażowych dokumentów KSeF.', 'erp-omd'); ?></td></tr>
