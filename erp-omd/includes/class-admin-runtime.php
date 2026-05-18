@@ -770,6 +770,7 @@ class ERP_OMD_Admin
     {
         $this->require_capability('erp_omd_access');
         $dashboard_private_tasks_filter = sanitize_key((string) wp_unslash($_GET['tasks_filter'] ?? 'all'));
+        $dashboard_private_tasks_edit_id = sanitize_text_field((string) wp_unslash($_GET['edit_task'] ?? ''));
         if (! in_array($dashboard_private_tasks_filter, ['all', 'today', 'incomplete'], true)) {
             $dashboard_private_tasks_filter = 'all';
         }
