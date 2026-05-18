@@ -1,7 +1,14 @@
-<section class="erp-omd-card">
-    <div class="erp-omd-section-header">
-        <h2><?php esc_html_e('Taski prywatne', 'erp-omd'); ?></h2>
-    </div>
+<div class="wrap erp-omd-admin">
+    <h1><?php esc_html_e('ERP OMD — Taski prywatne', 'erp-omd'); ?></h1>
+
+    <div class="erp-omd-page-sections">
+    <section class="erp-omd-card">
+        <div class="erp-omd-section-header">
+            <div>
+                <h2><?php esc_html_e('Taski prywatne', 'erp-omd'); ?></h2>
+                <p><?php esc_html_e('Prywatna lista zadań zalogowanego użytkownika administratora/managera.', 'erp-omd'); ?></p>
+            </div>
+        </div>
 
     <form method="post" class="erp-omd-form-grid">
         <?php wp_nonce_field('erp_omd_save_admin_private_task'); ?>
@@ -57,4 +64,6 @@
             <?php endif; ?>
         </tbody>
     </table>
-</section>
+    </section>
+    </div>
+</div>
