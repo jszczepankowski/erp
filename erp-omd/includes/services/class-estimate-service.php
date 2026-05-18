@@ -227,6 +227,9 @@ class ERP_OMD_Estimate_Service
             ? 0.0
             : (float) $totals['net'];
 
+        $project_start_date = (string) ($estimate['accepted_at'] ?? '') !== '' ? substr((string) $estimate['accepted_at'], 0, 10) : current_time('Y-m-d');
+        $project_end_date = $project_start_date;
+
         $project_id = $this->projects->create([
             'client_id' => (int) $estimate['client_id'],
             'name' => $project_name,
@@ -234,12 +237,13 @@ class ERP_OMD_Estimate_Service
             'budget' => $project_budget,
             'retainer_monthly_fee' => 0,
             'status' => 'w_realizacji',
-            'start_date' => (string) ($estimate['accepted_at'] ?? '') !== '' ? substr((string) $estimate['accepted_at'], 0, 10) : current_time('Y-m-d'),
-            'end_date' => '',
+            'start_date' => $project_start_date,
+            'end_date' => $project_end_date,
             'manager_id' => $manager_id,
             'manager_ids' => $manager_ids,
             'estimate_id' => (int) $estimate_id,
             'brief' => implode("\n", $brief_lines),
+            'project_links' => '',
             'alert_margin_threshold' => null,
         ]);
 

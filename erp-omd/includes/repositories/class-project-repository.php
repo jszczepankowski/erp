@@ -2,6 +2,8 @@
 
 class ERP_OMD_Project_Repository
 {
+    private $projects_columns_cache = null;
+
     public function table_name()
     {
         global $wpdb;
@@ -184,6 +186,10 @@ class ERP_OMD_Project_Repository
     public function sync_manager_ids($project_id, array $manager_ids)
     {
         global $wpdb;
+        $project_id = (int) $project_id;
+        if ($project_id <= 0) {
+            return;
+        }
 
         $manager_ids = array_values(array_unique(array_filter(array_map('intval', $manager_ids))));
         $wpdb->delete($this->managers_table_name(), ['project_id' => $project_id], ['%d']);
@@ -221,29 +227,36 @@ class ERP_OMD_Project_Repository
         global $wpdb;
 
         $now = current_time('mysql');
-        $wpdb->insert(
-            $this->table_name(),
-            [
-                'client_id' => $data['client_id'],
-                'name' => $data['name'],
-                'billing_type' => $data['billing_type'],
-                'budget' => $data['budget'],
-                'retainer_monthly_fee' => $data['retainer_monthly_fee'],
-                'status' => $data['status'],
-                'start_date' => $data['start_date'] ?: null,
-                'end_date' => $data['end_date'] ?: null,
-                'deadline_date' => ($data['deadline_date'] ?? '') !== '' ? $data['deadline_date'] : null,
-                'deadline_completed_at' => ($data['deadline_completed_at'] ?? '') !== '' ? $data['deadline_completed_at'] : null,
-                'deadline_completed_by' => ! empty($data['deadline_completed_by']) ? (int) $data['deadline_completed_by'] : null,
-                'manager_id' => $data['manager_id'] ?: null,
-                'estimate_id' => $data['estimate_id'] ?: null,
-                'brief' => $data['brief'],
-                'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%s', '%s']
-        );
+        $insert_data = [
+            'client_id' => $data['client_id'],
+            'name' => $data['name'],
+            'billing_type' => $data['billing_type'],
+            'budget' => $data['budget'],
+            'retainer_monthly_fee' => $data['retainer_monthly_fee'],
+            'status' => $data['status'],
+            'start_date' => $data['start_date'] ?: null,
+            'end_date' => $data['end_date'] ?: null,
+            'deadline_date' => ($data['deadline_date'] ?? '') !== '' ? $data['deadline_date'] : null,
+            'deadline_completed_at' => ($data['deadline_completed_at'] ?? '') !== '' ? $data['deadline_completed_at'] : null,
+            'deadline_completed_by' => ! empty($data['deadline_completed_by']) ? (int) $data['deadline_completed_by'] : null,
+            'manager_id' => $data['manager_id'] ?: null,
+            'estimate_id' => $data['estimate_id'] ?: null,
+            'brief' => $data['brief'],
+            'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+        if ($this->projects_table_has_column('project_links')) {
+            $insert_data['project_links'] = $data['project_links'] ?? '';
+        }
+        $insert_formats = [
+            '%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s',
+            '%d', '%d', '%d', '%s', '%s', '%s', '%s',
+        ];
+        if (isset($insert_data['project_links'])) {
+            array_splice($insert_formats, 14, 0, ['%s']);
+        }
+        $wpdb->insert($this->table_name(), $insert_data, $insert_formats);
 
         $project_id = (int) $wpdb->insert_id;
         $this->sync_manager_ids($project_id, $data['manager_ids'] ?? array_filter([(int) ($data['manager_id'] ?? 0)]));
@@ -259,30 +272,35 @@ class ERP_OMD_Project_Repository
     {
         global $wpdb;
 
-        $updated = $wpdb->update(
-            $this->table_name(),
-            [
-                'client_id' => $data['client_id'],
-                'name' => $data['name'],
-                'billing_type' => $data['billing_type'],
-                'budget' => $data['budget'],
-                'retainer_monthly_fee' => $data['retainer_monthly_fee'],
-                'status' => $data['status'],
-                'start_date' => $data['start_date'] ?: null,
-                'end_date' => $data['end_date'] ?: null,
-                'deadline_date' => ($data['deadline_date'] ?? '') !== '' ? $data['deadline_date'] : null,
-                'deadline_completed_at' => ($data['deadline_completed_at'] ?? '') !== '' ? $data['deadline_completed_at'] : null,
-                'deadline_completed_by' => ! empty($data['deadline_completed_by']) ? (int) $data['deadline_completed_by'] : null,
-                'manager_id' => $data['manager_id'] ?: null,
-                'estimate_id' => $data['estimate_id'] ?: null,
-                'brief' => $data['brief'],
-                'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
-                'updated_at' => current_time('mysql'),
-            ],
-            ['id' => $id],
-            ['%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%s', '%s'],
-            ['%d']
-        );
+        $update_data = [
+            'client_id' => $data['client_id'],
+            'name' => $data['name'],
+            'billing_type' => $data['billing_type'],
+            'budget' => $data['budget'],
+            'retainer_monthly_fee' => $data['retainer_monthly_fee'],
+            'status' => $data['status'],
+            'start_date' => $data['start_date'] ?: null,
+            'end_date' => $data['end_date'] ?: null,
+            'deadline_date' => ($data['deadline_date'] ?? '') !== '' ? $data['deadline_date'] : null,
+            'deadline_completed_at' => ($data['deadline_completed_at'] ?? '') !== '' ? $data['deadline_completed_at'] : null,
+            'deadline_completed_by' => ! empty($data['deadline_completed_by']) ? (int) $data['deadline_completed_by'] : null,
+            'manager_id' => $data['manager_id'] ?: null,
+            'estimate_id' => $data['estimate_id'] ?: null,
+            'brief' => $data['brief'],
+            'alert_margin_threshold' => $data['alert_margin_threshold'] === null ? null : (string) $data['alert_margin_threshold'],
+            'updated_at' => current_time('mysql'),
+        ];
+        if ($this->projects_table_has_column('project_links')) {
+            $update_data['project_links'] = $data['project_links'] ?? '';
+        }
+        $update_formats = [
+            '%d', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s',
+            '%d', '%d', '%d', '%s', '%s', '%s',
+        ];
+        if (isset($update_data['project_links'])) {
+            array_splice($update_formats, 14, 0, ['%s']);
+        }
+        $updated = $wpdb->update($this->table_name(), $update_data, ['id' => $id], $update_formats, ['%d']);
 
         $this->sync_manager_ids($id, $data['manager_ids'] ?? array_filter([(int) ($data['manager_id'] ?? 0)]));
         $updated_project = $this->find($id);
@@ -291,6 +309,20 @@ class ERP_OMD_Project_Repository
         }
 
         return $updated;
+    }
+
+    private function projects_table_has_column($column_name)
+    {
+        global $wpdb;
+        if (! is_string($column_name) || $column_name === '') {
+            return false;
+        }
+        if (! is_array($this->projects_columns_cache)) {
+            $table = esc_sql($this->table_name());
+            $columns = $wpdb->get_col("SHOW COLUMNS FROM `{$table}`", 0);
+            $this->projects_columns_cache = is_array($columns) ? array_map('strval', $columns) : [];
+        }
+        return in_array($column_name, $this->projects_columns_cache, true);
     }
 
     public function delete($id)
