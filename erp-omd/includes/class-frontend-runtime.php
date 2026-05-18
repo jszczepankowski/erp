@@ -701,14 +701,6 @@ class ERP_OMD_Frontend
             $this->create_worker_project_request($user);
             return;
         }
-        if ($action === 'save_private_task') {
-            $this->save_worker_private_task($user);
-            return;
-        }
-        if ($action === 'toggle_private_task_completed') {
-            $this->toggle_worker_private_task_completed($user);
-            return;
-        }
 
         $this->redirect_worker_with_notice('error', __('Nieobsługiwana akcja formularza FRONT.', 'erp-omd'));
     }
@@ -1095,14 +1087,9 @@ class ERP_OMD_Frontend
         if (! in_array($worker_filters['focus'], ['all', 'today', 'week', 'month'], true)) {
             $worker_filters['focus'] = 'month';
         }
-        if (! in_array($worker_filters['tab'], ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski', 'taski'], true)) {
+        if (! in_array($worker_filters['tab'], ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski'], true)) {
             $worker_filters['tab'] = 'wpisy';
         }
-        $worker_tasks_filter = sanitize_key((string) wp_unslash($_GET['tasks_filter'] ?? 'all'));
-        if (! in_array($worker_tasks_filter, ['all', 'today', 'incomplete'], true)) {
-            $worker_tasks_filter = 'all';
-        }
-        $worker_private_tasks = $this->get_private_tasks_for_user((int) $user->ID, $worker_tasks_filter);
         if (! preg_match('/^\d{4}-\d{2}$/', $worker_filters['calendar_month'])) {
             $worker_filters['calendar_month'] = gmdate('Y-m');
         }
@@ -2328,7 +2315,7 @@ class ERP_OMD_Frontend
     private function redirect_worker_with_notice($type, $message, array $extra_args = [])
     {
         $request_tab = sanitize_key(wp_unslash($_REQUEST['tab'] ?? ''));
-        if ($request_tab !== '' && ! isset($extra_args['tab']) && in_array($request_tab, ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski', 'taski'], true)) {
+        if ($request_tab !== '' && ! isset($extra_args['tab']) && in_array($request_tab, ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski'], true)) {
             $extra_args['tab'] = $request_tab;
         }
 

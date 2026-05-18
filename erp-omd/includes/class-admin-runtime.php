@@ -106,7 +106,7 @@ class ERP_OMD_Admin
             56
         );
         add_submenu_page('erp-omd', __('Dashboard', 'erp-omd'), __('Dashboard', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard']);
-        add_submenu_page('erp-omd', __('Taski prywatne', 'erp-omd'), __('Taski prywatne', 'erp-omd'), 'erp_omd_access', 'erp-omd-private-tasks', [$this, 'render_private_tasks']);
+        add_submenu_page('erp-omd', __('Lista zadań', 'erp-omd'), __('Lista zadań', 'erp-omd'), 'erp_omd_access', 'erp-omd-private-tasks', [$this, 'render_private_tasks']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-team');
         add_submenu_page('erp-omd', __('Pracownicy', 'erp-omd'), __('Pracownicy', 'erp-omd'), 'erp_omd_manage_employees', 'erp-omd-employees', [$this, 'render_employees']);
         add_submenu_page('erp-omd', __('Role', 'erp-omd'), __('Role', 'erp-omd'), 'erp_omd_manage_roles', 'erp-omd-roles', [$this, 'render_roles']);
@@ -817,7 +817,7 @@ class ERP_OMD_Admin
         $text = sanitize_textarea_field((string) wp_unslash($_POST['task_text'] ?? ''));
         $due_date = sanitize_text_field((string) wp_unslash($_POST['task_due_date'] ?? ''));
         if ($text === '') {
-            $this->redirect_with_notice('erp-omd', 'error', __('Treść taska jest wymagana.', 'erp-omd'));
+            $this->redirect_with_notice('erp-omd', 'error', __('Treść zadania jest wymagana.', 'erp-omd'));
         }
         if ($due_date !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $due_date)) {
             $this->redirect_with_notice('erp-omd', 'error', __('Data taska ma niepoprawny format.', 'erp-omd'));

@@ -34,7 +34,6 @@
                 'wpisy' => __('Wpisy', 'erp-omd'),
                 'kalendarz' => __('Kalendarz', 'erp-omd'),
                 'wnioski' => __('Wnioski', 'erp-omd'),
-                'taski' => __('Taski prywatne', 'erp-omd'),
             ];
             $worker_tab_base_args = [
                 'client_id' => (int) ($worker_filters['client_id'] ?? 0),
@@ -44,7 +43,6 @@
                 'focus' => (string) ($worker_filters['focus'] ?? 'month'),
                 'calendar_month' => (string) ($worker_filters['calendar_month'] ?? gmdate('Y-m')),
                 'selected_date' => (string) $selected_day,
-                'tasks_filter' => (string) ($worker_tasks_filter ?? 'all'),
             ];
             ?>
             <nav class="erp-omd-front-inline-actions erp-omd-front-tabs" aria-label="<?php esc_attr_e('Nawigacja panelu pracownika', 'erp-omd'); ?>">
@@ -279,56 +277,6 @@
                             <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Wyślij wniosek', 'erp-omd'); ?></button>
                         </div>
                     </form>
-                </article>
-
-                <article class="erp-omd-front-panel erp-omd-front-panel-form" data-worker-tab-pane="taski">
-                    <div class="erp-omd-front-section-heading">
-                        <h2><?php esc_html_e('Taski prywatne', 'erp-omd'); ?></h2>
-                    </div>
-                    <form method="post" action="<?php echo esc_url($worker_form_action); ?>" class="erp-omd-front-form">
-                        <?php wp_nonce_field('erp_omd_front_worker'); ?>
-                        <input type="hidden" name="erp_omd_front_action" value="save_private_task">
-                        <input type="hidden" name="tab" value="taski">
-                        <label for="erp-omd-worker-private-task-text"><?php esc_html_e('Treść taska', 'erp-omd'); ?></label>
-                        <textarea id="erp-omd-worker-private-task-text" name="task_text" rows="3" required></textarea>
-                        <label for="erp-omd-worker-private-task-due"><?php esc_html_e('Termin', 'erp-omd'); ?></label>
-                        <input id="erp-omd-worker-private-task-due" type="date" name="task_due_date" value="<?php echo esc_attr(gmdate('Y-m-d')); ?>">
-                        <button type="submit" class="erp-omd-front-button erp-omd-front-button-primary"><?php esc_html_e('Dodaj task', 'erp-omd'); ?></button>
-                    </form>
-                    <p>
-                        <?php foreach (['all' => __('Wszystkie', 'erp-omd'), 'today' => __('Na dziś', 'erp-omd'), 'incomplete' => __('Niedokończone', 'erp-omd')] as $task_filter_key => $task_filter_label) : ?>
-                            <?php $task_filter_url = add_query_arg(array_merge($worker_tab_base_args, ['tab' => 'taski', 'tasks_filter' => $task_filter_key]), $front_worker_url); ?>
-                            <?php if (($worker_tasks_filter ?? 'all') === $task_filter_key) : ?><strong><?php endif; ?>
-                            <a href="<?php echo esc_url($task_filter_url); ?>"><?php echo esc_html($task_filter_label); ?></a><?php if (($worker_tasks_filter ?? 'all') === $task_filter_key) : ?></strong><?php endif; ?><?php echo $task_filter_key === 'incomplete' ? '' : ' · '; ?>
-                        <?php endforeach; ?>
-                    </p>
-                    <div class="erp-omd-front-table-wrap">
-                        <table class="erp-omd-front-table">
-                            <thead><tr><th><?php esc_html_e('Data dodania', 'erp-omd'); ?></th><th><?php esc_html_e('Termin', 'erp-omd'); ?></th><th><?php esc_html_e('Task', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th></tr></thead>
-                            <tbody>
-                            <?php if (! empty($worker_private_tasks)) : foreach ($worker_private_tasks as $private_task_item) : ?>
-                                <tr>
-                                    <td><?php echo esc_html((string) ($private_task_item['created_at'] ?? '—')); ?></td>
-                                    <td><?php echo esc_html((string) ($private_task_item['due_date'] ?? '—')); ?></td>
-                                    <td><?php echo esc_html((string) ($private_task_item['text'] ?? '')); ?></td>
-                                    <td>
-                                        <form method="post" action="<?php echo esc_url($worker_form_action); ?>" class="erp-omd-front-inline-form">
-                                            <?php wp_nonce_field('erp_omd_front_worker'); ?>
-                                            <input type="hidden" name="erp_omd_front_action" value="toggle_private_task_completed" />
-                                            <input type="hidden" name="task_created_at" value="<?php echo esc_attr((string) ($private_task_item['created_at'] ?? '')); ?>" />
-                                            <input type="hidden" name="tab" value="taski" />
-                                            <button type="submit" class="erp-omd-front-button erp-omd-front-button-ghost">
-                                                <?php echo ! empty($private_task_item['completed']) ? esc_html__('Zrobione', 'erp-omd') : esc_html__('Niedokończone', 'erp-omd'); ?>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <?php endforeach; else : ?>
-                                <tr><td colspan="4"><?php esc_html_e('Brak tasków dla wybranego filtra.', 'erp-omd'); ?></td></tr>
-                            <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
                 </article>
 
                 <article class="erp-omd-front-panel" data-collapsible-section="worker-time-list" data-worker-tab-pane="wpisy">

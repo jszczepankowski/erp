@@ -732,6 +732,14 @@
     align-self: end;
 }
 
+.erp-omd-admin .erp-omd-task-field-main {
+    grid-column: 1 / span 3;
+}
+
+.erp-omd-admin .erp-omd-task-field-side {
+    grid-column: span 1;
+}
+
 .erp-omd-admin .erp-omd-nav-tabs {
     margin-bottom: 16px;
 }

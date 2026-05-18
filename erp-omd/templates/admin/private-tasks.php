@@ -1,11 +1,11 @@
 <div class="wrap erp-omd-admin">
-    <h1><?php esc_html_e('ERP OMD — Taski prywatne', 'erp-omd'); ?></h1>
+    <h1><?php esc_html_e('ERP OMD — Lista zadań', 'erp-omd'); ?></h1>
 
     <div class="erp-omd-page-sections">
     <section class="erp-omd-card">
         <div class="erp-omd-section-header">
             <div>
-                <h2><?php esc_html_e('Taski prywatne', 'erp-omd'); ?></h2>
+                <h2><?php esc_html_e('Lista zadań', 'erp-omd'); ?></h2>
                 <p><?php esc_html_e('Prywatna lista zadań zalogowanego użytkownika administratora/managera.', 'erp-omd'); ?></p>
             </div>
         </div>
@@ -13,16 +13,16 @@
     <form method="post" class="erp-omd-form-grid">
         <?php wp_nonce_field('erp_omd_save_admin_private_task'); ?>
         <input type="hidden" name="erp_omd_action" value="save_admin_private_task">
-        <div class="erp-omd-form-field erp-omd-form-field-span-2">
-            <label for="erp-omd-admin-task-text"><?php esc_html_e('Treść taska', 'erp-omd'); ?></label>
+        <div class="erp-omd-form-field erp-omd-task-field-main">
+            <label for="erp-omd-admin-task-text"><?php esc_html_e('Treść zadania', 'erp-omd'); ?></label>
             <textarea id="erp-omd-admin-task-text" name="task_text" rows="3" class="large-text" required></textarea>
         </div>
-        <div class="erp-omd-form-field">
+        <div class="erp-omd-form-field erp-omd-task-field-side">
             <label for="erp-omd-admin-task-date"><?php esc_html_e('Termin', 'erp-omd'); ?></label>
             <input id="erp-omd-admin-task-date" type="date" name="task_due_date" value="<?php echo esc_attr(current_time('Y-m-d')); ?>">
         </div>
-        <div class="erp-omd-form-field erp-omd-form-field-align-end">
-            <button type="submit" class="button button-primary"><?php esc_html_e('Dodaj task', 'erp-omd'); ?></button>
+        <div class="erp-omd-form-field erp-omd-form-field-align-end erp-omd-task-field-side">
+            <button type="submit" class="button button-primary"><?php esc_html_e('Dodaj zadanie', 'erp-omd'); ?></button>
         </div>
     </form>
 
