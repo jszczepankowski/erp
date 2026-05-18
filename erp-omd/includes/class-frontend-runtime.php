@@ -612,6 +612,7 @@ class ERP_OMD_Frontend
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
         $front_logout_url = $this->front_url('logout');
         $front_client_url = $this->front_url('client');
+        $dashboard_args = $this->collect_client_dashboard_args();
         $client_notice_type = sanitize_key(wp_unslash($_GET['notice'] ?? ''));
         $client_notice_message = sanitize_text_field(wp_unslash($_GET['message'] ?? ''));
         if (! in_array($client_notice_type, ['', 'success', 'error', 'warning'], true)) {
@@ -698,6 +699,14 @@ class ERP_OMD_Frontend
         }
         if ($action === 'create_project_request') {
             $this->create_worker_project_request($user);
+            return;
+        }
+        if ($action === 'save_private_task') {
+            $this->save_worker_private_task($user);
+            return;
+        }
+        if ($action === 'toggle_private_task_completed') {
+            $this->toggle_worker_private_task_completed($user);
             return;
         }
 
@@ -1086,9 +1095,14 @@ class ERP_OMD_Frontend
         if (! in_array($worker_filters['focus'], ['all', 'today', 'week', 'month'], true)) {
             $worker_filters['focus'] = 'month';
         }
-        if (! in_array($worker_filters['tab'], ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski'], true)) {
+        if (! in_array($worker_filters['tab'], ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski', 'taski'], true)) {
             $worker_filters['tab'] = 'wpisy';
         }
+        $worker_tasks_filter = sanitize_key((string) wp_unslash($_GET['tasks_filter'] ?? 'all'));
+        if (! in_array($worker_tasks_filter, ['all', 'today', 'incomplete'], true)) {
+            $worker_tasks_filter = 'all';
+        }
+        $worker_private_tasks = $this->get_private_tasks_for_user((int) $user->ID, $worker_tasks_filter);
         if (! preg_match('/^\d{4}-\d{2}$/', $worker_filters['calendar_month'])) {
             $worker_filters['calendar_month'] = gmdate('Y-m');
         }
@@ -2314,7 +2328,7 @@ class ERP_OMD_Frontend
     private function redirect_worker_with_notice($type, $message, array $extra_args = [])
     {
         $request_tab = sanitize_key(wp_unslash($_REQUEST['tab'] ?? ''));
-        if ($request_tab !== '' && ! isset($extra_args['tab']) && in_array($request_tab, ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski'], true)) {
+        if ($request_tab !== '' && ! isset($extra_args['tab']) && in_array($request_tab, ['dodaj-wpis', 'wpisy', 'kalendarz', 'wnioski', 'taski'], true)) {
             $extra_args['tab'] = $request_tab;
         }
 
@@ -2964,6 +2978,86 @@ class ERP_OMD_Frontend
         }
 
         return $args;
+    }
+
+    private function get_private_tasks_for_user($user_id, $filter = 'all')
+    {
+        $raw_tasks = get_user_meta((int) $user_id, 'erp_omd_front_private_tasks', true);
+        $tasks = is_array($raw_tasks) ? $raw_tasks : [];
+        $today = gmdate('Y-m-d');
+        $filtered = [];
+        foreach ($tasks as $task_item) {
+            if (! is_array($task_item)) {
+                continue;
+            }
+            $text = trim((string) ($task_item['text'] ?? ''));
+            if ($text === '') {
+                continue;
+            }
+            $due_date = sanitize_text_field((string) ($task_item['due_date'] ?? ''));
+            $is_completed = ! empty($task_item['completed']);
+            if ($filter === 'today' && $due_date !== $today) {
+                continue;
+            }
+            if ($filter === 'incomplete' && $is_completed) {
+                continue;
+            }
+            $filtered[] = [
+                'text' => $text,
+                'due_date' => $due_date,
+                'completed' => $is_completed,
+                'created_at' => sanitize_text_field((string) ($task_item['created_at'] ?? '')),
+            ];
+        }
+
+        usort($filtered, static function ($left, $right) {
+            return strcmp((string) ($right['created_at'] ?? ''), (string) ($left['created_at'] ?? ''));
+        });
+
+        return $filtered;
+    }
+
+    private function save_worker_private_task(WP_User $user)
+    {
+        $dashboard_args = ['tab' => 'taski'];
+        $text = sanitize_textarea_field((string) wp_unslash($_POST['task_text'] ?? ''));
+        $due_date = sanitize_text_field((string) wp_unslash($_POST['task_due_date'] ?? ''));
+        $completed = ! empty($_POST['task_completed']) ? 1 : 0;
+        if ($text === '') {
+            $this->redirect_worker_with_notice('error', __('Treść taska jest wymagana.', 'erp-omd'), $dashboard_args);
+        }
+        if ($due_date !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $due_date)) {
+            $this->redirect_worker_with_notice('error', __('Data taska ma niepoprawny format.', 'erp-omd'), $dashboard_args);
+        }
+        $tasks = (array) get_user_meta((int) $user->ID, 'erp_omd_front_private_tasks', true);
+        array_unshift($tasks, ['text' => $text, 'due_date' => $due_date, 'completed' => $completed, 'created_at' => gmdate('Y-m-d H:i:s')]);
+        update_user_meta((int) $user->ID, 'erp_omd_front_private_tasks', array_slice($tasks, 0, 100));
+        $this->redirect_worker_with_notice('success', __('Prywatny task został zapisany.', 'erp-omd'), $dashboard_args);
+    }
+
+    private function toggle_worker_private_task_completed(WP_User $user)
+    {
+        $dashboard_args = ['tab' => 'taski'];
+        $task_created_at = sanitize_text_field((string) wp_unslash($_POST['task_created_at'] ?? ''));
+        if ($task_created_at === '') {
+            $this->redirect_worker_with_notice('error', __('Nie wskazano taska do aktualizacji.', 'erp-omd'), $dashboard_args);
+        }
+        $tasks = (array) get_user_meta((int) $user->ID, 'erp_omd_front_private_tasks', true);
+        $updated = false;
+        foreach ($tasks as &$task_item) {
+            if (! is_array($task_item) || (string) ($task_item['created_at'] ?? '') !== $task_created_at) {
+                continue;
+            }
+            $task_item['completed'] = empty($task_item['completed']) ? 1 : 0;
+            $updated = true;
+            break;
+        }
+        unset($task_item);
+        if (! $updated) {
+            $this->redirect_worker_with_notice('error', __('Nie znaleziono wskazanego taska.', 'erp-omd'), $dashboard_args);
+        }
+        update_user_meta((int) $user->ID, 'erp_omd_front_private_tasks', array_slice($tasks, 0, 100));
+        $this->redirect_worker_with_notice('success', __('Status taska został zaktualizowany.', 'erp-omd'), $dashboard_args);
     }
 
     private function find_request_in_collection(array $requests, $request_id)

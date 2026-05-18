@@ -188,6 +188,10 @@
                             <label for="project-brief"><?php esc_html_e('Opis projektu', 'erp-omd'); ?></label>
                             <textarea id="project-brief" class="large-text" rows="5" name="brief"><?php echo esc_textarea($project['brief'] ?? ''); ?></textarea>
                         </div>
+                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <label for="project-links"><?php esc_html_e('Linki i materiały (1 link na linię: etykieta | URL)', 'erp-omd'); ?></label>
+                            <textarea id="project-links" class="large-text" rows="4" name="project_links"><?php echo esc_textarea($project['project_links'] ?? ''); ?></textarea>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -218,6 +222,7 @@
                             <div class="erp-omd-detail-card">
                                 <h3><?php esc_html_e('Kontekst operacyjny', 'erp-omd'); ?></h3>
                                 <div class="erp-omd-detail-list erp-omd-detail-list-horizontal">
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Linki i materiały', 'erp-omd'); ?></strong><span><?php echo nl2br(esc_html((string) ($project['project_links'] ?? '—'))); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Budżet', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project['budget'] ?? 0), 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Abonament', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) ($project['retainer_monthly_fee'] ?? 0), 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Start', 'erp-omd'); ?></strong><span><?php echo esc_html($project['start_date'] ?? '—'); ?></span></div>

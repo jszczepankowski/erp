@@ -15,3 +15,9 @@
 
 ## Archiwum
 Dokumenty historyczne i sprintowe znajdują się w `docs/archiwum/`.
+
+## Jak utrzymywać ten katalog
+- Dodawaj nowe dokumenty produkcyjne bezpośrednio w `docs/` i dopisuj je do sekcji **Start** albo **Obszary specjalistyczne**.
+- Dokumenty zamkniętych sprintów i jednorazowe checklisty przenoś do `docs/archiwum/`.
+- W nazwach plików używaj daty w formacie `YYYY-MM-DD`, jeśli dokument opisuje stan na konkretny dzień.
+

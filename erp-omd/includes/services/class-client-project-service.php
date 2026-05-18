@@ -211,6 +211,18 @@ class ERP_OMD_Client_Project_Service
                 break;
             }
         }
+        $project_links_lines = preg_split('/\r\n|\r|\n/', (string) ($data['project_links'] ?? '')) ?: [];
+        foreach ($project_links_lines as $project_links_line) {
+            $project_links_line = trim((string) $project_links_line);
+            if ($project_links_line === '') {
+                continue;
+            }
+            $project_links_url = esc_url_raw($project_links_line);
+            if ($project_links_url === '' || ! wp_http_validate_url($project_links_url)) {
+                $errors[] = __('Każda pozycja pola "Linki i materiały" musi być poprawnym URL (http/https).', 'erp-omd');
+                break;
+            }
+        }
 
         $errors = array_merge($errors, $this->validate_billing_policy($data));
         $errors = array_merge($errors, $this->validate_status_transition($data, $existing_project));
@@ -269,6 +281,7 @@ class ERP_OMD_Client_Project_Service
             'manager_ids' => $manager_ids,
             'estimate_id' => (int) ($data['estimate_id'] ?? ($existing_project['estimate_id'] ?? 0)),
             'brief' => trim((string) ($data['brief'] ?? ($existing_project['brief'] ?? ''))),
+            'project_links' => trim((string) ($data['project_links'] ?? ($existing_project['project_links'] ?? ''))),
             'alert_margin_threshold' => $this->normalize_margin_threshold($data['alert_margin_threshold'] ?? ($existing_project['alert_margin_threshold'] ?? null)),
         ];
     }
