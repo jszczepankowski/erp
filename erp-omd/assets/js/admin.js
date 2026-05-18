@@ -1484,18 +1484,32 @@ document.addEventListener('DOMContentLoaded', () => {
     window.erpOmdInitAdminInteractions(currentPage);
   }
 
-  const notices = Array.from(document.querySelectorAll('.wrap .notice.notice-success, .wrap .notice.notice-error, .wrap .notice.notice-warning, .wrap .notice.notice-info'));
-  if (notices.length > 0) {
-    let toastHost = document.querySelector('.erp-omd-toast-host');
-    if (!toastHost) {
-      toastHost = document.createElement('div');
-      toastHost.className = 'erp-omd-toast-host';
-      document.body.appendChild(toastHost);
-    }
+  let toastHost = document.querySelector('.erp-omd-toast-host');
+  if (!toastHost) {
+    toastHost = document.createElement('div');
+    toastHost.className = 'erp-omd-toast-host';
+    document.body.appendChild(toastHost);
+  }
 
+  const convertNoticesToToasts = () => {
+    const notices = Array.from(document.querySelectorAll('.notice.notice-success, .notice.notice-error, .notice.notice-warning, .notice.notice-info'));
     notices.forEach((notice) => {
+      if (!(notice instanceof HTMLElement) || notice.dataset.erpOmdToastConverted === '1') {
+        return;
+      }
+      if (notice.closest('.erp-omd-toast-host')) {
+        return;
+      }
+      notice.dataset.erpOmdToastConverted = '1';
+
       const textNode = notice.querySelector('p');
       const message = textNode ? textNode.textContent : (notice.textContent || '');
+      const normalizedMessage = (message || '').replace(/\s+/g, ' ').trim();
+      if (normalizedMessage === '') {
+        notice.style.display = 'none';
+        return;
+      }
+
       const toast = document.createElement('div');
       toast.className = 'erp-omd-toast';
       if (notice.classList.contains('notice-success')) toast.classList.add('erp-omd-toast-success');
@@ -1503,7 +1517,7 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (notice.classList.contains('notice-warning')) toast.classList.add('erp-omd-toast-warning');
       else toast.classList.add('erp-omd-toast-info');
 
-      toast.textContent = (message || '').trim();
+      toast.textContent = normalizedMessage;
       toastHost.appendChild(toast);
       notice.style.display = 'none';
 
@@ -1513,5 +1527,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toast.remove(), 200);
       }, 4500);
     });
-  }
+  };
+
+  convertNoticesToToasts();
+  const noticeObserver = new MutationObserver(() => convertNoticesToToasts());
+  noticeObserver.observe(document.body, { childList: true, subtree: true });
 });
