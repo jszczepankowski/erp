@@ -106,6 +106,7 @@ class ERP_OMD_Admin
             56
         );
         add_submenu_page('erp-omd', __('Dashboard', 'erp-omd'), __('Dashboard', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard']);
+        add_submenu_page('erp-omd', __('Taski prywatne', 'erp-omd'), __('Taski prywatne', 'erp-omd'), 'erp_omd_access', 'erp-omd-private-tasks', [$this, 'render_private_tasks']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-team');
         add_submenu_page('erp-omd', __('Pracownicy', 'erp-omd'), __('Pracownicy', 'erp-omd'), 'erp_omd_manage_employees', 'erp-omd-employees', [$this, 'render_employees']);
         add_submenu_page('erp-omd', __('Role', 'erp-omd'), __('Role', 'erp-omd'), 'erp_omd_manage_roles', 'erp-omd-roles', [$this, 'render_roles']);
@@ -759,12 +760,18 @@ class ERP_OMD_Admin
             ['label' => __('Dodaj wpis czasu', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-time'], admin_url('admin.php'))],
             ['label' => __('Dodaj nowy kosztorys', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-estimates'], admin_url('admin.php'))],
         ];
+        include ERP_OMD_PATH . 'templates/admin/dashboard.php';
+    }
+
+    public function render_private_tasks()
+    {
+        $this->require_capability('erp_omd_access');
         $dashboard_private_tasks_filter = sanitize_key((string) wp_unslash($_GET['tasks_filter'] ?? 'all'));
         if (! in_array($dashboard_private_tasks_filter, ['all', 'today', 'incomplete'], true)) {
             $dashboard_private_tasks_filter = 'all';
         }
         $dashboard_private_tasks = $this->get_admin_private_tasks((int) get_current_user_id(), $dashboard_private_tasks_filter);
-        include ERP_OMD_PATH . 'templates/admin/dashboard.php';
+        include ERP_OMD_PATH . 'templates/admin/private-tasks.php';
     }
 
     private function get_admin_private_tasks($user_id, $filter = 'all')
