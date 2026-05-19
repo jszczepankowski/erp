@@ -191,6 +191,9 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/acl-audit', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_acl_audit'], 'permission_callback' => [$this, 'can_manage_employees']],
         ]);
+        register_rest_route('erp-omd/v1', '/acl-config', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_acl_config'], 'permission_callback' => [$this, 'can_manage_employees']],
+        ]);
         register_rest_route('erp-omd/v1', '/employees/(?P<id>\d+)/salary', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
@@ -486,6 +489,14 @@ class ERP_OMD_REST_API
             return (int) ($row['target_user_id'] ?? 0) === $target_user_id;
         }));
         return rest_ensure_response($filtered);
+    }
+    public function get_acl_config(WP_REST_Request $request)
+    {
+        return rest_ensure_response([
+            'capabilities' => (array) ERP_OMD_Capabilities::get_capabilities(),
+            'menu_slugs' => (array) ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS,
+            'decisions' => ['allow', 'deny', 'inherit'],
+        ]);
     }
     public function create_salary_history(WP_REST_Request $request) { $payload = $this->employee_service->prepare_salary_payload($this->sanitize_salary_payload($request, (int) $request['id'])); $errors = $this->employee_service->validate_salary($payload); if ($errors) { return new WP_Error('erp_omd_salary_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->salary_history->create($payload); return new WP_REST_Response($this->salary_history->find($id), 201); }
     public function get_salary_history(WP_REST_Request $request) { return $this->find_or_error($this->salary_history->find((int) $request['id']), 'erp_omd_salary_not_found', __('Salary history not found.', 'erp-omd')); }

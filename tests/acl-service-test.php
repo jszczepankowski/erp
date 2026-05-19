@@ -40,8 +40,10 @@ $adminFragments = [
 $restFragments = [
     "'/employees/(?P<id>\\d+)/acl'",
     "'/acl-audit'",
+    "'/acl-config'",
     'function update_employee_acl(',
     'function list_acl_audit(',
+    'function get_acl_config(',
     'ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS',
     'sanitize_acl_override_map(array $map, array $allowed_keys = [])',
     'private function current_user_can_acl($capability)',
