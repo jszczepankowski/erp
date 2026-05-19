@@ -400,14 +400,14 @@ class ERP_OMD_REST_API
     }
 
 
-    public function can_manage_roles() { return current_user_can('erp_omd_manage_roles'); }
-    public function can_manage_employees() { return current_user_can('erp_omd_manage_employees'); }
-    public function can_manage_salary() { return current_user_can('erp_omd_manage_salary'); }
-    public function can_manage_clients() { return current_user_can('erp_omd_manage_clients'); }
-    public function can_manage_projects() { return current_user_can('erp_omd_manage_projects'); }
-    public function can_manage_time() { return current_user_can('erp_omd_manage_time'); }
-    public function can_approve_time() { return current_user_can('erp_omd_approve_time') || current_user_can('administrator'); }
-    public function can_access_reports() { return current_user_can('erp_omd_access') || current_user_can('administrator'); }
+    public function can_manage_roles() { return $this->current_user_can_acl('erp_omd_manage_roles'); }
+    public function can_manage_employees() { return $this->current_user_can_acl('erp_omd_manage_employees'); }
+    public function can_manage_salary() { return $this->current_user_can_acl('erp_omd_manage_salary'); }
+    public function can_manage_clients() { return $this->current_user_can_acl('erp_omd_manage_clients'); }
+    public function can_manage_projects() { return $this->current_user_can_acl('erp_omd_manage_projects'); }
+    public function can_manage_time() { return $this->current_user_can_acl('erp_omd_manage_time'); }
+    public function can_approve_time() { return $this->current_user_can_acl('erp_omd_approve_time') || $this->current_user_can_acl('administrator'); }
+    public function can_access_reports() { return $this->current_user_can_acl('erp_omd_access') || $this->current_user_can_acl('administrator'); }
     public function can_manage_settings() { return current_user_can('erp_omd_manage_settings') || current_user_can('administrator'); }
 
 
@@ -1159,6 +1159,20 @@ class ERP_OMD_REST_API
         }
 
         return $sanitized;
+    }
+
+    private function current_user_can_acl($capability)
+    {
+        $user_id = (int) get_current_user_id();
+        if ($user_id <= 0) {
+            return false;
+        }
+
+        if ($this->acl_service instanceof ERP_OMD_Acl_Service) {
+            return $this->acl_service->can_user($user_id, (string) $capability);
+        }
+
+        return current_user_can((string) $capability);
     }
 
     /**

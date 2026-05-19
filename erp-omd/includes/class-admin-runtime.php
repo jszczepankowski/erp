@@ -4923,7 +4923,12 @@ class ERP_OMD_Admin
 
     private function require_capability($capability)
     {
-        if (! current_user_can($capability)) { wp_die(esc_html__('Brak uprawnień.', 'erp-omd')); }
+        $user_id = (int) get_current_user_id();
+        $can_access = $user_id > 0 && current_user_can($capability);
+        if ($can_access && $this->acl_service instanceof ERP_OMD_Acl_Service) {
+            $can_access = $this->acl_service->can_user($user_id, (string) $capability);
+        }
+        if (! $can_access) { wp_die(esc_html__('Brak uprawnień.', 'erp-omd')); }
     }
 
     private function sanitize_acl_override_map(array $overrides)
