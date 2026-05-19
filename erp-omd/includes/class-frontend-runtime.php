@@ -22,6 +22,7 @@ class ERP_OMD_Frontend
     private $project_financial_service;
     private $reporting_service;
     private $alert_service;
+    private $acl_service;
 
     public function __construct(
         ERP_OMD_Employee_Repository $employees,
@@ -59,6 +60,7 @@ class ERP_OMD_Frontend
         $this->project_financial_service = $project_financial_service;
         $this->reporting_service = $reporting_service;
         $this->alert_service = $alert_service;
+        $this->acl_service = class_exists('ERP_OMD_Acl_Service') ? new ERP_OMD_Acl_Service() : null;
     }
 
     public static function register_rewrite_rules()
@@ -285,17 +287,17 @@ class ERP_OMD_Frontend
 
     private function guard_dashboard_access($screen, WP_User $user)
     {
-        if ($screen === 'manager' && ! user_can($user, 'erp_omd_front_manager')) {
+        if ($screen === 'manager' && ! $this->user_has_front_capability($user, 'erp_omd_front_manager')) {
             wp_safe_redirect($this->resolve_dashboard_url_for_user($user));
             exit;
         }
 
-        if ($screen === 'worker' && ! user_can($user, 'erp_omd_front_worker') && ! user_can($user, 'erp_omd_front_manager')) {
+        if ($screen === 'worker' && ! $this->user_has_front_capability($user, 'erp_omd_front_worker') && ! $this->user_has_front_capability($user, 'erp_omd_front_manager')) {
             wp_safe_redirect($this->front_url('login', ['denied' => 1]));
             exit;
         }
 
-        if ($screen === 'client' && ! user_can($user, 'erp_omd_front_client')) {
+        if ($screen === 'client' && ! $this->user_has_front_capability($user, 'erp_omd_front_client')) {
             wp_safe_redirect($this->front_url('login', ['denied' => 1]));
             exit;
         }
@@ -324,7 +326,9 @@ class ERP_OMD_Frontend
             return false;
         }
 
-        return user_can($user, 'erp_omd_front_manager') || user_can($user, 'erp_omd_front_worker') || user_can($user, 'erp_omd_front_client');
+        return $this->user_has_front_capability($user, 'erp_omd_front_manager')
+            || $this->user_has_front_capability($user, 'erp_omd_front_worker')
+            || $this->user_has_front_capability($user, 'erp_omd_front_client');
     }
 
     private function resolve_dashboard_url_for_user($user)
@@ -333,15 +337,15 @@ class ERP_OMD_Frontend
             return $this->front_url('login');
         }
 
-        if (user_can($user, 'erp_omd_front_manager')) {
+        if ($this->user_has_front_capability($user, 'erp_omd_front_manager')) {
             return $this->front_url('manager');
         }
 
-        if (user_can($user, 'erp_omd_front_worker')) {
+        if ($this->user_has_front_capability($user, 'erp_omd_front_worker')) {
             return $this->front_url('worker');
         }
 
-        if (user_can($user, 'erp_omd_front_client')) {
+        if ($this->user_has_front_capability($user, 'erp_omd_front_client')) {
             $client_id = (int) get_user_meta((int) $user->ID, 'erp_omd_client_id', true);
             if ($client_id <= 0) {
                 return $this->front_url('logout');
@@ -351,6 +355,15 @@ class ERP_OMD_Frontend
         }
 
         return admin_url();
+    }
+
+    private function user_has_front_capability(WP_User $user, $capability)
+    {
+        if ($this->acl_service instanceof ERP_OMD_Acl_Service) {
+            return $this->acl_service->can_user((int) $user->ID, (string) $capability);
+        }
+
+        return user_can($user, (string) $capability);
     }
 
     private function handle_client_screen(WP_User $user)
