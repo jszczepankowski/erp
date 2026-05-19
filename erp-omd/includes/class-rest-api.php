@@ -456,8 +456,8 @@ class ERP_OMD_REST_API
 
         $before_capability_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, true);
         $before_menu_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true);
-        $capability_overrides = $this->sanitize_acl_override_map((array) $request->get_param('capability_overrides'));
-        $menu_overrides = $this->sanitize_acl_override_map((array) $request->get_param('menu_overrides'));
+        $capability_overrides = $this->sanitize_acl_override_map((array) $request->get_param('capability_overrides'), (array) ERP_OMD_Capabilities::get_capabilities());
+        $menu_overrides = $this->sanitize_acl_override_map((array) $request->get_param('menu_overrides'), (array) ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS);
 
         update_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, $capability_overrides);
         update_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, $menu_overrides);
@@ -1140,12 +1140,19 @@ class ERP_OMD_REST_API
     private function sanitize_project_payload(WP_REST_Request $request) { $manager_ids = $request->get_param('manager_ids'); return ['client_id' => (int) $request->get_param('client_id'), 'name' => sanitize_text_field((string) $request->get_param('name')), 'billing_type' => sanitize_text_field((string) $request->get_param('billing_type')) ?: 'time_material', 'budget' => (float) $request->get_param('budget'), 'retainer_monthly_fee' => (float) $request->get_param('retainer_monthly_fee'), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'do_rozpoczecia', 'start_date' => sanitize_text_field((string) $request->get_param('start_date')), 'end_date' => sanitize_text_field((string) $request->get_param('end_date')), 'deadline_date' => sanitize_text_field((string) $request->get_param('deadline_date')), 'deadline_completed_at' => sanitize_text_field((string) $request->get_param('deadline_completed_at')), 'deadline_completed_by' => (int) $request->get_param('deadline_completed_by'), 'manager_id' => (int) $request->get_param('manager_id'), 'manager_ids' => is_array($manager_ids) ? array_map('intval', $manager_ids) : [], 'estimate_id' => (int) $request->get_param('estimate_id'), 'brief' => sanitize_textarea_field((string) $request->get_param('brief')), 'alert_margin_threshold' => sanitize_text_field((string) $request->get_param('alert_margin_threshold'))]; }
     private function sanitize_project_cost_payload(WP_REST_Request $request, $project_id) { return ['project_id' => (int) $project_id, 'amount' => (float) $request->get_param('amount'), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'cost_date' => sanitize_text_field((string) $request->get_param('cost_date')), 'created_by_user_id' => get_current_user_id()]; }
     private function sanitize_time_entry_payload(WP_REST_Request $request) { return ['employee_id' => (int) $request->get_param('employee_id'), 'project_id' => (int) $request->get_param('project_id'), 'role_id' => (int) $request->get_param('role_id'), 'hours' => (float) $request->get_param('hours'), 'entry_date' => sanitize_text_field((string) $request->get_param('entry_date')), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'submitted']; }
-    private function sanitize_acl_override_map(array $map)
+    private function sanitize_acl_override_map(array $map, array $allowed_keys = [])
     {
         $sanitized = [];
+        $allowed_lookup = [];
+        foreach ($allowed_keys as $allowed_key) {
+            $allowed_lookup[sanitize_key((string) $allowed_key)] = true;
+        }
         foreach ($map as $key => $value) {
             $normalized_key = sanitize_key((string) $key);
             if ($normalized_key === '') {
+                continue;
+            }
+            if ($allowed_lookup !== [] && ! isset($allowed_lookup[$normalized_key])) {
                 continue;
             }
             $decision = strtolower(sanitize_text_field((string) $value));

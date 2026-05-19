@@ -105,7 +105,7 @@
                                 </div>
                                 <div class="erp-omd-form-field">
                                     <label><?php esc_html_e('Menu visibility overrides', 'erp-omd'); ?></label>
-                                    <?php foreach (['erp-omd', 'erp-omd-private-tasks', 'erp-omd-employees', 'erp-omd-roles', 'erp-omd-clients', 'erp-omd-time', 'erp-omd-estimates', 'erp-omd-projects', 'erp-omd-requests', 'erp-omd-calendar', 'erp-omd-cost-invoices', 'erp-omd-reports', 'erp-omd-alerts', 'erp-omd-settings'] as $acl_menu_key) : ?>
+                                    <?php foreach (ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS as $acl_menu_key) : ?>
                                         <?php $acl_menu_value = (string) ($employee_acl_menu_overrides[$acl_menu_key] ?? ''); ?>
                                         <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
                                             <code style="min-width:260px;"><?php echo esc_html($acl_menu_key); ?></code>

@@ -1993,8 +1993,14 @@ class ERP_OMD_Admin
 
         $before_capability_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, true);
         $before_menu_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true);
-        $capability_overrides = $this->sanitize_acl_override_map((array) wp_unslash($_POST['acl_capability_overrides'] ?? []));
-        $menu_overrides = $this->sanitize_acl_override_map((array) wp_unslash($_POST['acl_menu_overrides'] ?? []));
+        $capability_overrides = $this->sanitize_acl_override_map(
+            (array) wp_unslash($_POST['acl_capability_overrides'] ?? []),
+            (array) ERP_OMD_Capabilities::get_capabilities()
+        );
+        $menu_overrides = $this->sanitize_acl_override_map(
+            (array) wp_unslash($_POST['acl_menu_overrides'] ?? []),
+            (array) ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS
+        );
 
         update_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, $capability_overrides);
         update_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, $menu_overrides);
@@ -4941,12 +4947,19 @@ class ERP_OMD_Admin
         if (! $can_access) { wp_die(esc_html__('Brak uprawnień.', 'erp-omd')); }
     }
 
-    private function sanitize_acl_override_map(array $overrides)
+    private function sanitize_acl_override_map(array $overrides, array $allowed_keys = [])
     {
         $allowed = [];
+        $allowed_lookup = [];
+        foreach ($allowed_keys as $allowed_key) {
+            $allowed_lookup[sanitize_key((string) $allowed_key)] = true;
+        }
         foreach ($overrides as $key => $decision) {
             $normalized_key = sanitize_key((string) $key);
             if ($normalized_key === '') {
+                continue;
+            }
+            if ($allowed_lookup !== [] && ! isset($allowed_lookup[$normalized_key])) {
                 continue;
             }
             $normalized_decision = strtolower(sanitize_text_field((string) $decision));

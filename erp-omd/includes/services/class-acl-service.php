@@ -5,6 +5,22 @@ class ERP_OMD_Acl_Service
     public const USER_CAP_OVERRIDES_META_KEY = 'erp_omd_user_capability_overrides';
     public const USER_MENU_OVERRIDES_META_KEY = 'erp_omd_user_menu_visibility_overrides';
     public const OPTION_ACL_AUDIT_LOG = 'erp_omd_acl_audit_log';
+    public const ALLOWED_MENU_SLUGS = [
+        'erp-omd',
+        'erp-omd-private-tasks',
+        'erp-omd-employees',
+        'erp-omd-roles',
+        'erp-omd-clients',
+        'erp-omd-time',
+        'erp-omd-estimates',
+        'erp-omd-projects',
+        'erp-omd-requests',
+        'erp-omd-calendar',
+        'erp-omd-cost-invoices',
+        'erp-omd-reports',
+        'erp-omd-alerts',
+        'erp-omd-settings',
+    ];
 
     /**
      * @param int $user_id
