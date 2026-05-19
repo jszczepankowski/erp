@@ -1038,6 +1038,7 @@ class ERP_OMD_Admin
         $employee = null;
         $employee_acl_capability_overrides = [];
         $employee_acl_menu_overrides = [];
+        $employee_acl_audit_rows = [];
         $salary_rows = [];
         $reporting_month = current_time('Y-m');
         $reporting_month_label = current_time('m.Y');
@@ -1049,6 +1050,12 @@ class ERP_OMD_Admin
                 if ($employee_user_id > 0) {
                     $employee_acl_capability_overrides = (array) get_user_meta($employee_user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, true);
                     $employee_acl_menu_overrides = (array) get_user_meta($employee_user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true);
+                    $acl_audit_log = (array) get_option(ERP_OMD_Acl_Service::OPTION_ACL_AUDIT_LOG, []);
+                    $employee_acl_audit_rows = array_values(array_filter($acl_audit_log, static function ($row) use ($employee_user_id) {
+                        return (int) ($row['target_user_id'] ?? 0) === $employee_user_id;
+                    }));
+                    $employee_acl_audit_rows = array_reverse($employee_acl_audit_rows);
+                    $employee_acl_audit_rows = array_slice($employee_acl_audit_rows, 0, 20);
                 }
             }
         }

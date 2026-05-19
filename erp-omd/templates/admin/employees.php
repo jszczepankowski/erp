@@ -124,6 +124,37 @@
                         <?php submit_button(__('Zapisz ACL', 'erp-omd'), 'secondary'); ?>
                     </div>
                 </form>
+                <div class="erp-omd-section-header">
+                    <div>
+                        <h3><?php esc_html_e('Audit zmian ACL (ostatnie 20)', 'erp-omd'); ?></h3>
+                    </div>
+                </div>
+                <table class="widefat striped">
+                    <thead>
+                    <tr>
+                        <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Kto zmienił', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Capability before/after', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Menu before/after', 'erp-omd'); ?></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php if ($employee_acl_audit_rows === []) : ?>
+                        <tr><td colspan="4"><?php esc_html_e('Brak wpisów audytowych ACL.', 'erp-omd'); ?></td></tr>
+                    <?php else : ?>
+                        <?php foreach ($employee_acl_audit_rows as $employee_acl_audit_row) : ?>
+                            <?php $acl_actor_user_id = (int) ($employee_acl_audit_row['actor_user_id'] ?? 0); ?>
+                            <?php $acl_actor = $acl_actor_user_id > 0 ? get_userdata($acl_actor_user_id) : null; ?>
+                            <tr>
+                                <td><?php echo esc_html((string) ($employee_acl_audit_row['changed_at'] ?? '')); ?></td>
+                                <td><?php echo esc_html($acl_actor instanceof WP_User ? (string) $acl_actor->user_login : ('#' . $acl_actor_user_id)); ?></td>
+                                <td><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['before']['capability_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code><br><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['after']['capability_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code></td>
+                                <td><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['before']['menu_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code><br><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['after']['menu_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
 
                 <hr />
                 <div class="erp-omd-section-header">
