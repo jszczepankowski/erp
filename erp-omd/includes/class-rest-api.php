@@ -187,6 +187,7 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/employees/(?P<id>\d+)/acl', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
             ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
+            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'reset_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
         ]);
         register_rest_route('erp-omd/v1', '/acl-audit', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_acl_audit'], 'permission_callback' => [$this, 'can_manage_employees']],
@@ -472,6 +473,35 @@ class ERP_OMD_REST_API
                 $capability_overrides,
                 $before_menu_overrides,
                 $menu_overrides
+            );
+        }
+
+        return $this->get_employee_acl($request);
+    }
+    public function reset_employee_acl(WP_REST_Request $request)
+    {
+        $employee = $this->employees->find((int) $request['id']);
+        if (! $employee) {
+            return new WP_Error('erp_omd_employee_not_found', __('Employee not found.', 'erp-omd'), ['status' => 404]);
+        }
+        $user_id = (int) ($employee['user_id'] ?? 0);
+        if ($user_id <= 0) {
+            return new WP_Error('erp_omd_employee_without_user', __('Employee is not linked to WP user.', 'erp-omd'), ['status' => 422]);
+        }
+
+        $before_capability_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, true);
+        $before_menu_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true);
+        delete_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY);
+        delete_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY);
+
+        if ($this->acl_service instanceof ERP_OMD_Acl_Service) {
+            $this->acl_service->append_acl_audit_log(
+                (int) get_current_user_id(),
+                $user_id,
+                $before_capability_overrides,
+                [],
+                $before_menu_overrides,
+                []
             );
         }
 

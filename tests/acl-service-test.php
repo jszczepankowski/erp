@@ -42,6 +42,7 @@ $restFragments = [
     "'/acl-audit'",
     "'/acl-config'",
     'function update_employee_acl(',
+    'function reset_employee_acl(',
     'function list_acl_audit(',
     'function get_acl_config(',
     'ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS',
