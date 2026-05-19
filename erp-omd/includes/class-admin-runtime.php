@@ -3,6 +3,8 @@
 if (! class_exists('ERP_OMD_Admin')) {
 class ERP_OMD_Admin
 {
+    /** @var ERP_OMD_Acl_Service */
+    private $acl_service;
     private $roles;
     private $employees;
     private $salary_history;
@@ -82,6 +84,7 @@ class ERP_OMD_Admin
         $this->project_financial_service = $project_financial_service;
         $this->reporting_service = $reporting_service;
         $this->alert_service = $alert_service;
+        $this->acl_service = class_exists('ERP_OMD_Acl_Service') ? new ERP_OMD_Acl_Service() : null;
         $this->adjustment_audit = class_exists('ERP_OMD_Adjustment_Audit_Repository') ? new ERP_OMD_Adjustment_Audit_Repository() : null;
     }
 
@@ -95,8 +98,10 @@ class ERP_OMD_Admin
 
     public function register_menu()
     {
+        $user_id = (int) get_current_user_id();
         $menu_notifications = $this->get_kolko_notifications_summary();
-        add_menu_page(
+        if ($this->can_view_admin_page($user_id, 'erp-omd', 'erp_omd_access')) {
+            add_menu_page(
             __('ERP OMD', 'erp-omd'),
             __('ERP OMD', 'erp-omd'),
             'erp_omd_access',
@@ -105,14 +110,16 @@ class ERP_OMD_Admin
             'dashicons-chart-pie',
             56
         );
-        add_submenu_page('erp-omd', __('Dashboard', 'erp-omd'), __('Dashboard', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard']);
-        add_submenu_page('erp-omd', __('Lista zadań', 'erp-omd'), __('Lista zadań', 'erp-omd'), 'erp_omd_access', 'erp-omd-private-tasks', [$this, 'render_private_tasks']);
+        }
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Dashboard', 'erp-omd'), __('Dashboard', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard']);
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Lista zadań', 'erp-omd'), __('Lista zadań', 'erp-omd'), 'erp_omd_access', 'erp-omd-private-tasks', [$this, 'render_private_tasks']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-team');
-        add_submenu_page('erp-omd', __('Pracownicy', 'erp-omd'), __('Pracownicy', 'erp-omd'), 'erp_omd_manage_employees', 'erp-omd-employees', [$this, 'render_employees']);
-        add_submenu_page('erp-omd', __('Role', 'erp-omd'), __('Role', 'erp-omd'), 'erp_omd_manage_roles', 'erp-omd-roles', [$this, 'render_roles']);
-        add_submenu_page('erp-omd', __('Klienci', 'erp-omd'), __('Klienci', 'erp-omd'), 'erp_omd_manage_clients', 'erp-omd-clients', [$this, 'render_clients']);
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Pracownicy', 'erp-omd'), __('Pracownicy', 'erp-omd'), 'erp_omd_manage_employees', 'erp-omd-employees', [$this, 'render_employees']);
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Role', 'erp-omd'), __('Role', 'erp-omd'), 'erp_omd_manage_roles', 'erp-omd-roles', [$this, 'render_roles']);
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Klienci', 'erp-omd'), __('Klienci', 'erp-omd'), 'erp_omd_manage_clients', 'erp-omd-clients', [$this, 'render_clients']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-commercial');
-        add_submenu_page(
+        $this->register_acl_submenu_page(
+            $user_id,
             'erp-omd',
             __('Czas pracy', 'erp-omd'),
             $this->with_kolko_menu_badge(__('Czas pracy', 'erp-omd'), (int) ($menu_notifications['time_entries'] ?? 0)),
@@ -120,7 +127,8 @@ class ERP_OMD_Admin
             'erp-omd-time',
             [$this, 'render_time_entries']
         );
-        add_submenu_page(
+        $this->register_acl_submenu_page(
+            $user_id,
             'erp-omd',
             __('Kosztorysy', 'erp-omd'),
             $this->with_kolko_menu_badge(__('Kosztorysy', 'erp-omd'), (int) ($menu_notifications['estimates'] ?? 0)),
@@ -128,7 +136,8 @@ class ERP_OMD_Admin
             'erp-omd-estimates',
             [$this, 'render_estimates']
         );
-        add_submenu_page(
+        $this->register_acl_submenu_page(
+            $user_id,
             'erp-omd',
             __('Projekty', 'erp-omd'),
             $this->with_kolko_menu_badge(__('Projekty', 'erp-omd'), (int) ($menu_notifications['projects'] ?? 0)),
@@ -136,7 +145,8 @@ class ERP_OMD_Admin
             'erp-omd-projects',
             [$this, 'render_projects']
         );
-        add_submenu_page(
+        $this->register_acl_submenu_page(
+            $user_id,
             'erp-omd',
             __('Wnioski', 'erp-omd'),
             $this->with_kolko_menu_badge(__('Wnioski', 'erp-omd'), (int) ($menu_notifications['requests_total'] ?? 0)),
@@ -145,12 +155,31 @@ class ERP_OMD_Admin
             [$this, 'render_project_requests']
         );
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-time');
-        add_submenu_page('erp-omd', __('Kalendarz', 'erp-omd'), __('Kalendarz', 'erp-omd'), 'erp_omd_access', 'erp-omd-calendar', [$this, 'render_calendar']);
-        add_submenu_page('erp-omd', __('Faktury/KSEF', 'erp-omd'), __('Faktury/KSEF', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
-        add_submenu_page('erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
-        add_submenu_page('erp-omd', __('Alerty', 'erp-omd'), __('Alerty', 'erp-omd'), 'erp_omd_access', 'erp-omd-alerts', [$this, 'render_alerts']);
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Kalendarz', 'erp-omd'), __('Kalendarz', 'erp-omd'), 'erp_omd_access', 'erp-omd-calendar', [$this, 'render_calendar']);
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Faktury/KSEF', 'erp-omd'), __('Faktury/KSEF', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-cost-invoices', [$this, 'render_cost_invoices']);
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Raporty', 'erp-omd'), __('Raporty', 'erp-omd'), 'erp_omd_access', 'erp-omd-reports', [$this, 'render_reports']);
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Alerty', 'erp-omd'), __('Alerty', 'erp-omd'), 'erp_omd_access', 'erp-omd-alerts', [$this, 'render_alerts']);
         $this->add_submenu_separator('erp-omd', 'erp-omd-separator-settings');
-        add_submenu_page('erp-omd', __('Ustawienia', 'erp-omd'), __('Ustawienia', 'erp-omd'), 'erp_omd_manage_settings', 'erp-omd-settings', [$this, 'render_settings']);
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Ustawienia', 'erp-omd'), __('Ustawienia', 'erp-omd'), 'erp_omd_manage_settings', 'erp-omd-settings', [$this, 'render_settings']);
+    }
+
+    private function register_acl_submenu_page($user_id, $parent_slug, $page_title, $menu_title, $capability, $menu_slug, $callback)
+    {
+        if (! $this->can_view_admin_page((int) $user_id, (string) $menu_slug, (string) $capability)) {
+            return;
+        }
+
+        add_submenu_page($parent_slug, $page_title, $menu_title, $capability, $menu_slug, $callback);
+    }
+
+    private function can_view_admin_page($user_id, $menu_slug, $capability)
+    {
+        if ($this->acl_service instanceof ERP_OMD_Acl_Service) {
+            return $this->acl_service->can_user((int) $user_id, (string) $capability)
+                && $this->acl_service->can_view_menu_page((int) $user_id, (string) $menu_slug);
+        }
+
+        return user_can((int) $user_id, (string) $capability);
     }
 
     public function enqueue_assets($hook)

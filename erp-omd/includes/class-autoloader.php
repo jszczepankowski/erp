@@ -53,6 +53,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_KSeF_Import_Service' => 'includes/services/class-ksef-import-service.php',
         'ERP_OMD_KSeF_Auth_Provider_Interface' => 'includes/contracts/interface-ksef-auth-provider.php',
         'ERP_OMD_Client_Portal_Service' => 'includes/services/class-client-portal-service.php',
+        'ERP_OMD_Acl_Service' => 'includes/services/class-acl-service.php',
     ];
 
     public static function register()
