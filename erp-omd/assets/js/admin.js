@@ -90,6 +90,23 @@ const initTableTools = () => {
     };
 
     const compareValues = (a, b, direction) => {
+      const normalizeDateValue = (value) => {
+        const trimmed = value.trim();
+        const isoDateMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T].*)?$/);
+        if (!isoDateMatch) {
+          return null;
+        }
+
+        const timestamp = Date.parse(`${isoDateMatch[1]}-${isoDateMatch[2]}-${isoDateMatch[3]}T00:00:00Z`);
+        return Number.isNaN(timestamp) ? null : timestamp;
+      };
+
+      const dateA = normalizeDateValue(a);
+      const dateB = normalizeDateValue(b);
+      if (dateA !== null && dateB !== null) {
+        return direction === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+
       const numberA = Number.parseFloat(a.replace(',', '.'));
       const numberB = Number.parseFloat(b.replace(',', '.'));
       const bothNumbers = !Number.isNaN(numberA) && !Number.isNaN(numberB);
