@@ -455,6 +455,7 @@ class ERP_OMD_Admin
             case 'save_role': $this->handle_role_save(); break;
             case 'delete_role': $this->handle_role_delete(); break;
             case 'save_employee': $this->handle_employee_save(); break;
+            case 'save_employee_acl_overrides': $this->handle_employee_acl_overrides_save(); break;
             case 'inline_update_employee': $this->handle_inline_employee_update_action(); break;
             case 'change_employee_password': $this->handle_employee_password_change(); break;
             case 'toggle_employee_active': $this->handle_employee_active_toggle(); break;
@@ -1035,6 +1036,8 @@ class ERP_OMD_Admin
     public function render_employees()
     {
         $employee = null;
+        $employee_acl_capability_overrides = [];
+        $employee_acl_menu_overrides = [];
         $salary_rows = [];
         $reporting_month = current_time('Y-m');
         $reporting_month_label = current_time('m.Y');
@@ -1042,6 +1045,11 @@ class ERP_OMD_Admin
             $employee = $this->employees->find((int) $_GET['id']);
             if ($employee) {
                 $salary_rows = $this->salary_history->for_employee((int) $employee['id']);
+                $employee_user_id = (int) ($employee['user_id'] ?? 0);
+                if ($employee_user_id > 0) {
+                    $employee_acl_capability_overrides = (array) get_user_meta($employee_user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, true);
+                    $employee_acl_menu_overrides = (array) get_user_meta($employee_user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true);
+                }
             }
         }
         $monthly_metrics = $this->build_monthly_performance_metrics($reporting_month);
@@ -1955,6 +1963,31 @@ class ERP_OMD_Admin
         if ($id) { $this->employees->update($id, $payload); $message = __('Pracownik został zaktualizowany.', 'erp-omd'); } else { $id = $this->employees->create($payload); $message = __('Pracownik został utworzony.', 'erp-omd'); }
         $this->sync_wp_role($payload['user_id'], $payload['account_type']);
         $this->redirect_with_notice('erp-omd-employees', 'success', $message, ['id' => $id]);
+    }
+
+    private function handle_employee_acl_overrides_save()
+    {
+        check_admin_referer('erp_omd_save_employee_acl_overrides');
+        $this->require_capability('erp_omd_manage_employees');
+
+        $employee_id = (int) ($_POST['employee_id'] ?? 0);
+        $employee = $employee_id > 0 ? $this->employees->find($employee_id) : null;
+        if (! is_array($employee)) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', __('Nie znaleziono pracownika.', 'erp-omd'));
+        }
+
+        $user_id = (int) ($employee['user_id'] ?? 0);
+        if ($user_id <= 0) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', __('Pracownik nie ma powiązanego konta WordPress.', 'erp-omd'), ['id' => $employee_id]);
+        }
+
+        $capability_overrides = $this->sanitize_acl_override_map((array) wp_unslash($_POST['acl_capability_overrides'] ?? []));
+        $menu_overrides = $this->sanitize_acl_override_map((array) wp_unslash($_POST['acl_menu_overrides'] ?? []));
+
+        update_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, $capability_overrides);
+        update_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, $menu_overrides);
+
+        $this->redirect_with_notice('erp-omd-employees', 'success', __('Nadpisania ACL zostały zapisane.', 'erp-omd'), ['id' => $employee_id]);
     }
 
     private function handle_project_request_status_update_action()
@@ -4879,6 +4912,24 @@ class ERP_OMD_Admin
     private function require_capability($capability)
     {
         if (! current_user_can($capability)) { wp_die(esc_html__('Brak uprawnień.', 'erp-omd')); }
+    }
+
+    private function sanitize_acl_override_map(array $overrides)
+    {
+        $allowed = [];
+        foreach ($overrides as $key => $decision) {
+            $normalized_key = sanitize_key((string) $key);
+            if ($normalized_key === '') {
+                continue;
+            }
+            $normalized_decision = strtolower(sanitize_text_field((string) $decision));
+            if (! in_array($normalized_decision, ['allow', 'deny'], true)) {
+                continue;
+            }
+            $allowed[$normalized_key] = $normalized_decision;
+        }
+
+        return $allowed;
     }
 
     private function resolve_current_salary_row($employee_id)
