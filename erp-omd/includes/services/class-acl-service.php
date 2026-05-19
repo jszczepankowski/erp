@@ -4,6 +4,7 @@ class ERP_OMD_Acl_Service
 {
     public const USER_CAP_OVERRIDES_META_KEY = 'erp_omd_user_capability_overrides';
     public const USER_MENU_OVERRIDES_META_KEY = 'erp_omd_user_menu_visibility_overrides';
+    public const OPTION_ACL_AUDIT_LOG = 'erp_omd_acl_audit_log';
 
     /**
      * @param int $user_id
@@ -64,5 +65,36 @@ class ERP_OMD_Acl_Service
         }
 
         return 'inherit';
+    }
+
+    /**
+     * @param int $actor_user_id
+     * @param int $target_user_id
+     * @param array<string,string> $before_capability_overrides
+     * @param array<string,string> $after_capability_overrides
+     * @param array<string,string> $before_menu_overrides
+     * @param array<string,string> $after_menu_overrides
+     */
+    public function append_acl_audit_log($actor_user_id, $target_user_id, array $before_capability_overrides, array $after_capability_overrides, array $before_menu_overrides, array $after_menu_overrides)
+    {
+        $log = (array) get_option(self::OPTION_ACL_AUDIT_LOG, []);
+        $log[] = [
+            'id' => 'acl_' . wp_generate_uuid4(),
+            'actor_user_id' => (int) $actor_user_id,
+            'target_user_id' => (int) $target_user_id,
+            'changed_at' => current_time('mysql'),
+            'before' => [
+                'capability_overrides' => $before_capability_overrides,
+                'menu_overrides' => $before_menu_overrides,
+            ],
+            'after' => [
+                'capability_overrides' => $after_capability_overrides,
+                'menu_overrides' => $after_menu_overrides,
+            ],
+        ];
+        if (count($log) > 1000) {
+            $log = array_slice($log, -1000);
+        }
+        update_option(self::OPTION_ACL_AUDIT_LOG, $log, false);
     }
 }

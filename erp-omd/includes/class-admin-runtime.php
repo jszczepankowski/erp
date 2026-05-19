@@ -1981,11 +1981,23 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-employees', 'error', __('Pracownik nie ma powiązanego konta WordPress.', 'erp-omd'), ['id' => $employee_id]);
         }
 
+        $before_capability_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, true);
+        $before_menu_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true);
         $capability_overrides = $this->sanitize_acl_override_map((array) wp_unslash($_POST['acl_capability_overrides'] ?? []));
         $menu_overrides = $this->sanitize_acl_override_map((array) wp_unslash($_POST['acl_menu_overrides'] ?? []));
 
         update_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, $capability_overrides);
         update_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, $menu_overrides);
+        if ($this->acl_service instanceof ERP_OMD_Acl_Service) {
+            $this->acl_service->append_acl_audit_log(
+                (int) get_current_user_id(),
+                $user_id,
+                $before_capability_overrides,
+                $capability_overrides,
+                $before_menu_overrides,
+                $menu_overrides
+            );
+        }
 
         $this->redirect_with_notice('erp-omd-employees', 'success', __('Nadpisania ACL zostały zapisane.', 'erp-omd'), ['id' => $employee_id]);
     }
