@@ -408,7 +408,7 @@ class ERP_OMD_REST_API
     public function can_manage_time() { return $this->current_user_can_acl('erp_omd_manage_time'); }
     public function can_approve_time() { return $this->current_user_can_acl('erp_omd_approve_time') || $this->current_user_can_acl('administrator'); }
     public function can_access_reports() { return $this->current_user_can_acl('erp_omd_access') || $this->current_user_can_acl('administrator'); }
-    public function can_manage_settings() { return current_user_can('erp_omd_manage_settings') || current_user_can('administrator'); }
+    public function can_manage_settings() { return $this->current_user_can_acl('erp_omd_manage_settings') || $this->current_user_can_acl('administrator'); }
 
 
     // existing modules omitted no, implemented below.
@@ -1430,7 +1430,7 @@ class ERP_OMD_REST_API
 
     private function is_project_cost_locked_for_non_admin($project_id)
     {
-        if (current_user_can('erp_omd_manage_settings') || current_user_can('administrator')) {
+        if ($this->current_user_can_acl('erp_omd_manage_settings') || $this->current_user_can_acl('administrator')) {
             return false;
         }
 
