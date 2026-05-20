@@ -3,7 +3,8 @@
     <div class="erp-omd-page-sections">
         <section class="erp-omd-card">
             <div class="erp-omd-section-header"><h2><?php esc_html_e('Lista zadań', 'erp-omd'); ?></h2></div>
-            <form method="post" class="erp-omd-form-grid">
+            <div id="erp-omd-private-task-notice" style="display:none;margin:10px 0;"></div>
+            <form method="post" class="erp-omd-form-grid" id="erp-omd-private-task-editor">
                 <?php $is_edit_mode = ($dashboard_private_tasks_edit_id ?? '') !== ''; ?>
                 <?php
                 $editing_task = null;
@@ -15,16 +16,17 @@
                 ?>
                 <?php wp_nonce_field($is_edit_mode ? 'erp_omd_update_admin_private_task' : 'erp_omd_save_admin_private_task'); ?>
                 <input type="hidden" name="erp_omd_action" value="<?php echo esc_attr($is_edit_mode ? 'update_admin_private_task' : 'save_admin_private_task'); ?>">
-                <?php if ($is_edit_mode && is_array($editing_task)) : ?>
-                    <input type="hidden" name="task_id" value="<?php echo esc_attr((string) ($editing_task['task_id'] ?? '')); ?>" />
-                <?php endif; ?>
+                <input type="hidden" name="task_id" id="erp-omd-admin-task-id" value="<?php echo esc_attr($is_edit_mode && is_array($editing_task) ? (string) ($editing_task['task_id'] ?? '') : ''); ?>" />
                 <input type="hidden" name="tasks_filter" value="<?php echo esc_attr((string) ($dashboard_private_tasks_filter ?? 'all')); ?>" />
                 <div class="erp-omd-form-field erp-omd-task-field-main"><label for="erp-omd-admin-task-text"><?php esc_html_e('Treść zadania', 'erp-omd'); ?></label><textarea id="erp-omd-admin-task-text" name="task_text" rows="3" class="large-text" required></textarea></div>
                 <div class="erp-omd-form-field erp-omd-task-field-side"><label for="erp-omd-admin-task-date"><?php esc_html_e('Termin', 'erp-omd'); ?></label><input id="erp-omd-admin-task-date" type="date" name="task_due_date" value="<?php echo esc_attr(current_time('Y-m-d')); ?>"></div>
                 <script>
                 (function(){var t=document.getElementById('erp-omd-admin-task-text'),d=document.getElementById('erp-omd-admin-task-date');<?php if ($is_edit_mode && is_array($editing_task)) : ?>if(t){t.value=<?php echo wp_json_encode((string) ($editing_task['text'] ?? '')); ?>;}if(d){d.value=<?php echo wp_json_encode((string) ($editing_task['due_date'] ?? '')); ?>;}<?php endif; ?>})();
                 </script>
-                <div class="erp-omd-form-field erp-omd-form-field-align-end erp-omd-task-field-side"><button type="submit" class="button button-primary"><?php echo $is_edit_mode ? esc_html__('Zapisz zmiany', 'erp-omd') : esc_html__('Dodaj zadanie', 'erp-omd'); ?></button></div>
+                <div class="erp-omd-form-field erp-omd-form-field-align-end erp-omd-task-field-side">
+                    <button type="submit" class="button button-primary" id="erp-omd-task-submit"><?php echo $is_edit_mode ? esc_html__('Zapisz zmiany', 'erp-omd') : esc_html__('Dodaj zadanie', 'erp-omd'); ?></button>
+                    <button type="button" class="button" id="erp-omd-task-cancel-edit" style="<?php echo $is_edit_mode ? '' : 'display:none;'; ?>"><?php esc_html_e('Anuluj edycję', 'erp-omd'); ?></button>
+                </div>
             </form>
 
             <form method="post" id="erp-omd-bulk-private-tasks-form">
@@ -53,7 +55,7 @@
                     <thead><tr><th scope="col" class="manage-column check-column"><input type="checkbox" class="erp-omd-select-all-task" /></th><th><?php esc_html_e('ID', 'erp-omd'); ?></th><th><?php esc_html_e('Data dodania', 'erp-omd'); ?></th><th><?php esc_html_e('Zadanie', 'erp-omd'); ?></th><th><?php esc_html_e('Termin', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                     <tbody>
                     <?php if (! empty($dashboard_private_tasks)) : foreach ($dashboard_private_tasks as $i => $task_row) : $task_id = (string) ($task_row['task_id'] ?? ''); ?>
-                        <tr>
+                        <tr data-task-id="<?php echo esc_attr($task_id); ?>" data-task-text="<?php echo esc_attr((string) ($task_row['text'] ?? '')); ?>" data-task-due-date="<?php echo esc_attr((string) ($task_row['due_date'] ?? '')); ?>" data-task-completed="<?php echo ! empty($task_row['completed']) ? '1' : '0'; ?>">
                             <th scope="row" class="check-column"><input type="checkbox" name="task_ids[]" value="<?php echo esc_attr($task_id); ?>" /></th>
                             <td><?php echo esc_html((string) ($i + 1)); ?></td>
                             <td><?php echo esc_html((string) ($task_row['created_at'] ?? '—')); ?></td>
@@ -61,7 +63,7 @@
                             <td><?php echo esc_html((string) ($task_row['due_date'] ?? '—')); ?></td>
                             <td><?php echo ! empty($task_row['completed']) ? esc_html__('Zrobione', 'erp-omd') : esc_html__('Niedokończone', 'erp-omd'); ?></td>
                             <td>
-                                <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-private-tasks', 'tasks_filter' => (string) ($dashboard_private_tasks_filter ?? 'all'), 'edit_task' => $task_id], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                <button type="button" class="button button-small erp-omd-task-edit-btn"><?php esc_html_e('Edytuj', 'erp-omd'); ?></button>
                                 <form method="post" class="erp-omd-inline-form">
                                     <?php wp_nonce_field('erp_omd_toggle_admin_private_task'); ?>
                                     <input type="hidden" name="erp_omd_action" value="toggle_admin_private_task" />
@@ -87,3 +89,71 @@
         </section>
     </div>
 </div>
+<script>
+(function () {
+    const apiRoot = (window.wpApiSettings && window.wpApiSettings.root ? window.wpApiSettings.root : '/wp-json/') + 'erp-omd/v1/private-tasks';
+    const headers = Object.assign({'Content-Type': 'application/json'}, window.erpOmdAsync ? window.erpOmdAsync.defaultAsyncHeaders() : {});
+    const editor = document.getElementById('erp-omd-private-task-editor');
+    if (!editor) return;
+    const textEl = document.getElementById('erp-omd-admin-task-text');
+    const dateEl = document.getElementById('erp-omd-admin-task-date');
+    const idEl = document.getElementById('erp-omd-admin-task-id');
+    const submitEl = document.getElementById('erp-omd-task-submit');
+    const cancelEl = document.getElementById('erp-omd-task-cancel-edit');
+    const noticeEl = document.getElementById('erp-omd-private-task-notice');
+    const cardEl = document.querySelector('.erp-omd-card');
+    const showNotice = (ok, msg) => {
+        if (!noticeEl) return;
+        noticeEl.style.display = 'block';
+        noticeEl.className = ok ? 'notice notice-success' : 'notice notice-error';
+        noticeEl.innerHTML = '<p>' + (msg || '') + '</p>';
+    };
+    const parseResponse = async (response, fallback) => {
+        if (window.erpOmdAsync && window.erpOmdAsync.parseAsyncResponse) return window.erpOmdAsync.parseAsyncResponse(response, fallback);
+        const payload = await response.json();
+        return payload;
+    };
+    const refreshCard = async () => {
+        if (!cardEl) return;
+        const response = await fetch(window.location.href, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const nextCard = doc.querySelector('.erp-omd-card');
+        if (nextCard) {
+            cardEl.innerHTML = nextCard.innerHTML;
+            window.location.reload = window.location.reload;
+        }
+    };
+    const resetEditor = () => {
+        idEl.value = '';
+        submitEl.textContent = 'Dodaj zadanie';
+        cancelEl.style.display = 'none';
+    };
+    cancelEl.addEventListener('click', resetEditor);
+    editor.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const payload = {task_text: textEl.value || '', task_due_date: dateEl.value || ''};
+        const taskId = idEl.value || '';
+        const url = taskId ? apiRoot + '/' + encodeURIComponent(taskId) : apiRoot;
+        const method = taskId ? 'PUT' : 'POST';
+        const res = await fetch(url, {method, headers, body: JSON.stringify(payload)});
+        const parsed = await parseResponse(res, 'Błąd zapisu zadania.');
+        showNotice(!!parsed.ok, parsed.message || '');
+        if (!parsed.ok) return;
+        await refreshCard();
+    });
+    document.querySelectorAll('.erp-omd-task-edit-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const row = btn.closest('tr');
+            if (!row) return;
+            idEl.value = row.getAttribute('data-task-id') || '';
+            textEl.value = row.getAttribute('data-task-text') || '';
+            dateEl.value = row.getAttribute('data-task-due-date') || '';
+            submitEl.textContent = 'Zapisz zmiany';
+            cancelEl.style.display = 'inline-block';
+            textEl.focus();
+        });
+    });
+})();
+</script>
