@@ -75,7 +75,18 @@
             </form>
 
             <?php if ($employee) : ?>
+                <?php $employee_tab = sanitize_key((string) ($_GET['employee_tab'] ?? 'profile')); ?>
+                <?php if (! in_array($employee_tab, ['profile', 'acl'], true)) : ?>
+                    <?php $employee_tab = 'profile'; ?>
+                <?php endif; ?>
+                <?php $employee_tab_base_args = ['page' => 'erp-omd-employees', 'id' => (int) ($employee['id'] ?? 0)]; ?>
                 <hr />
+                <h2 class="nav-tab-wrapper">
+                    <a href="<?php echo esc_url(add_query_arg(array_merge($employee_tab_base_args, ['employee_tab' => 'profile']), admin_url('admin.php'))); ?>" class="nav-tab <?php echo $employee_tab === 'profile' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Dane pracownika', 'erp-omd'); ?></a>
+                    <a href="<?php echo esc_url(add_query_arg(array_merge($employee_tab_base_args, ['employee_tab' => 'acl']), admin_url('admin.php'))); ?>" class="nav-tab <?php echo $employee_tab === 'acl' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Uprawnienia ACL', 'erp-omd'); ?></a>
+                </h2>
+
+                <?php if ($employee_tab === 'acl') : ?>
                 <div class="erp-omd-section-header">
                     <div>
                         <h2><?php esc_html_e('ACL użytkownika (nadpisania)', 'erp-omd'); ?></h2>
@@ -86,6 +97,12 @@
                     <?php wp_nonce_field('erp_omd_save_employee_acl_overrides'); ?>
                     <input type="hidden" name="erp_omd_action" value="save_employee_acl_overrides" />
                     <input type="hidden" name="employee_id" value="<?php echo esc_attr((string) ((int) ($employee['id'] ?? 0))); ?>" />
+                    <p>
+                        <input type="search" id="erp-omd-acl-search" placeholder="<?php esc_attr_e('Szukaj capability/menu slug…', 'erp-omd'); ?>" style="min-width:340px;" />
+                        <button type="button" class="button" id="erp-omd-acl-preset-manager-light">Manager light</button>
+                        <button type="button" class="button" id="erp-omd-acl-preset-accounting">Księgowość</button>
+                        <button type="button" class="button" id="erp-omd-acl-preset-pm-readonly">PM read-only</button>
+                    </p>
                     <div class="erp-omd-form-sections">
                         <section class="erp-omd-form-section">
                             <div class="erp-omd-form-grid">
@@ -93,13 +110,14 @@
                                     <label><?php esc_html_e('Capability overrides', 'erp-omd'); ?></label>
                                     <?php foreach (ERP_OMD_Capabilities::get_capabilities() as $acl_capability_key) : ?>
                                         <?php $acl_capability_value = (string) ($employee_acl_capability_overrides[$acl_capability_key] ?? ''); ?>
-                                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                                        <div class="erp-omd-acl-row" data-acl-key="<?php echo esc_attr($acl_capability_key); ?>" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
                                             <code style="min-width:260px;"><?php echo esc_html($acl_capability_key); ?></code>
                                             <select name="acl_capability_overrides[<?php echo esc_attr($acl_capability_key); ?>]">
                                                 <option value="" <?php selected($acl_capability_value, ''); ?>><?php esc_html_e('Dziedzicz', 'erp-omd'); ?></option>
                                                 <option value="allow" <?php selected($acl_capability_value, 'allow'); ?>>allow</option>
                                                 <option value="deny" <?php selected($acl_capability_value, 'deny'); ?>>deny</option>
                                             </select>
+                                            <span class="erp-omd-acl-badge" style="font-size:11px;padding:2px 6px;border-radius:10px;background:#ddd;"><?php echo $acl_capability_value === '' ? esc_html__('dziedziczone', 'erp-omd') : esc_html($acl_capability_value); ?></span>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
@@ -107,13 +125,14 @@
                                     <label><?php esc_html_e('Menu visibility overrides', 'erp-omd'); ?></label>
                                     <?php foreach (ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS as $acl_menu_key) : ?>
                                         <?php $acl_menu_value = (string) ($employee_acl_menu_overrides[$acl_menu_key] ?? ''); ?>
-                                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                                        <div class="erp-omd-acl-row" data-acl-key="<?php echo esc_attr($acl_menu_key); ?>" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
                                             <code style="min-width:260px;"><?php echo esc_html($acl_menu_key); ?></code>
                                             <select name="acl_menu_overrides[<?php echo esc_attr($acl_menu_key); ?>]">
                                                 <option value="" <?php selected($acl_menu_value, ''); ?>><?php esc_html_e('Dziedzicz', 'erp-omd'); ?></option>
                                                 <option value="allow" <?php selected($acl_menu_value, 'allow'); ?>>allow</option>
                                                 <option value="deny" <?php selected($acl_menu_value, 'deny'); ?>>deny</option>
                                             </select>
+                                            <span class="erp-omd-acl-badge" style="font-size:11px;padding:2px 6px;border-radius:10px;background:#ddd;"><?php echo $acl_menu_value === '' ? esc_html__('dziedziczone', 'erp-omd') : esc_html($acl_menu_value); ?></span>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
@@ -148,13 +167,57 @@
                             <tr>
                                 <td><?php echo esc_html((string) ($employee_acl_audit_row['changed_at'] ?? '')); ?></td>
                                 <td><?php echo esc_html($acl_actor instanceof WP_User ? (string) $acl_actor->user_login : ('#' . $acl_actor_user_id)); ?></td>
-                                <td><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['before']['capability_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code><br><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['after']['capability_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code></td>
-                                <td><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['before']['menu_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code><br><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['after']['menu_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code></td>
+                                <td style="max-width:420px;white-space:normal;word-break:break-word;overflow-wrap:anywhere;"><code style="display:block;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;"><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['before']['capability_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code><br><code style="display:block;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;"><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['after']['capability_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code></td>
+                                <td style="max-width:420px;white-space:normal;word-break:break-word;overflow-wrap:anywhere;"><code style="display:block;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;"><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['before']['menu_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code><br><code style="display:block;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;"><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['after']['menu_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
                     </tbody>
                 </table>
+                <script>
+                (function () {
+                    const rows = Array.from(document.querySelectorAll('.erp-omd-acl-row'));
+                    const search = document.getElementById('erp-omd-acl-search');
+                    const refreshBadges = () => rows.forEach((row) => {
+                        const select = row.querySelector('select');
+                        const badge = row.querySelector('.erp-omd-acl-badge');
+                        if (!select || !badge) return;
+                        const value = select.value || 'dziedziczone';
+                        badge.textContent = value;
+                    });
+                    rows.forEach((row) => {
+                        const select = row.querySelector('select');
+                        if (select) select.addEventListener('change', refreshBadges);
+                    });
+                    if (search) {
+                        search.addEventListener('input', () => {
+                            const q = (search.value || '').toLowerCase().trim();
+                            rows.forEach((row) => {
+                                const key = (row.getAttribute('data-acl-key') || '').toLowerCase();
+                                row.style.display = q === '' || key.indexOf(q) !== -1 ? 'flex' : 'none';
+                            });
+                        });
+                    }
+                    const setPreset = (map) => {
+                        rows.forEach((row) => {
+                            const key = row.getAttribute('data-acl-key') || '';
+                            const select = row.querySelector('select');
+                            if (!select || !(key in map)) return;
+                            select.value = map[key];
+                        });
+                        refreshBadges();
+                    };
+                    const byId = (id) => document.getElementById(id);
+                    const managerLight = {'erp_omd_manage_projects':'allow','erp_omd_manage_time':'allow','erp_omd_manage_employees':'deny','erp_omd_manage_settings':'deny'};
+                    const accounting = {'erp_omd_manage_projects':'allow','erp_omd_manage_time':'deny','erp_omd_manage_employees':'deny'};
+                    const pmReadonly = {'erp_omd_manage_projects':'deny','erp_omd_manage_time':'deny','erp_omd_access':'allow'};
+                    if (byId('erp-omd-acl-preset-manager-light')) byId('erp-omd-acl-preset-manager-light').addEventListener('click', () => setPreset(managerLight));
+                    if (byId('erp-omd-acl-preset-accounting')) byId('erp-omd-acl-preset-accounting').addEventListener('click', () => setPreset(accounting));
+                    if (byId('erp-omd-acl-preset-pm-readonly')) byId('erp-omd-acl-preset-pm-readonly').addEventListener('click', () => setPreset(pmReadonly));
+                    refreshBadges();
+                })();
+                </script>
+                <?php else : ?>
 
                 <hr />
                 <div class="erp-omd-section-header">
@@ -223,6 +286,7 @@
                         <?php submit_button(__('Dodaj wpis do historii wynagrodzeń', 'erp-omd'), 'secondary'); ?>
                     </div>
                 </form>
+                <?php endif; ?>
             <?php endif; ?>
         </section>
 
