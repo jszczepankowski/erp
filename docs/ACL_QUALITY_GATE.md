@@ -17,3 +17,15 @@ Ten krok jest **obowiązkowy** przy każdym merge/release obejmującym:
 - wszystkie 3 komendy kończą się bez błędu,
 - `tests/admin-acl-coverage-test.php` raportuje pokrycie `>= 80%`,
 - zmiany ACL nie mogą obniżać dostępu do pełnego audytu dla super-admin.
+
+## Dodatkowe kroki operacyjne (po wdrożeniu)
+
+1. **Backfill ACL audit (legacy option -> tabela)**
+   - potwierdź obecność markera `erp_omd_acl_audit_backfill_done=1`,
+   - porównaj orientacyjnie liczność wpisów historycznych przed/po migracji.
+
+2. **Kontrakt eksportu CSV ACL**
+   - endpoint: `GET /erp-omd/v1/acl-audit/export`,
+   - wymagany nagłówek CSV:
+     `changed_at,actor_user_id,target_user_id,change_type,before_capability_overrides,after_capability_overrides,before_menu_overrides,after_menu_overrides`,
+   - daty filtrów `changed_from`/`changed_to` podawaj w czasie serwera WordPress.
