@@ -162,6 +162,10 @@ class ERP_OMD_REST_API
                 return new WP_REST_Response($created, 201);
             }, 'permission_callback' => [$this, 'can_manage_settings']],
         ]);
+    }
+
+    private function register_role_routes()
+    {
         register_rest_route('erp-omd/v1', '/roles', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_roles'], 'permission_callback' => [$this, 'can_manage_roles']],
             ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_role'], 'permission_callback' => [$this, 'can_manage_roles']],
