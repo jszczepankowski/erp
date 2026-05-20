@@ -425,7 +425,16 @@ class ERP_OMD_REST_API
     public function can_manage_clients() { return $this->current_user_can_acl('erp_omd_manage_clients'); }
     public function can_manage_projects() { return $this->current_user_can_acl('erp_omd_manage_projects'); }
     public function can_manage_time() { return $this->current_user_can_acl('erp_omd_manage_time'); }
-    public function can_access_private_tasks() { return $this->current_user_can_acl('erp_omd_access') || $this->current_user_can_acl('administrator'); }
+    public function can_access_private_tasks()
+    {
+        // Private tasks are per-user notes. Keep ACL gate, but provide safe fallback
+        // for logged-in wp-admin users to avoid false negatives in mixed-role installs.
+        if ($this->current_user_can_acl('erp_omd_access') || current_user_can('manage_options')) {
+            return true;
+        }
+
+        return is_user_logged_in() && current_user_can('read');
+    }
     public function can_approve_time() { return $this->current_user_can_acl('erp_omd_approve_time') || $this->current_user_can_acl('administrator'); }
     public function can_access_reports() { return $this->current_user_can_acl('erp_omd_access') || $this->current_user_can_acl('administrator'); }
     public function can_manage_settings() { return $this->current_user_can_acl('erp_omd_manage_settings') || $this->current_user_can_acl('administrator'); }
