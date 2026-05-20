@@ -418,8 +418,8 @@ class ERP_OMD_REST_API
     public function can_manage_settings() { return $this->current_user_can_acl('erp_omd_manage_settings') || $this->current_user_can_acl('administrator'); }
     public function can_access_acl_audit()
     {
-        if (function_exists('is_super_admin') && is_super_admin()) {
-            return true;
+        if (function_exists('is_super_admin')) {
+            return is_super_admin();
         }
 
         return $this->current_user_can_acl('administrator');
@@ -598,6 +598,9 @@ class ERP_OMD_REST_API
     }
     public function export_acl_audit_csv(WP_REST_Request $request)
     {
+        if (! $request->get_param('per_page') && method_exists($request, 'set_param')) {
+            $request->set_param('per_page', 500);
+        }
         $response = $this->list_acl_audit($request);
         $rows = $response instanceof WP_REST_Response ? (array) $response->get_data() : [];
         $lines = ['changed_at,actor_user_id,target_user_id,change_type,before_capability_overrides,after_capability_overrides,before_menu_overrides,after_menu_overrides'];

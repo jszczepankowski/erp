@@ -28,6 +28,7 @@ class ERP_OMD_Installer
 
         self::maybe_cleanup_legacy_time_entry_indexes();
         self::maybe_allow_nullable_project_request_requester_employee_id();
+        self::maybe_backfill_acl_audit_option_to_table();
     }
 
     public static function migrate()
@@ -1256,6 +1257,7 @@ class ERP_OMD_Installer
         add_option('erp_omd_fixed_monthly_cost_items', []);
         self::maybe_cleanup_legacy_time_entry_indexes();
         self::maybe_allow_nullable_project_request_requester_employee_id();
+        self::maybe_backfill_acl_audit_option_to_table();
     }
 
     private static function maybe_cleanup_legacy_time_entry_indexes()
@@ -1292,6 +1294,37 @@ class ERP_OMD_Installer
         }
 
         update_option('erp_omd_project_request_requester_employee_nullable_done', '1');
+    }
+
+    private static function maybe_backfill_acl_audit_option_to_table()
+    {
+        if (get_option('erp_omd_acl_audit_backfill_done') === '1') {
+            return;
+        }
+        if (! class_exists('ERP_OMD_Acl_Audit_Repository') || ! class_exists('ERP_OMD_Acl_Service')) {
+            return;
+        }
+
+        $rows = (array) get_option(ERP_OMD_Acl_Service::OPTION_ACL_AUDIT_LOG, []);
+        if ($rows !== []) {
+            $repo = new ERP_OMD_Acl_Audit_Repository();
+            foreach ($rows as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                $repo->insert([
+                    'event_id' => sanitize_text_field((string) ($row['id'] ?? '')),
+                    'actor_user_id' => (int) ($row['actor_user_id'] ?? 0),
+                    'target_user_id' => (int) ($row['target_user_id'] ?? 0),
+                    'changed_at' => sanitize_text_field((string) ($row['changed_at'] ?? current_time('mysql'))),
+                    'change_type' => sanitize_key((string) ($row['change_type'] ?? 'acl_override')),
+                    'before' => (array) ($row['before'] ?? []),
+                    'after' => (array) ($row['after'] ?? []),
+                ]);
+            }
+        }
+
+        update_option('erp_omd_acl_audit_backfill_done', '1');
     }
 
     private static function drop_legacy_time_entry_unique_indexes($time_entries_table)

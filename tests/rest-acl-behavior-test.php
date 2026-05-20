@@ -48,7 +48,7 @@ final class RestAclBehaviorTestRunner
         $this->assertSame(false, $api->can_access_acl_audit(), 'ACL audit should be blocked for non-admin/non-super-admin.');
 
         $GLOBALS['erp_omd_current_user_caps'] = ['administrator'];
-        $this->assertSame(true, $api->can_access_acl_audit(), 'ACL audit should be allowed for administrator.');
+        $this->assertSame(false, $api->can_access_acl_audit(), 'ACL audit should be blocked for administrator when super-admin model is available.');
 
         $GLOBALS['erp_omd_current_user_caps'] = ['erp_omd_manage_employees'];
         $GLOBALS['erp_omd_is_super_admin'] = true;

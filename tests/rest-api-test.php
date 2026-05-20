@@ -769,7 +769,7 @@ final class RestApiTestRunner
         $GLOBALS['erp_omd_is_super_admin'] = false;
         $this->assertSame(false, $api->can_access_acl_audit(), 'ACL audit should require super-admin/admin access.');
         $GLOBALS['erp_omd_current_user_caps'] = ['administrator'];
-        $this->assertSame(true, $api->can_access_acl_audit(), 'ACL audit should allow administrator access.');
+        $this->assertSame(false, $api->can_access_acl_audit(), 'ACL audit should block administrator when super-admin model is available.');
         $GLOBALS['erp_omd_current_user_caps'] = ['erp_omd_manage_employees'];
         $GLOBALS['erp_omd_is_super_admin'] = true;
         $this->assertSame(true, $api->can_access_acl_audit(), 'ACL audit should allow super-admin access.');
