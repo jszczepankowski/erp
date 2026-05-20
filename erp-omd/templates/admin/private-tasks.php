@@ -93,8 +93,9 @@
 (function () {
     const apiRoot = <?php echo wp_json_encode(esc_url_raw(rest_url('erp-omd/v1/private-tasks'))); ?>;
     const headers = Object.assign({'Content-Type': 'application/json'}, window.erpOmdAsync ? window.erpOmdAsync.defaultAsyncHeaders() : {});
-    if (!headers['X-WP-Nonce'] && window.wpApiSettings && window.wpApiSettings.nonce) {
-        headers['X-WP-Nonce'] = window.wpApiSettings.nonce;
+    const restNonce = <?php echo wp_json_encode(wp_create_nonce('wp_rest')); ?>;
+    if (!headers['X-WP-Nonce']) {
+        headers['X-WP-Nonce'] = (window.wpApiSettings && window.wpApiSettings.nonce) ? window.wpApiSettings.nonce : restNonce;
     }
     const editor = document.getElementById('erp-omd-private-task-editor');
     if (!editor) return;
