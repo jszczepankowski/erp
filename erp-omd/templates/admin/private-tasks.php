@@ -69,14 +69,14 @@
                                     <input type="hidden" name="erp_omd_action" value="toggle_admin_private_task" />
                                     <input type="hidden" name="task_id" value="<?php echo esc_attr($task_id); ?>" />
                                     <input type="hidden" name="tasks_filter" value="<?php echo esc_attr((string) ($dashboard_private_tasks_filter ?? 'all')); ?>" />
-                                    <button type="submit" class="button button-small"><?php esc_html_e('Zmień status', 'erp-omd'); ?></button>
+                                    <button type="submit" class="button button-small erp-omd-task-toggle-btn" data-task-id="<?php echo esc_attr($task_id); ?>"><?php esc_html_e('Zmień status', 'erp-omd'); ?></button>
                                 </form>
                                 <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć zadanie?', 'erp-omd')); ?>');">
                                     <?php wp_nonce_field('erp_omd_delete_admin_private_task'); ?>
                                     <input type="hidden" name="erp_omd_action" value="delete_admin_private_task" />
                                     <input type="hidden" name="task_id" value="<?php echo esc_attr($task_id); ?>" />
                                     <input type="hidden" name="tasks_filter" value="<?php echo esc_attr((string) ($dashboard_private_tasks_filter ?? 'all')); ?>" />
-                                    <button type="submit" class="button button-small button-link-delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                    <button type="submit" class="button button-small button-link-delete erp-omd-task-delete-btn" data-task-id="<?php echo esc_attr($task_id); ?>"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
                                 </form>
                             </td>
                         </tr>
@@ -99,14 +99,17 @@
     }
     const editor = document.getElementById('erp-omd-private-task-editor');
     if (!editor) return;
-    const textEl = document.getElementById('erp-omd-admin-task-text');
-    const dateEl = document.getElementById('erp-omd-admin-task-date');
-    const idEl = document.getElementById('erp-omd-admin-task-id');
-    const submitEl = document.getElementById('erp-omd-task-submit');
-    const cancelEl = document.getElementById('erp-omd-task-cancel-edit');
-    const noticeEl = document.getElementById('erp-omd-private-task-notice');
+    const getEls = () => ({
+        textEl: document.getElementById('erp-omd-admin-task-text'),
+        dateEl: document.getElementById('erp-omd-admin-task-date'),
+        idEl: document.getElementById('erp-omd-admin-task-id'),
+        submitEl: document.getElementById('erp-omd-task-submit'),
+        cancelEl: document.getElementById('erp-omd-task-cancel-edit'),
+        noticeEl: document.getElementById('erp-omd-private-task-notice')
+    });
     const cardEl = document.querySelector('.erp-omd-card');
     const showNotice = (ok, msg) => {
+        const {noticeEl} = getEls();
         if (!noticeEl) return;
         noticeEl.style.display = 'block';
         noticeEl.className = ok ? 'notice notice-success' : 'notice notice-error';
@@ -128,6 +131,8 @@
             btn.addEventListener('click', () => {
                 const row = btn.closest('tr');
                 if (!row) return;
+                const {idEl, textEl, dateEl, submitEl, cancelEl} = getEls();
+                if (!idEl || !textEl || !dateEl || !submitEl || !cancelEl) return;
                 idEl.value = row.getAttribute('data-task-id') || '';
                 textEl.value = row.getAttribute('data-task-text') || '';
                 dateEl.value = row.getAttribute('data-task-due-date') || '';
@@ -150,13 +155,20 @@
         }
     };
     const resetEditor = () => {
+        const {idEl, submitEl, cancelEl} = getEls();
+        if (!idEl || !submitEl || !cancelEl) return;
         idEl.value = '';
         submitEl.textContent = 'Dodaj zadanie';
         cancelEl.style.display = 'none';
     };
-    cancelEl.addEventListener('click', resetEditor);
+    const {cancelEl} = getEls();
+    if (cancelEl) {
+        cancelEl.addEventListener('click', resetEditor);
+    }
     editor.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const {textEl, dateEl, idEl} = getEls();
+        if (!textEl || !dateEl || !idEl) return;
         const payload = {task_text: textEl.value || '', task_due_date: dateEl.value || ''};
         const taskId = idEl.value || '';
         const url = taskId ? apiRoot + '/' + encodeURIComponent(taskId) : apiRoot;
@@ -166,6 +178,36 @@
         showNotice(!!parsed.ok, parsed.message || '');
         if (!parsed.ok) return;
         await refreshCard();
+        resetEditor();
+    });
+    cardEl.addEventListener('click', async (event) => {
+        const toggleBtn = event.target.closest('.erp-omd-task-toggle-btn');
+        if (toggleBtn) {
+            event.preventDefault();
+            const row = toggleBtn.closest('tr');
+            const taskId = toggleBtn.getAttribute('data-task-id') || '';
+            const currentCompleted = row ? (row.getAttribute('data-task-completed') === '1') : false;
+            const payload = {
+                task_text: row ? (row.getAttribute('data-task-text') || '') : '',
+                task_due_date: row ? (row.getAttribute('data-task-due-date') || '') : '',
+                completed: currentCompleted ? 0 : 1
+            };
+            const res = await fetch(apiRoot + '/' + encodeURIComponent(taskId), {method: 'PUT', headers, credentials: 'same-origin', body: JSON.stringify(payload)});
+            const parsed = await parseResponse(res, 'Błąd zmiany statusu zadania.');
+            showNotice(!!parsed.ok, parsed.message || '');
+            if (parsed.ok) await refreshCard();
+            return;
+        }
+        const deleteBtn = event.target.closest('.erp-omd-task-delete-btn');
+        if (deleteBtn) {
+            event.preventDefault();
+            if (!window.confirm('Usunąć zadanie?')) return;
+            const taskId = deleteBtn.getAttribute('data-task-id') || '';
+            const res = await fetch(apiRoot + '/' + encodeURIComponent(taskId), {method: 'DELETE', headers, credentials: 'same-origin'});
+            const parsed = await parseResponse(res, 'Błąd usuwania zadania.');
+            showNotice(!!parsed.ok, parsed.message || '');
+            if (parsed.ok) await refreshCard();
+        }
     });
     bindEditButtons();
 })();
