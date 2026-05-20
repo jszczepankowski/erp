@@ -110,8 +110,12 @@
     };
     const parseResponse = async (response, fallback) => {
         if (window.erpOmdAsync && window.erpOmdAsync.parseAsyncResponse) return window.erpOmdAsync.parseAsyncResponse(response, fallback);
-        const payload = await response.json();
-        return payload;
+        try {
+            const payload = await response.json();
+            return payload;
+        } catch (e) {
+            return {ok: false, message: fallback || 'Błąd odpowiedzi serwera.'};
+        }
     };
     const refreshCard = async () => {
         if (!cardEl) return;
@@ -137,7 +141,7 @@
         const taskId = idEl.value || '';
         const url = taskId ? apiRoot + '/' + encodeURIComponent(taskId) : apiRoot;
         const method = taskId ? 'PUT' : 'POST';
-        const res = await fetch(url, {method, headers, body: JSON.stringify(payload)});
+        const res = await fetch(url, {method, headers, credentials: 'same-origin', body: JSON.stringify(payload)});
         const parsed = await parseResponse(res, 'Błąd zapisu zadania.');
         showNotice(!!parsed.ok, parsed.message || '');
         if (!parsed.ok) return;
