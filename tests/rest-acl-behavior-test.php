@@ -79,8 +79,20 @@ final class RestAclBehaviorTestRunner
         $GLOBALS['erp_omd_user_meta'][1]['erp_omd_user_capability_overrides'] = ['erp_omd_manage_projects' => 'allow'];
         $GLOBALS['erp_omd_user_meta'][1]['erp_omd_user_menu_visibility_overrides'] = ['erp-omd-projects' => 'deny'];
         $resetResponse = $api->reset_employee_acl(new WP_REST_Request(['id' => 1]));
-        $this->assertSame([], $resetResponse['capability_overrides'], 'Reset ACL should clear capability overrides.');
-        $this->assertSame([], $resetResponse['menu_overrides'], 'Reset ACL should clear menu overrides.');
+        $resetData = $resetResponse instanceof WP_REST_Response ? (array) $resetResponse->get_data() : (array) $resetResponse;
+        $this->assertSame([], (array) ($resetData['capability_overrides'] ?? []), 'Reset ACL should clear capability overrides.');
+        $this->assertSame([], (array) ($resetData['menu_overrides'] ?? []), 'Reset ACL should clear menu overrides.');
+
+        $exportResponse = $api->export_acl_audit_csv(new WP_REST_Request([
+            'target_user_id' => 1,
+            'change_type' => 'capability_override',
+            'per_page' => 5,
+        ]));
+        $this->assertSame(true, $exportResponse instanceof WP_REST_Response, 'ACL audit export should return REST response.');
+        $exportData = (array) $exportResponse->get_data();
+        $this->assertSame('acl-audit.csv', (string) ($exportData['filename'] ?? ''), 'ACL audit export should provide stable filename.');
+        $csvContent = (string) ($exportData['content'] ?? '');
+        $this->assertSame(true, strpos($csvContent, 'changed_at,actor_user_id,target_user_id,change_type') === 0, 'ACL audit CSV should contain expected header.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "REST ACL behavior tests passed.\n";

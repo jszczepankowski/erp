@@ -48,6 +48,9 @@ if (! function_exists('sanitize_email')) {
 if (! function_exists('rest_ensure_response')) {
     function rest_ensure_response($data)
     {
+        if (class_exists('WP_REST_Response')) {
+            return new WP_REST_Response($data, 200);
+        }
         return $data;
     }
 }
