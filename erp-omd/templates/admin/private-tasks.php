@@ -91,7 +91,7 @@
 </div>
 <script>
 (function () {
-    const apiRoot = (window.wpApiSettings && window.wpApiSettings.root ? window.wpApiSettings.root : '/wp-json/') + 'erp-omd/v1/private-tasks';
+    const apiRoot = <?php echo wp_json_encode(esc_url_raw(rest_url('erp-omd/v1/private-tasks'))); ?>;
     const headers = Object.assign({'Content-Type': 'application/json'}, window.erpOmdAsync ? window.erpOmdAsync.defaultAsyncHeaders() : {});
     const editor = document.getElementById('erp-omd-private-task-editor');
     if (!editor) return;
