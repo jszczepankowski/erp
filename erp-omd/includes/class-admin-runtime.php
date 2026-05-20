@@ -92,6 +92,7 @@ class ERP_OMD_Admin
     {
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
+        add_action('admin_init', [$this, 'enforce_admin_page_acl_gatekeeper'], 1);
         add_action('admin_init', [$this, 'handle_forms']);
         add_action('wp_ajax_erp_omd_inline_project_update', [$this, 'handle_inline_project_update_ajax']);
     }
@@ -180,6 +181,45 @@ class ERP_OMD_Admin
         }
 
         return user_can((int) $user_id, (string) $capability);
+    }
+
+    public function enforce_admin_page_acl_gatekeeper()
+    {
+        if (! is_admin()) {
+            return;
+        }
+        $page = sanitize_key((string) ($_GET['page'] ?? ''));
+        if ($page === '' || strpos($page, 'erp-omd') !== 0) {
+            return;
+        }
+        if (! in_array($page, ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS, true)) {
+            return;
+        }
+
+        $current_user_id = (int) get_current_user_id();
+        if ($current_user_id <= 0) {
+            return;
+        }
+        $capability_map = [
+            'erp-omd' => 'erp_omd_access',
+            'erp-omd-private-tasks' => 'erp_omd_access',
+            'erp-omd-employees' => 'erp_omd_manage_employees',
+            'erp-omd-roles' => 'erp_omd_manage_roles',
+            'erp-omd-clients' => 'erp_omd_manage_clients',
+            'erp-omd-time' => 'erp_omd_manage_time',
+            'erp-omd-estimates' => 'erp_omd_manage_projects',
+            'erp-omd-projects' => 'erp_omd_manage_projects',
+            'erp-omd-requests' => 'erp_omd_manage_projects',
+            'erp-omd-calendar' => 'erp_omd_access',
+            'erp-omd-cost-invoices' => 'erp_omd_manage_projects',
+            'erp-omd-reports' => 'erp_omd_access',
+            'erp-omd-alerts' => 'erp_omd_access',
+            'erp-omd-settings' => 'erp_omd_manage_settings',
+        ];
+        $required_capability = (string) ($capability_map[$page] ?? 'erp_omd_access');
+        if (! $this->can_view_admin_page($current_user_id, $page, $required_capability)) {
+            wp_die(esc_html__('Brak uprawnień do tego ekranu.', 'erp-omd'), 403);
+        }
     }
 
     public function enqueue_assets($hook)

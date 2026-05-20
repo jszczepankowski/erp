@@ -521,10 +521,11 @@ class ERP_OMD_REST_API
         $actor_user_id = (int) $request->get_param('actor_user_id');
         $changed_from = sanitize_text_field((string) $request->get_param('changed_from'));
         $changed_to = sanitize_text_field((string) $request->get_param('changed_to'));
+        $change_type = sanitize_key((string) $request->get_param('change_type'));
         $page = max(1, (int) $request->get_param('page'));
         $per_page = max(1, min(200, (int) $request->get_param('per_page') ?: 50));
         $rows = (array) get_option(ERP_OMD_Acl_Service::OPTION_ACL_AUDIT_LOG, []);
-        $filtered = array_values(array_filter($rows, static function ($row) use ($target_user_id, $actor_user_id, $changed_from, $changed_to) {
+        $filtered = array_values(array_filter($rows, static function ($row) use ($target_user_id, $actor_user_id, $changed_from, $changed_to, $change_type) {
             if ($target_user_id > 0 && (int) ($row['target_user_id'] ?? 0) !== $target_user_id) {
                 return false;
             }
@@ -536,6 +537,9 @@ class ERP_OMD_REST_API
                 return false;
             }
             if ($changed_to !== '' && $changed_at > $changed_to . ' 23:59:59') {
+                return false;
+            }
+            if ($change_type !== '' && sanitize_key((string) ($row['change_type'] ?? '')) !== $change_type) {
                 return false;
             }
             return true;
@@ -553,7 +557,9 @@ class ERP_OMD_REST_API
         return rest_ensure_response([
             'capabilities' => (array) ERP_OMD_Capabilities::get_capabilities(),
             'menu_slugs' => (array) ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS,
+            'critical_capabilities' => (array) ERP_OMD_Acl_Service::CRITICAL_CAPABILITIES,
             'decisions' => ['allow', 'deny', 'inherit'],
+            'change_types' => ['acl_override', 'capability_override', 'menu_override', 'capability_and_menu_override'],
         ]);
     }
     public function create_salary_history(WP_REST_Request $request) { $payload = $this->employee_service->prepare_salary_payload($this->sanitize_salary_payload($request, (int) $request['id'])); $errors = $this->employee_service->validate_salary($payload); if ($errors) { return new WP_Error('erp_omd_salary_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->salary_history->create($payload); return new WP_REST_Response($this->salary_history->find($id), 201); }

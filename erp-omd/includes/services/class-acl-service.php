@@ -21,6 +21,15 @@ class ERP_OMD_Acl_Service
         'erp-omd-alerts',
         'erp-omd-settings',
     ];
+    public const CRITICAL_CAPABILITIES = [
+        'erp_omd_manage_settings',
+        'erp_omd_manage_roles',
+        'erp_omd_manage_employees',
+        'erp_omd_manage_clients',
+        'erp_omd_manage_projects',
+        'erp_omd_manage_time',
+        'erp_omd_approve_time',
+    ];
 
     /**
      * @param int $user_id
@@ -94,11 +103,19 @@ class ERP_OMD_Acl_Service
     public function append_acl_audit_log($actor_user_id, $target_user_id, array $before_capability_overrides, array $after_capability_overrides, array $before_menu_overrides, array $after_menu_overrides)
     {
         $log = (array) get_option(self::OPTION_ACL_AUDIT_LOG, []);
+        $change_type = 'acl_override';
+        if ($before_capability_overrides !== $after_capability_overrides) {
+            $change_type = 'capability_override';
+        }
+        if ($before_menu_overrides !== $after_menu_overrides) {
+            $change_type = $change_type === 'capability_override' ? 'capability_and_menu_override' : 'menu_override';
+        }
         $log[] = [
             'id' => 'acl_' . wp_generate_uuid4(),
             'actor_user_id' => (int) $actor_user_id,
             'target_user_id' => (int) $target_user_id,
             'changed_at' => current_time('mysql'),
+            'change_type' => $change_type,
             'before' => [
                 'capability_overrides' => $before_capability_overrides,
                 'menu_overrides' => $before_menu_overrides,
