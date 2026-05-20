@@ -2,6 +2,7 @@
 
 class ERP_OMD_REST_API
 {
+    private $acl_service;
     private $roles;
     private $employees;
     private $salary_history;
@@ -64,6 +65,7 @@ class ERP_OMD_REST_API
         $this->employees = $employees;
         $this->salary_history = $salary_history;
         $this->employee_service = $employee_service;
+        $this->acl_service = class_exists('ERP_OMD_Acl_Service') ? new ERP_OMD_Acl_Service() : null;
         $this->monthly_hours_service = $monthly_hours_service;
         $this->clients = $clients;
         $this->client_rates = $client_rates;
@@ -181,6 +183,17 @@ class ERP_OMD_REST_API
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
             ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
             ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
+        ]);
+        register_rest_route('erp-omd/v1', '/employees/(?P<id>\d+)/acl', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
+            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
+            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'reset_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
+        ]);
+        register_rest_route('erp-omd/v1', '/acl-audit', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_acl_audit'], 'permission_callback' => [$this, 'can_manage_employees']],
+        ]);
+        register_rest_route('erp-omd/v1', '/acl-config', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_acl_config'], 'permission_callback' => [$this, 'can_manage_employees']],
         ]);
         register_rest_route('erp-omd/v1', '/employees/(?P<id>\d+)/salary', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
@@ -391,15 +404,15 @@ class ERP_OMD_REST_API
     }
 
 
-    public function can_manage_roles() { return current_user_can('erp_omd_manage_roles'); }
-    public function can_manage_employees() { return current_user_can('erp_omd_manage_employees'); }
-    public function can_manage_salary() { return current_user_can('erp_omd_manage_salary'); }
-    public function can_manage_clients() { return current_user_can('erp_omd_manage_clients'); }
-    public function can_manage_projects() { return current_user_can('erp_omd_manage_projects'); }
-    public function can_manage_time() { return current_user_can('erp_omd_manage_time'); }
-    public function can_approve_time() { return current_user_can('erp_omd_approve_time') || current_user_can('administrator'); }
-    public function can_access_reports() { return current_user_can('erp_omd_access') || current_user_can('administrator'); }
-    public function can_manage_settings() { return current_user_can('erp_omd_manage_settings') || current_user_can('administrator'); }
+    public function can_manage_roles() { return $this->current_user_can_acl('erp_omd_manage_roles'); }
+    public function can_manage_employees() { return $this->current_user_can_acl('erp_omd_manage_employees'); }
+    public function can_manage_salary() { return $this->current_user_can_acl('erp_omd_manage_salary'); }
+    public function can_manage_clients() { return $this->current_user_can_acl('erp_omd_manage_clients'); }
+    public function can_manage_projects() { return $this->current_user_can_acl('erp_omd_manage_projects'); }
+    public function can_manage_time() { return $this->current_user_can_acl('erp_omd_manage_time'); }
+    public function can_approve_time() { return $this->current_user_can_acl('erp_omd_approve_time') || $this->current_user_can_acl('administrator'); }
+    public function can_access_reports() { return $this->current_user_can_acl('erp_omd_access') || $this->current_user_can_acl('administrator'); }
+    public function can_manage_settings() { return $this->current_user_can_acl('erp_omd_manage_settings') || $this->current_user_can_acl('administrator'); }
 
 
     // existing modules omitted no, implemented below.
@@ -415,6 +428,140 @@ class ERP_OMD_REST_API
     public function update_employee(WP_REST_Request $request) { $id = (int) $request['id']; if (! $this->employees->find($id)) { return new WP_Error('erp_omd_employee_not_found', __('Employee not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_employee_payload($request); $errors = $this->employee_service->validate_employee($payload, $id); if ($errors) { return new WP_Error('erp_omd_employee_invalid', implode(' ', $errors), ['status' => 422]); } $this->employees->update($id, $payload); $this->sync_wp_role($payload['user_id'], $payload['account_type']); return rest_ensure_response($this->employees->find($id)); }
     public function delete_employee(WP_REST_Request $request) { $this->employees->deactivate((int) $request['id']); return new WP_REST_Response(null, 204); }
     public function list_salary_history(WP_REST_Request $request) { return rest_ensure_response($this->salary_history->for_employee((int) $request['id'])); }
+    public function get_employee_acl(WP_REST_Request $request)
+    {
+        $employee = $this->employees->find((int) $request['id']);
+        if (! $employee) {
+            return new WP_Error('erp_omd_employee_not_found', __('Employee not found.', 'erp-omd'), ['status' => 404]);
+        }
+        $user_id = (int) ($employee['user_id'] ?? 0);
+        if ($user_id <= 0) {
+            return new WP_Error('erp_omd_employee_without_user', __('Employee is not linked to WP user.', 'erp-omd'), ['status' => 422]);
+        }
+
+        return rest_ensure_response([
+            'employee_id' => (int) $employee['id'],
+            'user_id' => $user_id,
+            'capability_overrides' => (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, true),
+            'menu_overrides' => (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true),
+        ]);
+    }
+
+    public function update_employee_acl(WP_REST_Request $request)
+    {
+        $employee = $this->employees->find((int) $request['id']);
+        if (! $employee) {
+            return new WP_Error('erp_omd_employee_not_found', __('Employee not found.', 'erp-omd'), ['status' => 404]);
+        }
+        $user_id = (int) ($employee['user_id'] ?? 0);
+        if ($user_id <= 0) {
+            return new WP_Error('erp_omd_employee_without_user', __('Employee is not linked to WP user.', 'erp-omd'), ['status' => 422]);
+        }
+
+        $before_capability_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, true);
+        $before_menu_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true);
+        $capability_overrides = $this->sanitize_acl_override_map((array) $request->get_param('capability_overrides'), (array) ERP_OMD_Capabilities::get_capabilities());
+        $menu_overrides = $this->sanitize_acl_override_map((array) $request->get_param('menu_overrides'), (array) ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS);
+        $guard_error = $this->validate_acl_update_guardrails($user_id, $before_capability_overrides, $capability_overrides);
+        if ($guard_error instanceof WP_Error) {
+            return $guard_error;
+        }
+
+        update_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, $capability_overrides);
+        update_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, $menu_overrides);
+        if ($this->acl_service instanceof ERP_OMD_Acl_Service) {
+            $this->acl_service->append_acl_audit_log(
+                (int) get_current_user_id(),
+                $user_id,
+                $before_capability_overrides,
+                $capability_overrides,
+                $before_menu_overrides,
+                $menu_overrides
+            );
+        }
+
+        return $this->get_employee_acl($request);
+    }
+    public function reset_employee_acl(WP_REST_Request $request)
+    {
+        $employee = $this->employees->find((int) $request['id']);
+        if (! $employee) {
+            return new WP_Error('erp_omd_employee_not_found', __('Employee not found.', 'erp-omd'), ['status' => 404]);
+        }
+        $user_id = (int) ($employee['user_id'] ?? 0);
+        if ($user_id <= 0) {
+            return new WP_Error('erp_omd_employee_without_user', __('Employee is not linked to WP user.', 'erp-omd'), ['status' => 422]);
+        }
+
+        $before_capability_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, true);
+        $before_menu_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true);
+        $guard_error = $this->validate_acl_update_guardrails($user_id, $before_capability_overrides, []);
+        if ($guard_error instanceof WP_Error) {
+            return $guard_error;
+        }
+        delete_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY);
+        delete_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY);
+
+        if ($this->acl_service instanceof ERP_OMD_Acl_Service) {
+            $this->acl_service->append_acl_audit_log(
+                (int) get_current_user_id(),
+                $user_id,
+                $before_capability_overrides,
+                [],
+                $before_menu_overrides,
+                []
+            );
+        }
+
+        return $this->get_employee_acl($request);
+    }
+    public function list_acl_audit(WP_REST_Request $request)
+    {
+        $target_user_id = (int) $request->get_param('target_user_id');
+        $actor_user_id = (int) $request->get_param('actor_user_id');
+        $changed_from = sanitize_text_field((string) $request->get_param('changed_from'));
+        $changed_to = sanitize_text_field((string) $request->get_param('changed_to'));
+        $change_type = sanitize_key((string) $request->get_param('change_type'));
+        $page = max(1, (int) $request->get_param('page'));
+        $per_page = max(1, min(200, (int) $request->get_param('per_page') ?: 50));
+        $rows = (array) get_option(ERP_OMD_Acl_Service::OPTION_ACL_AUDIT_LOG, []);
+        $filtered = array_values(array_filter($rows, static function ($row) use ($target_user_id, $actor_user_id, $changed_from, $changed_to, $change_type) {
+            if ($target_user_id > 0 && (int) ($row['target_user_id'] ?? 0) !== $target_user_id) {
+                return false;
+            }
+            if ($actor_user_id > 0 && (int) ($row['actor_user_id'] ?? 0) !== $actor_user_id) {
+                return false;
+            }
+            $changed_at = (string) ($row['changed_at'] ?? '');
+            if ($changed_from !== '' && $changed_at < $changed_from) {
+                return false;
+            }
+            if ($changed_to !== '' && $changed_at > $changed_to . ' 23:59:59') {
+                return false;
+            }
+            if ($change_type !== '' && sanitize_key((string) ($row['change_type'] ?? '')) !== $change_type) {
+                return false;
+            }
+            return true;
+        }));
+        $total = count($filtered);
+        $offset = ($page - 1) * $per_page;
+        $paged = array_slice($filtered, $offset, $per_page);
+        $response = rest_ensure_response($paged);
+        $response->header('X-WP-Total', (string) $total);
+        $response->header('X-WP-TotalPages', (string) max(1, (int) ceil($total / $per_page)));
+        return $response;
+    }
+    public function get_acl_config(WP_REST_Request $request)
+    {
+        return rest_ensure_response([
+            'capabilities' => (array) ERP_OMD_Capabilities::get_capabilities(),
+            'menu_slugs' => (array) ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS,
+            'critical_capabilities' => (array) ERP_OMD_Acl_Service::CRITICAL_CAPABILITIES,
+            'decisions' => ['allow', 'deny', 'inherit'],
+            'change_types' => ['acl_override', 'capability_override', 'menu_override', 'capability_and_menu_override'],
+        ]);
+    }
     public function create_salary_history(WP_REST_Request $request) { $payload = $this->employee_service->prepare_salary_payload($this->sanitize_salary_payload($request, (int) $request['id'])); $errors = $this->employee_service->validate_salary($payload); if ($errors) { return new WP_Error('erp_omd_salary_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->salary_history->create($payload); return new WP_REST_Response($this->salary_history->find($id), 201); }
     public function get_salary_history(WP_REST_Request $request) { return $this->find_or_error($this->salary_history->find((int) $request['id']), 'erp_omd_salary_not_found', __('Salary history not found.', 'erp-omd')); }
     public function update_salary_history(WP_REST_Request $request) { $id = (int) $request['id']; $existing = $this->salary_history->find($id); if (! $existing) { return new WP_Error('erp_omd_salary_not_found', __('Salary history not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->employee_service->prepare_salary_payload($this->sanitize_salary_payload($request, (int) $existing['employee_id'])); $errors = $this->employee_service->validate_salary($payload, $id); if ($errors) { return new WP_Error('erp_omd_salary_invalid', implode(' ', $errors), ['status' => 422]); } $this->salary_history->update($id, $payload); return rest_ensure_response($this->salary_history->find($id)); }
@@ -1068,6 +1215,63 @@ class ERP_OMD_REST_API
     private function sanitize_project_payload(WP_REST_Request $request) { $manager_ids = $request->get_param('manager_ids'); return ['client_id' => (int) $request->get_param('client_id'), 'name' => sanitize_text_field((string) $request->get_param('name')), 'billing_type' => sanitize_text_field((string) $request->get_param('billing_type')) ?: 'time_material', 'budget' => (float) $request->get_param('budget'), 'retainer_monthly_fee' => (float) $request->get_param('retainer_monthly_fee'), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'do_rozpoczecia', 'start_date' => sanitize_text_field((string) $request->get_param('start_date')), 'end_date' => sanitize_text_field((string) $request->get_param('end_date')), 'deadline_date' => sanitize_text_field((string) $request->get_param('deadline_date')), 'deadline_completed_at' => sanitize_text_field((string) $request->get_param('deadline_completed_at')), 'deadline_completed_by' => (int) $request->get_param('deadline_completed_by'), 'manager_id' => (int) $request->get_param('manager_id'), 'manager_ids' => is_array($manager_ids) ? array_map('intval', $manager_ids) : [], 'estimate_id' => (int) $request->get_param('estimate_id'), 'brief' => sanitize_textarea_field((string) $request->get_param('brief')), 'alert_margin_threshold' => sanitize_text_field((string) $request->get_param('alert_margin_threshold'))]; }
     private function sanitize_project_cost_payload(WP_REST_Request $request, $project_id) { return ['project_id' => (int) $project_id, 'amount' => (float) $request->get_param('amount'), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'cost_date' => sanitize_text_field((string) $request->get_param('cost_date')), 'created_by_user_id' => get_current_user_id()]; }
     private function sanitize_time_entry_payload(WP_REST_Request $request) { return ['employee_id' => (int) $request->get_param('employee_id'), 'project_id' => (int) $request->get_param('project_id'), 'role_id' => (int) $request->get_param('role_id'), 'hours' => (float) $request->get_param('hours'), 'entry_date' => sanitize_text_field((string) $request->get_param('entry_date')), 'description' => sanitize_textarea_field((string) $request->get_param('description')), 'status' => sanitize_text_field((string) $request->get_param('status')) ?: 'submitted']; }
+    private function sanitize_acl_override_map(array $map, array $allowed_keys = [])
+    {
+        $sanitized = [];
+        $allowed_lookup = [];
+        foreach ($allowed_keys as $allowed_key) {
+            $allowed_lookup[sanitize_key((string) $allowed_key)] = true;
+        }
+        foreach ($map as $key => $value) {
+            $normalized_key = sanitize_key((string) $key);
+            if ($normalized_key === '') {
+                continue;
+            }
+            if ($allowed_lookup !== [] && ! isset($allowed_lookup[$normalized_key])) {
+                continue;
+            }
+            $decision = strtolower(sanitize_text_field((string) $value));
+            if (! in_array($decision, ['allow', 'deny', 'inherit'], true)) {
+                continue;
+            }
+            if ($decision === 'inherit') {
+                continue;
+            }
+            $sanitized[$normalized_key] = $decision;
+        }
+
+        return $sanitized;
+    }
+
+    private function current_user_can_acl($capability)
+    {
+        $user_id = (int) get_current_user_id();
+        if ($user_id <= 0) {
+            return false;
+        }
+
+        if ($this->acl_service instanceof ERP_OMD_Acl_Service) {
+            return $this->acl_service->can_user($user_id, (string) $capability);
+        }
+
+        return current_user_can((string) $capability);
+    }
+
+    private function validate_acl_update_guardrails($target_user_id, array $before_capability_overrides, array $after_capability_overrides)
+    {
+        $current_user_id = (int) get_current_user_id();
+        if ($current_user_id > 0 && $current_user_id === (int) $target_user_id && isset($after_capability_overrides['erp_omd_manage_settings']) && $after_capability_overrides['erp_omd_manage_settings'] === 'deny') {
+            return new WP_Error('erp_omd_acl_self_lockout', __('Nie możesz odebrać sobie uprawnienia zarządzania ustawieniami.', 'erp-omd'), ['status' => 422]);
+        }
+        if (! $this->current_user_can_acl('erp_omd_manage_settings')) {
+            foreach (['erp_omd_manage_settings', 'erp_omd_manage_roles', 'erp_omd_manage_employees'] as $critical_cap) {
+                if (($after_capability_overrides[$critical_cap] ?? '') === 'allow') {
+                    return new WP_Error('erp_omd_acl_privilege_escalation', __('Brak uprawnień do nadawania krytycznych uprawnień ACL.', 'erp-omd'), ['status' => 403]);
+                }
+            }
+        }
+        return null;
+    }
 
     /**
      * @param mixed $items_raw
@@ -1324,7 +1528,7 @@ class ERP_OMD_REST_API
 
     private function is_project_cost_locked_for_non_admin($project_id)
     {
-        if (current_user_can('erp_omd_manage_settings') || current_user_can('administrator')) {
+        if ($this->current_user_can_acl('erp_omd_manage_settings') || $this->current_user_can_acl('administrator')) {
             return false;
         }
 

@@ -78,6 +78,87 @@
                 <hr />
                 <div class="erp-omd-section-header">
                     <div>
+                        <h2><?php esc_html_e('ACL użytkownika (nadpisania)', 'erp-omd'); ?></h2>
+                        <p class="description"><?php esc_html_e('Ustawienia allow/deny dla capability i widoczności menu. Brak wyboru = dziedziczenie.', 'erp-omd'); ?></p>
+                    </div>
+                </div>
+                <form method="post">
+                    <?php wp_nonce_field('erp_omd_save_employee_acl_overrides'); ?>
+                    <input type="hidden" name="erp_omd_action" value="save_employee_acl_overrides" />
+                    <input type="hidden" name="employee_id" value="<?php echo esc_attr((string) ((int) ($employee['id'] ?? 0))); ?>" />
+                    <div class="erp-omd-form-sections">
+                        <section class="erp-omd-form-section">
+                            <div class="erp-omd-form-grid">
+                                <div class="erp-omd-form-field">
+                                    <label><?php esc_html_e('Capability overrides', 'erp-omd'); ?></label>
+                                    <?php foreach (ERP_OMD_Capabilities::get_capabilities() as $acl_capability_key) : ?>
+                                        <?php $acl_capability_value = (string) ($employee_acl_capability_overrides[$acl_capability_key] ?? ''); ?>
+                                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                                            <code style="min-width:260px;"><?php echo esc_html($acl_capability_key); ?></code>
+                                            <select name="acl_capability_overrides[<?php echo esc_attr($acl_capability_key); ?>]">
+                                                <option value="" <?php selected($acl_capability_value, ''); ?>><?php esc_html_e('Dziedzicz', 'erp-omd'); ?></option>
+                                                <option value="allow" <?php selected($acl_capability_value, 'allow'); ?>>allow</option>
+                                                <option value="deny" <?php selected($acl_capability_value, 'deny'); ?>>deny</option>
+                                            </select>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <div class="erp-omd-form-field">
+                                    <label><?php esc_html_e('Menu visibility overrides', 'erp-omd'); ?></label>
+                                    <?php foreach (ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS as $acl_menu_key) : ?>
+                                        <?php $acl_menu_value = (string) ($employee_acl_menu_overrides[$acl_menu_key] ?? ''); ?>
+                                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                                            <code style="min-width:260px;"><?php echo esc_html($acl_menu_key); ?></code>
+                                            <select name="acl_menu_overrides[<?php echo esc_attr($acl_menu_key); ?>]">
+                                                <option value="" <?php selected($acl_menu_value, ''); ?>><?php esc_html_e('Dziedzicz', 'erp-omd'); ?></option>
+                                                <option value="allow" <?php selected($acl_menu_value, 'allow'); ?>>allow</option>
+                                                <option value="deny" <?php selected($acl_menu_value, 'deny'); ?>>deny</option>
+                                            </select>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="erp-omd-form-actions">
+                        <?php submit_button(__('Zapisz ACL', 'erp-omd'), 'secondary'); ?>
+                    </div>
+                </form>
+                <div class="erp-omd-section-header">
+                    <div>
+                        <h3><?php esc_html_e('Audit zmian ACL (ostatnie 20)', 'erp-omd'); ?></h3>
+                    </div>
+                </div>
+                <table class="widefat striped">
+                    <thead>
+                    <tr>
+                        <th><?php esc_html_e('Data', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Kto zmienił', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Capability before/after', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Menu before/after', 'erp-omd'); ?></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php if ($employee_acl_audit_rows === []) : ?>
+                        <tr><td colspan="4"><?php esc_html_e('Brak wpisów audytowych ACL.', 'erp-omd'); ?></td></tr>
+                    <?php else : ?>
+                        <?php foreach ($employee_acl_audit_rows as $employee_acl_audit_row) : ?>
+                            <?php $acl_actor_user_id = (int) ($employee_acl_audit_row['actor_user_id'] ?? 0); ?>
+                            <?php $acl_actor = $acl_actor_user_id > 0 ? get_userdata($acl_actor_user_id) : null; ?>
+                            <tr>
+                                <td><?php echo esc_html((string) ($employee_acl_audit_row['changed_at'] ?? '')); ?></td>
+                                <td><?php echo esc_html($acl_actor instanceof WP_User ? (string) $acl_actor->user_login : ('#' . $acl_actor_user_id)); ?></td>
+                                <td><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['before']['capability_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code><br><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['after']['capability_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code></td>
+                                <td><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['before']['menu_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code><br><code><?php echo esc_html((string) wp_json_encode((array) ($employee_acl_audit_row['after']['menu_overrides'] ?? []), JSON_UNESCAPED_UNICODE)); ?></code></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+
+                <hr />
+                <div class="erp-omd-section-header">
+                    <div>
                         <h2><?php esc_html_e('Zmiana hasła', 'erp-omd'); ?></h2>
                         <p class="description"><?php esc_html_e('Zmiana hasła dotyczy powiązanego konta WordPress tego pracownika.', 'erp-omd'); ?></p>
                     </div>
