@@ -210,6 +210,14 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/monthly-hours/(?P<year_month>\d{4}-\d{2})', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_monthly_hours_suggestion'], 'permission_callback' => [$this, 'can_manage_salary']],
         ]);
+        register_rest_route('erp-omd/v1', '/private-tasks', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_private_tasks'], 'permission_callback' => [$this, 'can_access_private_tasks']],
+            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_private_task'], 'permission_callback' => [$this, 'can_access_private_tasks']],
+        ]);
+        register_rest_route('erp-omd/v1', '/private-tasks/(?P<task_id>[A-Za-z0-9\-_:]+)', [
+            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_private_task'], 'permission_callback' => [$this, 'can_access_private_tasks']],
+            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_private_task'], 'permission_callback' => [$this, 'can_access_private_tasks']],
+        ]);
     }
 
     private function register_client_routes()
@@ -413,6 +421,7 @@ class ERP_OMD_REST_API
     public function can_manage_clients() { return $this->current_user_can_acl('erp_omd_manage_clients'); }
     public function can_manage_projects() { return $this->current_user_can_acl('erp_omd_manage_projects'); }
     public function can_manage_time() { return $this->current_user_can_acl('erp_omd_manage_time'); }
+    public function can_access_private_tasks() { return $this->current_user_can_acl('erp_omd_access') || $this->current_user_can_acl('administrator'); }
     public function can_approve_time() { return $this->current_user_can_acl('erp_omd_approve_time') || $this->current_user_can_acl('administrator'); }
     public function can_access_reports() { return $this->current_user_can_acl('erp_omd_access') || $this->current_user_can_acl('administrator'); }
     public function can_manage_settings() { return $this->current_user_can_acl('erp_omd_manage_settings') || $this->current_user_can_acl('administrator'); }
@@ -439,6 +448,76 @@ class ERP_OMD_REST_API
     public function update_employee(WP_REST_Request $request) { $id = (int) $request['id']; if (! $this->employees->find($id)) { return new WP_Error('erp_omd_employee_not_found', __('Employee not found.', 'erp-omd'), ['status' => 404]); } $payload = $this->sanitize_employee_payload($request); $errors = $this->employee_service->validate_employee($payload, $id); if ($errors) { return new WP_Error('erp_omd_employee_invalid', implode(' ', $errors), ['status' => 422]); } $this->employees->update($id, $payload); $this->sync_wp_role($payload['user_id'], $payload['account_type']); return rest_ensure_response($this->employees->find($id)); }
     public function delete_employee(WP_REST_Request $request) { $this->employees->deactivate((int) $request['id']); return new WP_REST_Response(null, 204); }
     public function list_salary_history(WP_REST_Request $request) { return rest_ensure_response($this->salary_history->for_employee((int) $request['id'])); }
+    public function list_private_tasks(WP_REST_Request $request)
+    {
+        $filter = sanitize_key((string) $request->get_param('filter'));
+        if (! in_array($filter, ['all', 'today', 'incomplete'], true)) {
+            $filter = 'all';
+        }
+        return rest_ensure_response($this->build_async_result(true, __('Pobrano listę zadań.', 'erp-omd'), [
+            'items' => $this->get_private_tasks_for_user((int) get_current_user_id(), $filter),
+        ], [], ['entity' => 'private_task', 'action' => 'list', 'filter' => $filter]));
+    }
+    public function create_private_task(WP_REST_Request $request)
+    {
+        $text = sanitize_textarea_field((string) $request->get_param('task_text'));
+        $due_date = sanitize_text_field((string) $request->get_param('task_due_date'));
+        if ($text === '') {
+            return new WP_REST_Response($this->build_async_result(false, __('Treść zadania jest wymagana.', 'erp-omd'), null, ['task_text'], ['entity' => 'private_task', 'action' => 'create']), 422);
+        }
+        if ($due_date !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $due_date)) {
+            return new WP_REST_Response($this->build_async_result(false, __('Data taska ma niepoprawny format.', 'erp-omd'), null, ['task_due_date'], ['entity' => 'private_task', 'action' => 'create']), 422);
+        }
+        $user_id = (int) get_current_user_id();
+        $tasks = (array) get_user_meta($user_id, 'erp_omd_admin_private_tasks', true);
+        $task = ['task_id' => wp_generate_uuid4(), 'text' => $text, 'due_date' => $due_date, 'completed' => 0, 'created_at' => current_time('mysql')];
+        array_unshift($tasks, $task);
+        update_user_meta($user_id, 'erp_omd_admin_private_tasks', array_slice($tasks, 0, 100));
+        return new WP_REST_Response($this->build_async_result(true, __('Zadanie zostało zapisane.', 'erp-omd'), ['item' => $task], [], ['entity' => 'private_task', 'action' => 'create']), 201);
+    }
+    public function update_private_task(WP_REST_Request $request)
+    {
+        $task_id = sanitize_text_field((string) $request['task_id']);
+        $text = sanitize_textarea_field((string) $request->get_param('task_text'));
+        $due_date = sanitize_text_field((string) $request->get_param('task_due_date'));
+        $completed = $request->get_param('completed');
+        if ($text === '') {
+            return new WP_REST_Response($this->build_async_result(false, __('Treść zadania jest wymagana.', 'erp-omd'), null, ['task_text'], ['entity' => 'private_task', 'action' => 'update']), 422);
+        }
+        $tasks = (array) get_user_meta((int) get_current_user_id(), 'erp_omd_admin_private_tasks', true);
+        $updated = null;
+        foreach ($tasks as &$task) {
+            if (! is_array($task)) { continue; }
+            if ((string) ($task['task_id'] ?? '') !== $task_id) { continue; }
+            $task['text'] = $text;
+            $task['due_date'] = $due_date;
+            if ($completed !== null) {
+                $task['completed'] = ! empty($completed) ? 1 : 0;
+            }
+            $updated = $task;
+            break;
+        }
+        unset($task);
+        if (! is_array($updated)) {
+            return new WP_REST_Response($this->build_async_result(false, __('Nie znaleziono zadania do aktualizacji.', 'erp-omd'), null, ['task_id'], ['entity' => 'private_task', 'action' => 'update']), 404);
+        }
+        update_user_meta((int) get_current_user_id(), 'erp_omd_admin_private_tasks', array_slice($tasks, 0, 100));
+        return rest_ensure_response($this->build_async_result(true, __('Zadanie zostało zaktualizowane.', 'erp-omd'), ['item' => $updated], [], ['entity' => 'private_task', 'action' => 'update']));
+    }
+    public function delete_private_task(WP_REST_Request $request)
+    {
+        $task_id = sanitize_text_field((string) $request['task_id']);
+        $tasks = (array) get_user_meta((int) get_current_user_id(), 'erp_omd_admin_private_tasks', true);
+        $before = count($tasks);
+        $tasks = array_values(array_filter($tasks, static function ($task) use ($task_id) {
+            return (string) ($task['task_id'] ?? '') !== $task_id;
+        }));
+        if (count($tasks) === $before) {
+            return new WP_REST_Response($this->build_async_result(false, __('Nie znaleziono zadania do usunięcia.', 'erp-omd'), null, ['task_id'], ['entity' => 'private_task', 'action' => 'delete']), 404);
+        }
+        update_user_meta((int) get_current_user_id(), 'erp_omd_admin_private_tasks', array_slice($tasks, 0, 100));
+        return rest_ensure_response($this->build_async_result(true, __('Zadanie zostało usunięte.', 'erp-omd'), null, [], ['entity' => 'private_task', 'action' => 'delete']));
+    }
     public function get_employee_acl(WP_REST_Request $request)
     {
         $employee = $this->employees->find((int) $request['id']);
@@ -1810,6 +1889,48 @@ class ERP_OMD_REST_API
         }
 
         return false;
+    }
+
+    private function build_async_result($ok, $message, $data = null, array $errors = [], array $meta = [])
+    {
+        return [
+            'ok' => (bool) $ok,
+            'message' => (string) $message,
+            'data' => $data,
+            'errors' => array_values($errors),
+            'meta' => $meta,
+        ];
+    }
+
+    private function get_private_tasks_for_user($user_id, $filter = 'all')
+    {
+        $raw_tasks = get_user_meta((int) $user_id, 'erp_omd_admin_private_tasks', true);
+        $tasks = is_array($raw_tasks) ? $raw_tasks : [];
+        $today = current_time('Y-m-d');
+        $result = [];
+        foreach ($tasks as $task) {
+            if (! is_array($task)) {
+                continue;
+            }
+            $row = [
+                'task_id' => sanitize_text_field((string) ($task['task_id'] ?? '')),
+                'text' => trim((string) ($task['text'] ?? '')),
+                'due_date' => sanitize_text_field((string) ($task['due_date'] ?? '')),
+                'completed' => ! empty($task['completed']) ? 1 : 0,
+                'created_at' => sanitize_text_field((string) ($task['created_at'] ?? '')),
+            ];
+            if ($row['task_id'] === '' || $row['text'] === '') {
+                continue;
+            }
+            if ($filter === 'today' && $row['due_date'] !== $today) {
+                continue;
+            }
+            if ($filter === 'incomplete' && (int) $row['completed'] === 1) {
+                continue;
+            }
+            $result[] = $row;
+        }
+        return array_values($result);
     }
 }
 
