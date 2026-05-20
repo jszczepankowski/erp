@@ -190,10 +190,10 @@ class ERP_OMD_REST_API
             ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'reset_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
         ]);
         register_rest_route('erp-omd/v1', '/acl-audit', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_acl_audit'], 'permission_callback' => [$this, 'can_manage_employees']],
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_acl_audit'], 'permission_callback' => [$this, 'can_access_acl_audit']],
         ]);
         register_rest_route('erp-omd/v1', '/acl-audit/export', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'export_acl_audit_csv'], 'permission_callback' => [$this, 'can_manage_employees']],
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'export_acl_audit_csv'], 'permission_callback' => [$this, 'can_access_acl_audit']],
         ]);
         register_rest_route('erp-omd/v1', '/acl-config', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_acl_config'], 'permission_callback' => [$this, 'can_manage_employees']],
@@ -416,6 +416,14 @@ class ERP_OMD_REST_API
     public function can_approve_time() { return $this->current_user_can_acl('erp_omd_approve_time') || $this->current_user_can_acl('administrator'); }
     public function can_access_reports() { return $this->current_user_can_acl('erp_omd_access') || $this->current_user_can_acl('administrator'); }
     public function can_manage_settings() { return $this->current_user_can_acl('erp_omd_manage_settings') || $this->current_user_can_acl('administrator'); }
+    public function can_access_acl_audit()
+    {
+        if (function_exists('is_super_admin') && is_super_admin()) {
+            return true;
+        }
+
+        return $this->current_user_can_acl('administrator');
+    }
 
 
     // existing modules omitted no, implemented below.

@@ -72,7 +72,14 @@ if (! function_exists('register_rest_route')) {
 if (! function_exists('current_user_can')) {
     function current_user_can($capability)
     {
-        return in_array($capability, ['administrator', 'erp_omd_manage_settings', 'erp_omd_manage_projects', 'erp_omd_manage_time', 'erp_omd_access'], true);
+        $allowed = $GLOBALS['erp_omd_current_user_caps'] ?? ['administrator', 'erp_omd_manage_settings', 'erp_omd_manage_projects', 'erp_omd_manage_time', 'erp_omd_access'];
+        return in_array($capability, (array) $allowed, true);
+    }
+}
+if (! function_exists('is_super_admin')) {
+    function is_super_admin()
+    {
+        return ! empty($GLOBALS['erp_omd_is_super_admin']);
     }
 }
 if (! function_exists('get_current_user_id')) {
@@ -90,6 +97,33 @@ if (! function_exists('get_option')) {
         ];
 
         return $options[$key] ?? $default;
+    }
+}
+if (! function_exists('get_user_meta')) {
+    function get_user_meta($user_id, $key, $single = false)
+    {
+        $store = (array) ($GLOBALS['erp_omd_user_meta'] ?? []);
+        $user_id = (int) $user_id;
+        return $store[$user_id][$key] ?? [];
+    }
+}
+if (! function_exists('update_user_meta')) {
+    function update_user_meta($user_id, $key, $value)
+    {
+        $user_id = (int) $user_id;
+        if (! isset($GLOBALS['erp_omd_user_meta'][$user_id])) {
+            $GLOBALS['erp_omd_user_meta'][$user_id] = [];
+        }
+        $GLOBALS['erp_omd_user_meta'][$user_id][$key] = $value;
+        return true;
+    }
+}
+if (! function_exists('delete_user_meta')) {
+    function delete_user_meta($user_id, $key)
+    {
+        $user_id = (int) $user_id;
+        unset($GLOBALS['erp_omd_user_meta'][$user_id][$key]);
+        return true;
     }
 }
 if (! function_exists('current_time')) {
@@ -686,6 +720,42 @@ final class RestApiTestRunner
         $this->assertSame(3, count($estimatesPagedWithInvalidPerPage->get_data()), 'Estimates endpoint should fallback to default per_page=100 when invalid value is provided.');
         $estimateHeaders = $estimatesPagedWithInvalidPerPage->get_headers();
         $this->assertSame('100', $estimateHeaders['X-ERP-OMD-PerPage'] ?? '', 'Estimates paged response should clamp invalid per_page to 100.');
+
+        $GLOBALS['erp_omd_current_user_caps'] = ['erp_omd_manage_employees'];
+        $GLOBALS['erp_omd_is_super_admin'] = false;
+        $this->assertSame(false, $api->can_access_acl_audit(), 'ACL audit should require super-admin/admin access.');
+        $GLOBALS['erp_omd_current_user_caps'] = ['administrator'];
+        $this->assertSame(true, $api->can_access_acl_audit(), 'ACL audit should allow administrator access.');
+        $GLOBALS['erp_omd_current_user_caps'] = ['erp_omd_manage_employees'];
+        $GLOBALS['erp_omd_is_super_admin'] = true;
+        $this->assertSame(true, $api->can_access_acl_audit(), 'ACL audit should allow super-admin access.');
+        $GLOBALS['erp_omd_is_super_admin'] = false;
+
+        $denySelfCritical = $api->update_employee_acl(new WP_REST_Request([
+            'id' => 99,
+            'capability_overrides' => ['erp_omd_manage_employees' => 'deny'],
+            'menu_overrides' => [],
+        ]));
+        $this->assertSame(true, $denySelfCritical instanceof WP_Error, 'ACL update should block self-lockout for critical capability.');
+        $this->assertSame('erp_omd_acl_self_lockout', $denySelfCritical->get_error_code(), 'ACL update should return self-lockout error code.');
+        $this->assertSame(422, (int) (($denySelfCritical->get_error_data()['status'] ?? 0)), 'Self-lockout should return HTTP 422.');
+
+        $GLOBALS['erp_omd_current_user_caps'] = ['erp_omd_manage_employees'];
+        $escalation = $api->update_employee_acl(new WP_REST_Request([
+            'id' => 1,
+            'capability_overrides' => ['erp_omd_manage_settings' => 'allow'],
+            'menu_overrides' => [],
+        ]));
+        $this->assertSame(true, $escalation instanceof WP_Error, 'ACL update should block privilege escalation without manage_settings.');
+        $this->assertSame('erp_omd_acl_privilege_escalation', $escalation->get_error_code(), 'ACL update should return privilege escalation error code.');
+        $this->assertSame(403, (int) (($escalation->get_error_data()['status'] ?? 0)), 'Privilege escalation block should return HTTP 403.');
+
+        $GLOBALS['erp_omd_current_user_caps'] = ['administrator', 'erp_omd_manage_settings', 'erp_omd_manage_employees'];
+        $GLOBALS['erp_omd_user_meta'][1]['erp_omd_user_capability_overrides'] = ['erp_omd_manage_projects' => 'allow'];
+        $GLOBALS['erp_omd_user_meta'][1]['erp_omd_user_menu_visibility_overrides'] = ['erp-omd-projects' => 'deny'];
+        $resetResponse = $api->reset_employee_acl(new WP_REST_Request(['id' => 1]));
+        $this->assertSame([], $resetResponse['capability_overrides'], 'ACL reset should restore inherited capability overrides.');
+        $this->assertSame([], $resetResponse['menu_overrides'], 'ACL reset should restore inherited menu overrides.');
 
         echo "Assertions: {$this->assertions}\n";
         echo "REST API tests passed.\n";
