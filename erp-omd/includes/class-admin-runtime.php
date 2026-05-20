@@ -2001,6 +2001,16 @@ class ERP_OMD_Admin
             (array) wp_unslash($_POST['acl_menu_overrides'] ?? []),
             (array) ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS
         );
+        if ((int) get_current_user_id() === $user_id && (($capability_overrides['erp_omd_manage_settings'] ?? '') === 'deny')) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', __('Nie możesz odebrać sobie uprawnienia zarządzania ustawieniami.', 'erp-omd'), ['id' => $employee_id]);
+        }
+        if (! current_user_can('erp_omd_manage_settings')) {
+            foreach (['erp_omd_manage_settings', 'erp_omd_manage_roles', 'erp_omd_manage_employees'] as $critical_capability_key) {
+                if (($capability_overrides[$critical_capability_key] ?? '') === 'allow') {
+                    $this->redirect_with_notice('erp-omd-employees', 'error', __('Brak uprawnień do nadawania krytycznych uprawnień ACL.', 'erp-omd'), ['id' => $employee_id]);
+                }
+            }
+        }
 
         update_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, $capability_overrides);
         update_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, $menu_overrides);

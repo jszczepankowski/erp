@@ -462,6 +462,10 @@ class ERP_OMD_REST_API
         $before_menu_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true);
         $capability_overrides = $this->sanitize_acl_override_map((array) $request->get_param('capability_overrides'), (array) ERP_OMD_Capabilities::get_capabilities());
         $menu_overrides = $this->sanitize_acl_override_map((array) $request->get_param('menu_overrides'), (array) ERP_OMD_Acl_Service::ALLOWED_MENU_SLUGS);
+        $guard_error = $this->validate_acl_update_guardrails($user_id, $before_capability_overrides, $capability_overrides);
+        if ($guard_error instanceof WP_Error) {
+            return $guard_error;
+        }
 
         update_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, $capability_overrides);
         update_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, $menu_overrides);
@@ -491,6 +495,10 @@ class ERP_OMD_REST_API
 
         $before_capability_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY, true);
         $before_menu_overrides = (array) get_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY, true);
+        $guard_error = $this->validate_acl_update_guardrails($user_id, $before_capability_overrides, []);
+        if ($guard_error instanceof WP_Error) {
+            return $guard_error;
+        }
         delete_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY);
         delete_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY);
 
@@ -510,15 +518,35 @@ class ERP_OMD_REST_API
     public function list_acl_audit(WP_REST_Request $request)
     {
         $target_user_id = (int) $request->get_param('target_user_id');
+        $actor_user_id = (int) $request->get_param('actor_user_id');
+        $changed_from = sanitize_text_field((string) $request->get_param('changed_from'));
+        $changed_to = sanitize_text_field((string) $request->get_param('changed_to'));
+        $page = max(1, (int) $request->get_param('page'));
+        $per_page = max(1, min(200, (int) $request->get_param('per_page') ?: 50));
         $rows = (array) get_option(ERP_OMD_Acl_Service::OPTION_ACL_AUDIT_LOG, []);
-        if ($target_user_id <= 0) {
-            return rest_ensure_response($rows);
-        }
-
-        $filtered = array_values(array_filter($rows, static function ($row) use ($target_user_id) {
-            return (int) ($row['target_user_id'] ?? 0) === $target_user_id;
+        $filtered = array_values(array_filter($rows, static function ($row) use ($target_user_id, $actor_user_id, $changed_from, $changed_to) {
+            if ($target_user_id > 0 && (int) ($row['target_user_id'] ?? 0) !== $target_user_id) {
+                return false;
+            }
+            if ($actor_user_id > 0 && (int) ($row['actor_user_id'] ?? 0) !== $actor_user_id) {
+                return false;
+            }
+            $changed_at = (string) ($row['changed_at'] ?? '');
+            if ($changed_from !== '' && $changed_at < $changed_from) {
+                return false;
+            }
+            if ($changed_to !== '' && $changed_at > $changed_to . ' 23:59:59') {
+                return false;
+            }
+            return true;
         }));
-        return rest_ensure_response($filtered);
+        $total = count($filtered);
+        $offset = ($page - 1) * $per_page;
+        $paged = array_slice($filtered, $offset, $per_page);
+        $response = rest_ensure_response($paged);
+        $response->header('X-WP-Total', (string) $total);
+        $response->header('X-WP-TotalPages', (string) max(1, (int) ceil($total / $per_page)));
+        return $response;
     }
     public function get_acl_config(WP_REST_Request $request)
     {
@@ -1221,6 +1249,22 @@ class ERP_OMD_REST_API
         }
 
         return current_user_can((string) $capability);
+    }
+
+    private function validate_acl_update_guardrails($target_user_id, array $before_capability_overrides, array $after_capability_overrides)
+    {
+        $current_user_id = (int) get_current_user_id();
+        if ($current_user_id > 0 && $current_user_id === (int) $target_user_id && isset($after_capability_overrides['erp_omd_manage_settings']) && $after_capability_overrides['erp_omd_manage_settings'] === 'deny') {
+            return new WP_Error('erp_omd_acl_self_lockout', __('Nie możesz odebrać sobie uprawnienia zarządzania ustawieniami.', 'erp-omd'), ['status' => 422]);
+        }
+        if (! $this->current_user_can_acl('erp_omd_manage_settings')) {
+            foreach (['erp_omd_manage_settings', 'erp_omd_manage_roles', 'erp_omd_manage_employees'] as $critical_cap) {
+                if (($after_capability_overrides[$critical_cap] ?? '') === 'allow') {
+                    return new WP_Error('erp_omd_acl_privilege_escalation', __('Brak uprawnień do nadawania krytycznych uprawnień ACL.', 'erp-omd'), ['status' => 403]);
+                }
+            }
+        }
+        return null;
     }
 
     /**
