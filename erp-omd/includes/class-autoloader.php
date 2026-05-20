@@ -37,6 +37,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Cost_Invoice_Audit_Repository' => 'includes/repositories/class-cost-invoice-audit-repository.php',
         'ERP_OMD_Project_Calendar_Sync_Repository' => 'includes/repositories/class-project-calendar-sync-repository.php',
         'ERP_OMD_Adjustment_Audit_Repository' => 'includes/repositories/class-omd-adjustment-audit-repository.php',
+        'ERP_OMD_Acl_Audit_Repository' => 'includes/repositories/class-acl-audit-repository.php',
         'ERP_OMD_Monthly_Hours_Service' => 'includes/services/class-monthly-hours-service.php',
         'ERP_OMD_Employee_Service' => 'includes/services/class-employee-service.php',
         'ERP_OMD_Client_Project_Service' => 'includes/services/class-client-project-service.php',

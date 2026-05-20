@@ -67,6 +67,7 @@ class ERP_OMD_Installer
         $estimate_audit_table = $wpdb->prefix . 'erp_omd_estimate_audit';
         $periods_table = $wpdb->prefix . 'erp_omd_periods';
         $adjustment_audit_table = $wpdb->prefix . 'erp_omd_adjustment_audit';
+        $acl_audit_table = $wpdb->prefix . 'erp_omd_acl_audit';
 
         dbDelta(
             "CREATE TABLE {$roles_table} (
@@ -581,6 +582,27 @@ class ERP_OMD_Installer
                 KEY entity_lookup (entity_type, entity_id),
                 KEY adjustment_type (adjustment_type),
                 KEY changed_by (changed_by)
+            ) ENGINE=InnoDB {$charset_collate};"
+        );
+
+        dbDelta(
+            "CREATE TABLE {$acl_audit_table} (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                event_id VARCHAR(64) NOT NULL,
+                actor_user_id BIGINT UNSIGNED NOT NULL,
+                target_user_id BIGINT UNSIGNED NOT NULL,
+                changed_at DATETIME NOT NULL,
+                change_type VARCHAR(64) NOT NULL,
+                before_capability_overrides LONGTEXT NULL,
+                after_capability_overrides LONGTEXT NULL,
+                before_menu_overrides LONGTEXT NULL,
+                after_menu_overrides LONGTEXT NULL,
+                PRIMARY KEY  (id),
+                UNIQUE KEY event_id (event_id),
+                KEY target_user_id (target_user_id),
+                KEY changed_at (changed_at),
+                KEY actor_user_id (actor_user_id),
+                KEY change_type (change_type)
             ) ENGINE=InnoDB {$charset_collate};"
         );
 

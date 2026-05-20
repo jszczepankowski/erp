@@ -102,6 +102,7 @@ class ERP_OMD_Acl_Service
      */
     public function append_acl_audit_log($actor_user_id, $target_user_id, array $before_capability_overrides, array $after_capability_overrides, array $before_menu_overrides, array $after_menu_overrides)
     {
+        $entry = null;
         $log = (array) get_option(self::OPTION_ACL_AUDIT_LOG, []);
         $change_type = 'acl_override';
         if ($before_capability_overrides !== $after_capability_overrides) {
@@ -110,7 +111,7 @@ class ERP_OMD_Acl_Service
         if ($before_menu_overrides !== $after_menu_overrides) {
             $change_type = $change_type === 'capability_override' ? 'capability_and_menu_override' : 'menu_override';
         }
-        $log[] = [
+        $entry = [
             'id' => 'acl_' . wp_generate_uuid4(),
             'actor_user_id' => (int) $actor_user_id,
             'target_user_id' => (int) $target_user_id,
@@ -125,9 +126,23 @@ class ERP_OMD_Acl_Service
                 'menu_overrides' => $after_menu_overrides,
             ],
         ];
+        $log[] = $entry;
         if (count($log) > 1000) {
             $log = array_slice($log, -1000);
         }
         update_option(self::OPTION_ACL_AUDIT_LOG, $log, false);
+
+        if (class_exists('ERP_OMD_Acl_Audit_Repository')) {
+            $repo = new ERP_OMD_Acl_Audit_Repository();
+            $repo->insert([
+                'event_id' => (string) ($entry['id'] ?? ''),
+                'actor_user_id' => (int) ($entry['actor_user_id'] ?? 0),
+                'target_user_id' => (int) ($entry['target_user_id'] ?? 0),
+                'changed_at' => (string) ($entry['changed_at'] ?? ''),
+                'change_type' => (string) ($entry['change_type'] ?? 'acl_override'),
+                'before' => (array) ($entry['before'] ?? []),
+                'after' => (array) ($entry['after'] ?? []),
+            ]);
+        }
     }
 }

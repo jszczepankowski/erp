@@ -192,6 +192,9 @@ class ERP_OMD_REST_API
         register_rest_route('erp-omd/v1', '/acl-audit', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_acl_audit'], 'permission_callback' => [$this, 'can_manage_employees']],
         ]);
+        register_rest_route('erp-omd/v1', '/acl-audit/export', [
+            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'export_acl_audit_csv'], 'permission_callback' => [$this, 'can_manage_employees']],
+        ]);
         register_rest_route('erp-omd/v1', '/acl-config', [
             ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_acl_config'], 'permission_callback' => [$this, 'can_manage_employees']],
         ]);
@@ -524,7 +527,30 @@ class ERP_OMD_REST_API
         $change_type = sanitize_key((string) $request->get_param('change_type'));
         $page = max(1, (int) $request->get_param('page'));
         $per_page = max(1, min(200, (int) $request->get_param('per_page') ?: 50));
-        $rows = (array) get_option(ERP_OMD_Acl_Service::OPTION_ACL_AUDIT_LOG, []);
+        $rows = [];
+        if (class_exists('ERP_OMD_Acl_Audit_Repository')) {
+            $rows = (new ERP_OMD_Acl_Audit_Repository())->all();
+            $rows = array_map(static function ($row) {
+                return [
+                    'id' => (string) ($row['event_id'] ?? ''),
+                    'actor_user_id' => (int) ($row['actor_user_id'] ?? 0),
+                    'target_user_id' => (int) ($row['target_user_id'] ?? 0),
+                    'changed_at' => (string) ($row['changed_at'] ?? ''),
+                    'change_type' => (string) ($row['change_type'] ?? 'acl_override'),
+                    'before' => [
+                        'capability_overrides' => (array) json_decode((string) ($row['before_capability_overrides'] ?? '[]'), true),
+                        'menu_overrides' => (array) json_decode((string) ($row['before_menu_overrides'] ?? '[]'), true),
+                    ],
+                    'after' => [
+                        'capability_overrides' => (array) json_decode((string) ($row['after_capability_overrides'] ?? '[]'), true),
+                        'menu_overrides' => (array) json_decode((string) ($row['after_menu_overrides'] ?? '[]'), true),
+                    ],
+                ];
+            }, $rows);
+        }
+        if ($rows === []) {
+            $rows = (array) get_option(ERP_OMD_Acl_Service::OPTION_ACL_AUDIT_LOG, []);
+        }
         $filtered = array_values(array_filter($rows, static function ($row) use ($target_user_id, $actor_user_id, $changed_from, $changed_to, $change_type) {
             if ($target_user_id > 0 && (int) ($row['target_user_id'] ?? 0) !== $target_user_id) {
                 return false;
@@ -561,6 +587,25 @@ class ERP_OMD_REST_API
             'decisions' => ['allow', 'deny', 'inherit'],
             'change_types' => ['acl_override', 'capability_override', 'menu_override', 'capability_and_menu_override'],
         ]);
+    }
+    public function export_acl_audit_csv(WP_REST_Request $request)
+    {
+        $response = $this->list_acl_audit($request);
+        $rows = $response instanceof WP_REST_Response ? (array) $response->get_data() : [];
+        $lines = ['changed_at,actor_user_id,target_user_id,change_type,before_capability_overrides,after_capability_overrides,before_menu_overrides,after_menu_overrides'];
+        foreach ($rows as $row) {
+            $lines[] = implode(',', [
+                $this->csv_escape((string) ($row['changed_at'] ?? '')),
+                (int) ($row['actor_user_id'] ?? 0),
+                (int) ($row['target_user_id'] ?? 0),
+                $this->csv_escape((string) ($row['change_type'] ?? '')),
+                $this->csv_escape((string) wp_json_encode((array) (($row['before']['capability_overrides'] ?? [])))),
+                $this->csv_escape((string) wp_json_encode((array) (($row['after']['capability_overrides'] ?? [])))),
+                $this->csv_escape((string) wp_json_encode((array) (($row['before']['menu_overrides'] ?? [])))),
+                $this->csv_escape((string) wp_json_encode((array) (($row['after']['menu_overrides'] ?? [])))),
+            ]);
+        }
+        return new WP_REST_Response(['filename' => 'acl-audit.csv', 'content' => implode("\n", $lines)], 200);
     }
     public function create_salary_history(WP_REST_Request $request) { $payload = $this->employee_service->prepare_salary_payload($this->sanitize_salary_payload($request, (int) $request['id'])); $errors = $this->employee_service->validate_salary($payload); if ($errors) { return new WP_Error('erp_omd_salary_invalid', implode(' ', $errors), ['status' => 422]); } $id = $this->salary_history->create($payload); return new WP_REST_Response($this->salary_history->find($id), 201); }
     public function get_salary_history(WP_REST_Request $request) { return $this->find_or_error($this->salary_history->find((int) $request['id']), 'erp_omd_salary_not_found', __('Salary history not found.', 'erp-omd')); }
@@ -1260,8 +1305,12 @@ class ERP_OMD_REST_API
     private function validate_acl_update_guardrails($target_user_id, array $before_capability_overrides, array $after_capability_overrides)
     {
         $current_user_id = (int) get_current_user_id();
-        if ($current_user_id > 0 && $current_user_id === (int) $target_user_id && isset($after_capability_overrides['erp_omd_manage_settings']) && $after_capability_overrides['erp_omd_manage_settings'] === 'deny') {
-            return new WP_Error('erp_omd_acl_self_lockout', __('Nie możesz odebrać sobie uprawnienia zarządzania ustawieniami.', 'erp-omd'), ['status' => 422]);
+        if ($current_user_id > 0 && $current_user_id === (int) $target_user_id) {
+            foreach (['erp_omd_manage_settings', 'erp_omd_manage_employees'] as $critical_self_capability) {
+                if (($after_capability_overrides[$critical_self_capability] ?? '') === 'deny') {
+                    return new WP_Error('erp_omd_acl_self_lockout', __('Nie możesz odebrać sobie krytycznego uprawnienia.', 'erp-omd'), ['status' => 422]);
+                }
+            }
         }
         if (! $this->current_user_can_acl('erp_omd_manage_settings')) {
             foreach (['erp_omd_manage_settings', 'erp_omd_manage_roles', 'erp_omd_manage_employees'] as $critical_cap) {
@@ -1321,6 +1370,12 @@ class ERP_OMD_REST_API
         $invoice['items'] = (array) $this->cost_invoice_items->for_invoice($invoice_id);
 
         return $invoice;
+    }
+
+    private function csv_escape($value)
+    {
+        $value = str_replace('"', '""', (string) $value);
+        return '"' . $value . '"';
     }
 
     private function resolve_estimate_by_token($token)
