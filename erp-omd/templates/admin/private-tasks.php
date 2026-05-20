@@ -121,6 +121,22 @@
             return {ok: false, message: fallback || 'Błąd odpowiedzi serwera.'};
         }
     };
+    const bindEditButtons = () => {
+        document.querySelectorAll('.erp-omd-task-edit-btn').forEach((btn) => {
+            if (btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', () => {
+                const row = btn.closest('tr');
+                if (!row) return;
+                idEl.value = row.getAttribute('data-task-id') || '';
+                textEl.value = row.getAttribute('data-task-text') || '';
+                dateEl.value = row.getAttribute('data-task-due-date') || '';
+                submitEl.textContent = 'Zapisz zmiany';
+                cancelEl.style.display = 'inline-block';
+                textEl.focus();
+            });
+        });
+    };
     const refreshCard = async () => {
         if (!cardEl) return;
         const response = await fetch(window.location.href, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
@@ -130,7 +146,7 @@
         const nextCard = doc.querySelector('.erp-omd-card');
         if (nextCard) {
             cardEl.innerHTML = nextCard.innerHTML;
-            window.location.reload = window.location.reload;
+            bindEditButtons();
         }
     };
     const resetEditor = () => {
@@ -151,17 +167,6 @@
         if (!parsed.ok) return;
         await refreshCard();
     });
-    document.querySelectorAll('.erp-omd-task-edit-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const row = btn.closest('tr');
-            if (!row) return;
-            idEl.value = row.getAttribute('data-task-id') || '';
-            textEl.value = row.getAttribute('data-task-text') || '';
-            dateEl.value = row.getAttribute('data-task-due-date') || '';
-            submitEl.textContent = 'Zapisz zmiany';
-            cancelEl.style.display = 'inline-block';
-            textEl.focus();
-        });
-    });
+    bindEditButtons();
 })();
 </script>
