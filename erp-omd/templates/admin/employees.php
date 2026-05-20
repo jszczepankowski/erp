@@ -75,7 +75,18 @@
             </form>
 
             <?php if ($employee) : ?>
+                <?php $employee_tab = sanitize_key((string) ($_GET['employee_tab'] ?? 'profile')); ?>
+                <?php if (! in_array($employee_tab, ['profile', 'acl'], true)) : ?>
+                    <?php $employee_tab = 'profile'; ?>
+                <?php endif; ?>
+                <?php $employee_tab_base_args = ['page' => 'erp-omd-employees', 'id' => (int) ($employee['id'] ?? 0)]; ?>
                 <hr />
+                <h2 class="nav-tab-wrapper">
+                    <a href="<?php echo esc_url(add_query_arg(array_merge($employee_tab_base_args, ['employee_tab' => 'profile']), admin_url('admin.php'))); ?>" class="nav-tab <?php echo $employee_tab === 'profile' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Dane pracownika', 'erp-omd'); ?></a>
+                    <a href="<?php echo esc_url(add_query_arg(array_merge($employee_tab_base_args, ['employee_tab' => 'acl']), admin_url('admin.php'))); ?>" class="nav-tab <?php echo $employee_tab === 'acl' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Uprawnienia ACL', 'erp-omd'); ?></a>
+                </h2>
+
+                <?php if ($employee_tab === 'acl') : ?>
                 <div class="erp-omd-section-header">
                     <div>
                         <h2><?php esc_html_e('ACL użytkownika (nadpisania)', 'erp-omd'); ?></h2>
@@ -206,6 +217,7 @@
                     refreshBadges();
                 })();
                 </script>
+                <?php else : ?>
 
                 <hr />
                 <div class="erp-omd-section-header">
@@ -274,6 +286,7 @@
                         <?php submit_button(__('Dodaj wpis do historii wynagrodzeń', 'erp-omd'), 'secondary'); ?>
                     </div>
                 </form>
+                <?php endif; ?>
             <?php endif; ?>
         </section>
 
