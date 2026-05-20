@@ -1,3 +1,61 @@
+const buildAsyncResult = ({ ok = false, message = '', data = null, errors = [], meta = {} } = {}) => ({
+  ok: Boolean(ok),
+  message: String(message || ''),
+  data,
+  errors: Array.isArray(errors) ? errors : [],
+  meta: meta && typeof meta === 'object' ? meta : {},
+});
+
+const parseAsyncResponse = async (response, fallbackMessage = 'Wystąpił błąd operacji.') => {
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    if (payload && typeof payload === 'object') {
+      if (Array.isArray(payload.errors)) {
+        return buildAsyncResult({
+          ok: false,
+          message: payload.message || fallbackMessage,
+          errors: payload.errors,
+          meta: payload.meta || {},
+        });
+      }
+      if (payload.message) {
+        return buildAsyncResult({ ok: false, message: payload.message, errors: [] });
+      }
+    }
+    return buildAsyncResult({ ok: false, message: fallbackMessage, errors: [] });
+  }
+
+  if (payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, 'ok')) {
+    return buildAsyncResult(payload);
+  }
+
+  return buildAsyncResult({
+    ok: true,
+    message: '',
+    data: payload,
+  });
+};
+
+const defaultAsyncHeaders = () => {
+  const headers = { Accept: 'application/json' };
+  if (typeof erpOmdAdminData !== 'undefined' && erpOmdAdminData && erpOmdAdminData.restNonce) {
+    headers['X-WP-Nonce'] = String(erpOmdAdminData.restNonce);
+  }
+  return headers;
+};
+
+window.erpOmdAsync = {
+  buildAsyncResult,
+  parseAsyncResponse,
+  defaultAsyncHeaders,
+};
+
 const initTableTools = () => {
   const currentPage = new URLSearchParams(window.location.search).get('page') || '';
   const paginatedPages = new Set([
