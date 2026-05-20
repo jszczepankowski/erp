@@ -85,7 +85,7 @@ if (! function_exists('is_super_admin')) {
 if (! function_exists('get_current_user_id')) {
     function get_current_user_id()
     {
-        return 99;
+        return (int) ($GLOBALS['erp_omd_current_user_id'] ?? 99);
     }
 }
 if (! function_exists('get_option')) {
@@ -569,6 +569,47 @@ if (! class_exists('ERP_OMD_Adjustment_Audit_Repository')) {
         }
     }
 }
+if (! class_exists('ERP_OMD_Acl_Service')) {
+    class ERP_OMD_Acl_Service
+    {
+        public const USER_CAP_OVERRIDES_META_KEY = 'erp_omd_user_capability_overrides';
+        public const USER_MENU_OVERRIDES_META_KEY = 'erp_omd_user_menu_visibility_overrides';
+        public const OPTION_ACL_AUDIT_LOG = 'erp_omd_acl_audit_log';
+        public const ALLOWED_MENU_SLUGS = ['erp-omd', 'erp-omd-employees', 'erp-omd-settings', 'erp-omd-projects'];
+        public const CRITICAL_CAPABILITIES = ['erp_omd_manage_settings', 'erp_omd_manage_employees'];
+
+        public function can_user($user_id, $capability)
+        {
+            return current_user_can((string) $capability);
+        }
+
+        public function can_view_menu_page($user_id, $page_slug)
+        {
+            return true;
+        }
+
+        public function append_acl_audit_log($actor_user_id, $target_user_id, array $before_capability_overrides, array $after_capability_overrides, array $before_menu_overrides, array $after_menu_overrides)
+        {
+            return true;
+        }
+    }
+}
+if (! class_exists('ERP_OMD_Capabilities')) {
+    class ERP_OMD_Capabilities
+    {
+        public static function get_capabilities()
+        {
+            return [
+                'erp_omd_access',
+                'erp_omd_manage_projects',
+                'erp_omd_manage_time',
+                'erp_omd_manage_settings',
+                'erp_omd_manage_employees',
+                'erp_omd_manage_roles',
+            ];
+        }
+    }
+}
 
 require_once __DIR__ . '/../erp-omd/includes/services/class-project-attachment-service.php';
 require_once __DIR__ . '/../erp-omd/includes/class-rest-api.php';
@@ -787,4 +828,6 @@ final class RestApiTestRunner
     }
 }
 
-(new RestApiTestRunner())->run();
+if (realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
+    (new RestApiTestRunner())->run();
+}
