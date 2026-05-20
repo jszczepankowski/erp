@@ -101,16 +101,17 @@ class ERP_OMD_Admin
     {
         $user_id = (int) get_current_user_id();
         $menu_notifications = $this->get_kolko_notifications_summary();
-        if ($this->can_view_admin_page($user_id, 'erp-omd', 'erp_omd_access')) {
+        $first_accessible_slug = $this->first_accessible_erp_admin_slug($user_id);
+        if ($first_accessible_slug !== null) {
             add_menu_page(
-            __('ERP OMD', 'erp-omd'),
-            __('ERP OMD', 'erp-omd'),
-            'erp_omd_access',
-            'erp-omd',
-            [$this, 'render_dashboard'],
-            'dashicons-chart-pie',
-            56
-        );
+                __('ERP OMD', 'erp-omd'),
+                __('ERP OMD', 'erp-omd'),
+                'read',
+                'erp-omd',
+                [$this, 'render_dashboard'],
+                'dashicons-chart-pie',
+                56
+            );
         }
         $this->register_acl_submenu_page($user_id, 'erp-omd', __('Dashboard', 'erp-omd'), __('Dashboard', 'erp-omd'), 'erp_omd_access', 'erp-omd', [$this, 'render_dashboard']);
         $this->register_acl_submenu_page($user_id, 'erp-omd', __('Lista zadań', 'erp-omd'), __('Lista zadań', 'erp-omd'), 'erp_omd_access', 'erp-omd-private-tasks', [$this, 'render_private_tasks']);
@@ -217,9 +218,45 @@ class ERP_OMD_Admin
             'erp-omd-settings' => 'erp_omd_manage_settings',
         ];
         $required_capability = (string) ($capability_map[$page] ?? 'erp_omd_access');
+        if ($page === 'erp-omd' && ! $this->can_view_admin_page($current_user_id, 'erp-omd', 'erp_omd_access')) {
+            $redirect_slug = $this->first_accessible_erp_admin_slug($current_user_id, ['erp-omd']);
+            if ($redirect_slug !== null) {
+                wp_safe_redirect(admin_url('admin.php?page=' . rawurlencode($redirect_slug)));
+                exit;
+            }
+        }
         if (! $this->can_view_admin_page($current_user_id, $page, $required_capability)) {
             wp_die(esc_html__('Brak uprawnień do tego ekranu.', 'erp-omd'), 403);
         }
+    }
+
+    private function first_accessible_erp_admin_slug($user_id, array $exclude_slugs = [])
+    {
+        $capability_map = [
+            'erp-omd' => 'erp_omd_access',
+            'erp-omd-private-tasks' => 'erp_omd_access',
+            'erp-omd-employees' => 'erp_omd_manage_employees',
+            'erp-omd-roles' => 'erp_omd_manage_roles',
+            'erp-omd-clients' => 'erp_omd_manage_clients',
+            'erp-omd-time' => 'erp_omd_manage_time',
+            'erp-omd-estimates' => 'erp_omd_manage_projects',
+            'erp-omd-projects' => 'erp_omd_manage_projects',
+            'erp-omd-requests' => 'erp_omd_manage_projects',
+            'erp-omd-calendar' => 'erp_omd_access',
+            'erp-omd-cost-invoices' => 'erp_omd_manage_projects',
+            'erp-omd-reports' => 'erp_omd_access',
+            'erp-omd-alerts' => 'erp_omd_access',
+            'erp-omd-settings' => 'erp_omd_manage_settings',
+        ];
+        foreach ($capability_map as $slug => $capability) {
+            if (in_array($slug, $exclude_slugs, true)) {
+                continue;
+            }
+            if ($this->can_view_admin_page((int) $user_id, (string) $slug, (string) $capability)) {
+                return $slug;
+            }
+        }
+        return null;
     }
 
     public function enqueue_assets($hook)
