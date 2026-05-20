@@ -82,6 +82,14 @@ $templateFragments = [
     "'tab' => 'relations'",
 ];
 
+$forbiddenTemplateFragments = [
+    'invoice_sort',
+    'ksef_sales_sort',
+    'invoice_date_sort_url',
+    'sales_date_sort_url',
+    'class="sortable',
+];
+
 $assertions = 0;
 foreach ($runtimeFragments as $fragment) {
     $assertions++;
@@ -94,6 +102,13 @@ foreach ($templateFragments as $fragment) {
     $assertions++;
     if (strpos($templateSource, $fragment) === false) {
         throw new RuntimeException('Missing admin template fragment: ' . $fragment);
+    }
+}
+
+foreach ($forbiddenTemplateFragments as $fragment) {
+    $assertions++;
+    if (strpos($templateSource, $fragment) !== false) {
+        throw new RuntimeException('Unexpected server-side sortable invoice fragment: ' . $fragment);
     }
 }
 
