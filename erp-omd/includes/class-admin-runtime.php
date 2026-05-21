@@ -1643,7 +1643,7 @@ class ERP_OMD_Admin
         foreach ($this->projects->all() as $project) {
             $project_status = (string) ($project['status'] ?? '');
             $billing_type = (string) ($project['billing_type'] ?? '');
-            if ($project_status === 'archiwum' || $billing_type === 'retainer') {
+            if (in_array($project_status, ['do_faktury', 'zakonczony', 'archiwum'], true) || $billing_type === 'retainer') {
                 continue;
             }
 
@@ -3216,6 +3216,7 @@ class ERP_OMD_Admin
             'delivery_address' => $delivery_address,
             'invoice_nip' => $invoice_nip,
             'note' => sanitize_textarea_field(wp_unslash($_POST['estimate_note'] ?? '')),
+            'estimate_link_valid_days' => max(1, min(365, (int) ($_POST['estimate_link_valid_days'] ?? 5))),
         ];
         $errors = $this->estimate_service->validate_estimate($payload, $existing);
         $initial_items_payload = $this->collect_initial_estimate_items();
@@ -3457,7 +3458,9 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Klient nie ma poprawnego adresu e-mail.', 'erp-omd'), ['id' => $estimate_id]);
         }
 
-        $decision_url = $this->ensure_estimate_decision_token((int) $estimate_id);
+        $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
+        $valid_for_days = max(1, min(365, (int) ($_POST['estimate_link_valid_days'] ?? ($accept_meta['estimate_link_valid_days'] ?? 5))));
+        $decision_url = $this->ensure_estimate_decision_token((int) $estimate_id, $valid_for_days);
         $state = $this->estimate_client_link_state();
         $estimate_mail_defaults = $this->estimate_client_mail_defaults();
         $estimate_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_client_mail_settings', []), $estimate_mail_defaults);
@@ -3466,7 +3469,7 @@ class ERP_OMD_Admin
             '{estimate_name}' => (string) ($estimate['name'] ?? ('#' . $estimate_id)),
             '{client_name}' => (string) ($client['name'] ?? ($estimate['client_name'] ?? '')),
             '{decision_url}' => (string) $decision_url,
-            '{expires_at}' => wp_date('d.m.Y H:i', time() + (5 * DAY_IN_SECONDS)),
+            '{expires_at}' => wp_date('d.m.Y H:i', time() + ($valid_for_days * DAY_IN_SECONDS)),
             '{preferred_delivery_date}' => (string) ($accept_meta['preferred_delivery_date'] ?? '—'),
             '{delivery_other}' => ! empty($accept_meta['delivery_other']) ? __('Tak', 'erp-omd') : __('Nie', 'erp-omd'),
             '{invoice_other_entity}' => ! empty($accept_meta['invoice_other_entity']) ? __('Tak', 'erp-omd') : __('Nie', 'erp-omd'),
@@ -5421,7 +5424,7 @@ class ERP_OMD_Admin
         return $prepared;
     }
 
-    private function ensure_estimate_decision_token($estimate_id)
+    private function ensure_estimate_decision_token($estimate_id, $valid_for_days = 5)
     {
         $estimate_id = (int) $estimate_id;
         if ($estimate_id <= 0) {
@@ -5432,9 +5435,10 @@ class ERP_OMD_Admin
         $token = (string) ($row['token'] ?? '');
         if ($token === '') {
             $token = wp_generate_password(48, false, false);
+            $valid_for_days = max(1, min(365, (int) $valid_for_days));
             $state[$estimate_id] = [
                 'token' => $token,
-                'expires_at' => time() + (5 * DAY_IN_SECONDS),
+                'expires_at' => time() + ($valid_for_days * DAY_IN_SECONDS),
                 'created_at' => current_time('mysql'),
                 'created_by' => (int) get_current_user_id(),
             ];

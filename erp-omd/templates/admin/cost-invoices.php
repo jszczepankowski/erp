@@ -12,6 +12,31 @@ foreach ((array) $suppliers as $supplier_row) {
 foreach ((array) $projects as $project_row) {
     $project_name_by_id[(int) ($project_row['id'] ?? 0)] = (string) ($project_row['name'] ?? '');
 }
+
+$active_project_options = [];
+$active_project_label_by_id = [];
+foreach ((array) $projects as $project_row) {
+    $project_id = (int) ($project_row['id'] ?? 0);
+    $project_status = (string) ($project_row['status'] ?? '');
+    if ($project_id <= 0 || in_array($project_status, ['zakonczony', 'archiwum'], true)) {
+        continue;
+    }
+
+    $project_client_name = (string) ($project_row['client_name'] ?? '');
+    $project_start_label = (string) ($project_row['start_date'] ?? '');
+    $project_end_label = (string) ($project_row['end_date'] ?? '');
+    $project_date_range = trim(($project_start_label !== '' ? $project_start_label : '??') . ' - ' . ($project_end_label !== '' ? $project_end_label : '??'));
+    $project_label = ($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project_row['name'] ?? '') . ' (' . $project_date_range . ')';
+
+    $active_project_options[] = [
+        'id' => $project_id,
+        'label' => $project_label,
+    ];
+    $active_project_label_by_id[$project_id] = $project_label;
+}
+$invoice_project_selected_id = (int) ($invoice_form['project_id'] ?? 0);
+$invoice_project_selected_label = (string) ($active_project_label_by_id[$invoice_project_selected_id] ?? '');
+
 $invoice_form_net_amount = (float) ($invoice_form['net_amount'] ?? 0);
 $invoice_form_vat_amount = (float) ($invoice_form['vat_amount'] ?? 0);
 $invoice_form_vat_rate = '23';
@@ -36,7 +61,24 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
     <h1><?php esc_html_e('Dostawcy i koszty', 'erp-omd'); ?></h1>
 
     <?php if (! empty($_GET['message'])) : ?>
-        <div class="notice notice-success"><p><?php echo esc_html((string) wp_unslash($_GET['message'])); ?></p></div>
+        <?php
+        $message_key = sanitize_key((string) wp_unslash($_GET['message']));
+        $message_map = [
+            'supplier_saved' => __('Dostawca został zapisany.', 'erp-omd'),
+            'supplier_deleted' => __('Dostawca został usunięty.', 'erp-omd'),
+            'cost_invoice_saved' => __('Faktura kosztowa została zapisana.', 'erp-omd'),
+            'cost_invoice_deleted' => __('Faktura kosztowa została usunięta.', 'erp-omd'),
+            'cost_invoice_bulk_deleted' => __('Wybrane faktury kosztowe zostały usunięte.', 'erp-omd'),
+            'cost_invoice_bulk_status_updated' => __('Status wybranych faktur został zaktualizowany.', 'erp-omd'),
+            'ksef_moderation_saved' => __('Moderacja KSeF została zapisana.', 'erp-omd'),
+            'ksef_bulk_moderation_saved' => __('Moderacja zbiorcza KSeF została zapisana.', 'erp-omd'),
+            'ksef_sales_xml_imported' => __('Dokumenty sprzedażowe KSeF zostały zaimportowane.', 'erp-omd'),
+            'ksef_cost_xml_imported' => __('Dokumenty kosztowe KSeF zostały zaimportowane.', 'erp-omd'),
+            'ksef_sales_attached' => __('Dokument sprzedażowy KSeF został przypisany do projektu.', 'erp-omd'),
+        ];
+        $notice_message = $message_map[$message_key] ?? (string) wp_unslash($_GET['message']);
+        ?>
+        <div class="notice notice-success"><p><?php echo esc_html($notice_message); ?></p></div>
     <?php endif; ?>
     <?php if (! empty($_GET['error'])) : ?>
         <div class="notice notice-error"><p><?php echo esc_html(rawurldecode((string) wp_unslash($_GET['error']))); ?></p></div>
@@ -229,20 +271,22 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                 </select>
                             </div>
                             <div class="erp-omd-form-field">
-                                <label for="cost_invoice_project_id"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
-                                <select id="cost_invoice_project_id" name="cost_invoice_project_id">
-                                    <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
-                                    <?php foreach ($projects as $project) : ?>
-                                        <?php $project_id = (int) ($project['id'] ?? 0); ?>
-                                        <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
-                                        <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($invoice_form['project_id'] ?? 0), $project_id); ?>><?php
-                                            $project_start_label = (string) ($project['start_date'] ?? '');
-                                            $project_end_label = (string) ($project['end_date'] ?? '');
-                                            $project_date_range = trim(($project_start_label !== '' ? $project_start_label : '??') . ' - ' . ($project_end_label !== '' ? $project_end_label : '??'));
-                                            echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '') . ' (' . $project_date_range . ' | ' . (string) ($project['billing_type'] ?? '') . ')');
-                                        ?></option>
+                                <label for="cost_invoice_project_autocomplete"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
+                                <input
+                                    type="text"
+                                    id="cost_invoice_project_autocomplete"
+                                    class="regular-text"
+                                    list="cost_invoice_project_list"
+                                    value="<?php echo esc_attr($invoice_project_selected_label); ?>"
+                                    placeholder="<?php echo esc_attr__('Wybierz lub wpisz nazwę projektu / klienta', 'erp-omd'); ?>"
+                                    autocomplete="off"
+                                />
+                                <input type="hidden" id="cost_invoice_project_id" name="cost_invoice_project_id" value="<?php echo esc_attr((string) $invoice_project_selected_id); ?>" />
+                                <datalist id="cost_invoice_project_list">
+                                    <?php foreach ($active_project_options as $project_option) : ?>
+                                        <option value="<?php echo esc_attr((string) ($project_option['label'] ?? '')); ?>" data-project-id="<?php echo esc_attr((string) ((int) ($project_option['id'] ?? 0))); ?>"></option>
                                     <?php endforeach; ?>
-                                </select>
+                                </datalist>
                             </div>
                             <div class="erp-omd-form-field erp-omd-form-field-span-full erp-omd-form-grid erp-omd-form-grid-cost-invoice-document-row">
                                 <div class="erp-omd-form-field">
@@ -603,6 +647,8 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                     <?php foreach ($projects as $project) : ?>
                                         <?php $project_id = (int) ($project['id'] ?? 0); ?>
                                         <?php $project_status = (string) ($project['status'] ?? ''); ?>
+                                        <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true)) { continue; } ?>
+                                        <?php $project_status = (string) ($project['status'] ?? ''); ?>
                                         <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php if (! empty($final_invoice_project_ids[$project_id]) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
@@ -770,7 +816,38 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         var grossAmountField = document.getElementById('cost_invoice_gross_amount');
         var addItemButton = document.getElementById('cost-invoice-add-item');
         var selectAll = document.getElementById('cost-invoice-select-all');
+        var costInvoiceProjectAutocomplete = document.getElementById('cost_invoice_project_autocomplete');
+        var costInvoiceProjectIdField = document.getElementById('cost_invoice_project_id');
+        var costInvoiceProjectList = document.getElementById('cost_invoice_project_list');
         var ksefCostSelectAll = document.getElementById('ksef-cost-invoice-select-all');
+        if (costInvoiceProjectAutocomplete && costInvoiceProjectIdField && costInvoiceProjectList) {
+            var resolveProjectIdFromLabel = function (label) {
+                var normalized = (label || '').trim().toLowerCase();
+                if (normalized === '') {
+                    return 0;
+                }
+
+                var options = costInvoiceProjectList.querySelectorAll('option');
+                for (var i = 0; i < options.length; i += 1) {
+                    var option = options[i];
+                    var optionLabel = ((option.value || '') + '').trim().toLowerCase();
+                    if (optionLabel === normalized) {
+                        var resolvedId = parseInt(option.getAttribute('data-project-id') || '0', 10);
+                        return isNaN(resolvedId) ? 0 : resolvedId;
+                    }
+                }
+
+                return 0;
+            };
+
+            var syncProjectSelection = function () {
+                var resolvedId = resolveProjectIdFromLabel(costInvoiceProjectAutocomplete.value || '');
+                costInvoiceProjectIdField.value = resolvedId > 0 ? String(resolvedId) : '';
+            };
+
+            costInvoiceProjectAutocomplete.addEventListener('input', syncProjectSelection);
+            costInvoiceProjectAutocomplete.addEventListener('change', syncProjectSelection);
+        }
         if (!netField || !vatAmountField || !grossAmountField) { return; }
 
         var recalculate = function () {
