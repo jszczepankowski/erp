@@ -97,8 +97,7 @@
     if (!headers['X-WP-Nonce']) {
         headers['X-WP-Nonce'] = (window.wpApiSettings && window.wpApiSettings.nonce) ? window.wpApiSettings.nonce : restNonce;
     }
-    const editor = document.getElementById('erp-omd-private-task-editor');
-    if (!editor) return;
+    if (!cardEl) return;
     const getEls = () => ({
         textEl: document.getElementById('erp-omd-admin-task-text'),
         dateEl: document.getElementById('erp-omd-admin-task-date'),
@@ -165,7 +164,9 @@
     if (cancelEl) {
         cancelEl.addEventListener('click', resetEditor);
     }
-    editor.addEventListener('submit', async (event) => {
+    cardEl.addEventListener('submit', async (event) => {
+        const form = event.target;
+        if (!form || form.id !== 'erp-omd-private-task-editor') return;
         event.preventDefault();
         const {textEl, dateEl, idEl} = getEls();
         if (!textEl || !dateEl || !idEl) return;
