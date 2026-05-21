@@ -1386,7 +1386,7 @@ class ERP_OMD_Admin
                     (new ERP_OMD_Cost_Invoice_Repository())->list(),
                     static function ($invoice_row) use ($project) {
                         $invoice_status = (string) ($invoice_row['status'] ?? '');
-                        if (! in_array($invoice_status, ['zatwierdzona', 'przypisana'], true)) {
+                        if ($invoice_status === 'nieistotne') {
                             return false;
                         }
                         $invoice_project_id = (int) ($invoice_row['project_id'] ?? 0);
@@ -2586,7 +2586,7 @@ class ERP_OMD_Admin
         }
 
         $should_sync_project_cost = (int) ($payload['project_id'] ?? 0) > 0
-            && in_array((string) ($payload['status'] ?? ''), ['zatwierdzona', 'przypisana'], true);
+            && (string) ($payload['status'] ?? '') !== 'nieistotne';
         if ($should_sync_project_cost) {
             $attach_errors = $this->sync_attached_cost_invoice_to_project_cost((int) ($result['invoice_id'] ?? $invoice_id));
             if ($attach_errors !== []) {
