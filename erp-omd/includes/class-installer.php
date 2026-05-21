@@ -328,6 +328,9 @@ class ERP_OMD_Installer
                 KEY created_by_user_id (created_by_user_id)
             ) ENGINE=InnoDB {$charset_collate};"
         );
+        self::add_column_if_missing($project_costs_table, 'source_type', "ALTER TABLE {$project_costs_table} ADD COLUMN source_type VARCHAR(32) NOT NULL DEFAULT 'manual' AFTER created_by_user_id");
+        self::add_column_if_missing($project_costs_table, 'source_id', "ALTER TABLE {$project_costs_table} ADD COLUMN source_id BIGINT UNSIGNED NOT NULL DEFAULT 0 AFTER source_type");
+        self::add_index_if_missing($project_costs_table, 'source_type_source_id', "ALTER TABLE {$project_costs_table} ADD KEY source_type_source_id (source_type, source_id)");
 
         dbDelta(
             "CREATE TABLE {$project_revenues_table} (

@@ -442,7 +442,7 @@
                                 </div>
                             </form>
 
-                            <form method="post" style="margin-top:12px;">
+                            <form method="post" style="margin-top:12px;" onsubmit="return confirm('Czy na pewno podłączyć fakturę kosztową do projektu?');">
                                 <?php wp_nonce_field('erp_omd_attach_cost_invoice_to_project'); ?>
                                 <input type="hidden" name="erp_omd_action" value="attach_cost_invoice_to_project" />
                                 <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
@@ -474,15 +474,16 @@
                             </form>
                         <?php endif; ?>
                         <table class="widefat striped">
-                            <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                            <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Źródło', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                             <tbody>
                                 <?php if (empty($project_cost_rows)) : ?>
-                                    <tr><td colspan="4"><?php esc_html_e('Brak kosztów projektu. Dodaj koszt, jeśli chcesz uwzględnić wydatki poza czasem pracy.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="5"><?php esc_html_e('Brak kosztów projektu. Dodaj koszt, jeśli chcesz uwzględnić wydatki poza czasem pracy.', 'erp-omd'); ?></td></tr>
                                 <?php else : ?>
                                     <?php foreach ($project_cost_rows as $project_cost_row) : ?>
                                         <tr>
                                             <td><?php echo esc_html($project_cost_row['cost_date']); ?></td>
                                             <td><?php echo esc_html(number_format_i18n((float) ($project_cost_row['amount'] ?? 0), 2)); ?></td>
+                                            <td><?php echo esc_html((string) (($project_cost_row['source_type'] ?? 'manual') === 'cost_invoice' ? __('Faktura kosztowa', 'erp-omd') : __('Ręczny', 'erp-omd'))); ?><?php if ((int) ($project_cost_row['source_id'] ?? 0) > 0) : ?> #<?php echo esc_html((string) ((int) ($project_cost_row['source_id'] ?? 0))); ?><?php endif; ?></td>
                                             <td><?php echo esc_html($project_cost_row['description'] ?: '—'); ?></td>
                                             <td>
                                                 <?php if ($project_costs_locked) : ?>

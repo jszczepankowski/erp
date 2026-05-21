@@ -101,10 +101,12 @@ class ERP_OMD_Project_Cost_Repository
                 'description' => $data['description'],
                 'cost_date' => $data['cost_date'],
                 'created_by_user_id' => $data['created_by_user_id'],
+                'source_type' => (string) ($data['source_type'] ?? 'manual'),
+                'source_id' => (int) ($data['source_id'] ?? 0),
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%d', '%f', '%s', '%s', '%d', '%s', '%s']
+            ['%d', '%f', '%s', '%s', '%d', '%s', '%d', '%s', '%s']
         );
 
         if (function_exists('erp_omd_reports_cache_bump_version')) {

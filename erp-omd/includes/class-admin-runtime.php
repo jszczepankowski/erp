@@ -1643,7 +1643,7 @@ class ERP_OMD_Admin
         foreach ($this->projects->all() as $project) {
             $project_status = (string) ($project['status'] ?? '');
             $billing_type = (string) ($project['billing_type'] ?? '');
-            if ($project_status === 'archiwum' || $billing_type === 'retainer') {
+            if (in_array($project_status, ['do_faktury', 'zakonczony', 'archiwum'], true) || $billing_type === 'retainer') {
                 continue;
             }
 
@@ -3216,6 +3216,7 @@ class ERP_OMD_Admin
             'delivery_address' => $delivery_address,
             'invoice_nip' => $invoice_nip,
             'note' => sanitize_textarea_field(wp_unslash($_POST['estimate_note'] ?? '')),
+            'estimate_link_valid_days' => max(1, min(365, (int) ($_POST['estimate_link_valid_days'] ?? 5))),
         ];
         $errors = $this->estimate_service->validate_estimate($payload, $existing);
         $initial_items_payload = $this->collect_initial_estimate_items();
@@ -3457,7 +3458,9 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Klient nie ma poprawnego adresu e-mail.', 'erp-omd'), ['id' => $estimate_id]);
         }
 
-        $decision_url = $this->ensure_estimate_decision_token((int) $estimate_id);
+        $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
+        $valid_for_days = max(1, min(365, (int) ($_POST['estimate_link_valid_days'] ?? ($accept_meta['estimate_link_valid_days'] ?? 5))));
+        $decision_url = $this->ensure_estimate_decision_token((int) $estimate_id, $valid_for_days);
         $state = $this->estimate_client_link_state();
         $estimate_mail_defaults = $this->estimate_client_mail_defaults();
         $estimate_mail_settings = wp_parse_args((array) get_option('erp_omd_estimate_client_mail_settings', []), $estimate_mail_defaults);
@@ -3466,7 +3469,7 @@ class ERP_OMD_Admin
             '{estimate_name}' => (string) ($estimate['name'] ?? ('#' . $estimate_id)),
             '{client_name}' => (string) ($client['name'] ?? ($estimate['client_name'] ?? '')),
             '{decision_url}' => (string) $decision_url,
-            '{expires_at}' => wp_date('d.m.Y H:i', time() + (5 * DAY_IN_SECONDS)),
+            '{expires_at}' => wp_date('d.m.Y H:i', time() + ($valid_for_days * DAY_IN_SECONDS)),
             '{preferred_delivery_date}' => (string) ($accept_meta['preferred_delivery_date'] ?? '—'),
             '{delivery_other}' => ! empty($accept_meta['delivery_other']) ? __('Tak', 'erp-omd') : __('Nie', 'erp-omd'),
             '{invoice_other_entity}' => ! empty($accept_meta['invoice_other_entity']) ? __('Tak', 'erp-omd') : __('Nie', 'erp-omd'),
@@ -3957,6 +3960,8 @@ class ERP_OMD_Admin
             'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
             'cost_date' => sanitize_text_field(wp_unslash($_POST['cost_date'] ?? '')),
             'created_by_user_id' => get_current_user_id(),
+            'source_type' => 'manual',
+            'source_id' => 0,
         ];
         $errors = $this->project_financial_service->validate_project_cost($payload);
         if ($errors) {
@@ -4060,12 +4065,31 @@ class ERP_OMD_Admin
             }
         }
 
+        $mapped_cost = $this->find_project_cost_candidate_for_invoice($existing_project_costs, $invoice);
+        if (is_array($mapped_cost)) {
+            $mapped_description = trim((string) ($mapped_cost['description'] ?? ''));
+            if (strpos($mapped_description, '[Rozliczono fakturą kosztową #') === false) {
+                $mapped_description = trim($mapped_description . ' [Rozliczono fakturą kosztową #' . (int) $invoice_id . ']');
+            }
+
+            $mapped_payload = [
+                'amount' => (float) ($invoice['net_amount'] ?? 0),
+                'description' => $mapped_description,
+                'cost_date' => (string) ($invoice['issue_date'] ?? ($mapped_cost['cost_date'] ?? gmdate('Y-m-d'))),
+            ];
+            $this->project_costs->update((int) ($mapped_cost['id'] ?? 0), $mapped_payload);
+            $this->project_financial_service->rebuild_for_project($project_id);
+            $this->redirect_with_notice('erp-omd-projects', 'success', __('Faktura kosztowa została zmapowana na istniejący koszt projektu po potwierdzeniu.', 'erp-omd'), ['id' => $project_id]);
+        }
+
         $payload = [
             'project_id' => $project_id,
             'amount' => (float) ($invoice['net_amount'] ?? 0),
             'description' => $description,
             'cost_date' => (string) ($invoice['issue_date'] ?? gmdate('Y-m-d')),
             'created_by_user_id' => get_current_user_id(),
+            'source_type' => 'cost_invoice',
+            'source_id' => (int) $invoice_id,
         ];
         $errors = $this->project_financial_service->validate_project_cost($payload);
         if ($errors !== []) {
@@ -4173,12 +4197,29 @@ class ERP_OMD_Admin
             }
         }
 
+        $mapped_cost = $this->find_project_cost_candidate_for_invoice($existing_project_costs, $invoice);
+        if (is_array($mapped_cost)) {
+            $mapped_description = trim((string) ($mapped_cost['description'] ?? ''));
+            if (strpos($mapped_description, '[Rozliczono fakturą kosztową #') === false) {
+                $mapped_description = trim($mapped_description . ' [Rozliczono fakturą kosztową #' . (int) $invoice_id . ']');
+            }
+            $this->project_costs->update((int) ($mapped_cost['id'] ?? 0), [
+                'amount' => (float) ($invoice['net_amount'] ?? 0),
+                'description' => $mapped_description,
+                'cost_date' => (string) ($invoice['issue_date'] ?? ($mapped_cost['cost_date'] ?? gmdate('Y-m-d'))),
+            ]);
+            $this->project_financial_service->rebuild_for_project($project_id);
+            return [];
+        }
+
         $payload = [
             'project_id' => $project_id,
             'amount' => (float) ($invoice['net_amount'] ?? 0),
             'description' => $description,
             'cost_date' => (string) ($invoice['issue_date'] ?? gmdate('Y-m-d')),
             'created_by_user_id' => get_current_user_id(),
+            'source_type' => 'cost_invoice',
+            'source_id' => (int) $invoice_id,
         ];
         $errors = $this->project_financial_service->validate_project_cost($payload);
         if ($errors !== []) {
@@ -5337,6 +5378,60 @@ class ERP_OMD_Admin
         }
     }
 
+    private function find_project_cost_candidate_for_invoice(array $project_cost_rows, array $invoice)
+    {
+        $invoice_amount = (float) ($invoice['net_amount'] ?? 0);
+        if ($invoice_amount <= 0) {
+            return null;
+        }
+
+        $invoice_date = (string) ($invoice['issue_date'] ?? '');
+        $invoice_ts = strtotime($invoice_date . ' 00:00:00');
+        if ($invoice_ts === false) {
+            $invoice_ts = time();
+        }
+
+        $amount_tolerance = max(50.0, abs($invoice_amount) * 0.05);
+        $date_tolerance_days = 21;
+        $best = null;
+        $best_score = null;
+
+        foreach ($project_cost_rows as $row) {
+            $description = trim((string) ($row['description'] ?? ''));
+            if ($description === '') {
+                continue;
+            }
+            if (strpos($description, '[Rozliczono fakturą kosztową #') !== false || strpos($description, __('Faktura kosztowa', 'erp-omd')) === 0) {
+                continue;
+            }
+
+            $row_amount = (float) ($row['amount'] ?? 0);
+            $amount_diff = abs($row_amount - $invoice_amount);
+            if ($amount_diff > $amount_tolerance) {
+                continue;
+            }
+
+            $row_date = (string) ($row['cost_date'] ?? '');
+            $row_ts = strtotime($row_date . ' 00:00:00');
+            if ($row_ts === false) {
+                continue;
+            }
+            $date_diff_days = (int) floor(abs($invoice_ts - $row_ts) / DAY_IN_SECONDS);
+            if ($date_diff_days > $date_tolerance_days) {
+                continue;
+            }
+
+            $is_estimate_seed = strpos($description, 'Pozycja przychodowa z kosztorysu:') === 0;
+            $score = ($is_estimate_seed ? 100000 : 0) - (int) round($amount_diff * 100) - ($date_diff_days * 1000);
+            if ($best === null || $score > $best_score) {
+                $best = $row;
+                $best_score = $score;
+            }
+        }
+
+        return $best;
+    }
+
     private function is_project_cost_locked_by_status($status)
     {
         return in_array((string) $status, ['zakonczony', 'archiwum'], true);
@@ -5421,7 +5516,7 @@ class ERP_OMD_Admin
         return $prepared;
     }
 
-    private function ensure_estimate_decision_token($estimate_id)
+    private function ensure_estimate_decision_token($estimate_id, $valid_for_days = 5)
     {
         $estimate_id = (int) $estimate_id;
         if ($estimate_id <= 0) {
@@ -5432,9 +5527,10 @@ class ERP_OMD_Admin
         $token = (string) ($row['token'] ?? '');
         if ($token === '') {
             $token = wp_generate_password(48, false, false);
+            $valid_for_days = max(1, min(365, (int) $valid_for_days));
             $state[$estimate_id] = [
                 'token' => $token,
-                'expires_at' => time() + (5 * DAY_IN_SECONDS),
+                'expires_at' => time() + ($valid_for_days * DAY_IN_SECONDS),
                 'created_at' => current_time('mysql'),
                 'created_by' => (int) get_current_user_id(),
             ];
