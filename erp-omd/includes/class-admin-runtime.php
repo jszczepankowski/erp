@@ -3954,6 +3954,31 @@ class ERP_OMD_Admin
                 ['id' => $project_id]
             );
         }
+        $possible_duplicates = [];
+        $invoice_amount = (float) ($invoice['net_amount'] ?? 0);
+        $invoice_ts = strtotime((string) ($invoice['issue_date'] ?? '') . ' 00:00:00');
+        if ($invoice_amount > 0 && $invoice_ts !== false) {
+            foreach ($existing_project_costs as $existing_project_cost) {
+                $existing_description = (string) ($existing_project_cost['description'] ?? '');
+                if (strpos($existing_description, '(rozliczono fakturą #') !== false || strpos($existing_description, __('Faktura kosztowa', 'erp-omd') . ' #') === 0) {
+                    continue;
+                }
+                $existing_ts = strtotime((string) ($existing_project_cost['cost_date'] ?? '') . ' 00:00:00');
+                if ($existing_ts === false || abs($existing_ts - $invoice_ts) > (21 * DAY_IN_SECONDS)) {
+                    continue;
+                }
+                $existing_amount = (float) ($existing_project_cost['amount'] ?? 0);
+                $allowed_diff = abs($invoice_amount) * 0.10;
+                if (abs($existing_amount - $invoice_amount) <= $allowed_diff) {
+                    $possible_duplicates[] = (int) ($existing_project_cost['id'] ?? 0);
+                }
+            }
+        }
+
+        if ($possible_duplicates !== []) {
+            $this->redirect_with_notice('erp-omd-projects', 'warning', __('Wykryto możliwy duplikat kosztu (data ±21 dni, kwota w tolerancji 10%). Wybierz koszt projektu i przypnij fakturę ręcznie.', 'erp-omd'), ['id' => $project_id]);
+        }
+
         $payload = [
             'project_id' => $project_id,
             'amount' => (float) ($_POST['amount'] ?? 0),
@@ -4063,6 +4088,48 @@ class ERP_OMD_Admin
             }
         }
 
+        $project_cost_id = max(0, (int) ($_POST['project_cost_id'] ?? 0));
+        if ($project_cost_id > 0) {
+            $project_cost = $this->project_costs->find($project_cost_id);
+            if (! is_array($project_cost) || (int) ($project_cost['project_id'] ?? 0) !== $project_id) {
+                $this->redirect_with_notice('erp-omd-projects', 'error', __('Wybrany koszt projektu nie istnieje.', 'erp-omd'), ['id' => $project_id]);
+            }
+
+            $base_description = trim((string) ($project_cost['description'] ?? ''));
+            if (strpos($base_description, '(rozliczono fakturą #') === false) {
+                $base_description = sprintf('%s (rozliczono fakturą #%d)', $base_description !== '' ? $base_description : __('Koszt projektu', 'erp-omd'), $invoice_id);
+            }
+            $this->project_costs->update($project_cost_id, [
+                'amount' => (float) ($invoice['net_amount'] ?? 0),
+                'description' => $base_description,
+                'cost_date' => (string) ($invoice['issue_date'] ?? gmdate('Y-m-d')),
+            ]);
+            if ((string) ($invoice['status'] ?? '') !== 'przypisana') {
+                $invoice['status'] = 'przypisana';
+                $invoice_repository->update($invoice_id, $invoice);
+            }
+            $this->project_financial_service->rebuild_for_project($project_id);
+            $this->redirect_with_notice('erp-omd-projects', 'success', __('Faktura kosztowa została przypięta do istniejącego kosztu projektu.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        $invoice_amount = (float) ($invoice['net_amount'] ?? 0);
+        $invoice_ts = strtotime((string) ($invoice['issue_date'] ?? '') . ' 00:00:00');
+        if ($invoice_amount > 0 && $invoice_ts !== false) {
+            foreach ($existing_project_costs as $existing_project_cost) {
+                $existing_description = (string) ($existing_project_cost['description'] ?? '');
+                if (strpos($existing_description, '(rozliczono fakturą #') !== false || strpos($existing_description, __('Faktura kosztowa', 'erp-omd') . ' #') === 0) {
+                    continue;
+                }
+                $existing_ts = strtotime((string) ($existing_project_cost['cost_date'] ?? '') . ' 00:00:00');
+                if ($existing_ts === false || abs($existing_ts - $invoice_ts) > (21 * DAY_IN_SECONDS)) {
+                    continue;
+                }
+                $existing_amount = (float) ($existing_project_cost['amount'] ?? 0);
+                if (abs($existing_amount - $invoice_amount) <= (abs($invoice_amount) * 0.10)) {
+                    $this->redirect_with_notice('erp-omd-projects', 'warning', __('Wykryto możliwy duplikat kosztu (data ±21 dni, kwota ±10%). Wybierz istniejący koszt projektu i przypnij fakturę ręcznie albo świadomie dodaj nowy koszt po korekcie danych.', 'erp-omd'), ['id' => $project_id]);
+                }
+            }
+        }
         $payload = [
             'project_id' => $project_id,
             'amount' => (float) ($invoice['net_amount'] ?? 0),
@@ -4175,7 +4242,6 @@ class ERP_OMD_Admin
                 return [];
             }
         }
-
         $payload = [
             'project_id' => $project_id,
             'amount' => (float) ($invoice['net_amount'] ?? 0),
@@ -5465,6 +5531,8 @@ class ERP_OMD_Admin
 
         return $state;
     }
+
+
 
     /**
      * @param int $invoice_id

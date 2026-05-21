@@ -442,11 +442,31 @@
                                 </div>
                             </form>
 
-                            <form method="post" style="margin-top:12px;">
+                            <form method="post" style="margin-top:12px;" onsubmit="var costSelect=this.querySelector('#attach-project-cost-id'); if(costSelect&&String(costSelect.value||'0')==='0'){ return window.confirm('<?php echo esc_js(__('Nie wybrano istniejącego kosztu projektu. System spróbuje dodać nowy koszt z faktury i może wykryć duplikat. Kontynuować?', 'erp-omd')); ?>'); } return true;">
                                 <?php wp_nonce_field('erp_omd_attach_cost_invoice_to_project'); ?>
                                 <input type="hidden" name="erp_omd_action" value="attach_cost_invoice_to_project" />
                                 <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
                                 <div class="erp-omd-form-grid">
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                        <label for="attach-project-cost-id"><?php esc_html_e('Połącz z istniejącym kosztem projektu (opcjonalnie)', 'erp-omd'); ?></label>
+                                        <select id="attach-project-cost-id" name="project_cost_id">
+                                            <option value="0"><?php esc_html_e('— Utwórz nowy koszt z faktury —', 'erp-omd'); ?></option>
+                                            <?php foreach ((array) ($project_cost_rows ?? []) as $project_cost_option_row) : ?>
+                                                <option value="<?php echo esc_attr((string) ((int) ($project_cost_option_row['id'] ?? 0))); ?>">
+                                                    <?php
+                                                    echo esc_html(
+                                                        sprintf(
+                                                            '#%1$d • %2$s • %3$s',
+                                                            (int) ($project_cost_option_row['id'] ?? 0),
+                                                            (string) ($project_cost_option_row['cost_date'] ?? ''),
+                                                            number_format_i18n((float) ($project_cost_option_row['amount'] ?? 0), 2)
+                                                        )
+                                                    );
+                                                    ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label for="attach-cost-invoice-id"><?php esc_html_e('Dodaj koszt z faktury kosztowej (netto)', 'erp-omd'); ?></label>
                                         <select id="attach-cost-invoice-id" name="cost_invoice_id">
