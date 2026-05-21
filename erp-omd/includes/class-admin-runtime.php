@@ -1383,8 +1383,12 @@ class ERP_OMD_Admin
                 $project_rates = $this->project_rates->for_project((int) $project['id']);
                 $project_cost_rows = $this->project_costs->for_project((int) $project['id']);
                 $project_cost_invoice_rows = array_values(array_filter(
-                    (new ERP_OMD_Cost_Invoice_Repository())->list(['status' => 'zatwierdzona']),
+                    (new ERP_OMD_Cost_Invoice_Repository())->list(),
                     static function ($invoice_row) use ($project) {
+                        $invoice_status = (string) ($invoice_row['status'] ?? '');
+                        if (! in_array($invoice_status, ['zatwierdzona', 'przypisana'], true)) {
+                            return false;
+                        }
                         $invoice_project_id = (int) ($invoice_row['project_id'] ?? 0);
                         return $invoice_project_id === 0 || $invoice_project_id === (int) ($project['id'] ?? 0);
                     }
@@ -2581,7 +2585,9 @@ class ERP_OMD_Admin
             $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
         }
 
-        if ((string) ($payload['status'] ?? '') === 'przypisana') {
+        $should_sync_project_cost = (int) ($payload['project_id'] ?? 0) > 0
+            && in_array((string) ($payload['status'] ?? ''), ['zatwierdzona', 'przypisana'], true);
+        if ($should_sync_project_cost) {
             $attach_errors = $this->sync_attached_cost_invoice_to_project_cost((int) ($result['invoice_id'] ?? $invoice_id));
             if ($attach_errors !== []) {
                 $this->redirect_cost_invoice_page(['tab' => 'invoices', 'error' => rawurlencode(implode(' ', $attach_errors))]);
