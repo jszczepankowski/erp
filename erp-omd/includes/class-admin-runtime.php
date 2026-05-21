@@ -683,6 +683,7 @@ class ERP_OMD_Admin
             case 'delete_project_rate': $this->handle_project_rate_delete(); break;
             case 'save_project_cost': $this->handle_project_cost_save(); break;
             case 'delete_project_cost': $this->handle_project_cost_delete(); break;
+            case 'connect_project_cost_invoice': $this->handle_project_cost_invoice_connect(); break;
             case 'save_project_revenue':
                 check_admin_referer('erp_omd_save_project_revenue');
                 $this->require_capability('erp_omd_manage_projects');
@@ -4262,6 +4263,78 @@ class ERP_OMD_Admin
             $this->project_financial_service->rebuild_for_project($project_id);
         }
         $this->redirect_with_notice('erp-omd-projects', 'success', __('Koszt projektu został usunięty.', 'erp-omd'), ['id' => $project_id]);
+    }
+
+    private function handle_project_cost_invoice_connect()
+    {
+        check_admin_referer('erp_omd_connect_project_cost_invoice');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $project_cost_id = (int) ($_POST['project_cost_id'] ?? 0);
+        $cost_row = $project_cost_id > 0 ? $this->project_costs->find($project_cost_id) : null;
+        if (! is_array($cost_row) || (int) ($cost_row['project_id'] ?? 0) !== $project_id) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono pozycji kosztowej do połączenia.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        $invoices = (array) (new ERP_OMD_Cost_Invoice_Repository())->list();
+        $cost_amount = (float) ($cost_row['amount'] ?? 0);
+        $cost_ts = strtotime((string) ($cost_row['cost_date'] ?? '') . ' 00:00:00');
+        if ($cost_ts === false) {
+            $cost_ts = time();
+        }
+        $amount_tolerance = max(50.0, abs($cost_amount) * 0.05);
+        $matches = [];
+        foreach ($invoices as $invoice) {
+            $status = (string) ($invoice['status'] ?? '');
+            if ($status === 'nieistotne') {
+                continue;
+            }
+            $invoice_project_id = (int) ($invoice['project_id'] ?? 0);
+            if ($invoice_project_id > 0 && $invoice_project_id !== $project_id) {
+                continue;
+            }
+            $invoice_amount = (float) ($invoice['net_amount'] ?? 0);
+            if (abs($invoice_amount - $cost_amount) > $amount_tolerance) {
+                continue;
+            }
+            $invoice_ts = strtotime((string) ($invoice['issue_date'] ?? '') . ' 00:00:00');
+            if ($invoice_ts === false) {
+                continue;
+            }
+            $date_diff_days = (int) floor(abs($invoice_ts - $cost_ts) / DAY_IN_SECONDS);
+            if ($date_diff_days > 21) {
+                continue;
+            }
+            $matches[] = $invoice;
+        }
+
+        if ($matches === []) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie znaleziono pasującej faktury kosztowej dla tej pozycji.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        if (count($matches) > 1) {
+            $match_ids = implode(', ', array_map(static function ($row) { return '#' . (int) ($row['id'] ?? 0); }, $matches));
+            $this->redirect_with_notice('erp-omd-projects', 'error', sprintf(__('Znaleziono wiele pasujących faktur: %s. Zawęź dane pozycji kosztowej.', 'erp-omd'), $match_ids), ['id' => $project_id]);
+        }
+
+        $invoice = (array) $matches[0];
+        $invoice_id = (int) ($invoice['id'] ?? 0);
+        if ($invoice_id <= 0) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Nie udało się odczytać pasującej faktury.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        $invoice['project_id'] = $project_id;
+        if ((string) ($invoice['status'] ?? '') !== 'przypisana') {
+            $invoice['status'] = 'przypisana';
+        }
+        (new ERP_OMD_Cost_Invoice_Repository())->update($invoice_id, $invoice);
+        $sync_errors = $this->sync_attached_cost_invoice_to_project_cost($invoice_id);
+        if ($sync_errors !== []) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $sync_errors), ['id' => $project_id]);
+        }
+
+        $this->redirect_with_notice('erp-omd-projects', 'success', sprintf(__('Połączono pozycję kosztową z fakturą #%d.', 'erp-omd'), $invoice_id), ['id' => $project_id]);
     }
 
     private function handle_time_entry_save()

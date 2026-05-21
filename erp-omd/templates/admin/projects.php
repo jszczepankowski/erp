@@ -490,6 +490,13 @@
                                                     <span aria-hidden="true">—</span>
                                                 <?php else : ?>
                                                     <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => (int) $project['id'], 'edit_project_cost_id' => (int) ($project_cost_row['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                                    <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Sprawdzić i połączyć tę pozycję kosztową z pasującą fakturą?', 'erp-omd')); ?>');">
+                                                        <?php wp_nonce_field('erp_omd_connect_project_cost_invoice'); ?>
+                                                        <input type="hidden" name="erp_omd_action" value="connect_project_cost_invoice" />
+                                                        <input type="hidden" name="project_cost_id" value="<?php echo esc_attr($project_cost_row['id']); ?>" />
+                                                        <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                                        <button class="button button-small" type="submit"><?php esc_html_e('Połącz', 'erp-omd'); ?></button>
+                                                    </form>
                                                     <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć koszt projektu?', 'erp-omd')); ?>');">
                                                         <?php wp_nonce_field('erp_omd_delete_project_cost'); ?>
                                                         <input type="hidden" name="erp_omd_action" value="delete_project_cost" />
