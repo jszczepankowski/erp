@@ -12,6 +12,31 @@ foreach ((array) $suppliers as $supplier_row) {
 foreach ((array) $projects as $project_row) {
     $project_name_by_id[(int) ($project_row['id'] ?? 0)] = (string) ($project_row['name'] ?? '');
 }
+
+$active_project_options = [];
+$active_project_label_by_id = [];
+foreach ((array) $projects as $project_row) {
+    $project_id = (int) ($project_row['id'] ?? 0);
+    $project_status = (string) ($project_row['status'] ?? '');
+    if ($project_id <= 0 || in_array($project_status, ['zakonczony', 'archiwum'], true)) {
+        continue;
+    }
+
+    $project_client_name = (string) ($project_row['client_name'] ?? '');
+    $project_start_label = (string) ($project_row['start_date'] ?? '');
+    $project_end_label = (string) ($project_row['end_date'] ?? '');
+    $project_date_range = trim(($project_start_label !== '' ? $project_start_label : '??') . ' - ' . ($project_end_label !== '' ? $project_end_label : '??'));
+    $project_label = ($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project_row['name'] ?? '') . ' (' . $project_date_range . ' | ' . (string) ($project_row['billing_type'] ?? '') . ')';
+
+    $active_project_options[] = [
+        'id' => $project_id,
+        'label' => $project_label,
+    ];
+    $active_project_label_by_id[$project_id] = $project_label;
+}
+$invoice_project_selected_id = (int) ($invoice_form['project_id'] ?? 0);
+$invoice_project_selected_label = (string) ($active_project_label_by_id[$invoice_project_selected_id] ?? '');
+
 $invoice_form_net_amount = (float) ($invoice_form['net_amount'] ?? 0);
 $invoice_form_vat_amount = (float) ($invoice_form['vat_amount'] ?? 0);
 $invoice_form_vat_rate = '23';
@@ -246,24 +271,22 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                 </select>
                             </div>
                             <div class="erp-omd-form-field">
-                                <label for="cost_invoice_project_search"><?php esc_html_e('Szukaj projektu', 'erp-omd'); ?></label>
-                                <input type="search" id="cost_invoice_project_search" class="regular-text" placeholder="<?php echo esc_attr__('Wpisz nazwę projektu lub klienta', 'erp-omd'); ?>" />
-                                <label for="cost_invoice_project_id"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
-                                <select id="cost_invoice_project_id" name="cost_invoice_project_id">
-                                    <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
-                                    <?php foreach ($projects as $project) : ?>
-                                        <?php $project_id = (int) ($project['id'] ?? 0); ?>
-                                        <?php $project_status = (string) ($project['status'] ?? ''); ?>
-                                        <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true)) { continue; } ?>
-                                        <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
-                                        <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($invoice_form['project_id'] ?? 0), $project_id); ?>><?php
-                                            $project_start_label = (string) ($project['start_date'] ?? '');
-                                            $project_end_label = (string) ($project['end_date'] ?? '');
-                                            $project_date_range = trim(($project_start_label !== '' ? $project_start_label : '??') . ' - ' . ($project_end_label !== '' ? $project_end_label : '??'));
-                                            echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '') . ' (' . $project_date_range . ' | ' . (string) ($project['billing_type'] ?? '') . ')');
-                                        ?></option>
+                                <label for="cost_invoice_project_autocomplete"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
+                                <input
+                                    type="text"
+                                    id="cost_invoice_project_autocomplete"
+                                    class="regular-text"
+                                    list="cost_invoice_project_list"
+                                    value="<?php echo esc_attr($invoice_project_selected_label); ?>"
+                                    placeholder="<?php echo esc_attr__('Wybierz lub wpisz nazwę projektu / klienta', 'erp-omd'); ?>"
+                                    autocomplete="off"
+                                />
+                                <input type="hidden" id="cost_invoice_project_id" name="cost_invoice_project_id" value="<?php echo esc_attr((string) $invoice_project_selected_id); ?>" />
+                                <datalist id="cost_invoice_project_list">
+                                    <?php foreach ($active_project_options as $project_option) : ?>
+                                        <option value="<?php echo esc_attr((string) ($project_option['label'] ?? '')); ?>" data-project-id="<?php echo esc_attr((string) ((int) ($project_option['id'] ?? 0))); ?>"></option>
                                     <?php endforeach; ?>
-                                </select>
+                                </datalist>
                             </div>
                             <div class="erp-omd-form-field erp-omd-form-field-span-full erp-omd-form-grid erp-omd-form-grid-cost-invoice-document-row">
                                 <div class="erp-omd-form-field">
@@ -793,17 +816,37 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         var grossAmountField = document.getElementById('cost_invoice_gross_amount');
         var addItemButton = document.getElementById('cost-invoice-add-item');
         var selectAll = document.getElementById('cost-invoice-select-all');
-        var costInvoiceProjectSearch = document.getElementById('cost_invoice_project_search');
-        var costInvoiceProjectSelect = document.getElementById('cost_invoice_project_id');
+        var costInvoiceProjectAutocomplete = document.getElementById('cost_invoice_project_autocomplete');
+        var costInvoiceProjectIdField = document.getElementById('cost_invoice_project_id');
+        var costInvoiceProjectList = document.getElementById('cost_invoice_project_list');
         var ksefCostSelectAll = document.getElementById('ksef-cost-invoice-select-all');
-        if (costInvoiceProjectSearch && costInvoiceProjectSelect) {
-            costInvoiceProjectSearch.addEventListener('input', function () {
-                var query = (costInvoiceProjectSearch.value || '').toLowerCase().trim();
-                costInvoiceProjectSelect.querySelectorAll('option').forEach(function (option, index) {
-                    if (index === 0) { return; }
-                    option.hidden = query !== '' && option.textContent.toLowerCase().indexOf(query) === -1;
-                });
-            });
+        if (costInvoiceProjectAutocomplete && costInvoiceProjectIdField && costInvoiceProjectList) {
+            var resolveProjectIdFromLabel = function (label) {
+                var normalized = (label || '').trim().toLowerCase();
+                if (normalized === '') {
+                    return 0;
+                }
+
+                var options = costInvoiceProjectList.querySelectorAll('option');
+                for (var i = 0; i < options.length; i += 1) {
+                    var option = options[i];
+                    var optionLabel = ((option.value || '') + '').trim().toLowerCase();
+                    if (optionLabel === normalized) {
+                        var resolvedId = parseInt(option.getAttribute('data-project-id') || '0', 10);
+                        return isNaN(resolvedId) ? 0 : resolvedId;
+                    }
+                }
+
+                return 0;
+            };
+
+            var syncProjectSelection = function () {
+                var resolvedId = resolveProjectIdFromLabel(costInvoiceProjectAutocomplete.value || '');
+                costInvoiceProjectIdField.value = resolvedId > 0 ? String(resolvedId) : '';
+            };
+
+            costInvoiceProjectAutocomplete.addEventListener('input', syncProjectSelection);
+            costInvoiceProjectAutocomplete.addEventListener('change', syncProjectSelection);
         }
         if (!netField || !vatAmountField || !grossAmountField) { return; }
 
