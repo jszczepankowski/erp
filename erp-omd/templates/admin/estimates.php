@@ -14,7 +14,7 @@
                     <section class="erp-omd-form-section">
                         <div class="erp-omd-form-section-header">
                             <h3><?php esc_html_e('Podstawy kosztorysu + lifecycle', 'erp-omd'); ?></h3>
-                            <p><?php esc_html_e('Nazwa, klient i status kosztorysu w jednym wierszu.', 'erp-omd'); ?></p>
+                            <p><?php esc_html_e('Nazwa, klient, ważność linku i status kosztorysu w jednym wierszu.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-estimate-basics-lifecycle">
                             <div class="erp-omd-form-field">
@@ -32,16 +32,16 @@
                                 </select>
                             </div>
                             <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="estimate-link-valid-days"><?php esc_html_e('Ważność linku (dni)', 'erp-omd'); ?></label>
+                                <input id="estimate-link-valid-days" type="number" min="1" max="365" name="estimate_link_valid_days" value="<?php echo esc_attr((string) max(1, min(365, (int) ($estimate_accept_meta['estimate_link_valid_days'] ?? 5)))); ?>">
+                            </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
                                 <label for="estimate-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
                                 <select id="estimate-status" name="status">
                                     <?php foreach (['wstepny', 'do_akceptacji', 'odrzucony', 'zaakceptowany'] as $status_option) : ?>
                                         <option value="<?php echo esc_attr($status_option); ?>" <?php selected((string) ($estimate['status'] ?? 'wstepny'), $status_option); ?>><?php echo esc_html($estimate_status_labels[$status_option] ?? $status_option); ?></option>
                                     <?php endforeach; ?>
                                 </select>
-                            </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
-                                <label for="estimate-link-valid-days"><?php esc_html_e('Ważność linku (dni)', 'erp-omd'); ?></label>
-                                <input id="estimate-link-valid-days" type="number" min="1" max="365" name="estimate_link_valid_days" value="<?php echo esc_attr((string) max(1, min(365, (int) ($estimate_accept_meta['estimate_link_valid_days'] ?? 5)))); ?>">
                             </div>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-estimate-basics-grid">
