@@ -675,6 +675,7 @@
                                                 <?php wp_nonce_field('erp_omd_send_estimate_client_link'); ?>
                                                 <input type="hidden" name="erp_omd_action" value="send_estimate_client_link" />
                                                 <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ($estimate_row['id'] ?? 0)); ?>" />
+                                                <input type="number" min="1" max="365" name="estimate_link_valid_days" value="5" class="small-text" title="<?php echo esc_attr__('Ważność linku (dni)', 'erp-omd'); ?>" />
                                                 <button class="button button-small" type="submit"><?php esc_html_e('Wyślij do klienta', 'erp-omd'); ?></button>
                                             </form>
                                         <?php endif; ?>

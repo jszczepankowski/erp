@@ -36,7 +36,24 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
     <h1><?php esc_html_e('Dostawcy i koszty', 'erp-omd'); ?></h1>
 
     <?php if (! empty($_GET['message'])) : ?>
-        <div class="notice notice-success"><p><?php echo esc_html((string) wp_unslash($_GET['message'])); ?></p></div>
+        <?php
+        $message_key = sanitize_key((string) wp_unslash($_GET['message']));
+        $message_map = [
+            'supplier_saved' => __('Dostawca został zapisany.', 'erp-omd'),
+            'supplier_deleted' => __('Dostawca został usunięty.', 'erp-omd'),
+            'cost_invoice_saved' => __('Faktura kosztowa została zapisana.', 'erp-omd'),
+            'cost_invoice_deleted' => __('Faktura kosztowa została usunięta.', 'erp-omd'),
+            'cost_invoice_bulk_deleted' => __('Wybrane faktury kosztowe zostały usunięte.', 'erp-omd'),
+            'cost_invoice_bulk_status_updated' => __('Status wybranych faktur został zaktualizowany.', 'erp-omd'),
+            'ksef_moderation_saved' => __('Moderacja KSeF została zapisana.', 'erp-omd'),
+            'ksef_bulk_moderation_saved' => __('Moderacja zbiorcza KSeF została zapisana.', 'erp-omd'),
+            'ksef_sales_xml_imported' => __('Dokumenty sprzedażowe KSeF zostały zaimportowane.', 'erp-omd'),
+            'ksef_cost_xml_imported' => __('Dokumenty kosztowe KSeF zostały zaimportowane.', 'erp-omd'),
+            'ksef_sales_attached' => __('Dokument sprzedażowy KSeF został przypisany do projektu.', 'erp-omd'),
+        ];
+        $notice_message = $message_map[$message_key] ?? (string) wp_unslash($_GET['message']);
+        ?>
+        <div class="notice notice-success"><p><?php echo esc_html($notice_message); ?></p></div>
     <?php endif; ?>
     <?php if (! empty($_GET['error'])) : ?>
         <div class="notice notice-error"><p><?php echo esc_html(rawurldecode((string) wp_unslash($_GET['error']))); ?></p></div>
@@ -229,11 +246,15 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                 </select>
                             </div>
                             <div class="erp-omd-form-field">
+                                <label for="cost_invoice_project_search"><?php esc_html_e('Szukaj projektu', 'erp-omd'); ?></label>
+                                <input type="search" id="cost_invoice_project_search" class="regular-text" placeholder="<?php echo esc_attr__('Wpisz nazwę projektu lub klienta', 'erp-omd'); ?>" />
                                 <label for="cost_invoice_project_id"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
                                 <select id="cost_invoice_project_id" name="cost_invoice_project_id">
                                     <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
                                     <?php foreach ($projects as $project) : ?>
                                         <?php $project_id = (int) ($project['id'] ?? 0); ?>
+                                        <?php $project_status = (string) ($project['status'] ?? ''); ?>
+                                        <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true)) { continue; } ?>
                                         <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
                                         <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($invoice_form['project_id'] ?? 0), $project_id); ?>><?php
                                             $project_start_label = (string) ($project['start_date'] ?? '');
@@ -603,6 +624,8 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                     <?php foreach ($projects as $project) : ?>
                                         <?php $project_id = (int) ($project['id'] ?? 0); ?>
                                         <?php $project_status = (string) ($project['status'] ?? ''); ?>
+                                        <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true)) { continue; } ?>
+                                        <?php $project_status = (string) ($project['status'] ?? ''); ?>
                                         <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php if (! empty($final_invoice_project_ids[$project_id]) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
@@ -770,7 +793,18 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         var grossAmountField = document.getElementById('cost_invoice_gross_amount');
         var addItemButton = document.getElementById('cost-invoice-add-item');
         var selectAll = document.getElementById('cost-invoice-select-all');
+        var costInvoiceProjectSearch = document.getElementById('cost_invoice_project_search');
+        var costInvoiceProjectSelect = document.getElementById('cost_invoice_project_id');
         var ksefCostSelectAll = document.getElementById('ksef-cost-invoice-select-all');
+        if (costInvoiceProjectSearch && costInvoiceProjectSelect) {
+            costInvoiceProjectSearch.addEventListener('input', function () {
+                var query = (costInvoiceProjectSearch.value || '').toLowerCase().trim();
+                costInvoiceProjectSelect.querySelectorAll('option').forEach(function (option, index) {
+                    if (index === 0) { return; }
+                    option.hidden = query !== '' && option.textContent.toLowerCase().indexOf(query) === -1;
+                });
+            });
+        }
         if (!netField || !vatAmountField || !grossAmountField) { return; }
 
         var recalculate = function () {
