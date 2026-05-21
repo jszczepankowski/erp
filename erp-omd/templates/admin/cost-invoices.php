@@ -26,7 +26,7 @@ foreach ((array) $projects as $project_row) {
     $project_start_label = (string) ($project_row['start_date'] ?? '');
     $project_end_label = (string) ($project_row['end_date'] ?? '');
     $project_date_range = trim(($project_start_label !== '' ? $project_start_label : '??') . ' - ' . ($project_end_label !== '' ? $project_end_label : '??'));
-    $project_label = ($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project_row['name'] ?? '') . ' (' . $project_date_range . ' | ' . (string) ($project_row['billing_type'] ?? '') . ')';
+    $project_label = ($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project_row['name'] ?? '') . ' (' . $project_date_range . ')';
 
     $active_project_options[] = [
         'id' => $project_id,

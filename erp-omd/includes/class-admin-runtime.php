@@ -3216,6 +3216,7 @@ class ERP_OMD_Admin
             'delivery_address' => $delivery_address,
             'invoice_nip' => $invoice_nip,
             'note' => sanitize_textarea_field(wp_unslash($_POST['estimate_note'] ?? '')),
+            'estimate_link_valid_days' => max(1, min(365, (int) ($_POST['estimate_link_valid_days'] ?? 5))),
         ];
         $errors = $this->estimate_service->validate_estimate($payload, $existing);
         $initial_items_payload = $this->collect_initial_estimate_items();
@@ -3457,7 +3458,8 @@ class ERP_OMD_Admin
             $this->redirect_with_notice('erp-omd-estimates', 'error', __('Klient nie ma poprawnego adresu e-mail.', 'erp-omd'), ['id' => $estimate_id]);
         }
 
-        $valid_for_days = max(1, min(365, (int) ($_POST['estimate_link_valid_days'] ?? 5)));
+        $accept_meta = (array) get_option('erp_omd_estimate_acceptance_meta_' . (int) $estimate_id, []);
+        $valid_for_days = max(1, min(365, (int) ($_POST['estimate_link_valid_days'] ?? ($accept_meta['estimate_link_valid_days'] ?? 5))));
         $decision_url = $this->ensure_estimate_decision_token((int) $estimate_id, $valid_for_days);
         $state = $this->estimate_client_link_state();
         $estimate_mail_defaults = $this->estimate_client_mail_defaults();

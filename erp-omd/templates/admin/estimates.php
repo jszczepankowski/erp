@@ -39,6 +39,10 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
+                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                <label for="estimate-link-valid-days"><?php esc_html_e('Ważność linku (dni)', 'erp-omd'); ?></label>
+                                <input id="estimate-link-valid-days" type="number" min="1" max="365" name="estimate_link_valid_days" value="<?php echo esc_attr((string) max(1, min(365, (int) ($estimate_accept_meta['estimate_link_valid_days'] ?? 5)))); ?>">
+                            </div>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-estimate-basics-grid">
                             <div class="erp-omd-form-field">
@@ -675,7 +679,6 @@
                                                 <?php wp_nonce_field('erp_omd_send_estimate_client_link'); ?>
                                                 <input type="hidden" name="erp_omd_action" value="send_estimate_client_link" />
                                                 <input type="hidden" name="estimate_id" value="<?php echo esc_attr((string) ($estimate_row['id'] ?? 0)); ?>" />
-                                                <input type="number" min="1" max="365" name="estimate_link_valid_days" value="5" class="small-text" title="<?php echo esc_attr__('Ważność linku (dni)', 'erp-omd'); ?>" />
                                                 <button class="button button-small" type="submit"><?php esc_html_e('Wyślij do klienta', 'erp-omd'); ?></button>
                                             </form>
                                         <?php endif; ?>
