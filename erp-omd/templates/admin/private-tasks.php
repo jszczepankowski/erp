@@ -97,6 +97,7 @@
     if (!headers['X-WP-Nonce']) {
         headers['X-WP-Nonce'] = (window.wpApiSettings && window.wpApiSettings.nonce) ? window.wpApiSettings.nonce : restNonce;
     }
+    const cardEl = document.querySelector('.erp-omd-card');
     if (!cardEl) return;
     const getEls = () => ({
         textEl: document.getElementById('erp-omd-admin-task-text'),
@@ -106,7 +107,6 @@
         cancelEl: document.getElementById('erp-omd-task-cancel-edit'),
         noticeEl: document.getElementById('erp-omd-private-task-notice')
     });
-    const cardEl = document.querySelector('.erp-omd-card');
     const showNotice = (ok, msg) => {
         const {noticeEl} = getEls();
         if (!noticeEl) return;
