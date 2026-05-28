@@ -683,6 +683,8 @@ class ERP_OMD_Admin
             case 'delete_project_rate': $this->handle_project_rate_delete(); break;
             case 'save_project_cost': $this->handle_project_cost_save(); break;
             case 'delete_project_cost': $this->handle_project_cost_delete(); break;
+            case 'bulk_delete_project_costs': $this->handle_project_costs_bulk_delete(); break;
+            case 'bulk_delete_project_revenues': $this->handle_project_revenues_bulk_delete(); break;
             case 'save_project_revenue':
                 check_admin_referer('erp_omd_save_project_revenue');
                 $this->require_capability('erp_omd_manage_projects');
@@ -4196,6 +4198,98 @@ class ERP_OMD_Admin
         $this->project_financial_service->rebuild_for_project($project_id);
 
         return [];
+    }
+
+    private function handle_project_revenues_bulk_delete()
+    {
+        check_admin_referer('erp_omd_bulk_delete_project_revenues');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $project = $project_id > 0 ? $this->projects->find($project_id) : null;
+        if (! is_array($project)) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Projekt nie istnieje.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        if ($this->is_project_cost_locked_by_status((string) ($project['status'] ?? ''))) {
+            $this->redirect_with_notice(
+                'erp-omd-projects',
+                'error',
+                __('Przychody projektu po statusie Zakończony/Archiwum modyfikuj wyłącznie przez admina po zamknięciu miesiąca.', 'erp-omd'),
+                ['id' => $project_id]
+            );
+        }
+
+        $ids = isset($_POST['project_revenue_ids']) && is_array($_POST['project_revenue_ids'])
+            ? array_values(array_unique(array_filter(array_map('intval', wp_unslash($_POST['project_revenue_ids'])))))
+            : [];
+
+        if ($ids === []) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Zaznacz pozycje przychodowe projektu do usunięcia.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        $deleted_count = 0;
+        foreach ($ids as $id) {
+            $existing = $id > 0 ? $this->project_revenues->find($id) : null;
+            if (! is_array($existing) || (int) ($existing['project_id'] ?? 0) !== $project_id) {
+                continue;
+            }
+
+            $this->project_revenues->delete($id);
+            $deleted_count++;
+        }
+
+        if ($deleted_count > 0) {
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+
+        $this->redirect_with_notice('erp-omd-projects', 'success', sprintf(__('Usunięto pozycje przychodowe projektu: %d.', 'erp-omd'), $deleted_count), ['id' => $project_id]);
+    }
+
+    private function handle_project_costs_bulk_delete()
+    {
+        check_admin_referer('erp_omd_bulk_delete_project_costs');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $project_id = (int) ($_POST['project_id'] ?? 0);
+        $project = $project_id > 0 ? $this->projects->find($project_id) : null;
+        if (! is_array($project)) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Projekt nie istnieje.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        if ($this->is_project_cost_locked_by_status((string) ($project['status'] ?? ''))) {
+            $this->redirect_with_notice(
+                'erp-omd-projects',
+                'error',
+                __('Koszty projektu po statusie Zakończony/Archiwum modyfikuj wyłącznie przez „Szybka korekta admina (po zamknięciu miesiąca)”.', 'erp-omd'),
+                ['id' => $project_id]
+            );
+        }
+
+        $ids = isset($_POST['project_cost_ids']) && is_array($_POST['project_cost_ids'])
+            ? array_values(array_unique(array_filter(array_map('intval', wp_unslash($_POST['project_cost_ids'])))))
+            : [];
+
+        if ($ids === []) {
+            $this->redirect_with_notice('erp-omd-projects', 'error', __('Zaznacz koszty projektu do usunięcia.', 'erp-omd'), ['id' => $project_id]);
+        }
+
+        $deleted_count = 0;
+        foreach ($ids as $id) {
+            $existing = $id > 0 ? $this->project_costs->find($id) : null;
+            if (! is_array($existing) || (int) ($existing['project_id'] ?? 0) !== $project_id) {
+                continue;
+            }
+
+            $this->project_costs->delete($id);
+            $deleted_count++;
+        }
+
+        if ($deleted_count > 0) {
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+
+        $this->redirect_with_notice('erp-omd-projects', 'success', sprintf(__('Usunięto koszty projektu: %d.', 'erp-omd'), $deleted_count), ['id' => $project_id]);
     }
 
     private function handle_project_cost_delete()

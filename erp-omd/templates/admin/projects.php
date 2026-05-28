@@ -361,11 +361,21 @@
                                 </div>
                             </form>
                         <?php endif; ?>
+                        <?php $project_revenue_bulk_delete_available = ! $project_financial_rows_locked && ! empty($project_revenue_rows); ?>
+                        <?php if ($project_revenue_bulk_delete_available) : ?>
+                            <form id="erp-omd-bulk-project-revenues-form" method="post" style="margin: 12px 0;" onsubmit="return confirm('<?php echo esc_js(__('Usunąć zaznaczone pozycje przychodowe projektu?', 'erp-omd')); ?>');">
+                                <?php wp_nonce_field('erp_omd_bulk_delete_project_revenues'); ?>
+                                <input type="hidden" name="erp_omd_action" value="bulk_delete_project_revenues" />
+                                <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń zaznaczone przychody', 'erp-omd'); ?></button>
+                            </form>
+                        <?php endif; ?>
                         <table class="widefat striped">
-                            <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                            <thead><tr><?php if ($project_revenue_bulk_delete_available) : ?><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-project-revenue-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><?php endif; ?><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                             <tbody>
                                 <?php if (is_array($project_final_sales_invoice_row)) : ?>
                                     <tr>
+                                        <?php if ($project_revenue_bulk_delete_available) : ?><td><span aria-hidden="true">—</span></td><?php endif; ?>
                                         <td><?php echo esc_html((string) ($project_final_sales_invoice_row['issue_date'] ?? '—')); ?></td>
                                         <td><?php echo esc_html(number_format_i18n((float) ($project_final_sales_invoice_row['net_amount'] ?? 0), 2)); ?></td>
                                         <td><?php echo esc_html(sprintf(__('Faktura sprzedażowa końcowa: %s', 'erp-omd'), (string) ($project_final_sales_invoice_row['invoice_number'] ?? '—'))); ?></td>
@@ -373,10 +383,11 @@
                                     </tr>
                                 <?php endif; ?>
                                 <?php if (empty($project_revenue_rows)) : ?>
-                                    <tr><td colspan="4"><?php esc_html_e('Brak pozycji przychodowych projektu.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="<?php echo esc_attr((string) ($project_revenue_bulk_delete_available ? 5 : 4)); ?>"><?php esc_html_e('Brak pozycji przychodowych projektu.', 'erp-omd'); ?></td></tr>
                                 <?php else : ?>
                                     <?php foreach ($project_revenue_rows as $project_revenue_row) : ?>
                                         <tr>
+                                            <?php if ($project_revenue_bulk_delete_available) : ?><td><input class="erp-omd-project-revenue-checkbox" type="checkbox" name="project_revenue_ids[]" value="<?php echo esc_attr((string) ($project_revenue_row['id'] ?? 0)); ?>" form="erp-omd-bulk-project-revenues-form" /></td><?php endif; ?>
                                             <td><?php echo esc_html($project_revenue_row['revenue_date']); ?></td>
                                             <td><?php echo esc_html(number_format_i18n((float) ($project_revenue_row['amount'] ?? 0), 2)); ?></td>
                                             <td><?php echo esc_html($project_revenue_row['description'] ?: '—'); ?></td>
@@ -473,14 +484,24 @@
                                 </div>
                             </form>
                         <?php endif; ?>
+                        <?php $project_cost_bulk_delete_available = ! $project_costs_locked && ! empty($project_cost_rows); ?>
+                        <?php if ($project_cost_bulk_delete_available) : ?>
+                            <form id="erp-omd-bulk-project-costs-form" method="post" style="margin: 12px 0;" onsubmit="return confirm('<?php echo esc_js(__('Usunąć zaznaczone koszty projektu?', 'erp-omd')); ?>');">
+                                <?php wp_nonce_field('erp_omd_bulk_delete_project_costs'); ?>
+                                <input type="hidden" name="erp_omd_action" value="bulk_delete_project_costs" />
+                                <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń zaznaczone koszty', 'erp-omd'); ?></button>
+                            </form>
+                        <?php endif; ?>
                         <table class="widefat striped">
-                            <thead><tr><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+                            <thead><tr><?php if ($project_cost_bulk_delete_available) : ?><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-project-cost-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><?php endif; ?><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Kwota', 'erp-omd'); ?></th><th><?php esc_html_e('Opis', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                             <tbody>
                                 <?php if (empty($project_cost_rows)) : ?>
-                                    <tr><td colspan="4"><?php esc_html_e('Brak kosztów projektu. Dodaj koszt, jeśli chcesz uwzględnić wydatki poza czasem pracy.', 'erp-omd'); ?></td></tr>
+                                    <tr><td colspan="<?php echo esc_attr((string) ($project_cost_bulk_delete_available ? 5 : 4)); ?>"><?php esc_html_e('Brak kosztów projektu. Dodaj koszt, jeśli chcesz uwzględnić wydatki poza czasem pracy.', 'erp-omd'); ?></td></tr>
                                 <?php else : ?>
                                     <?php foreach ($project_cost_rows as $project_cost_row) : ?>
                                         <tr>
+                                            <?php if ($project_cost_bulk_delete_available) : ?><td><input class="erp-omd-project-cost-checkbox" type="checkbox" name="project_cost_ids[]" value="<?php echo esc_attr((string) ($project_cost_row['id'] ?? 0)); ?>" form="erp-omd-bulk-project-costs-form" /></td><?php endif; ?>
                                             <td><?php echo esc_html($project_cost_row['cost_date']); ?></td>
                                             <td><?php echo esc_html(number_format_i18n((float) ($project_cost_row['amount'] ?? 0), 2)); ?></td>
                                             <td><?php echo esc_html($project_cost_row['description'] ?: '—'); ?></td>
