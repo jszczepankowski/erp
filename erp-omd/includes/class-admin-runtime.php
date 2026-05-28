@@ -879,13 +879,20 @@ class ERP_OMD_Admin
     public function render_private_tasks()
     {
         $this->require_capability('erp_omd_access');
-        $dashboard_private_tasks_filter = sanitize_key((string) wp_unslash($_GET['tasks_filter'] ?? 'all'));
+        $dashboard_private_tasks_filter = $this->normalize_admin_private_tasks_filter($_GET['tasks_filter'] ?? 'all');
         $dashboard_private_tasks_edit_id = sanitize_text_field((string) wp_unslash($_GET['edit_task'] ?? ''));
-        if (! in_array($dashboard_private_tasks_filter, ['all', 'today', 'incomplete'], true)) {
-            $dashboard_private_tasks_filter = 'all';
-        }
         $dashboard_private_tasks = $this->get_admin_private_tasks((int) get_current_user_id(), $dashboard_private_tasks_filter);
         include ERP_OMD_PATH . 'templates/admin/private-tasks.php';
+    }
+
+    private function normalize_admin_private_tasks_filter($filter)
+    {
+        $filter = sanitize_key((string) wp_unslash($filter));
+        if (! in_array($filter, ['all', 'today', 'incomplete'], true)) {
+            return 'all';
+        }
+
+        return $filter;
     }
 
     private function get_admin_private_tasks($user_id, $filter = 'all')
@@ -933,6 +940,7 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_save_admin_private_task');
         $this->require_capability('erp_omd_access');
         $user_id = (int) get_current_user_id();
+        $tasks_filter = $this->normalize_admin_private_tasks_filter($_POST['tasks_filter'] ?? 'all');
         $text = sanitize_textarea_field((string) wp_unslash($_POST['task_text'] ?? ''));
         $due_date = sanitize_text_field((string) wp_unslash($_POST['task_due_date'] ?? ''));
         if ($text === '') {
@@ -952,6 +960,7 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_toggle_admin_private_task');
         $this->require_capability('erp_omd_access');
         $user_id = (int) get_current_user_id();
+        $tasks_filter = $this->normalize_admin_private_tasks_filter($_POST['tasks_filter'] ?? 'all');
         $task_id = sanitize_text_field((string) wp_unslash($_POST['task_id'] ?? ''));
         $tasks = (array) get_user_meta($user_id, 'erp_omd_admin_private_tasks', true);
         $updated = false;
@@ -980,6 +989,7 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_delete_admin_private_task');
         $this->require_capability('erp_omd_access');
         $user_id = (int) get_current_user_id();
+        $tasks_filter = $this->normalize_admin_private_tasks_filter($_POST['tasks_filter'] ?? 'all');
         $task_id = sanitize_text_field((string) wp_unslash($_POST['task_id'] ?? ''));
         $tasks = (array) get_user_meta($user_id, 'erp_omd_admin_private_tasks', true);
         $tasks = array_values(array_filter($tasks, static function ($task) use ($task_id) {
@@ -998,6 +1008,7 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_update_admin_private_task');
         $this->require_capability('erp_omd_access');
         $user_id = (int) get_current_user_id();
+        $tasks_filter = $this->normalize_admin_private_tasks_filter($_POST['tasks_filter'] ?? 'all');
         $task_id = sanitize_text_field((string) wp_unslash($_POST['task_id'] ?? ''));
         $text = sanitize_textarea_field((string) wp_unslash($_POST['task_text'] ?? ''));
         $due_date = sanitize_text_field((string) wp_unslash($_POST['task_due_date'] ?? ''));
@@ -1024,6 +1035,7 @@ class ERP_OMD_Admin
     {
         check_admin_referer('erp_omd_bulk_admin_private_tasks');
         $this->require_capability('erp_omd_access');
+        $tasks_filter = $this->normalize_admin_private_tasks_filter($_POST['tasks_filter'] ?? 'all');
         $action = sanitize_text_field((string) wp_unslash($_POST['bulk_action'] ?? ''));
         $ids = array_values(array_filter(array_map('sanitize_text_field', (array) wp_unslash($_POST['task_ids'] ?? []))));
         if ($action === '' || $ids === []) {
