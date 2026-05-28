@@ -510,6 +510,50 @@
                                                     <span aria-hidden="true">—</span>
                                                 <?php else : ?>
                                                     <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => (int) $project['id'], 'edit_project_cost_id' => (int) ($project_cost_row['id'] ?? 0)], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
+                                                    <?php $project_cost_invoice_id = (int) ($project_cost_row['cost_invoice_id'] ?? 0); ?>
+                                                    <?php if ($project_cost_invoice_id > 0) : ?>
+                                                        <span class="tag"><?php echo esc_html(sprintf(__('Faktura #%d', 'erp-omd'), $project_cost_invoice_id)); ?></span>
+                                                    <?php else : ?>
+                                                        <?php $project_cost_map_modal_id = 'erp-omd-project-cost-map-' . (int) ($project_cost_row['id'] ?? 0); ?>
+                                                        <button class="button button-small" type="button" data-erp-omd-open-cost-map-modal="<?php echo esc_attr($project_cost_map_modal_id); ?>"><?php esc_html_e('Połącz', 'erp-omd'); ?></button>
+                                                        <div id="<?php echo esc_attr($project_cost_map_modal_id); ?>" class="erp-omd-modal" role="dialog" aria-modal="true" aria-labelledby="<?php echo esc_attr($project_cost_map_modal_id . '-title'); ?>" hidden>
+                                                            <div class="erp-omd-modal-backdrop" data-erp-omd-close-cost-map-modal></div>
+                                                            <div class="erp-omd-modal-panel" role="document">
+                                                                <h3 id="<?php echo esc_attr($project_cost_map_modal_id . '-title'); ?>"><?php esc_html_e('Połącz koszt projektu z fakturą kosztową', 'erp-omd'); ?></h3>
+                                                                <form method="post">
+                                                                    <?php wp_nonce_field('erp_omd_map_project_cost_to_invoice'); ?>
+                                                                    <input type="hidden" name="erp_omd_action" value="map_project_cost_to_invoice" />
+                                                                    <input type="hidden" name="project_id" value="<?php echo esc_attr($project['id']); ?>" />
+                                                                    <input type="hidden" name="project_cost_id" value="<?php echo esc_attr((string) ($project_cost_row['id'] ?? 0)); ?>" />
+                                                                    <p class="description"><?php esc_html_e('Wybierz zatwierdzoną fakturę kosztową. Istniejąca pozycja kosztowa zostanie zmapowana z fakturą zamiast tworzyć duplikat kosztu.', 'erp-omd'); ?></p>
+                                                                    <p>
+                                                                        <label for="<?php echo esc_attr($project_cost_map_modal_id . '-invoice'); ?>"><?php esc_html_e('Faktura kosztowa', 'erp-omd'); ?></label><br />
+                                                                        <select id="<?php echo esc_attr($project_cost_map_modal_id . '-invoice'); ?>" name="cost_invoice_id" required>
+                                                                            <option value=""><?php esc_html_e('Wybierz zatwierdzoną fakturę kosztową', 'erp-omd'); ?></option>
+                                                                            <?php foreach ((array) ($project_cost_invoice_rows ?? []) as $project_cost_invoice_row) : ?>
+                                                                                <option value="<?php echo esc_attr((string) ((int) ($project_cost_invoice_row['id'] ?? 0))); ?>">
+                                                                                    <?php
+                                                                                    echo esc_html(
+                                                                                        sprintf(
+                                                                                            '#%d • %s • netto %s',
+                                                                                            (int) ($project_cost_invoice_row['id'] ?? 0),
+                                                                                            (string) ($project_cost_invoice_row['invoice_number'] ?? '—'),
+                                                                                            number_format_i18n((float) ($project_cost_invoice_row['net_amount'] ?? 0), 2)
+                                                                                        )
+                                                                                    );
+                                                                                    ?>
+                                                                                </option>
+                                                                            <?php endforeach; ?>
+                                                                        </select>
+                                                                    </p>
+                                                                    <div class="erp-omd-form-actions">
+                                                                        <button type="submit" class="button button-primary"><?php esc_html_e('Połącz', 'erp-omd'); ?></button>
+                                                                        <button type="button" class="button" data-erp-omd-close-cost-map-modal><?php esc_html_e('Anuluj', 'erp-omd'); ?></button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; ?>
                                                     <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć koszt projektu?', 'erp-omd')); ?>');">
                                                         <?php wp_nonce_field('erp_omd_delete_project_cost'); ?>
                                                         <input type="hidden" name="erp_omd_action" value="delete_project_cost" />
@@ -852,6 +896,36 @@
         </table>
     </div>
 </div>
+
+<style>
+.erp-omd-modal[hidden] { display: none; }
+.erp-omd-modal { position: fixed; inset: 0; z-index: 100000; display: flex; align-items: center; justify-content: center; }
+.erp-omd-modal-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); }
+.erp-omd-modal-panel { position: relative; width: min(560px, calc(100vw - 40px)); max-height: calc(100vh - 60px); overflow: auto; background: #fff; padding: 20px; border-radius: 4px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25); }
+.erp-omd-modal-panel select { width: 100%; max-width: 100%; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-erp-omd-open-cost-map-modal]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var modal = document.getElementById(button.getAttribute('data-erp-omd-open-cost-map-modal'));
+            if (modal) {
+                modal.hidden = false;
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-erp-omd-close-cost-map-modal]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var modal = button.closest('.erp-omd-modal');
+            if (modal) {
+                modal.hidden = true;
+            }
+        });
+    });
+});
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

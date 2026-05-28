@@ -48,13 +48,14 @@
                         <?php endforeach; ?>
                     </div>
                 </div>
+            </form>
 
                 <table class="widefat striped">
                     <thead><tr><th scope="col" class="manage-column check-column"><input type="checkbox" class="erp-omd-select-all-task" /></th><th><?php esc_html_e('ID', 'erp-omd'); ?></th><th><?php esc_html_e('Data dodania', 'erp-omd'); ?></th><th><?php esc_html_e('Zadanie', 'erp-omd'); ?></th><th><?php esc_html_e('Termin', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
                     <tbody>
                     <?php if (! empty($dashboard_private_tasks)) : foreach ($dashboard_private_tasks as $i => $task_row) : $task_id = (string) ($task_row['task_id'] ?? ''); ?>
                         <tr>
-                            <th scope="row" class="check-column"><input type="checkbox" name="task_ids[]" value="<?php echo esc_attr($task_id); ?>" /></th>
+                            <th scope="row" class="check-column"><input type="checkbox" name="task_ids[]" value="<?php echo esc_attr($task_id); ?>" form="erp-omd-bulk-private-tasks-form" /></th>
                             <td><?php echo esc_html((string) ($i + 1)); ?></td>
                             <td><?php echo esc_html((string) ($task_row['created_at'] ?? '—')); ?></td>
                             <td><?php echo esc_html((string) ($task_row['text'] ?? '')); ?></td>
@@ -83,7 +84,17 @@
                     <?php endif; ?>
                     </tbody>
                 </table>
-            </form>
         </section>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.erp-omd-select-all-task').forEach(function (toggle) {
+        toggle.addEventListener('change', function () {
+            document.querySelectorAll('input[name="task_ids[]"][form="erp-omd-bulk-private-tasks-form"]').forEach(function (checkbox) {
+                checkbox.checked = !!toggle.checked;
+            });
+        });
+    });
+});
+</script>
