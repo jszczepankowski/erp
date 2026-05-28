@@ -3086,8 +3086,12 @@ class ERP_OMD_Admin
         $sales_id = (int) ($_POST['sales_id'] ?? 0);
         $project_id = (int) ($_POST['project_id'] ?? 0);
         $is_final = ! empty($_POST['is_final']);
-        if ($sales_id <= 0 || $project_id <= 0) {
-            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wskaż dokument sprzedażowy i projekt.', 'erp-omd'))]);
+        if ($sales_id <= 0) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wskaż dokument sprzedażowy KSeF.', 'erp-omd'))]);
+        }
+
+        if ($project_id <= 0) {
+            $is_final = false;
         }
 
         $service = new ERP_OMD_KSeF_Import_Service(
