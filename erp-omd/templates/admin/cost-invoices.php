@@ -644,11 +644,14 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                 <input type="hidden" name="sales_id" value="<?php echo esc_attr((string) ((int) ($sales_row['id'] ?? 0))); ?>" />
                                 <select name="project_id" required style="min-width:180px;">
                                     <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
+                                    <?php $sales_project_id = (int) ($sales_row['project_id'] ?? 0); ?>
+                                    <?php if ($sales_project_id > 0 && ! isset($project_name_by_id[$sales_project_id])) : ?>
+                                        <option value="<?php echo esc_attr((string) $sales_project_id); ?>" selected="selected"><?php echo esc_html('#' . $sales_project_id); ?></option>
+                                    <?php endif; ?>
                                     <?php foreach ($projects as $project) : ?>
                                         <?php $project_id = (int) ($project['id'] ?? 0); ?>
                                         <?php $project_status = (string) ($project['status'] ?? ''); ?>
-                                        <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true)) { continue; } ?>
-                                        <?php $project_status = (string) ($project['status'] ?? ''); ?>
+                                                                                <?php $project_status = (string) ($project['status'] ?? ''); ?>
                                         <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php if (! empty($final_invoice_project_ids[$project_id]) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
