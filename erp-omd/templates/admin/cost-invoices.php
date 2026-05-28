@@ -576,17 +576,6 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
 
 
     <?php if ($active_tab === 'ksef-sales') : ?>
-    <?php
-    $final_invoice_project_ids = [];
-    foreach ((array) $ksef_sales_inbox as $sales_invoice_row) {
-        if ((int) ($sales_invoice_row['is_final'] ?? 0) === 1) {
-            $final_project_id = (int) ($sales_invoice_row['project_id'] ?? 0);
-            if ($final_project_id > 0) {
-                $final_invoice_project_ids[$final_project_id] = true;
-            }
-        }
-    }
-    ?>
     <section class="erp-omd-card">
         <h2><?php esc_html_e('KSeF — faktury sprzedażowe', 'erp-omd'); ?></h2>
         
@@ -636,14 +625,15 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                         <td><?php echo esc_html((string) ($sales_row['issue_date'] ?? '')); ?></td>
                         <td><?php echo esc_html((string) ($client_name_by_id[$sales_client_id] ?? '—')); ?></td>
                         <td><?php echo esc_html((string) ($sales_row['buyer_nip'] ?? '')); ?></td>
-                        <td><?php echo esc_html((string) ($project_name_by_id[(int) ($sales_row['project_id'] ?? 0)] ?? ('#' . (int) ($sales_row['project_id'] ?? 0)))); ?></td>
+                        <?php $current_sales_project_id = (int) ($sales_row['project_id'] ?? 0); ?>
+                        <td><?php echo $current_sales_project_id > 0 ? esc_html((string) ($project_name_by_id[$current_sales_project_id] ?? ('#' . $current_sales_project_id))) : esc_html__('—', 'erp-omd'); ?></td>
                         <td>
                             <form method="post" style="display:flex;gap:6px;align-items:center;">
                                 <?php wp_nonce_field('erp_omd_attach_ksef_sales_invoice'); ?>
                                 <input type="hidden" name="erp_omd_action" value="attach_ksef_sales_invoice" />
                                 <input type="hidden" name="sales_id" value="<?php echo esc_attr((string) ((int) ($sales_row['id'] ?? 0))); ?>" />
-                                <select name="project_id" required style="min-width:180px;">
-                                    <option value=""><?php esc_html_e('Wybierz projekt', 'erp-omd'); ?></option>
+                                <select name="project_id" style="min-width:180px;">
+                                    <option value="0"><?php esc_html_e('Odłącz od projektu', 'erp-omd'); ?></option>
                                     <?php $sales_project_id = (int) ($sales_row['project_id'] ?? 0); ?>
                                     <?php if ($sales_project_id > 0 && ! isset($project_name_by_id[$sales_project_id])) : ?>
                                         <option value="<?php echo esc_attr((string) $sales_project_id); ?>" selected="selected"><?php echo esc_html('#' . $sales_project_id); ?></option>
@@ -651,9 +641,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                     <?php foreach ($projects as $project) : ?>
                                         <?php $project_id = (int) ($project['id'] ?? 0); ?>
                                         <?php $project_status = (string) ($project['status'] ?? ''); ?>
-                                                                                <?php $project_status = (string) ($project['status'] ?? ''); ?>
                                         <?php if (in_array($project_status, ['zakonczony', 'archiwum'], true) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
-                                        <?php if (! empty($final_invoice_project_ids[$project_id]) && (int) ($sales_row['project_id'] ?? 0) !== $project_id) { continue; } ?>
                                         <?php $project_client_name = (string) ($project['client_name'] ?? ''); ?>
                                         <option value="<?php echo esc_attr((string) $project_id); ?>" <?php selected((int) ($sales_row['project_id'] ?? 0), $project_id); ?>><?php echo esc_html(($project_client_name !== '' ? '[' . $project_client_name . '] ' : '') . (string) ($project['name'] ?? '')); ?></option>
                                     <?php endforeach; ?>

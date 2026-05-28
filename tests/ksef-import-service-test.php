@@ -296,6 +296,29 @@ if ((int) ($xmlImport['imported'] ?? 0) !== 1 || count($service->list_sales_inbo
     throw new RuntimeException('Expected manual sales XML import to append row into sales inbox.');
 }
 
+$attachSecondSales = $service->attach_sales_document_to_project(2, 77, false, 91);
+$assertions++;
+if (! (bool) ($attachSecondSales['ok'] ?? false) || (int) (($attachSecondSales['row']['project_id'] ?? 0)) !== 77 || (int) (($attachSecondSales['row']['is_final'] ?? 0)) !== 0) {
+    throw new RuntimeException('Expected attaching a second non-final sales invoice to the same project.');
+}
+
+$duplicateFinalSales = $service->attach_sales_document_to_project(2, 77, true, 91);
+$assertions++;
+if ((bool) ($duplicateFinalSales['ok'] ?? false)) {
+    throw new RuntimeException('Expected only one final sales invoice per project.');
+}
+
+$detachSales = $service->attach_sales_document_to_project(1, 0, false, 91);
+$assertions++;
+if (! (bool) ($detachSales['ok'] ?? false) || (int) (($detachSales['row']['project_id'] ?? -1)) !== 0 || (int) (($detachSales['row']['is_final'] ?? -1)) !== 0 || (string) (($detachSales['row']['status'] ?? '')) !== 'ready') {
+    throw new RuntimeException('Expected detaching a sales invoice to clear project and final flags.');
+}
+
+$assertions++;
+if ($service->has_final_sales_invoice_for_project(77)) {
+    throw new RuntimeException('Expected detached final sales invoice to no longer count as project final invoice.');
+}
+
 $costXmlImport = $service->import_cost_xml('<?xml version="1.0"?><Fa><Naglowek><P_1>2026-04-15</P_1><P_2>XML/COST/1</P_2></Naglowek><Podmiot1><DaneIdentyfikacyjne><NIP>2222222222</NIP></DaneIdentyfikacyjne></Podmiot1><Podmiot2><DaneIdentyfikacyjne><NIP>1111111111</NIP></DaneIdentyfikacyjne></Podmiot2><NumerKSeF>XML-COST-REF</NumerKSeF><FaCtrl><B>200</B><V>46</V><WartoscFaktury>246</WartoscFaktury></FaCtrl></Fa>', 91);
 $assertions++;
 if ((int) ($costXmlImport['imported'] ?? 0) !== 1) {
