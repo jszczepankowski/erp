@@ -32,6 +32,8 @@ $fragments = [
     [$template, 'name="ksef_sales_xml_content"', 'Admin template should provide XML textarea.'],
     [$template, 'name="sales_id"', 'Admin template should expose sales attach form.'],
     [$template, 'name="is_final"', 'Admin template should allow marking sales invoice as final.'],
+    [$template, "esc_html_e('Odłącz od projektu', 'erp-omd')", 'Admin template should allow detaching sales invoice from project.'],
+    [$service, "Projekt ma już oznaczoną fakturę sprzedażową jako końcową", 'Service should keep one final sales invoice per project.'],
     [$template, 'name="ksef_sales_xml_files[]"', 'Admin template should provide bulk sales XML file upload.'],
     [$template, 'name="ksef_sales_description"', 'Admin template should provide optional sales invoice description field.'],
     [$template, 'name="ksef_cost_xml_content"', 'Admin template should provide cost XML textarea.'],

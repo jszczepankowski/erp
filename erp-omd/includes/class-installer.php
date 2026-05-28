@@ -319,15 +319,20 @@ class ERP_OMD_Installer
                 amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
                 description TEXT NULL,
                 cost_date DATE NOT NULL,
+                cost_invoice_id BIGINT UNSIGNED NULL,
                 created_by_user_id BIGINT UNSIGNED NOT NULL,
                 created_at DATETIME NOT NULL,
                 updated_at DATETIME NOT NULL,
                 PRIMARY KEY  (id),
                 KEY project_id (project_id),
                 KEY cost_date (cost_date),
+                KEY cost_invoice_id (cost_invoice_id),
                 KEY created_by_user_id (created_by_user_id)
             ) ENGINE=InnoDB {$charset_collate};"
         );
+
+        self::add_column_if_missing($project_costs_table, 'cost_invoice_id', "ALTER TABLE {$project_costs_table} ADD COLUMN cost_invoice_id BIGINT UNSIGNED NULL AFTER cost_date");
+        self::add_index_if_missing($project_costs_table, 'cost_invoice_id', "ALTER TABLE {$project_costs_table} ADD INDEX cost_invoice_id (cost_invoice_id)");
 
         dbDelta(
             "CREATE TABLE {$project_revenues_table} (
@@ -1220,6 +1225,7 @@ class ERP_OMD_Installer
         self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_rate_history_project', "ALTER TABLE {$project_rate_history_table} ADD CONSTRAINT fk_erp_omd_project_rate_history_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($roles_table, 'fk_erp_omd_project_rate_history_role', "ALTER TABLE {$project_rate_history_table} ADD CONSTRAINT fk_erp_omd_project_rate_history_role FOREIGN KEY (role_id) REFERENCES {$roles_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_costs_project', "ALTER TABLE {$project_costs_table} ADD CONSTRAINT fk_erp_omd_project_costs_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
+        self::add_foreign_key_if_missing($cost_invoices_table, 'fk_erp_omd_project_costs_cost_invoice', "ALTER TABLE {$project_costs_table} ADD CONSTRAINT fk_erp_omd_project_costs_cost_invoice FOREIGN KEY (cost_invoice_id) REFERENCES {$cost_invoices_table}(id) ON DELETE SET NULL");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_project_costs_created_by', "ALTER TABLE {$project_costs_table} ADD CONSTRAINT fk_erp_omd_project_costs_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($projects_table, 'fk_erp_omd_project_revenues_project', "ALTER TABLE {$project_revenues_table} ADD CONSTRAINT fk_erp_omd_project_revenues_project FOREIGN KEY (project_id) REFERENCES {$projects_table}(id) ON DELETE CASCADE");
         self::add_foreign_key_if_missing($users_table, 'fk_erp_omd_project_revenues_created_by', "ALTER TABLE {$project_revenues_table} ADD CONSTRAINT fk_erp_omd_project_revenues_created_by FOREIGN KEY (created_by_user_id) REFERENCES {$users_table}(ID) ON DELETE CASCADE");

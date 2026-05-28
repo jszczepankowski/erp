@@ -100,11 +100,12 @@ class ERP_OMD_Project_Cost_Repository
                 'amount' => $data['amount'],
                 'description' => $data['description'],
                 'cost_date' => $data['cost_date'],
+                'cost_invoice_id' => ! empty($data['cost_invoice_id']) ? (int) $data['cost_invoice_id'] : null,
                 'created_by_user_id' => $data['created_by_user_id'],
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            ['%d', '%f', '%s', '%s', '%d', '%s', '%s']
+            ['%d', '%f', '%s', '%s', '%d', '%d', '%s', '%s']
         );
 
         if (function_exists('erp_omd_reports_cache_bump_version')) {
@@ -118,16 +119,23 @@ class ERP_OMD_Project_Cost_Repository
     {
         global $wpdb;
 
+        $update_data = [
+            'amount' => $data['amount'],
+            'description' => $data['description'],
+            'cost_date' => $data['cost_date'],
+            'updated_at' => current_time('mysql'),
+        ];
+        $formats = ['%f', '%s', '%s', '%s'];
+        if (array_key_exists('cost_invoice_id', $data)) {
+            $update_data['cost_invoice_id'] = ! empty($data['cost_invoice_id']) ? (int) $data['cost_invoice_id'] : null;
+            $formats[] = '%d';
+        }
+
         $updated = $wpdb->update(
             $this->table_name(),
-            [
-                'amount' => $data['amount'],
-                'description' => $data['description'],
-                'cost_date' => $data['cost_date'],
-                'updated_at' => current_time('mysql'),
-            ],
+            $update_data,
             ['id' => $id],
-            ['%f', '%s', '%s', '%s'],
+            $formats,
             ['%d']
         );
 

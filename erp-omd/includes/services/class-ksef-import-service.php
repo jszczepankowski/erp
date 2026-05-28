@@ -501,21 +501,37 @@ class ERP_OMD_KSeF_Import_Service
         $sales_id = (int) $sales_id;
         $project_id = (int) $project_id;
         $is_final = (bool) $is_final;
-        if ($sales_id <= 0 || $project_id <= 0) {
-            return ['ok' => false, 'errors' => [__('Wymagane sales_id i project_id.', 'erp-omd')]];
+        if ($sales_id <= 0) {
+            return ['ok' => false, 'errors' => [__('Wymagane sales_id.', 'erp-omd')]];
+        }
+
+        if ($project_id <= 0 && $is_final) {
+            return ['ok' => false, 'errors' => [__('Faktura końcowa musi być przypisana do projektu.', 'erp-omd')]];
         }
 
         $rows = $this->load_sales_inbox();
+        if ($project_id > 0 && $is_final) {
+            foreach ($rows as $row) {
+                if ((int) ($row['id'] ?? 0) === $sales_id) {
+                    continue;
+                }
+
+                if ((int) ($row['project_id'] ?? 0) === $project_id && (int) ($row['is_final'] ?? 0) === 1) {
+                    return ['ok' => false, 'errors' => [__('Projekt ma już oznaczoną fakturę sprzedażową jako końcową.', 'erp-omd')]];
+                }
+            }
+        }
+
         foreach ($rows as $index => $row) {
             if ((int) ($row['id'] ?? 0) !== $sales_id) {
                 continue;
             }
 
             $before = $row;
-            $rows[$index]['project_id'] = $project_id;
-            $rows[$index]['is_final'] = $is_final ? 1 : 0;
-            $rows[$index]['status'] = 'attached';
-            if ($is_final) {
+            $rows[$index]['project_id'] = $project_id > 0 ? $project_id : 0;
+            $rows[$index]['is_final'] = ($project_id > 0 && $is_final) ? 1 : 0;
+            $rows[$index]['status'] = $project_id > 0 ? 'attached' : 'ready';
+            if ($project_id > 0 && $is_final) {
                 $rows[$index]['final_marked_at'] = $this->now();
                 $rows[$index]['final_marked_by_user_id'] = (int) $user_id;
             } else {

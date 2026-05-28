@@ -13,7 +13,7 @@ if (! defined('ABSPATH')) {
 }
 
 define('ERP_OMD_VERSION', '4.0_dev');
-define('ERP_OMD_DB_VERSION', '6.6.2');
+define('ERP_OMD_DB_VERSION', '6.6.3');
 define('ERP_OMD_FILE', __FILE__);
 define('ERP_OMD_PATH', plugin_dir_path(__FILE__));
 define('ERP_OMD_URL', plugin_dir_url(__FILE__));
