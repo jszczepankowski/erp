@@ -87,6 +87,7 @@ class ERP_OMD_Reporting_Service
             'tab' => $tab,
             'page_num' => $page,
             'per_page' => $per_page,
+            'include_all_statuses' => ! empty($raw_filters['include_all_statuses']),
         ];
     }
 
@@ -619,8 +620,11 @@ class ERP_OMD_Reporting_Service
     public function build_calendar(array $filters)
     {
         $filters = $this->sanitize_filters($filters);
-        $projects = $this->get_filtered_projects($filters);
-        $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
+        $project_ids = [];
+        if ($this->isProjectStatusFilter((string) ($filters['status'] ?? ''))) {
+            $projects = $this->get_filtered_projects($filters);
+            $project_ids = array_map('intval', wp_list_pluck($projects, 'id'));
+        }
         $entries = $this->get_filtered_entries($project_ids, $filters);
         $month = $filters['month'];
         $first_day = new DateTimeImmutable($month . '-01');
@@ -925,7 +929,9 @@ class ERP_OMD_Reporting_Service
                 return false;
             }
 
-            if ($report_type !== 'calendar' && ! $this->is_project_from_reporting_month($project, (string) ($filters['month'] ?? ''))) {
+            $tab = (string) ($filters['tab'] ?? '');
+            $is_calendar_context = $report_type === 'calendar' || $tab === 'calendar';
+            if (! $is_calendar_context && ! $this->is_project_from_reporting_month($project, (string) ($filters['month'] ?? ''))) {
                 return false;
             }
 
@@ -1239,6 +1245,9 @@ class ERP_OMD_Reporting_Service
         if ($filters['project_id'] > 0 && (int) ($entry['project_id'] ?? 0) !== (int) $filters['project_id']) {
             return false;
         }
+        if ($filters['client_id'] > 0 && (int) ($entry['client_id'] ?? 0) !== (int) $filters['client_id']) {
+            return false;
+        }
         if (! $allow_non_approved && (string) ($entry['status'] ?? '') !== 'approved') {
             return false;
         }
@@ -1252,6 +1261,7 @@ class ERP_OMD_Reporting_Service
         }
         if (
             $allow_non_approved
+            && empty($filters['include_all_statuses'])
             && $filters['status'] === ''
             && (string) ($entry['status'] ?? '') !== 'approved'
         ) {

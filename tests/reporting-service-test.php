@@ -153,6 +153,7 @@ final class ReportingServiceTestRunner
             new ERP_OMD_Project_Repository([
                 ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000, 'start_date' => '2026-03-01', 'end_date' => '2026-03-31'],
                 ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000, 'start_date' => '2026-01-01', 'end_date' => '2026-03-20'],
+                ['id' => 12, 'client_id' => 1, 'name' => 'Closed support', 'client_name' => 'ACME', 'status' => 'zakonczony', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 800, 'start_date' => '2026-01-01', 'end_date' => '2026-02-28'],
             ]),
             new ERP_OMD_Client_Repository([
                 ['id' => 1, 'name' => 'ACME'],
@@ -186,6 +187,7 @@ final class ReportingServiceTestRunner
                 ['project_id' => 10, 'client_id' => 1, 'employee_id' => 1, 'hours' => 2, 'entry_date' => '2026-03-10', 'status' => 'approved', 'rate_snapshot' => 100, 'cost_snapshot' => 40],
                 ['project_id' => 10, 'client_id' => 1, 'employee_id' => 2, 'hours' => 1, 'entry_date' => '2026-03-12', 'status' => 'submitted', 'rate_snapshot' => 120, 'cost_snapshot' => 50],
                 ['project_id' => 11, 'client_id' => 2, 'employee_id' => 1, 'hours' => 3, 'entry_date' => '2026-03-15', 'status' => 'approved', 'rate_snapshot' => 200, 'cost_snapshot' => 80],
+                ['project_id' => 12, 'client_id' => 1, 'employee_id' => 1, 'hours' => 4, 'entry_date' => '2026-03-15', 'status' => 'approved', 'rate_snapshot' => 150, 'cost_snapshot' => 70],
             ]),
             new ERP_OMD_Project_Financial_Service([
                 10 => ['revenue' => 320.0, 'cost' => 190.0, 'profit' => 130.0, 'margin' => 40.63, 'budget_usage' => 19.0],
@@ -289,10 +291,19 @@ final class ReportingServiceTestRunner
 
         $calendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame('2026-03', $calendar['month'], 'Calendar should be built for requested month.');
-        $this->assertSame(5.0, $calendar['totals']['hours'], 'Calendar totals should aggregate approved daily hours by default.');
+        $this->assertSame(9.0, $calendar['totals']['hours'], 'Calendar totals should aggregate approved daily hours by default, including entries from projects closed before the calendar month.');
 
         $approvedCalendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => 'approved', 'report_type' => 'projects', 'tab' => 'calendar']);
-        $this->assertSame(5.0, $approvedCalendar['totals']['hours'], 'Calendar approved filter should keep approved entry hours.');
+        $this->assertSame(9.0, $approvedCalendar['totals']['hours'], 'Calendar approved filter should keep approved entry hours from all matching day entries.');
+
+        $allStatusesCalendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar', 'include_all_statuses' => true]);
+        $this->assertSame(10.0, $allStatusesCalendar['totals']['hours'], 'Worker calendar should aggregate all statuses when requested to match day details.');
+        $this->assertSame(4, $allStatusesCalendar['totals']['entries_count'], 'Worker calendar should count all visible entries when requested to match day details.');
+        $this->assertSame(1.0, $allStatusesCalendar['totals']['submitted_hours'], 'Worker calendar should expose submitted hours separately while keeping them in totals.');
+        $this->assertSame(9.0, $allStatusesCalendar['totals']['approved_hours'], 'Worker calendar should keep approved status breakdown with all-status totals.');
+        $calendarDay = $this->findCalendarDay($allStatusesCalendar, '2026-03-15');
+        $this->assertSame(7.0, $calendarDay['hours'], 'Worker calendar day tile should match selected day details even after the project status or lifecycle dates change.');
+        $this->assertSame(2, $calendarDay['entries_count'], 'Worker calendar day tile should count all entries displayed in selected day details.');
 
         $export = $service->export_definition('projects', $filters);
         $this->assertSame('Klient', $export['headers'][0], 'Project export should expose column headers.');
@@ -343,6 +354,20 @@ final class ReportingServiceTestRunner
 
         echo "Assertions: {$this->assertions}\n";
         echo "Reporting service tests passed.\n";
+    }
+
+
+    private function findCalendarDay(array $calendar, string $date): array
+    {
+        foreach ((array) ($calendar['weeks'] ?? []) as $week) {
+            foreach ((array) $week as $day) {
+                if (is_array($day) && (string) ($day['date'] ?? '') === $date) {
+                    return $day;
+                }
+            }
+        }
+
+        throw new RuntimeException('Calendar day not found: ' . $date);
     }
 
     private function assertSame($expected, $actual, string $message): void

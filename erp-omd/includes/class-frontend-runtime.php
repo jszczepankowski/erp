@@ -1237,6 +1237,7 @@ class ERP_OMD_Frontend
             'month' => $worker_filters['calendar_month'],
             'report_type' => 'monthly',
             'tab' => 'calendar',
+            'include_all_statuses' => true,
         ]);
         $calendar_navigation = $this->get_calendar_navigation($worker_filters['calendar_month'], $worker_filters);
         $selected_day = $this->resolve_selected_day($worker_filters, $calendar_data);
