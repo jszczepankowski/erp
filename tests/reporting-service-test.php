@@ -2,46 +2,7 @@
 
 declare(strict_types=1);
 
-if (! function_exists('sanitize_text_field')) {
-    function sanitize_text_field($value)
-    {
-        return trim((string) $value);
-    }
-}
-
-if (! function_exists('__')) {
-    function __($text, $domain = null)
-    {
-        return $text;
-    }
-}
-
-if (! function_exists('get_option')) {
-    function get_option($name, $default = false)
-    {
-        return $default;
-    }
-}
-
-if (! function_exists('sanitize_key')) {
-    function sanitize_key($value)
-    {
-        return preg_replace('/[^a-z0-9_\-]/', '', strtolower((string) $value));
-    }
-}
-
-if (! function_exists('wp_list_pluck')) {
-    function wp_list_pluck(array $list, $field)
-    {
-        $values = [];
-        foreach ($list as $item) {
-            if (is_array($item) && array_key_exists($field, $item)) {
-                $values[] = $item[$field];
-            }
-        }
-        return $values;
-    }
-}
+require_once __DIR__ . '/bootstrap.php';
 
 if (! class_exists('ERP_OMD_Project_Repository')) {
     class ERP_OMD_Project_Repository
@@ -50,6 +11,7 @@ if (! class_exists('ERP_OMD_Project_Repository')) {
         public $all_calls = 0;
         public function __construct(array $projects) { $this->projects = $projects; }
         public function all() { $this->all_calls++; return $this->projects; }
+        public function find($id) { foreach ($this->projects as $project) { if ((int) ($project['id'] ?? 0) === (int) $id) { return $project; } } return null; }
     }
 }
 
@@ -136,6 +98,17 @@ if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
     }
 }
 
+
+if (! class_exists('ERP_OMD_Project_Revenue_Repository')) {
+    class ERP_OMD_Project_Revenue_Repository
+    {
+        private $revenues;
+        public $for_project_calls = 0;
+        public function __construct(array $revenues) { $this->revenues = $revenues; }
+        public function for_project($project_id) { $this->for_project_calls++; return $this->revenues[(int) $project_id] ?? []; }
+    }
+}
+
 if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
     class ERP_OMD_Time_Entry_Repository
     {
@@ -178,8 +151,8 @@ final class ReportingServiceTestRunner
     {
         $service = new ERP_OMD_Reporting_Service(
             new ERP_OMD_Project_Repository([
-                ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000, 'end_date' => '2026-02-15'],
-                ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000, 'end_date' => '2026-03-20'],
+                ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000, 'start_date' => '2026-03-01', 'end_date' => '2026-03-31'],
+                ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000, 'start_date' => '2026-01-01', 'end_date' => '2026-03-20'],
             ]),
             new ERP_OMD_Client_Repository([
                 ['id' => 1, 'name' => 'ACME'],
@@ -199,6 +172,14 @@ final class ReportingServiceTestRunner
                 ],
                 11 => [
                     ['amount' => 250.0, 'cost_date' => '2026-03-15'],
+                ],
+            ]),
+            new ERP_OMD_Project_Revenue_Repository([
+                10 => [
+                    ['amount' => 50.0, 'revenue_date' => '2026-03-10'],
+                ],
+                11 => [
+                    ['amount' => 400.0, 'revenue_date' => '2026-03-15'],
                 ],
             ]),
             new ERP_OMD_Time_Entry_Repository([
@@ -251,7 +232,7 @@ final class ReportingServiceTestRunner
         $this->assertSame(1, count($projectDetail[0]['detail']['time_entries']), 'Project detail report should include approved entries for selected month by default.');
         $this->assertSame(1, count($projectDetail[0]['detail']['direct_cost_items']), 'Project detail report should include direct cost rows for selected month.');
         $this->assertSame(200.0, $projectDetail[0]['detail']['billing_mix']['hourly_component'], 'Project detail report should expose billing mix hourly component.');
-        $this->assertSame(19.0, $projectDetail[0]['detail']['billing_mix']['budget_usage'], 'Project detail report should expose billing mix budget usage.');
+        $this->assertSame(18.0, $projectDetail[0]['detail']['billing_mix']['budget_usage'], 'Project detail report should expose billing mix budget usage.');
 
         $clientReport = $service->build_client_report($filters);
         $this->assertSame(2, count($clientReport), 'Client report should aggregate per client.');
@@ -288,15 +269,17 @@ final class ReportingServiceTestRunner
         $projectCostCallsBeforeSettlement = $projectCostRepository->for_project_calls;
         $projectCostMonthlySumCallsBeforeSettlement = $projectCostRepository->sum_by_project_and_month_in_date_range_calls;
         $timeEntryCallsBeforeSettlement = $timeEntryRepository->all_calls;
-        $omdSettlement = $service->build_omd_settlement_report($filters);
+        $omdFilters = $service->sanitize_filters(['report_type' => 'omd_rozliczenia', 'month' => '2026-03', 'status' => 'omd_wszystkie']);
+        $omdSettlement = $service->build_omd_settlement_report($omdFilters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
         $this->assertSame('2026-03', $omdSettlement[11]['month'], 'OMD settlement report should end with selected month.');
+        $this->assertSame(0.0, $omdSettlement[10]['project_revenue'], 'OMD settlement should not repeat fixed-price project revenue before the project close month.');
         $this->assertSame(0.0, $omdSettlement[10]['active_project_budgets'], 'OMD settlement should not recognize project budget before project end_date month.');
         $this->assertSame(5000.0, $omdSettlement[11]['active_project_budgets'], 'OMD settlement should recognize project budget in project end_date month.');
         $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
-        $this->assertSame(5550.0, $omdSettlement[11]['operational_result'], 'OMD settlement should expose operational result before controlling overhead.');
+        $this->assertSame(5300.0, $omdSettlement[11]['operational_result'], 'OMD settlement should expose operational result before controlling overhead.');
         $this->assertSame(19000.0, $omdSettlement[11]['controlling_overhead'], 'OMD settlement should expose controlling overhead components.');
-        $this->assertSame(-13450.0, $omdSettlement[11]['controlling_result'], 'OMD settlement should expose controlling result after overhead.');
+        $this->assertSame(-13700.0, $omdSettlement[11]['controlling_result'], 'OMD settlement should expose controlling result after overhead.');
         $this->assertSame(0, $salaryRepository->for_employee_calls - $salaryCallsBeforeSettlement, 'OMD settlement should avoid per-employee salary reads when batch prefetch is available.');
         $this->assertSame(1, $salaryRepository->for_employees_calls - $salaryBatchCallsBeforeSettlement, 'OMD settlement should prefetch salary history in one batch query for 12M range.');
         $this->assertSame(1, $projectRepository->all_calls - $projectAllCallsBeforeSettlement, 'OMD settlement should fetch project list once and reuse it across 12 months.');
@@ -310,6 +293,12 @@ final class ReportingServiceTestRunner
 
         $approvedCalendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => 'approved', 'report_type' => 'projects', 'tab' => 'calendar']);
         $this->assertSame(5.0, $approvedCalendar['totals']['hours'], 'Calendar approved filter should keep approved entry hours.');
+
+        $allStatusesCalendar = $service->build_calendar(['month' => '2026-03', 'client_id' => 0, 'project_id' => 0, 'employee_id' => 0, 'status' => '', 'report_type' => 'projects', 'tab' => 'calendar', 'include_all_statuses' => true]);
+        $this->assertSame(6.0, $allStatusesCalendar['totals']['hours'], 'Worker calendar should aggregate all statuses when requested to match day details.');
+        $this->assertSame(3, $allStatusesCalendar['totals']['entries_count'], 'Worker calendar should count all visible entries when requested to match day details.');
+        $this->assertSame(1.0, $allStatusesCalendar['totals']['submitted_hours'], 'Worker calendar should expose submitted hours separately while keeping them in totals.');
+        $this->assertSame(5.0, $allStatusesCalendar['totals']['approved_hours'], 'Worker calendar should keep approved status breakdown with all-status totals.');
 
         $export = $service->export_definition('projects', $filters);
         $this->assertSame('Klient', $export['headers'][0], 'Project export should expose column headers.');
@@ -331,7 +320,7 @@ final class ReportingServiceTestRunner
 
         $strictOperationalCloseService = new ERP_OMD_Reporting_Service(
             new ERP_OMD_Project_Repository([
-                ['id' => 99, 'client_id' => 1, 'name' => 'Legacy close month fallback', 'client_name' => 'ACME', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager', 'budget' => 3000, 'end_date' => '2026-03-31'],
+                ['id' => 99, 'client_id' => 1, 'name' => 'Legacy close month fallback', 'client_name' => 'ACME', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager', 'budget' => 3000, 'start_date' => '2026-03-01', 'end_date' => '2026-03-31'],
             ]),
             new ERP_OMD_Client_Repository([
                 ['id' => 1, 'name' => 'ACME'],
@@ -343,6 +332,9 @@ final class ReportingServiceTestRunner
                 1 => [['monthly_salary' => 10000.0, 'valid_from' => '2026-01-01', 'valid_to' => null]],
             ]),
             new ERP_OMD_Project_Cost_Repository([
+                99 => [],
+            ]),
+            new ERP_OMD_Project_Revenue_Repository([
                 99 => [],
             ]),
             new ERP_OMD_Time_Entry_Repository([
