@@ -2,36 +2,14 @@
 
 declare(strict_types=1);
 
-if (! function_exists('sanitize_text_field')) {
-    function sanitize_text_field($value) { return trim((string) $value); }
-}
-if (! function_exists('sanitize_key')) {
-    function sanitize_key($value) { return preg_replace('/[^a-z0-9_\-]/', '', strtolower((string) $value)); }
-}
-if (! function_exists('__')) {
-    function __($text, $domain = null) { return $text; }
-}
-if (! function_exists('get_option')) {
-    function get_option($name, $default = false) { return $default; }
-}
-if (! function_exists('wp_list_pluck')) {
-    function wp_list_pluck(array $list, $field)
-    {
-        $out = [];
-        foreach ($list as $row) {
-            if (is_array($row) && array_key_exists($field, $row)) {
-                $out[] = $row[$field];
-            }
-        }
-        return $out;
-    }
-}
+require_once __DIR__ . '/bootstrap.php';
 
 if (! class_exists('ERP_OMD_Project_Repository')) {
     class ERP_OMD_Project_Repository {
         public int $allCalls = 0;
         public function __construct(private array $rows) {}
         public function all() { $this->allCalls++; return $this->rows; }
+        public function find($id) { foreach ($this->rows as $row) { if ((int) ($row['id'] ?? 0) === (int) $id) { return $row; } } return null; }
     }
 }
 if (! class_exists('ERP_OMD_Client_Repository')) {
@@ -91,6 +69,14 @@ if (! class_exists('ERP_OMD_Project_Cost_Repository')) {
         }
     }
 }
+
+if (! class_exists('ERP_OMD_Project_Revenue_Repository')) {
+    class ERP_OMD_Project_Revenue_Repository {
+        public int $forProjectCalls = 0;
+        public function __construct(private array $rows) {}
+        public function for_project($projectId) { $this->forProjectCalls++; return $this->rows[(int) $projectId] ?? []; }
+    }
+}
 if (! class_exists('ERP_OMD_Time_Entry_Repository')) {
     class ERP_OMD_Time_Entry_Repository {
         public int $allCalls = 0;
@@ -121,6 +107,7 @@ $clients = [];
 $employees = [];
 $salary = [];
 $projectCosts = [];
+$projectRevenues = [];
 $timeEntries = [];
 $financials = [];
 
@@ -145,6 +132,9 @@ for ($p = 1; $p <= 80; $p++) {
     ];
     $financials[$p] = ['revenue' => 10000.0, 'cost' => 7000.0, 'profit' => 3000.0, 'margin' => 30.0, 'budget_usage' => 40.0];
     $projectCosts[$p] = [];
+    $projectRevenues[$p] = [
+        ['amount' => 500 + $p, 'revenue_date' => $month . '-15'],
+    ];
     for ($i = 1; $i <= 4; $i++) {
         $projectCosts[$p][] = ['amount' => 100 + $i, 'cost_date' => $month . '-0' . (($i % 9) + 1)];
     }
@@ -165,6 +155,7 @@ for ($i = 1; $i <= 12000; $i++) {
 
 $salaryRepo = new ERP_OMD_Salary_History_Repository($salary);
 $projectCostRepo = new ERP_OMD_Project_Cost_Repository($projectCosts);
+$projectRevenueRepo = new ERP_OMD_Project_Revenue_Repository($projectRevenues);
 $timeRepo = new ERP_OMD_Time_Entry_Repository($timeEntries);
 
 $projectRepo = new ERP_OMD_Project_Repository($projects);
@@ -174,11 +165,12 @@ $service = new ERP_OMD_Reporting_Service(
     new ERP_OMD_Employee_Repository($employees),
     $salaryRepo,
     $projectCostRepo,
+    $projectRevenueRepo,
     $timeRepo,
     new ERP_OMD_Project_Financial_Service($financials)
 );
 
-$filters = $service->sanitize_filters(['report_type' => 'omd_rozliczenia', 'month' => '2026-12']);
+$filters = $service->sanitize_filters(['report_type' => 'omd_rozliczenia', 'month' => '2026-12', 'status' => 'omd_wszystkie']);
 $start = microtime(true);
 $rows = $service->build_omd_settlement_report($filters);
 $elapsedMs = (microtime(true) - $start) * 1000;
@@ -191,6 +183,7 @@ $result = [
     'salary_for_employees_calls' => $salaryRepo->forEmployeesCalls,
     'project_cost_for_project_calls' => $projectCostRepo->forProjectCalls,
     'project_cost_sum_by_project_and_month_calls' => $projectCostRepo->sumByProjectAndMonthInDateRangeCalls,
+    'project_revenue_for_project_calls' => $projectRevenueRepo->forProjectCalls,
     'time_entries_all_calls' => $timeRepo->allCalls,
 ];
 
