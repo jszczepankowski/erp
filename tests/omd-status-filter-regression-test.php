@@ -2,11 +2,7 @@
 
 declare(strict_types=1);
 
-if (! function_exists('sanitize_text_field')) { function sanitize_text_field($v){ return trim((string)$v);} }
-if (! function_exists('sanitize_key')) { function sanitize_key($v){ return preg_replace('/[^a-z0-9_\-]/','',strtolower((string)$v));} }
-if (! function_exists('__')) { function __($t,$d=null){ return $t; } }
-if (! function_exists('get_option')) { function get_option($name,$default=false){ return $default; } }
-if (! function_exists('wp_list_pluck')) { function wp_list_pluck(array $list,$field){$o=[];foreach($list as $i){if(is_array($i)&&array_key_exists($field,$i)){$o[]=$i[$field];}}return $o; } }
+require_once __DIR__ . '/bootstrap.php';
 
 class ERP_OMD_Project_Repository { private $rows; public function __construct(array $rows){$this->rows=$rows;} public function all(){return $this->rows;} public function find($id){foreach($this->rows as $r){ if((int)$r['id']===(int)$id){return $r;}} return null;} }
 class ERP_OMD_Client_Repository { public function all(){ return []; } }
@@ -52,10 +48,14 @@ $closed = $service->build_report('omd_rozliczenia', ['report_type'=>'omd_rozlicz
 $current = $service->build_report('omd_rozliczenia', ['report_type'=>'omd_rozliczenia','month'=>'2026-03','status'=>'omd_biezace']);
 
 if ($closed === [] || $current === []) { throw new RuntimeException('Expected non-empty rows for both status filters.'); }
-$closedRevenue = (float)($closed[0]['project_revenue'] ?? 0.0);
-$currentRevenue = (float)($current[0]['project_revenue'] ?? 0.0);
-$closedDirectCost = (float)($closed[0]['project_direct_cost'] ?? 0.0);
-$currentDirectCost = (float)($current[0]['project_direct_cost'] ?? 0.0);
+$closedByMonth = array_column($closed, null, 'month');
+$currentByMonth = array_column($current, null, 'month');
+$closedMarch = $closedByMonth['2026-03'] ?? [];
+$currentMarch = $currentByMonth['2026-03'] ?? [];
+$closedRevenue = (float)($closedMarch['project_revenue'] ?? 0.0);
+$currentRevenue = (float)($currentMarch['project_revenue'] ?? 0.0);
+$closedDirectCost = (float)($closedMarch['project_direct_cost'] ?? 0.0);
+$currentDirectCost = (float)($currentMarch['project_direct_cost'] ?? 0.0);
 
 if (abs($closedRevenue - $currentRevenue) < 0.00001 && abs($closedDirectCost - $currentDirectCost) < 0.00001) {
     throw new RuntimeException('OMD status filters regression: expected different aggregates for different OMD status groups.');
