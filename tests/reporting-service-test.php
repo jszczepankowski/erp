@@ -152,7 +152,7 @@ final class ReportingServiceTestRunner
         $service = new ERP_OMD_Reporting_Service(
             new ERP_OMD_Project_Repository([
                 ['id' => 10, 'client_id' => 1, 'name' => 'SEO', 'client_name' => 'ACME', 'status' => 'w_realizacji', 'billing_type' => 'time_material', 'manager_login' => 'manager', 'budget' => 1000, 'start_date' => '2026-03-01', 'end_date' => '2026-03-31'],
-                ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000, 'start_date' => '2026-03-01', 'end_date' => '2026-03-20'],
+                ['id' => 11, 'client_id' => 2, 'name' => 'Branding', 'client_name' => 'Globex', 'status' => 'do_faktury', 'billing_type' => 'fixed_price', 'manager_login' => 'manager2', 'budget' => 5000, 'start_date' => '2026-01-01', 'end_date' => '2026-03-20'],
             ]),
             new ERP_OMD_Client_Repository([
                 ['id' => 1, 'name' => 'ACME'],
@@ -273,6 +273,7 @@ final class ReportingServiceTestRunner
         $omdSettlement = $service->build_omd_settlement_report($omdFilters);
         $this->assertSame(12, count($omdSettlement), 'OMD settlement report should return a 12-month trend.');
         $this->assertSame('2026-03', $omdSettlement[11]['month'], 'OMD settlement report should end with selected month.');
+        $this->assertSame(0.0, $omdSettlement[10]['project_revenue'], 'OMD settlement should not repeat fixed-price project revenue before the project close month.');
         $this->assertSame(0.0, $omdSettlement[10]['active_project_budgets'], 'OMD settlement should not recognize project budget before project end_date month.');
         $this->assertSame(5000.0, $omdSettlement[11]['active_project_budgets'], 'OMD settlement should recognize project budget in project end_date month.');
         $this->assertSame(19000.0, $omdSettlement[11]['salary_cost'], 'OMD settlement report should include full monthly salaries for active month.');
