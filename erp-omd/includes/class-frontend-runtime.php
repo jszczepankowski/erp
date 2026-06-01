@@ -269,6 +269,7 @@ class ERP_OMD_Frontend
 
     private function handle_logout()
     {
+        check_admin_referer('erp_omd_front_logout');
         wp_logout();
         wp_safe_redirect($this->front_url('login', ['logged_out' => 1]));
         exit;
@@ -643,7 +644,7 @@ class ERP_OMD_Frontend
 
         $dashboard_title = __('Panel klienta', 'erp-omd');
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
-        $front_logout_url = $this->front_url('logout');
+        $front_logout_url = wp_nonce_url($this->front_url('logout'), 'erp_omd_front_logout');
         $front_client_url = $this->front_url('client');
         $dashboard_args = $this->collect_client_dashboard_args();
         $client_notice_type = sanitize_key(wp_unslash($_GET['notice'] ?? ''));
@@ -1313,7 +1314,7 @@ class ERP_OMD_Frontend
 
         $dashboard_title = __('Panel pracownika', 'erp-omd');
         $dashboard_intro = __('FRONT-2 udostępnia pracownikowi własne raportowanie czasu: szybki formularz, listę wpisów, filtry i operacje tylko na własnych draftach submitted.', 'erp-omd');
-        $front_logout_url = $this->front_url('logout');
+        $front_logout_url = wp_nonce_url($this->front_url('logout'), 'erp_omd_front_logout');
         $front_worker_url = $this->front_url('worker');
         $front_manager_url = $this->front_url('manager');
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');
@@ -1677,7 +1678,7 @@ class ERP_OMD_Frontend
         ];
         $dashboard_title = __('Panel managera', 'erp-omd');
         $dashboard_intro = __('FRONT-3 daje managerowi operacyjny przegląd własnych projektów: finanse, alerty, powiązane kosztorysy i kolejkę wpisów czasu do szybkiej akceptacji.', 'erp-omd');
-        $front_logout_url = $this->front_url('logout');
+        $front_logout_url = wp_nonce_url($this->front_url('logout'), 'erp_omd_front_logout');
         $front_worker_url = $this->front_url('worker');
         $front_manager_url = $this->front_url('manager');
         $front_brand_label = __('ERP OMD FRONT', 'erp-omd');

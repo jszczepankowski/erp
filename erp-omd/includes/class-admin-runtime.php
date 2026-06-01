@@ -5046,30 +5046,12 @@ class ERP_OMD_Admin
 
     private function encrypt_option_value($raw_value)
     {
-        $raw_value = (string) $raw_value;
-        if ($raw_value === '' || ! function_exists('openssl_encrypt')) {
-            return $raw_value;
-        }
-
-        $key = hash('sha256', (string) wp_salt('auth'), true);
-        $iv = substr(hash('sha256', (string) wp_salt('secure_auth')), 0, 16);
-        $encrypted = openssl_encrypt($raw_value, 'AES-256-CBC', $key, 0, $iv);
-
-        return is_string($encrypted) ? $encrypted : $raw_value;
+        return ERP_OMD_Secret_Store::encrypt($raw_value);
     }
 
     private function decrypt_option_value($encrypted)
     {
-        $encrypted = (string) $encrypted;
-        if ($encrypted === '' || ! function_exists('openssl_decrypt')) {
-            return $encrypted;
-        }
-
-        $key = hash('sha256', (string) wp_salt('auth'), true);
-        $iv = substr(hash('sha256', (string) wp_salt('secure_auth')), 0, 16);
-        $decrypted = openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
-
-        return is_string($decrypted) ? $decrypted : $encrypted;
+        return ERP_OMD_Secret_Store::decrypt($encrypted);
     }
 
     private function masked_secret($secret)

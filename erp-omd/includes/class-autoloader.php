@@ -7,12 +7,14 @@ class ERP_OMD_Autoloader
      */
     private static $class_map = [
         'ERP_OMD_Plugin' => 'includes/class-plugin.php',
+        'ERP_OMD_Container' => 'includes/class-container.php',
         'ERP_OMD_Installer' => 'includes/class-installer.php',
         'ERP_OMD_Capabilities' => 'includes/class-capabilities.php',
         'ERP_OMD_Admin' => 'includes/class-admin-runtime.php',
         'ERP_OMD_Frontend' => 'includes/class-frontend-runtime.php',
         'ERP_OMD_REST_API' => 'includes/class-rest-api.php',
         'ERP_OMD_Backup_Manager' => 'includes/class-backup-manager.php',
+        'ERP_OMD_Secret_Store' => 'includes/class-secret-store.php',
         'ERP_OMD_Cron_Manager' => 'includes/class-cron-manager.php',
         'ERP_OMD_Role_Repository' => 'includes/repositories/class-role-repository.php',
         'ERP_OMD_Employee_Repository' => 'includes/repositories/class-employee-repository.php',
