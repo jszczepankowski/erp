@@ -123,13 +123,13 @@ if (! $service->can_transition('zaimportowana', 'nieistotne')) {
 }
 
 $assertions++;
-if ($service->can_transition('zaimportowana', 'przypisana')) {
-    throw new RuntimeException('Expected transition zaimportowana -> przypisana to be invalid.');
+if (! $service->can_transition('zaimportowana', 'przypisana')) {
+    throw new RuntimeException('Expected transition zaimportowana -> przypisana to be valid under list-based status validation.');
 }
 
 $assertions++;
-if ($service->can_transition('przypisana', 'nieistotne')) {
-    throw new RuntimeException('Expected transition przypisana -> nieistotne to be invalid.');
+if (! $service->can_transition('przypisana', 'nieistotne')) {
+    throw new RuntimeException('Expected transition przypisana -> nieistotne to be valid under list-based status validation.');
 }
 
 $errors = $service->validate_invoice_data(

@@ -1,6 +1,6 @@
 # ERP OMD
 
-ERP_OMD V2 — wersja 3.2.0 przygotowana pod wdrożenie Sprintu 10.
+ERP_OMD — wersja wtyczki 4.0_dev.
 
 > Uwaga dot. numeracji: zakres „kalendarz projektów + Google Calendar” odpowiada Sprintowi 4 w planie ERP_4.0 (`docs/ERP_4_0_BACKLOG_MASTER.md`), mimo że w linii historycznej V2 występuje jako część pakietu Sprintu 10.
 
@@ -25,58 +25,53 @@ ERP_OMD V2 — wersja 3.2.0 przygotowana pod wdrożenie Sprintu 10.
   - wybór dnia z kalendarza i panel szczegółów dla wskazanej daty,
   - szybkie szablony na bazie ostatnich wpisów pracownika
 
+## REST API
+- Endpoint `erp-omd/v1/dashboard-v1` jest wycofany z aktualnego kontraktu API wersji 4.0_dev; dashboard korzysta z bieżących widoków i endpointów raportowych.
+
 ## Build ZIP
-- Sprint 1 (historyczny): `./scripts/archiwum/2026-Q2/build-sprint-1-zip.sh`
-- Sprint 2 (historyczny): `./scripts/archiwum/2026-Q2/build-sprint-2-zip.sh`
-- Sprint 3 (historyczny): `./scripts/archiwum/2026-Q2/build-sprint-3-zip.sh`
-- Sprint 4 (historyczny): `./scripts/archiwum/2026-Q2/build-sprint-4-zip.sh`
-- Sprint 5 (historyczny): `./scripts/archiwum/2026-Q2/build-sprint-5-zip.sh`
-- Sprint 6 (historyczny): `./scripts/archiwum/2026-Q2/build-sprint-6-zip.sh`
-- Sprint 7 (historyczny): `./scripts/archiwum/2026-Q2/build-sprint-7-zip.sh`
-- Sprint 8 RC (historyczny): `./scripts/archiwum/2026-Q2/build-sprint-8-rc.sh`
-- Sprint 9 (historyczny): `./scripts/archiwum/2026-Q2/build-sprint-9.sh`
-- Sprint 10 (aktualny): `./scripts/archiwum/2026-Q2/build-sprint-10.sh`
+- Skrypty buildów sprintowych z katalogu `./scripts/archiwum/2026-Q2/` zostały zarchiwizowane poza aktualnym repozytorium.
+- Dla wersji 4.0_dev paczkę wtyczki przygotuj z katalogu `erp-omd/`, z pominięciem plików testowych i dokumentacji repozytorium.
 
 ## Testy Sprintu 3
-- Automatyczne sanity checki: `./scripts/archiwum/2026-Q2/test-sprint-3.sh`
+- Historyczny skrypt sanity Sprintu 3 został zarchiwizowany poza repozytorium.
 - Test domenowy time trackingu: `php tests/time-entry-service-test.php`
 - Plan odbioru ręcznego i bramka do Sprintu 4: `docs/SPRINT_3_ACCEPTANCE_PLAN.md`
 
 ## Testy Sprintu 4
-- Automatyczne sanity checki: `./scripts/archiwum/2026-Q2/test-sprint-4.sh`
+- Historyczny skrypt sanity Sprintu 4 został zarchiwizowany poza repozytorium.
 - Test domenowy finansów projektu: `php tests/project-financial-service-test.php`
 - Checklista odbiorowa Sprintu 4: `docs/archiwum/2026-Q2/SPRINT_4_CHECKLIST.md`
 
 ## Testy Sprintu 5
-- Automatyczne sanity checki: `./scripts/archiwum/2026-Q2/test-sprint-5.sh`
+- Historyczny skrypt sanity Sprintu 5 został zarchiwizowany poza repozytorium.
 - Test domenowy kosztorysów: `php tests/estimate-service-test.php`
 - Checklista odbiorowa Sprintu 5: `docs/archiwum/2026-Q2/SPRINT_5_CHECKLIST.md`
 - Release Closure Sprintu 5: `docs/archiwum/2026-Q2/RELEASE_CLOSURE_SPRINT_5_2026-04-15.md`
 
 ## Testy Sprintu 6
-- Automatyczne sanity checki: `./scripts/archiwum/2026-Q2/test-sprint-6.sh`
+- Historyczny skrypt sanity Sprintu 6 został zarchiwizowany poza repozytorium.
 - Test domenowy raportów: `php tests/reporting-service-test.php`
 - Checklista odbiorowa Sprintu 6: `docs/archiwum/2026-Q2/SPRINT_6_CHECKLIST.md`
 - Tickety + Definition of Done Sprintu 6: `docs/archiwum/2026-Q2/SPRINT_6_TICKETS_DOD.md`
 - Prompt startowy realizacji Sprintu 6: `docs/archiwum/2026-Q2/PROMPT_SPRINT_6_EXECUTION.md`
 
 ## Testy Sprintu 7
-- Automatyczne sanity checki: `./scripts/archiwum/2026-Q2/test-sprint-7.sh`
+- Historyczny skrypt sanity Sprintu 7 został zarchiwizowany poza repozytorium.
 - Test domenowy alertów: `php tests/alert-service-test.php`
 - Checklista odbiorowa Sprintu 7: `docs/archiwum/2026-Q2/SPRINT_7_CHECKLIST.md`
 
 ## Testy Sprintu 8 RC
-- Automatyczne sanity checki: `./scripts/archiwum/2026-Q2/test-sprint-8.sh`
+- Historyczny skrypt sanity Sprintu 8 został zarchiwizowany poza repozytorium.
 - Test REST API / hardening: `php tests/rest-api-test.php`
 - Checklista odbiorowa Sprintu 8: `docs/archiwum/2026-Q2/SPRINT_8_CHECKLIST.md`
 
 ## Testy Sprintu 9
-- Automatyczne sanity checki: `./scripts/archiwum/2026-Q2/test-sprint-9.sh`
+- Historyczny skrypt sanity Sprintu 9 został zarchiwizowany poza repozytorium.
 - Test walidacji klient/projekt: `php tests/client-project-service-test.php`
 - Test REST API / hardening: `php tests/rest-api-test.php`
 - Checklista odbiorowa Sprintu 9: `docs/archiwum/2026-Q2/SPRINT_9_CHECKLIST.md`
 
 ## Testy Sprintu 10
-- Automatyczne sanity checki: `./scripts/archiwum/2026-Q2/test-sprint-10.sh`
-- Test workflow wniosków projektowych: `php tests/project-request-service-test.php`
+- Sanity check aktualnego kontraktu: `php tests/project-request-service-test.php`
+- Pełny przebieg testów plikowych: `for f in tests/*-test.php; do php "$f"; done`
 - Checklista odbiorowa Sprintu 10: `docs/archiwum/2026-Q2/SPRINT_10_CHECKLIST.md`

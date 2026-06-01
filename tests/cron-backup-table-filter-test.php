@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../erp-omd/includes/class-cron-manager.php';
+require_once __DIR__ . '/../erp-omd/includes/class-backup-manager.php';
 
-$reflection = new ReflectionClass('ERP_OMD_Cron_Manager');
+$reflection = new ReflectionClass('ERP_OMD_Backup_Manager');
 $method = $reflection->getMethod('filter_erp_tables');
 $method->setAccessible(true);
 
