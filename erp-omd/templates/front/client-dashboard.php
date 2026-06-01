@@ -30,13 +30,12 @@
                 <article class="erp-omd-front-panel">
                     <h2><?php esc_html_e('Twoje konto', 'erp-omd'); ?></h2>
                     <div class="erp-omd-front-metrics">
-                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Użytkownik', 'erp-omd'); ?></span><strong><?php echo esc_html($user->user_login); ?></strong></div>
-                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Firma', 'erp-omd'); ?></span><strong><?php echo esc_html($client_profile['company'] ?? '—'); ?></strong></div>
-                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Status', 'erp-omd'); ?></span><strong><?php echo esc_html($client_profile['status'] ?? '—'); ?></strong></div>
-                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Email', 'erp-omd'); ?></span><strong><?php echo esc_html($client_profile['email'] ?? ($user->user_email ?? '—')); ?></strong></div>
-                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Telefon', 'erp-omd'); ?></span><strong><?php echo esc_html($client_profile['phone'] ?? '—'); ?></strong></div>
-                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Kontakt główny', 'erp-omd'); ?></span><strong><?php echo esc_html($client_profile['contact_person_name'] ?? '—'); ?></strong></div>
-                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Adres', 'erp-omd'); ?></span><strong><?php echo esc_html(trim((string) ($client_profile['street'] ?? '') . ' ' . (string) ($client_profile['apartment_number'] ?? '') . ', ' . (string) ($client_profile['postal_code'] ?? '') . ' ' . (string) ($client_profile['city'] ?? '') . ', ' . (string) ($client_profile['country'] ?? '')) ?: '—'); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Użytkownik', 'erp-omd'); ?></span><strong style="font-size: 16px;"><?php echo esc_html($user->user_login); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Firma', 'erp-omd'); ?></span><strong style="font-size: 16px;"><?php echo esc_html($client_profile['company'] ?? '—'); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Email', 'erp-omd'); ?></span><strong style="font-size: 16px;"><?php echo esc_html($client_profile['email'] ?? ($user->user_email ?? '—')); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Telefon', 'erp-omd'); ?></span><strong style="font-size: 16px;"><?php echo esc_html($client_profile['phone'] ?? '—'); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Kontakt główny', 'erp-omd'); ?></span><strong style="font-size: 16px;"><?php echo esc_html($client_profile['contact_person_name'] ?? '—'); ?></strong></div>
+                        <div class="erp-omd-front-metric"><span class="erp-omd-front-metric-label"><?php esc_html_e('Adres', 'erp-omd'); ?></span><strong style="font-size: 16px;"><?php echo esc_html(trim((string) ($client_profile['street'] ?? '') . ' ' . (string) ($client_profile['apartment_number'] ?? '') . ', ' . (string) ($client_profile['postal_code'] ?? '') . ' ' . (string) ($client_profile['city'] ?? '') . ', ' . (string) ($client_profile['country'] ?? '')) ?: '—'); ?></strong></div>
                     </div>
                 </article>
                 <article class="erp-omd-front-panel">
