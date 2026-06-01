@@ -475,6 +475,20 @@ class ERP_OMD_Frontend
             $project_sort_order = 'asc';
         }
         $selected_project_id = (int) ($_GET['project_id'] ?? 0);
+        $client_portal_service = class_exists('ERP_OMD_Client_Portal_Service')
+            ? new ERP_OMD_Client_Portal_Service($this->projects, $this->project_revenues, $this->project_costs)
+            : null;
+        if ($client_portal_service instanceof ERP_OMD_Client_Portal_Service) {
+            foreach ($projects as &$project_row) {
+                $project_finance_view = $client_portal_service->build_project_finance_view((int) ($project_row['id'] ?? 0));
+                if (is_array($project_finance_view)) {
+                    $project_row['budget_current'] = (float) ($project_finance_view['budget_current'] ?? ($project_row['budget'] ?? 0));
+                } else {
+                    $project_row['budget_current'] = (float) ($project_row['budget'] ?? 0);
+                }
+            }
+            unset($project_row);
+        }
 
         usort(
             $projects,
@@ -483,8 +497,8 @@ class ERP_OMD_Frontend
                 $right_value = $right[$project_sort_by] ?? '';
 
                 if ($project_sort_by === 'budget') {
-                    $left_comp = (float) $left_value;
-                    $right_comp = (float) $right_value;
+                    $left_comp = (float) ($left['budget_current'] ?? $left_value);
+                    $right_comp = (float) ($right['budget_current'] ?? $right_value);
                     $result = $left_comp <=> $right_comp;
                 } else {
                     $result = strcasecmp((string) $left_value, (string) $right_value);
@@ -507,9 +521,6 @@ class ERP_OMD_Frontend
         }
         $selected_project = $selected_project_id > 0 ? $this->find_project_in_collection($projects, $selected_project_id) : null;
 
-        $client_portal_service = class_exists('ERP_OMD_Client_Portal_Service')
-            ? new ERP_OMD_Client_Portal_Service($this->projects, $this->project_revenues, $this->project_costs)
-            : null;
         $selected_project_finance = null;
         if ($selected_project_id > 0 && $client_portal_service instanceof ERP_OMD_Client_Portal_Service) {
             $selected_project_finance = $client_portal_service->build_project_finance_view($selected_project_id);
