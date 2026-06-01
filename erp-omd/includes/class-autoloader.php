@@ -13,6 +13,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Frontend' => 'includes/class-frontend-runtime.php',
         'ERP_OMD_REST_API' => 'includes/class-rest-api.php',
         'ERP_OMD_Backup_Manager' => 'includes/class-backup-manager.php',
+        'ERP_OMD_Secret_Store' => 'includes/class-secret-store.php',
         'ERP_OMD_Cron_Manager' => 'includes/class-cron-manager.php',
         'ERP_OMD_Role_Repository' => 'includes/repositories/class-role-repository.php',
         'ERP_OMD_Employee_Repository' => 'includes/repositories/class-employee-repository.php',
