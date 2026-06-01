@@ -12,16 +12,18 @@ $requiredSnippets = [
     'name="history_month"',
     "value=\"create_project_request\"",
     "esc_html_e('Wyślij wniosek projektowy', 'erp-omd')",
-    "['time_material', 'fixed_price', 'mixed']",
+    'name="billing_type" value="mixed"',
     'name="budget"',
     'data-client-budget-field',
     'billingTypeField.value === \'fixed_price\'',
     'budgetInput.required = shouldShow;',
     "esc_html_e('Budżet projektu (wymagany dla Ryczałtu)', 'erp-omd')",
     "esc_html_e('Szczegóły projektu', 'erp-omd')",
-    "esc_html_e('Lista projektów', 'erp-omd')",
-    '$client_project_requests',
-    "esc_html_e('Podgląd szczegółów', 'erp-omd')",
+    "esc_html_e('Twoje projekty', 'erp-omd')",
+    "__('Budżet aktualny', 'erp-omd')",
+    "\$project_item['budget_current'] ?? \$project_item['budget'] ?? 0",
+    "add_query_arg(array_merge(\$sort_base_args, ['project_id' => (int) (\$project_item['id'] ?? 0)]), \$front_client_url)",
+    "remove_query_arg(['project_id'], add_query_arg(\$sort_base_args, \$front_client_url))",
     'name="end_date"',
     'name="deadline"',
     "esc_html_e('Brief / opis projektu', 'erp-omd')",
@@ -49,14 +51,14 @@ foreach ($requiredSnippets as $snippet) {
     }
 }
 
-$projectsHeadingPos = strpos($template, "esc_html_e('Lista projektów', 'erp-omd')");
+$projectsHeadingPos = strpos($template, "esc_html_e('Twoje projekty', 'erp-omd')");
 $detailsHeadingPos = strpos($template, "esc_html_e('Szczegóły projektu', 'erp-omd')");
 $historyHeadingPos = strpos($template, "esc_html_e('Historia zmian budżetu', 'erp-omd')");
 if ($projectsHeadingPos === false || $detailsHeadingPos === false || $historyHeadingPos === false) {
     throw new RuntimeException('Missing heading snippets required for section order validation.');
 }
 if (! ($projectsHeadingPos < $detailsHeadingPos && $detailsHeadingPos < $historyHeadingPos)) {
-    throw new RuntimeException('Expected section order: Lista projektów -> Szczegóły projektu -> Historia zmian budżetu.');
+    throw new RuntimeException('Expected section order: Twoje projekty -> Szczegóły projektu -> Historia zmian budżetu.');
 }
 
 echo "Assertions: " . count($requiredSnippets) . "\n";

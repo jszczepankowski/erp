@@ -364,7 +364,7 @@
                             <tr>
                                 <th><a href="<?php echo esc_url($render_sort_url('name')); ?>"><?php echo esc_html($render_sort_label('name', __('Projekt', 'erp-omd'))); ?></a></th>
                                 <th><a href="<?php echo esc_url($render_sort_url('status')); ?>"><?php echo esc_html($render_sort_label('status', __('Status', 'erp-omd'))); ?></a></th>
-                                <th><a href="<?php echo esc_url($render_sort_url('budget')); ?>"><?php echo esc_html($render_sort_label('budget', __('Budżet projektu', 'erp-omd'))); ?></a></th>
+                                <th><a href="<?php echo esc_url($render_sort_url('budget')); ?>"><?php echo esc_html($render_sort_label('budget', __('Budżet aktualny', 'erp-omd'))); ?></a></th>
                                 <th><a href="<?php echo esc_url($render_sort_url('start_date')); ?>"><?php echo esc_html($render_sort_label('start_date', __('Data rozpoczęcia', 'erp-omd'))); ?></a></th>
                                 <th><a href="<?php echo esc_url($render_sort_url('end_date')); ?>"><?php echo esc_html($render_sort_label('end_date', __('Data zakończenia', 'erp-omd'))); ?></a></th>
                                 <th><a href="<?php echo esc_url($render_sort_url('billing_type')); ?>"><?php echo esc_html($render_sort_label('billing_type', __('Typ projektu', 'erp-omd'))); ?></a></th>
@@ -383,7 +383,7 @@
                                             echo esc_html($project_status_labels[$project_status] ?? ($project_status !== '' ? $project_status : '—'));
                                             ?>
                                         </td>
-                                        <td><?php echo esc_html(number_format_i18n((float) ($project_item['budget'] ?? 0), 2)); ?></td>
+                                        <td><?php echo esc_html(number_format_i18n((float) ($project_item['budget_current'] ?? $project_item['budget'] ?? 0), 2)); ?></td>
                                         <td><?php echo esc_html((string) ($project_item['start_date'] ?? '—')); ?></td>
                                         <td><?php echo esc_html((string) ($project_item['end_date'] ?? '—')); ?></td>
                                         <td>
@@ -396,7 +396,7 @@
                                         <td>
                                             <a
                                                 class="erp-omd-front-button erp-omd-front-button-small"
-                                                href="<?php echo esc_url(add_query_arg(['project_id' => (int) ($project_item['id'] ?? 0)], $front_client_url)); ?>"
+                                                href="<?php echo esc_url(add_query_arg(array_merge($sort_base_args, ['project_id' => (int) ($project_item['id'] ?? 0)]), $front_client_url)); ?>"
                                             >
                                                 <?php esc_html_e('Otwórz', 'erp-omd'); ?>
                                             </a>
@@ -415,9 +415,9 @@
 
             <?php if ($selected_project_id > 0 && ! empty($selected_project)) : ?>
             <div class="erp-omd-front-modal-overlay">
-                <a class="erp-omd-front-modal-overlay-close" href="<?php echo esc_url(remove_query_arg(['project_id'], $front_client_url)); ?>" aria-label="<?php echo esc_attr__('Zamknij', 'erp-omd'); ?>"></a>
+                <a class="erp-omd-front-modal-overlay-close" href="<?php echo esc_url(remove_query_arg(['project_id'], add_query_arg($sort_base_args, $front_client_url))); ?>" aria-label="<?php echo esc_attr__('Zamknij', 'erp-omd'); ?>"></a>
                 <div class="erp-omd-front-modal">
-                    <a class="erp-omd-front-modal-close" href="<?php echo esc_url(remove_query_arg(['project_id'], $front_client_url)); ?>">×</a>
+                    <a class="erp-omd-front-modal-close" href="<?php echo esc_url(remove_query_arg(['project_id'], add_query_arg($sort_base_args, $front_client_url))); ?>">×</a>
                     <article class="erp-omd-front-panel">
                         <div class="erp-omd-front-section-heading">
                             <h2><?php esc_html_e('Szczegóły projektu', 'erp-omd'); ?></h2>

@@ -16,6 +16,12 @@ if (! function_exists('is_email')) {
     }
 }
 
+if (! function_exists('sanitize_email')) {
+    function sanitize_email($email)
+    {
+        return trim((string) $email);
+    }
+}
 if (! function_exists('get_attached_file')) {
     function get_attached_file($attachment_id)
     {
@@ -309,7 +315,7 @@ final class ClientProjectServiceTestRunner
             'manager_id' => 5,
             'manager_ids' => [6],
         ]);
-        $this->assertSame([5, 6], $preparedProject['manager_ids'], 'Primary manager should be merged into manager_ids list.');
+        $this->assertSame([6], $preparedProject['manager_ids'], 'Incoming manager_ids should remain the team manager list when no default main manager is configured.');
 
         $preparedProjectWithChangedBillingType = $service->prepare_project(
             [
@@ -466,8 +472,8 @@ final class ClientProjectServiceTestRunner
         $this->assertSame(false, in_array('Projekt nie może przejść do zakończony bez co najmniej jednej końcowej faktury PDF.', $validCloseErrors, true), 'Project with valid PDF should be allowed to close.');
 
         $finalSalesOnlyErrors = $service->validate_project(
-            ['client_id' => 1, 'name' => 'Projekt z końcową fakturą sprzedażową', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'zakonczony', 'manager_id' => 5],
-            ['id' => 14, 'client_id' => 1, 'name' => 'Projekt z końcową fakturą sprzedażową', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'do_faktury', 'manager_id' => 5]
+            ['client_id' => 1, 'name' => 'Projekt z końcową fakturą sprzedażową', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'zakonczony', 'manager_id' => 5, 'start_date' => '2026-03-01', 'end_date' => '2026-03-31'],
+            ['id' => 14, 'client_id' => 1, 'name' => 'Projekt z końcową fakturą sprzedażową', 'billing_type' => 'time_material', 'budget' => 0, 'retainer_monthly_fee' => 0, 'status' => 'do_faktury', 'manager_id' => 5, 'start_date' => '2026-03-01', 'end_date' => '2026-03-31']
         );
         $this->assertSame([], $finalSalesOnlyErrors, 'Project with final sales invoice should not require additional final PDF attachment.');
 
