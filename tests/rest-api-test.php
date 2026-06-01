@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 if (! defined('ERP_OMD_VERSION')) {
-    define('ERP_OMD_VERSION', '0.9.0');
+    define('ERP_OMD_VERSION', '4.0_dev');
 }
 if (! defined('ERP_OMD_DB_VERSION')) {
     define('ERP_OMD_DB_VERSION', '6.2.0');
@@ -646,7 +646,7 @@ final class RestApiTestRunner
         $adjustmentsRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/adjustments'/", (string) $restApiSource);
         $this->assertSame(1, (int) $adjustmentsRouteCount, 'REST API source should register adjustments route directly in register_routes.');
         $dashboardRouteCount = preg_match_all("/register_rest_route\('erp-omd\/v1', '\/dashboard-v1'/", (string) $restApiSource);
-        $this->assertSame(1, (int) $dashboardRouteCount, 'REST API source should register dashboard-v1 route directly in register_routes.');
+        $this->assertSame(0, (int) $dashboardRouteCount, 'REST API source should not register retired dashboard-v1 route.');
 
         preg_match_all('/function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/', (string) $restApiSource, $methodMatches);
         $methodNames = $methodMatches[1] ?? [];
@@ -681,23 +681,23 @@ final class RestApiTestRunner
             new ERP_OMD_Adjustment_Audit_Repository()
         );
 
-        $meta = $api->get_meta();
-        $this->assertSame('0.9.0', $meta['plugin_version'], 'Meta endpoint should expose plugin version.');
+        $meta = $api->get_meta()->get_data();
+        $this->assertSame('4.0_dev', $meta['plugin_version'], 'Meta endpoint should expose plugin version.');
         $this->assertSame(['project', 'estimate'], $meta['attachment_entity_types'], 'Meta endpoint should expose supported attachment entity types.');
         $this->assertSame(['client', 'agency', 'variant_a', 'variant_b'], $meta['export_variants'], 'Meta endpoint should expose estimate export variants and aliases.');
 
-        $alerts = $api->list_alerts(new WP_REST_Request(['entity_type' => 'project', 'entity_id' => 10]));
+        $alerts = $api->list_alerts(new WP_REST_Request(['entity_type' => 'project', 'entity_id' => 10]))->get_data();
         $this->assertSame(1, count($alerts), 'Alert endpoint should filter alerts by entity.');
         $this->assertSame('project_low_margin', $alerts[0]['code'], 'Filtered alert should keep original code.');
 
-        $attachments = $api->list_attachments(new WP_REST_Request(['entity_type' => 'project', 'entity_id' => 10]));
+        $attachments = $api->list_attachments(new WP_REST_Request(['entity_type' => 'project', 'entity_id' => 10]))->get_data();
         $this->assertSame(1, count($attachments), 'Attachment endpoint should return entity attachments.');
 
         $created = $api->create_attachment(new WP_REST_Request(['entity_type' => 'estimate', 'entity_id' => 20, 'attachment_id' => 556, 'label' => 'PDF']));
         $this->assertSame(201, $created->get_status(), 'Attachment create endpoint should return 201 status.');
         $this->assertSame('estimate', $created->get_data()['entity_type'], 'Attachment create endpoint should persist entity type.');
 
-        $system = $api->get_system_status();
+        $system = $api->get_system_status()->get_data();
         $this->assertSame(1, $system['counts']['alerts'], 'System status should include alert count.');
         $this->assertSame(true, $system['current_user']['can_manage_settings'], 'System status should expose current user capabilities.');
         $this->assertSame(false, array_key_exists('feature_flags', $system), 'System status should no longer expose retired feature flag contracts.');
@@ -712,43 +712,12 @@ final class RestApiTestRunner
             'changed_by' => 77,
             'reason' => 'faktury',
             'limit' => 1,
-        ]));
+        ]))->get_data();
         $this->assertSame(1, count($filteredAdjustments), 'Adjustments endpoint should support combined audit filters.');
         $this->assertSame(501, $filteredAdjustments[0]['id'], 'Adjustments endpoint should return matching adjustment rows.');
         $this->assertSame('STANDARD', $filteredAdjustments[0]['adjustment_type'], 'Adjustments endpoint should preserve adjustment type in filtered results.');
 
-        $dashboardCallback = $this->findRouteCallback('/dashboard-v1', WP_REST_Server::READABLE);
-        $dashboardPayload = $dashboardCallback(new WP_REST_Request(['month' => '2026-03', 'mode' => 'ZAMKNIETY', 'profitability_scope' => 'project', 'adjustments_limit' => 1, 'queue_limit' => 1, 'profitability_limit' => 1]));
-        $this->assertSame('v1', $dashboardPayload['api_version'], 'Dashboard endpoint should expose explicit contract version.');
-        $this->assertSame('2026-03-20 12:00:00', $dashboardPayload['generated_at'], 'Dashboard endpoint should expose deterministic generation timestamp.');
-        $this->assertSame(true, isset($dashboardPayload['data_health']['has_operational_data']), 'Dashboard endpoint should expose operational data health flag.');
-        $this->assertSame(true, isset($dashboardPayload['data_health']['hint']), 'Dashboard endpoint should expose explanatory data health hint.');
-        $this->assertSame(true, isset($dashboardPayload['data_health']['counters']['trend_rows']), 'Dashboard endpoint should expose data health counters.');
-        $this->assertSame(1, $dashboardPayload['applied_limits']['adjustments_items'], 'Dashboard endpoint should expose applied adjustments item limit.');
-        $this->assertSame(1, $dashboardPayload['applied_limits']['queue_items'], 'Dashboard endpoint should expose applied queue item limit.');
-        $this->assertSame(1, $dashboardPayload['applied_limits']['profitability_items'], 'Dashboard endpoint should expose applied profitability item limit.');
-        $this->assertSame('2026-03', $dashboardPayload['month'], 'Dashboard endpoint should preserve explicit month filter.');
-        $this->assertSame('ZAMKNIETY', $dashboardPayload['mode'], 'Dashboard endpoint should expose applied reporting mode.');
-        $this->assertSame(true, $dashboardPayload['readiness_checklist']['ready'], 'Dashboard endpoint should expose readiness checklist snapshot for selected month.');
-        $this->assertSame(1, $dashboardPayload['readiness_meta']['submitted_or_rejected_entries'], 'Dashboard readiness meta should expose submitted/rejected entry counter.');
-        $this->assertSame(true, isset($dashboardPayload['metric_definitions']['trend_3m']), 'Dashboard endpoint should expose metric definitions for frontend tooltip rendering.');
-        $this->assertSame(true, isset($dashboardPayload['metric_definitions']['readiness_checklist.ready']), 'Dashboard endpoint should expose readiness definition tooltip key.');
-        $this->assertSame(true, isset($dashboardPayload['metric_definitions']['data_health.has_operational_data']), 'Dashboard endpoint should expose data_health definition tooltip key.');
-        $this->assertSame(true, isset($dashboardPayload['metric_definitions']['applied_limits']), 'Dashboard endpoint should define applied limits semantics for clients.');
-        $this->assertSame(true, isset($dashboardPayload['drilldown_links']['settlement_queue']), 'Dashboard endpoint should expose drilldown links for queue and adjustments.');
-        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=invoice&month=2026-03', $dashboardPayload['drilldown_links']['settlement_queue'], 'Dashboard queue drilldown should target invoice report for selected month.');
-        $this->assertSame(true, isset($dashboardPayload['profitability_by_scope']['project']['top']), 'Dashboard endpoint should expose project ranking buckets for scope switch without reload.');
-        $this->assertSame(true, isset($dashboardPayload['profitability_by_scope']['project']['top'][0]['drilldown_link']), 'Dashboard profitability rows should expose drilldown links for detailed reports.');
-        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=projects&month=2026-03&project_id=10', $dashboardPayload['profitability_by_scope']['project']['top'][0]['drilldown_link'], 'Project profitability drilldown link should include month and project_id.');
-        $this->assertSame(1, count($dashboardPayload['profitability_by_scope']['client']['bottom']), 'Dashboard endpoint should honor profitability_limit for scope rankings.');
-        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=invoice&month=2026-03&project_id=10', $dashboardPayload['settlement_queue']['items'][0]['drilldown_link'], 'Queue rows should include month-aware drilldown link to invoice report.');
-        $this->assertSame(26.0, $dashboardPayload['adjustments']['impact'], 'Dashboard adjustment impact should sum delta between new and old values.');
-        $this->assertSame('/wp-admin/admin.php?page=erp-omd-reports&report_type=time&month=2026-03&adjustments=1&entity_type=project_cost&entity_id=10', $dashboardPayload['adjustments']['items'][0]['drilldown_link'], 'Dashboard adjustment rows should expose drilldown link with entity context.');
-        $this->assertSame(1, count($dashboardPayload['settlement_queue']['items']), 'Dashboard should honor queue_limit for serialized queue rows.');
-        $this->assertSame(1, count($dashboardPayload['adjustments']['items']), 'Dashboard should honor adjustments_limit for serialized adjustment rows.');
-        $this->assertSame(2, $dashboardPayload['settlement_queue']['count'], 'Dashboard endpoint should expose invoice queue count.');
-        $dashboardPayloadWithInvalidMonth = $dashboardCallback(new WP_REST_Request(['month' => '2026-13']));
-        $this->assertSame(gmdate('Y-m'), $dashboardPayloadWithInvalidMonth['month'], 'Dashboard endpoint should fallback to current month when out-of-range month is provided.');
+        $this->assertSame(false, isset($GLOBALS['erp_omd_registered_rest_routes']['/dashboard-v1']), 'REST API registry should not expose retired dashboard-v1 route.');
 
         $clientsPaged = $api->list_clients(new WP_REST_Request(['paged' => 1, 'page' => 2, 'per_page' => 2]));
         $this->assertSame(200, $clientsPaged->get_status(), 'Clients endpoint should return HTTP 200 for paged response.');
@@ -774,6 +743,7 @@ final class RestApiTestRunner
         $GLOBALS['erp_omd_is_super_admin'] = true;
         $this->assertSame(true, $api->can_access_acl_audit(), 'ACL audit should allow super-admin access.');
         $GLOBALS['erp_omd_is_super_admin'] = false;
+        $GLOBALS['erp_omd_current_user_id'] = 1;
 
         $denySelfCritical = $api->update_employee_acl(new WP_REST_Request([
             'id' => 99,
@@ -784,6 +754,7 @@ final class RestApiTestRunner
         $this->assertSame('erp_omd_acl_self_lockout', $denySelfCritical->get_error_code(), 'ACL update should return self-lockout error code.');
         $this->assertSame(422, (int) (($denySelfCritical->get_error_data()['status'] ?? 0)), 'Self-lockout should return HTTP 422.');
 
+        $GLOBALS['erp_omd_current_user_id'] = 99;
         $GLOBALS['erp_omd_current_user_caps'] = ['erp_omd_manage_employees'];
         $escalation = $api->update_employee_acl(new WP_REST_Request([
             'id' => 1,
@@ -797,7 +768,7 @@ final class RestApiTestRunner
         $GLOBALS['erp_omd_current_user_caps'] = ['administrator', 'erp_omd_manage_settings', 'erp_omd_manage_employees'];
         $GLOBALS['erp_omd_user_meta'][1]['erp_omd_user_capability_overrides'] = ['erp_omd_manage_projects' => 'allow'];
         $GLOBALS['erp_omd_user_meta'][1]['erp_omd_user_menu_visibility_overrides'] = ['erp-omd-projects' => 'deny'];
-        $resetResponse = $api->reset_employee_acl(new WP_REST_Request(['id' => 1]));
+        $resetResponse = $api->reset_employee_acl(new WP_REST_Request(['id' => 1]))->get_data();
         $this->assertSame([], $resetResponse['capability_overrides'], 'ACL reset should restore inherited capability overrides.');
         $this->assertSame([], $resetResponse['menu_overrides'], 'ACL reset should restore inherited menu overrides.');
 

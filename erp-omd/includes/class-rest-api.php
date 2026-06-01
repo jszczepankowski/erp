@@ -103,7 +103,6 @@ class ERP_OMD_REST_API
 
     public function register_routes()
     {
-        $this->register_role_routes();
         $this->register_employee_routes();
         $this->register_client_routes();
         $this->register_supplier_routes();

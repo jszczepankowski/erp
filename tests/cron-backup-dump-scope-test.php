@@ -24,7 +24,7 @@ if (! defined('ARRAY_N')) {
     define('ARRAY_N', 'ARRAY_N');
 }
 
-require_once __DIR__ . '/../erp-omd/includes/class-cron-manager.php';
+require_once __DIR__ . '/../erp-omd/includes/class-backup-manager.php';
 
 final class CronBackupDumpScopeWpdbStub
 {
@@ -66,7 +66,7 @@ final class CronBackupDumpScopeWpdbStub
 global $wpdb;
 $wpdb = new CronBackupDumpScopeWpdbStub();
 
-$reflection = new ReflectionClass('ERP_OMD_Cron_Manager');
+$reflection = new ReflectionClass('ERP_OMD_Backup_Manager');
 $method = $reflection->getMethod('build_database_dump');
 $method->setAccessible(true);
 $dump = (string) $method->invoke(null);

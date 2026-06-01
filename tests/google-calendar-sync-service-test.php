@@ -54,6 +54,20 @@ if (! function_exists('is_email')) {
     }
 }
 
+if (! function_exists('sanitize_key')) {
+    function sanitize_key($value)
+    {
+        return preg_replace('/[^a-z0-9_\-]/', '', strtolower((string) $value));
+    }
+}
+
+if (! function_exists('sanitize_text_field')) {
+    function sanitize_text_field($value)
+    {
+        return trim((string) $value);
+    }
+}
+
 if (! function_exists('wp_mail')) {
     function wp_mail($to, $subject, $message)
     {
