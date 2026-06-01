@@ -478,13 +478,22 @@ class ERP_OMD_Frontend
         $client_portal_service = class_exists('ERP_OMD_Client_Portal_Service')
             ? new ERP_OMD_Client_Portal_Service($this->projects, $this->project_revenues, $this->project_costs)
             : null;
+        $project_financials_for_display = $this->project_financial_service->get_project_financials(wp_list_pluck($projects, 'id'));
         if ($client_portal_service instanceof ERP_OMD_Client_Portal_Service) {
             foreach ($projects as &$project_row) {
-                $project_finance_view = $client_portal_service->build_project_finance_view((int) ($project_row['id'] ?? 0));
+                $project_id = (int) ($project_row['id'] ?? 0);
+                $project_finance_view = $client_portal_service->build_project_finance_view($project_id);
                 if (is_array($project_finance_view)) {
                     $project_row['budget_current'] = (float) ($project_finance_view['budget_current'] ?? ($project_row['budget'] ?? 0));
                 } else {
                     $project_row['budget_current'] = (float) ($project_row['budget'] ?? 0);
+                }
+
+                if ((string) ($project_row['billing_type'] ?? '') === 'time_material') {
+                    $project_financial = $project_financials_for_display[$project_id] ?? null;
+                    if (is_array($project_financial)) {
+                        $project_row['budget_current'] = (float) ($project_financial['revenue'] ?? $project_row['budget_current']);
+                    }
                 }
             }
             unset($project_row);
