@@ -211,6 +211,7 @@ if (! class_exists('ERP_OMD_Project_Calendar_Sync_Repository')) {
     }
 }
 
+require_once __DIR__ . '/../erp-omd/includes/class-secret-store.php';
 require_once __DIR__ . '/../erp-omd/includes/services/class-google-calendar-sync-service.php';
 
 final class GoogleCalendarSyncServiceTestRunner

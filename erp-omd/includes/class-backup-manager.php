@@ -106,6 +106,9 @@ class ERP_OMD_Backup_Manager
             throw new RuntimeException('Settings export file not found inside backup ZIP.');
         }
 
+        self::validate_zip_entry_name($sql_file);
+        self::validate_zip_entry_name($settings_file);
+
         $sql_dump = (string) $zip->getFromName($sql_file);
         $settings_raw = (string) $zip->getFromName($settings_file);
         $zip->close();
@@ -124,10 +127,171 @@ class ERP_OMD_Backup_Manager
             $sql_dump = str_replace('`' . $source_prefix . 'erp_omd_', '`' . $target_prefix . 'erp_omd_', $sql_dump);
         }
 
+        self::validate_sql_dump_scope($sql_dump);
         self::import_sql_dump($sql_dump);
         self::import_settings_payload($settings_payload);
         update_option('erp_omd_last_restore_status', 'success');
         update_option('erp_omd_last_restore_at', current_time('mysql'));
+    }
+
+
+    private static function validate_zip_entry_name($entry_name)
+    {
+        $entry_name = (string) $entry_name;
+        if ($entry_name === '' || strpos($entry_name, "\0") !== false || preg_match('#(^|/)\.\.(/|$)#', $entry_name)) {
+            throw new RuntimeException('Backup ZIP contains an invalid entry path.');
+        }
+    }
+
+    private static function validate_sql_dump_scope($sql_dump)
+    {
+        $statements = self::split_sql_statements((string) $sql_dump);
+        foreach ($statements as $statement) {
+            $trimmed = self::strip_leading_sql_comments((string) $statement);
+            if ($trimmed === '') {
+                continue;
+            }
+
+            self::validate_sql_statement_scope($trimmed);
+        }
+    }
+
+
+    private static function strip_leading_sql_comments($statement)
+    {
+        $statement = trim((string) $statement);
+        while ($statement !== '') {
+            if (strpos($statement, '--') === 0) {
+                $newline_position = strpos($statement, "\n");
+                if ($newline_position === false) {
+                    return '';
+                }
+                $statement = trim(substr($statement, $newline_position + 1));
+                continue;
+            }
+
+            if (strpos($statement, '/*') === 0) {
+                $comment_end = strpos($statement, '*/');
+                if ($comment_end === false) {
+                    return '';
+                }
+                $statement = trim(substr($statement, $comment_end + 2));
+                continue;
+            }
+
+            break;
+        }
+
+        return $statement;
+    }
+
+    private static function split_sql_statements($sql_dump)
+    {
+        $statements = [];
+        $buffer = '';
+        $quote = null;
+        $length = strlen((string) $sql_dump);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $sql_dump[$i];
+            $next = $i + 1 < $length ? $sql_dump[$i + 1] : '';
+            $buffer .= $char;
+
+            if ($quote !== null) {
+                if ($char === '\\') {
+                    if ($i + 1 < $length) {
+                        $i++;
+                        $buffer .= $sql_dump[$i];
+                    }
+                    continue;
+                }
+                if ($char === $quote) {
+                    $quote = null;
+                }
+                continue;
+            }
+
+            if ($char === "'" || $char === '"' || $char === '`') {
+                $quote = $char;
+                continue;
+            }
+
+            if ($char === '-' && $next === '-') {
+                while ($i + 1 < $length && $sql_dump[$i + 1] !== "\n") {
+                    $i++;
+                    $buffer .= $sql_dump[$i];
+                }
+                continue;
+            }
+
+            if ($char === '/' && $next === '*') {
+                while ($i + 1 < $length && ! ($sql_dump[$i] === '*' && $sql_dump[$i + 1] === '/')) {
+                    $i++;
+                    $buffer .= $sql_dump[$i];
+                }
+                if ($i + 1 < $length) {
+                    $i++;
+                    $buffer .= $sql_dump[$i];
+                }
+                continue;
+            }
+
+            if ($char === ';') {
+                $statements[] = $buffer;
+                $buffer = '';
+            }
+        }
+
+        if (trim($buffer) !== '') {
+            $statements[] = $buffer;
+        }
+
+        return $statements;
+    }
+
+    private static function validate_sql_statement_scope($statement)
+    {
+        $statement = trim((string) $statement);
+        $allowed_table_prefix = self::database_prefix() . 'erp_omd_';
+        $table_patterns = [
+            '/^DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?`([^`]+)`/i',
+            '/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`([^`]+)`/i',
+            '/^INSERT\s+INTO\s+`([^`]+)`/i',
+            '/^ALTER\s+TABLE\s+`([^`]+)`/i',
+            '/^LOCK\s+TABLES\s+`([^`]+)`/i',
+            '/^TRUNCATE\s+TABLE\s+`([^`]+)`/i',
+        ];
+
+        foreach ($table_patterns as $pattern) {
+            if (preg_match($pattern, $statement, $matches)) {
+                self::assert_erp_table_name((string) $matches[1], $allowed_table_prefix);
+                if (preg_match('/^CREATE\s+TABLE\b/i', $statement) && preg_match('/\bAS\s+SELECT\b/i', $statement)) {
+                    throw new RuntimeException('Backup SQL CREATE TABLE AS SELECT statements are not allowed.');
+                }
+                if (preg_match('/^INSERT\s+INTO\b/i', $statement) && preg_match('/\bSELECT\b/i', $statement)) {
+                    throw new RuntimeException('Backup SQL INSERT SELECT statements are not allowed.');
+                }
+                return;
+            }
+        }
+
+        if (preg_match('/^UNLOCK\s+TABLES\b/i', $statement)) {
+            return;
+        }
+
+        if (preg_match('/^SET\s+(?:FOREIGN_KEY_CHECKS|UNIQUE_CHECKS|SQL_MODE|NAMES)\b/i', $statement)) {
+            return;
+        }
+
+        throw new RuntimeException('Backup SQL contains a disallowed statement.');
+    }
+
+    private static function assert_erp_table_name($table_name, $allowed_table_prefix)
+    {
+        $table_name = (string) $table_name;
+        if ($allowed_table_prefix === '' || strpos($table_name, (string) $allowed_table_prefix) !== 0) {
+            throw new RuntimeException('Backup SQL references a table outside ERP OMD scope.');
+        }
     }
 
     private static function build_database_dump()

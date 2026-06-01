@@ -370,30 +370,12 @@ class ERP_OMD_Google_Calendar_Sync_Service
 
     private function encrypt_value($raw_value)
     {
-        $raw_value = (string) $raw_value;
-        if ($raw_value === '' || ! function_exists('openssl_encrypt')) {
-            return $raw_value;
-        }
-
-        $key = hash('sha256', (string) wp_salt('auth'), true);
-        $iv = substr(hash('sha256', (string) wp_salt('secure_auth')), 0, 16);
-        $encrypted = openssl_encrypt($raw_value, 'AES-256-CBC', $key, 0, $iv);
-
-        return is_string($encrypted) ? $encrypted : $raw_value;
+        return ERP_OMD_Secret_Store::encrypt($raw_value);
     }
 
     private function decrypt_option($option_name)
     {
-        $encrypted = (string) get_option($option_name, '');
-        if ($encrypted === '' || ! function_exists('openssl_decrypt')) {
-            return $encrypted;
-        }
-
-        $key = hash('sha256', (string) wp_salt('auth'), true);
-        $iv = substr(hash('sha256', (string) wp_salt('secure_auth')), 0, 16);
-        $decrypted = openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
-
-        return is_string($decrypted) ? $decrypted : $encrypted;
+        return ERP_OMD_Secret_Store::decrypt((string) get_option($option_name, ''));
     }
 
     private function notify_admin_about_sync_error($project_id, $error_message)
