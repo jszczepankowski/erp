@@ -21,8 +21,9 @@
                 <input type="hidden" name="tasks_filter" value="<?php echo esc_attr((string) ($dashboard_private_tasks_filter ?? 'all')); ?>" />
                 <div class="erp-omd-form-field erp-omd-task-field-main"><label for="erp-omd-admin-task-text"><?php esc_html_e('Treść zadania', 'erp-omd'); ?></label><textarea id="erp-omd-admin-task-text" name="task_text" rows="3" class="large-text" required></textarea></div>
                 <div class="erp-omd-form-field erp-omd-task-field-side"><label for="erp-omd-admin-task-date"><?php esc_html_e('Termin', 'erp-omd'); ?></label><input id="erp-omd-admin-task-date" type="date" name="task_due_date" value="<?php echo esc_attr(current_time('Y-m-d')); ?>"></div>
+                <div class="erp-omd-form-field erp-omd-task-field-side"><label for="erp-omd-admin-task-status"><?php esc_html_e('Status', 'erp-omd'); ?></label><select id="erp-omd-admin-task-status" name="task_status"><option value="todo"><?php esc_html_e('Niedokończone', 'erp-omd'); ?></option><option value="in_progress"><?php esc_html_e('W realizacji', 'erp-omd'); ?></option><option value="done"><?php esc_html_e('Zrobione', 'erp-omd'); ?></option></select></div>
                 <script>
-                (function(){var t=document.getElementById('erp-omd-admin-task-text'),d=document.getElementById('erp-omd-admin-task-date');<?php if ($is_edit_mode && is_array($editing_task)) : ?>if(t){t.value=<?php echo wp_json_encode((string) ($editing_task['text'] ?? '')); ?>;}if(d){d.value=<?php echo wp_json_encode((string) ($editing_task['due_date'] ?? '')); ?>;}<?php endif; ?>})();
+                (function(){var t=document.getElementById('erp-omd-admin-task-text'),d=document.getElementById('erp-omd-admin-task-date'),s=document.getElementById('erp-omd-admin-task-status');<?php if ($is_edit_mode && is_array($editing_task)) : ?>if(t){t.value=<?php echo wp_json_encode((string) ($editing_task['text'] ?? '')); ?>;}if(d){d.value=<?php echo wp_json_encode((string) ($editing_task['due_date'] ?? '')); ?>;}if(s){s.value=<?php echo wp_json_encode((string) ($editing_task['status'] ?? (! empty($editing_task['completed']) ? 'done' : 'todo'))); ?>;}<?php endif; ?>})();
                 </script>
                 <div class="erp-omd-form-field erp-omd-form-field-align-end erp-omd-task-field-side"><button type="submit" class="button button-primary"><?php echo $is_edit_mode ? esc_html__('Zapisz zmiany', 'erp-omd') : esc_html__('Dodaj zadanie', 'erp-omd'); ?></button></div>
             </form>
@@ -37,12 +38,13 @@
                             <option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option>
                             <option value="delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></option>
                             <option value="mark_done"><?php esc_html_e('Oznacz jako zrobione', 'erp-omd'); ?></option>
+                            <option value="mark_in_progress"><?php esc_html_e('Oznacz jako w realizacji', 'erp-omd'); ?></option>
                             <option value="mark_todo"><?php esc_html_e('Oznacz jako niedokończone', 'erp-omd'); ?></option>
                         </select>
                         <button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button>
                     </div>
                     <div class="alignright actions">
-                        <?php foreach (['all' => __('Wszystkie', 'erp-omd'), 'today' => __('Na dziś', 'erp-omd'), 'incomplete' => __('Niedokończone', 'erp-omd')] as $task_filter_key => $task_filter_label) : ?>
+                        <?php foreach (['all' => __('Wszystkie', 'erp-omd'), 'today' => __('Na dziś', 'erp-omd'), 'incomplete' => __('Niedokończone', 'erp-omd'), 'in_progress' => __('W realizacji', 'erp-omd')] as $task_filter_key => $task_filter_label) : ?>
                             <?php $task_filter_url = add_query_arg(['page' => 'erp-omd-private-tasks', 'tasks_filter' => $task_filter_key], admin_url('admin.php')); ?>
                             <a class="button <?php echo ($dashboard_private_tasks_filter ?? 'all') === $task_filter_key ? 'button-primary' : ''; ?>" href="<?php echo esc_url($task_filter_url); ?>"><?php echo esc_html($task_filter_label); ?></a>
                         <?php endforeach; ?>
@@ -60,7 +62,7 @@
                             <td><?php echo esc_html((string) ($task_row['created_at'] ?? '—')); ?></td>
                             <td><?php echo esc_html((string) ($task_row['text'] ?? '')); ?></td>
                             <td><?php echo esc_html((string) ($task_row['due_date'] ?? '—')); ?></td>
-                            <td><?php echo ! empty($task_row['completed']) ? esc_html__('Zrobione', 'erp-omd') : esc_html__('Niedokończone', 'erp-omd'); ?></td>
+                            <td><?php $task_status = (string) ($task_row['status'] ?? (! empty($task_row['completed']) ? 'done' : 'todo')); echo esc_html(['todo' => __('Niedokończone', 'erp-omd'), 'in_progress' => __('W realizacji', 'erp-omd'), 'done' => __('Zrobione', 'erp-omd')][$task_status] ?? __('Niedokończone', 'erp-omd')); ?></td>
                             <td>
                                 <a class="button button-small" href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-private-tasks', 'tasks_filter' => (string) ($dashboard_private_tasks_filter ?? 'all'), 'edit_task' => $task_id], admin_url('admin.php'))); ?>"><?php esc_html_e('Edytuj', 'erp-omd'); ?></a>
                                 <form method="post" class="erp-omd-inline-form">

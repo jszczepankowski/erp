@@ -24,10 +24,15 @@ if (! $can_select_any_employee && $current_employee) {
     $filters['employee_id'] = (string) $current_employee['id'];
 }
 
+$time_entry_form_state = $this->pop_admin_form_payload('time_entry');
+$time_entry_form_errors = (array) ($time_entry_form_state['error_fields'] ?? []);
 $entry = ! empty($_GET['id']) ? $this->time_entries->find((int) $_GET['id']) : null;
 $can_edit_selected_entry = $entry ? $this->time_entry_service->can_edit_entry($entry, $current_user) : true;
 if ($entry && ! $can_edit_selected_entry) {
     $entry = null;
+}
+if (! empty($time_entry_form_state['payload'])) {
+    $entry = array_merge((array) $entry, (array) ($time_entry_form_state['payload'] ?? []));
 }
 
 $employees_for_select = $this->employees->all();
@@ -58,6 +63,8 @@ if ($entry) {
             break;
         }
     }
+} elseif (! empty($entry['client_id'])) {
+    $selected_time_client_id = (int) $entry['client_id'];
 } elseif (! empty($filters['client_id'])) {
     $selected_time_client_id = (int) $filters['client_id'];
 }

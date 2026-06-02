@@ -77,15 +77,15 @@
                         <p><?php esc_html_e('Klient, nazwa i model rozliczenia.', 'erp-omd'); ?></p>
                     </div>
                     <div class="erp-omd-form-grid erp-omd-form-grid-project-basics">
-                        <div class="erp-omd-form-field">
+                        <div class="erp-omd-form-field <?php echo in_array('client_id', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
                             <select id="project-client" name="client_id" required><option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option><?php foreach ($clients as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) ($project['client_id'] ?? 0), (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select>
                         </div>
-                        <div class="erp-omd-form-field">
+                        <div class="erp-omd-form-field <?php echo in_array('name', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
                             <input id="project-name" class="regular-text" type="text" name="name" value="<?php echo esc_attr($project['name'] ?? ''); ?>" required />
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                        <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('billing_type', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-billing-type"><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></label>
                             <select id="project-billing-type" name="billing_type">
                                 <option value="time_material" <?php selected($project['billing_type'] ?? 'time_material', 'time_material'); ?>><?php esc_html_e('Godzinowy', 'erp-omd'); ?></option>
@@ -102,16 +102,16 @@
                         <h3><?php esc_html_e('Finanse i lifecycle', 'erp-omd'); ?></h3>
                     </div>
                     <div class="erp-omd-form-grid erp-omd-form-grid-project-lifecycle">
-                        <div id="erp-omd-project-budget-row" class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-span-2">
+                        <div id="erp-omd-project-budget-row" class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-span-2 <?php echo in_array('budget', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-budget"><?php esc_html_e('Budżet', 'erp-omd'); ?></label>
                             <input id="project-budget" type="number" step="0.01" min="0" name="budget" value="<?php echo esc_attr($project['budget'] ?? '0'); ?>" />
                         </div>
-                        <div id="erp-omd-project-retainer-row" class="erp-omd-form-field erp-omd-form-field-span-2">
+                        <div id="erp-omd-project-retainer-row" class="erp-omd-form-field erp-omd-form-field-span-2 <?php echo in_array('retainer_monthly_fee', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-retainer-fee"><?php esc_html_e('Abonament — opłata miesięczna', 'erp-omd'); ?></label>
                             <input id="project-retainer-fee" type="number" step="0.01" min="0" name="retainer_monthly_fee" value="<?php echo esc_attr($project['retainer_monthly_fee'] ?? '0'); ?>" />
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-project-lifecycle-row erp-omd-form-field erp-omd-form-field-span-2">
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('status', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="project-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
                                 <select id="project-status" name="status">
                                     <?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'] as $project_status) : ?>
@@ -179,16 +179,16 @@
                         <h3><?php esc_html_e('Powiązania i opis', 'erp-omd'); ?></h3>
                         <p><?php esc_html_e('Link do estymacji i szerszy opis projektu.', 'erp-omd'); ?></p>
                     </div>
-                    <div class="erp-omd-form-grid">
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                    <div class="erp-omd-form-grid erp-omd-form-grid-project-links-row">
+                        <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('estimate_id', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-estimate-id"><?php esc_html_e('ID estymacji', 'erp-omd'); ?></label>
                             <input id="project-estimate-id" type="number" min="0" name="estimate_id" value="<?php echo esc_attr($project['estimate_id'] ?? ''); ?>" />
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                        <div class="erp-omd-form-field <?php echo in_array('brief', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-brief"><?php esc_html_e('Opis projektu', 'erp-omd'); ?></label>
                             <textarea id="project-brief" class="large-text" rows="5" name="brief"><?php echo esc_textarea($project['brief'] ?? ''); ?></textarea>
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                        <div class="erp-omd-form-field <?php echo in_array('project_links', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-links"><?php esc_html_e('Linki i materiały (1 link na linię: etykieta | URL)', 'erp-omd'); ?></label>
                             <textarea id="project-links" class="large-text" rows="4" name="project_links"><?php echo esc_textarea($project['project_links'] ?? ''); ?></textarea>
                         </div>
@@ -432,15 +432,15 @@
                                     <input type="hidden" name="project_cost_id" value="<?php echo esc_attr((string) ($project_cost_edit_row['id'] ?? 0)); ?>" />
                                 <?php endif; ?>
                                 <div class="erp-omd-form-grid">
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('amount', (array) ($project_cost_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                         <label for="project-cost-amount"><?php esc_html_e('Kwota', 'erp-omd'); ?></label>
                                         <input id="project-cost-amount" type="number" step="0.01" min="0" name="amount" value="<?php echo esc_attr((string) ($project_cost_edit_row['amount'] ?? '')); ?>" required />
                                     </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('cost_date', (array) ($project_cost_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                         <label for="project-cost-date"><?php esc_html_e('Data kosztu', 'erp-omd'); ?></label>
                                         <input id="project-cost-date" type="date" name="cost_date" value="<?php echo esc_attr((string) ($project_cost_edit_row['cost_date'] ?? gmdate('Y-m-d'))); ?>" required />
                                     </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2 <?php echo in_array('description', (array) ($project_cost_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                         <label for="project-cost-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
                                         <textarea id="project-cost-description" class="large-text" rows="3" name="description"><?php echo esc_textarea((string) ($project_cost_edit_row['description'] ?? '')); ?></textarea>
                                     </div>

@@ -1,4 +1,4 @@
-<?php $estimate_status_labels = ['wstepny' => __('Wstępny', 'erp-omd'), 'do_akceptacji' => __('Do akceptacji', 'erp-omd'), 'odrzucony' => __('Odrzucony', 'erp-omd'), 'zaakceptowany' => __('Zaakceptowany', 'erp-omd')]; ?>
+<?php $estimate_form_errors = (array) ($estimate_form_errors ?? []); $initial_items_payload = (array) ($initial_items_payload ?? []); $estimate_status_labels = ['wstepny' => __('Wstępny', 'erp-omd'), 'do_akceptacji' => __('Do akceptacji', 'erp-omd'), 'odrzucony' => __('Odrzucony', 'erp-omd'), 'zaakceptowany' => __('Zaakceptowany', 'erp-omd')]; ?>
 <div class="wrap erp-omd-admin">
     <h1><?php esc_html_e('Kosztorysy', 'erp-omd'); ?></h1>
 
@@ -17,12 +17,12 @@
                             <p><?php esc_html_e('Nazwa, klient, ważność linku i status kosztorysu w jednym wierszu.', 'erp-omd'); ?></p>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-estimate-basics-lifecycle">
-                            <div class="erp-omd-form-field">
+                            <div class="erp-omd-form-field <?php echo in_array('name', $estimate_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="estimate-name"><?php esc_html_e('Nazwa kosztorysu', 'erp-omd'); ?></label>
                                 <input id="estimate-name" name="name" type="text" class="regular-text" value="<?php echo esc_attr($estimate['name'] ?? ''); ?>" required>
                                 <p class="description"><?php esc_html_e('Np. Kampania launchowa produktu.', 'erp-omd'); ?></p>
                             </div>
-                            <div class="erp-omd-form-field">
+                            <div class="erp-omd-form-field <?php echo in_array('client_id', $estimate_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="estimate-client-id"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
                                 <select id="estimate-client-id" name="client_id" required>
                                     <option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option>
@@ -35,7 +35,7 @@
                                 <label for="estimate-link-valid-days"><?php esc_html_e('Ważność linku (dni)', 'erp-omd'); ?></label>
                                 <input id="estimate-link-valid-days" type="number" min="1" max="365" name="estimate_link_valid_days" value="<?php echo esc_attr((string) max(1, min(365, (int) ($estimate_accept_meta['estimate_link_valid_days'] ?? 5)))); ?>">
                             </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('status', $estimate_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="estimate-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
                                 <select id="estimate-status" name="status">
                                     <?php foreach (['wstepny', 'do_akceptacji', 'odrzucony', 'zaakceptowany'] as $status_option) : ?>
@@ -70,42 +70,45 @@
                                 <p><?php esc_html_e('Dodaj minimum jedną pozycję. Możesz od razu dodać wiele pozycji przed zapisaniem kosztorysu.', 'erp-omd'); ?></p>
                             </div>
                             <div class="erp-omd-estimate-create-items" data-admin-initial-items>
+                                <?php $initial_items_for_template = $initial_items_payload !== [] ? $initial_items_payload : [['name' => '', 'qty' => 1, 'cost_internal' => 0, 'margin_percent' => 0, 'price' => 0, 'comment' => '', 'price_source' => 'manual']]; ?>
+                                <?php foreach ($initial_items_for_template as $initial_item_row) : ?>
                                 <div class="erp-omd-form-grid erp-omd-estimate-create-item-row" data-admin-initial-item-row>
                                     <div class="erp-omd-form-grid erp-omd-form-grid-estimate-item-row erp-omd-form-grid-estimate-item-row-with-suggest erp-omd-form-field erp-omd-form-field-span-2" data-admin-price-row>
                                         <div class="erp-omd-form-field">
                                             <label><?php esc_html_e('Nazwa pozycji', 'erp-omd'); ?></label>
-                                            <input name="initial_item_name[]" type="text" class="regular-text" required>
+                                            <input name="initial_item_name[]" type="text" class="regular-text" value="<?php echo esc_attr((string) ($initial_item_row['name'] ?? '')); ?>" required>
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label><?php esc_html_e('Ilość', 'erp-omd'); ?></label>
-                                            <input name="initial_item_qty[]" type="number" step="0.01" min="0.01" value="1" required>
+                                            <input name="initial_item_qty[]" type="number" step="0.01" min="0.01" value="<?php echo esc_attr((string) ($initial_item_row['qty'] ?? 1)); ?>" required>
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></label>
-                                            <input name="initial_item_cost_internal[]" type="number" step="0.01" min="0" value="0" required data-cost-input>
+                                            <input name="initial_item_cost_internal[]" type="number" step="0.01" min="0" value="<?php echo esc_attr((string) ($initial_item_row['cost_internal'] ?? 0)); ?>" required data-cost-input>
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label><?php esc_html_e('Marża (%)', 'erp-omd'); ?></label>
-                                            <input name="initial_item_margin_percent[]" type="number" step="0.01" min="0" max="500" value="0" required data-margin-input>
+                                            <input name="initial_item_margin_percent[]" type="number" step="0.01" min="0" max="500" value="<?php echo esc_attr((string) ($initial_item_row['margin_percent'] ?? 0)); ?>" required data-margin-input>
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact">
                                             <label><?php esc_html_e('Cena', 'erp-omd'); ?></label>
-                                            <input name="initial_item_price[]" type="number" step="0.01" min="0" value="0" required data-price-input>
+                                            <input name="initial_item_price[]" type="number" step="0.01" min="0" value="<?php echo esc_attr((string) ($initial_item_row['price'] ?? 0)); ?>" required data-price-input>
                                         </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-inline-action">
                                             <label>&nbsp;</label>
                                             <button type="button" class="button button-secondary" data-admin-suggest-price><?php esc_html_e('Zasugeruj cenę', 'erp-omd'); ?></button>
                                         </div>
                                     </div>
-                                    <input type="hidden" name="initial_item_price_source[]" value="manual">
+                                    <input type="hidden" name="initial_item_price_source[]" value="<?php echo esc_attr((string) ($initial_item_row['price_source'] ?? 'manual')); ?>">
                                     <div class="erp-omd-form-field erp-omd-form-field-span-2">
                                         <label><?php esc_html_e('Komentarz', 'erp-omd'); ?></label>
-                                        <textarea name="initial_item_comment[]" rows="3" class="large-text"></textarea>
+                                        <textarea name="initial_item_comment[]" rows="3" class="large-text"><?php echo esc_textarea((string) ($initial_item_row['comment'] ?? '')); ?></textarea>
                                     </div>
                                         <div class="erp-omd-form-field erp-omd-form-field-span-2 erp-omd-estimate-create-item-actions">
                                         <button type="button" class="button button-link-delete" data-admin-remove-item><?php esc_html_e('Usuń pozycję', 'erp-omd'); ?></button>
                                     </div>
                                 </div>
+                                <?php endforeach; ?>
                             </div>
                             <div class="erp-omd-form-actions">
                                 <button type="button" class="button button-secondary" data-admin-add-item><?php esc_html_e('Dodaj kolejną pozycję', 'erp-omd'); ?></button>

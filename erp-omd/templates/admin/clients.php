@@ -62,6 +62,7 @@
                                 <input id="client-email" class="regular-text" type="text" name="email" value="<?php echo esc_attr($client['email'] ?? ''); ?>" />
                                 <p class="description"><?php esc_html_e('Możesz podać wiele adresów e-mail, oddzielając je przecinkiem, średnikiem lub spacją.', 'erp-omd'); ?></p>
                             </div>
+                            <div class="erp-omd-form-grid erp-omd-form-grid-client-contact-row erp-omd-form-field-span-full">
                             <div class="erp-omd-form-field">
                                 <label for="client-phone"><?php esc_html_e('Telefon', 'erp-omd'); ?></label>
                                 <input id="client-phone" class="regular-text" type="text" name="phone" value="<?php echo esc_attr($client['phone'] ?? ''); ?>" />
@@ -78,6 +79,7 @@
                                 <label for="contact-person-phone"><?php esc_html_e('Osoba kontaktowa — telefon', 'erp-omd'); ?></label>
                                 <input id="contact-person-phone" class="regular-text" type="text" name="contact_person_phone" value="<?php echo esc_attr($client['contact_person_phone'] ?? ''); ?>" />
                             </div>
+                            </div>
                         </div>
                     </section>
 
@@ -86,7 +88,7 @@
                             <h3><?php esc_html_e('Lifecycle i odpowiedzialność', 'erp-omd'); ?></h3>
                             <p><?php esc_html_e('Status klienta, owner i ustawienia ryzyka w jednym miejscu.', 'erp-omd'); ?></p>
                         </div>
-                        <div class="erp-omd-form-grid">
+                        <div class="erp-omd-form-grid erp-omd-form-grid-client-lifecycle-row">
                             <div class="erp-omd-form-field">
                                 <label for="client-account-manager"><?php esc_html_e('Opiekun klienta', 'erp-omd'); ?></label>
                                 <select id="client-account-manager" name="account_manager_id">
