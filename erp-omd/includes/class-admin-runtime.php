@@ -1576,15 +1576,19 @@ class ERP_OMD_Admin
             return true;
         }));
         $project_attachments = $project ? $this->attachments->for_entity('project', (int) $project['id']) : [];
+        $project_final_sales_invoices_by_project = [];
+        foreach ((array) get_option('erp_omd_ksef_sales_inbox', []) as $sales_row) {
+            $sales_project_id = (int) ($sales_row['project_id'] ?? 0);
+            if ($sales_project_id <= 0 || (int) ($sales_row['is_final'] ?? 0) !== 1) {
+                continue;
+            }
+            if (! isset($project_final_sales_invoices_by_project[$sales_project_id])) {
+                $project_final_sales_invoices_by_project[$sales_project_id] = (array) $sales_row;
+            }
+        }
         $project_final_sales_invoice_info = null;
         if ($project) {
-            foreach ((array) get_option('erp_omd_ksef_sales_inbox', []) as $sales_row) {
-                if ((int) ($sales_row['project_id'] ?? 0) !== (int) ($project['id'] ?? 0) || (int) ($sales_row['is_final'] ?? 0) !== 1) {
-                    continue;
-                }
-                $project_final_sales_invoice_info = (array) $sales_row;
-                break;
-            }
+            $project_final_sales_invoice_info = $project_final_sales_invoices_by_project[(int) ($project['id'] ?? 0)] ?? null;
         }
         include ERP_OMD_PATH . 'templates/admin/projects.php';
     }
