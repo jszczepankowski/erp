@@ -50,7 +50,10 @@ Zakres techniczny: wydzielenie `ERP_OMD_Client_Project_Module`, który zarządza
 - [ ] Utwórz wniosek projektowy z FRONT jako klient/pracownik.
 - [ ] Jako manager/admin zaakceptuj lub skonwertuj wniosek do projektu.
 
-### Finanse / raporty / alerty
+### Etap 2C — Finanse / raporty / alerty
+
+Zakres techniczny: wydzielenie `ERP_OMD_Finance_Module`, który zarządza repozytoriami kosztów, przychodów i finansów projektu oraz serwisami finansów projektu, raportów i alertów.
+
 - [ ] Dodaj koszt projektu i przychód projektu.
 - [ ] Sprawdź, czy podsumowanie finansowe projektu przelicza marżę/budżet.
 - [ ] Otwórz raporty i sprawdź, czy filtry miesiąca/klienta/projektu działają.

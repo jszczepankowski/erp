@@ -104,6 +104,7 @@ if (! class_exists('ERP_OMD_Project_Request_Service')) {
 
 require_once __DIR__ . '/../erp-omd/includes/class-hr-module.php';
 require_once __DIR__ . '/../erp-omd/includes/class-client-project-module.php';
+require_once __DIR__ . '/../erp-omd/includes/class-finance-module.php';
 require_once __DIR__ . '/../erp-omd/includes/class-container.php';
 
 $container = new ERP_OMD_Container();

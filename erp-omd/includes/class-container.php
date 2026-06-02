@@ -84,25 +84,26 @@ class ERP_OMD_Container
         return $this->client_project_module()->project_rate_repository();
     }
 
+    public function finance_module()
+    {
+        return $this->get('finance_module', function () {
+            return new ERP_OMD_Finance_Module($this);
+        });
+    }
+
     public function project_cost_repository()
     {
-        return $this->get('project_cost_repository', function () {
-            return new ERP_OMD_Project_Cost_Repository();
-        });
+        return $this->finance_module()->project_cost_repository();
     }
 
     public function project_revenue_repository()
     {
-        return $this->get('project_revenue_repository', function () {
-            return new ERP_OMD_Project_Revenue_Repository();
-        });
+        return $this->finance_module()->project_revenue_repository();
     }
 
     public function project_financial_repository()
     {
-        return $this->get('project_financial_repository', function () {
-            return new ERP_OMD_Project_Financial_Repository();
-        });
+        return $this->finance_module()->project_financial_repository();
     }
 
     public function time_entry_repository()
@@ -182,47 +183,17 @@ class ERP_OMD_Container
 
     public function project_financial_service()
     {
-        return $this->get('project_financial_service', function () {
-            return new ERP_OMD_Project_Financial_Service(
-                $this->project_repository(),
-                $this->project_cost_repository(),
-                $this->project_revenue_repository(),
-                $this->project_financial_repository(),
-                $this->time_entry_repository()
-            );
-        });
+        return $this->finance_module()->project_financial_service();
     }
 
     public function reporting_service()
     {
-        return $this->get('reporting_service', function () {
-            return new ERP_OMD_Reporting_Service(
-                $this->project_repository(),
-                $this->client_repository(),
-                $this->employee_repository(),
-                $this->salary_repository(),
-                $this->project_cost_repository(),
-                $this->project_revenue_repository(),
-                $this->time_entry_repository(),
-                $this->project_financial_service(),
-                $this->estimate_item_repository()
-            );
-        });
+        return $this->finance_module()->reporting_service();
     }
 
     public function alert_service()
     {
-        return $this->get('alert_service', function () {
-            return new ERP_OMD_Alert_Service(
-                $this->employee_repository(),
-                $this->client_repository(),
-                $this->client_rate_repository(),
-                $this->project_repository(),
-                $this->project_rate_repository(),
-                $this->project_financial_service(),
-                $this->time_entry_repository()
-            );
-        });
+        return $this->finance_module()->alert_service();
     }
 
     public function client_project_service()
