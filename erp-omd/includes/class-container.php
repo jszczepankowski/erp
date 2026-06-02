@@ -156,11 +156,16 @@ class ERP_OMD_Container
         return $this->client_project_module()->attachment_repository();
     }
 
+    public function calendar_module()
+    {
+        return $this->get('calendar_module', function () {
+            return new ERP_OMD_Calendar_Module($this);
+        });
+    }
+
     public function project_calendar_sync_repository()
     {
-        return $this->get('project_calendar_sync_repository', function () {
-            return new ERP_OMD_Project_Calendar_Sync_Repository();
-        });
+        return $this->calendar_module()->project_calendar_sync_repository();
     }
 
     public function project_attachment_service()
@@ -170,12 +175,7 @@ class ERP_OMD_Container
 
     public function google_calendar_sync_service()
     {
-        return $this->get('google_calendar_sync_service', function () {
-            return new ERP_OMD_Google_Calendar_Sync_Service(
-                $this->project_repository(),
-                $this->project_calendar_sync_repository()
-            );
-        });
+        return $this->calendar_module()->google_calendar_sync_service();
     }
 
     public function monthly_hours_service()

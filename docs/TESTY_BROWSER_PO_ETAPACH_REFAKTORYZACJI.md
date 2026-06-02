@@ -77,7 +77,10 @@ Zakres techniczny: wydzielenie `ERP_OMD_KSeF_Module`, który zarządza dostawcam
 - [ ] Podepnij fakturę kosztową do projektu.
 - [ ] Sprawdź, czy koszt projektu i relacja faktury są widoczne po odświeżeniu strony.
 
-### Calendar / Google Calendar
+### Etap 2F — Calendar / Google Calendar
+
+Zakres techniczny: wydzielenie `ERP_OMD_Calendar_Module`, który zarządza repozytorium synchronizacji projektów z kalendarzem oraz `ERP_OMD_Google_Calendar_Sync_Service`.
+
 - [ ] Zapisz projekt z datą startu/końca/deadline.
 - [ ] Jeżeli integracja jest skonfigurowana: sprawdź, czy event pojawia się lub aktualizuje w Google Calendar.
 - [ ] Zmień projekt na archiwalny i sprawdź, czy synchronizacja usuwa/oznacza eventy zgodnie z dotychczasowym zachowaniem.
