@@ -9,6 +9,7 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Plugin' => 'includes/class-plugin.php',
         'ERP_OMD_Container' => 'includes/class-container.php',
         'ERP_OMD_HR_Module' => 'includes/class-hr-module.php',
+        'ERP_OMD_Client_Project_Module' => 'includes/class-client-project-module.php',
         'ERP_OMD_Installer' => 'includes/class-installer.php',
         'ERP_OMD_Capabilities' => 'includes/class-capabilities.php',
         'ERP_OMD_Admin' => 'includes/class-admin-runtime.php',

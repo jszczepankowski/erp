@@ -41,7 +41,10 @@ Zakres techniczny: wydzielenie `ERP_OMD_HR_Module`, który zarządza repozytoria
 - [ ] Dodaj historię wynagrodzenia lub miesięczne godziny, jeśli moduł był modyfikowany.
 - [ ] Sprawdź, czy pracownik może zalogować się do FRONT zgodnie z przypisanymi uprawnieniami.
 
-### Klienci / projekty / wnioski projektowe
+### Etap 2B — Klienci / projekty / wnioski projektowe
+
+Zakres techniczny: wydzielenie `ERP_OMD_Client_Project_Module`, który zarządza repozytoriami klientów, stawek klientów, projektów, wniosków projektowych, notatek projektu, stawek projektowych, załączników oraz serwisami klient/projekt i wniosków projektowych.
+
 - [ ] Dodaj klienta testowego i zapisz dane kontaktowe.
 - [ ] Dodaj projekt dla klienta oraz zmień jego status.
 - [ ] Utwórz wniosek projektowy z FRONT jako klient/pracownik.
