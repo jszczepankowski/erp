@@ -59,7 +59,10 @@ Zakres techniczny: wydzielenie `ERP_OMD_Finance_Module`, który zarządza repozy
 - [ ] Otwórz raporty i sprawdź, czy filtry miesiąca/klienta/projektu działają.
 - [ ] Sprawdź, czy alerty niskiej marży lub braków danych nadal pojawiają się w oczekiwanych miejscach.
 
-### Kosztorysy
+### Etap 2D — Kosztorysy
+
+Zakres techniczny: wydzielenie `ERP_OMD_Estimate_Module`, który zarządza repozytoriami kosztorysów, pozycjami, audytem kosztorysów oraz `ERP_OMD_Estimate_Service`.
+
 - [ ] Utwórz kosztorys z pozycjami.
 - [ ] Wyślij/udostępnij kosztorys klientowi, jeśli środowisko na to pozwala.
 - [ ] Jako klient zaakceptuj lub odrzuć kosztorys z komentarzem.

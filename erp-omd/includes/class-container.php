@@ -53,25 +53,26 @@ class ERP_OMD_Container
         return $this->client_project_module()->project_request_repository();
     }
 
+    public function estimate_module()
+    {
+        return $this->get('estimate_module', function () {
+            return new ERP_OMD_Estimate_Module($this);
+        });
+    }
+
     public function estimate_repository()
     {
-        return $this->get('estimate_repository', function () {
-            return new ERP_OMD_Estimate_Repository();
-        });
+        return $this->estimate_module()->estimate_repository();
     }
 
     public function estimate_item_repository()
     {
-        return $this->get('estimate_item_repository', function () {
-            return new ERP_OMD_Estimate_Item_Repository();
-        });
+        return $this->estimate_module()->estimate_item_repository();
     }
 
     public function estimate_audit_repository()
     {
-        return $this->get('estimate_audit_repository', function () {
-            return new ERP_OMD_Estimate_Audit_Repository();
-        });
+        return $this->estimate_module()->estimate_audit_repository();
     }
 
     public function project_note_repository()
@@ -152,18 +153,7 @@ class ERP_OMD_Container
 
     public function estimate_service()
     {
-        return $this->get('estimate_service', function () {
-            return new ERP_OMD_Estimate_Service(
-                $this->estimate_repository(),
-                $this->estimate_item_repository(),
-                $this->client_repository(),
-                $this->project_repository(),
-                $this->project_cost_repository(),
-                $this->estimate_audit_repository(),
-                $this->project_request_repository(),
-                $this->project_revenue_repository()
-            );
-        });
+        return $this->estimate_module()->estimate_service();
     }
 
     public function time_entry_service()
