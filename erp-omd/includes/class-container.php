@@ -107,6 +107,43 @@ class ERP_OMD_Container
         return $this->finance_module()->project_financial_repository();
     }
 
+    public function ksef_module()
+    {
+        return $this->get('ksef_module', function () {
+            return new ERP_OMD_KSeF_Module($this);
+        });
+    }
+
+    public function supplier_repository()
+    {
+        return $this->ksef_module()->supplier_repository();
+    }
+
+    public function cost_invoice_repository()
+    {
+        return $this->ksef_module()->cost_invoice_repository();
+    }
+
+    public function cost_invoice_item_repository()
+    {
+        return $this->ksef_module()->cost_invoice_item_repository();
+    }
+
+    public function cost_invoice_audit_repository()
+    {
+        return $this->ksef_module()->cost_invoice_audit_repository();
+    }
+
+    public function cost_invoice_workflow_service()
+    {
+        return $this->ksef_module()->cost_invoice_workflow_service();
+    }
+
+    public function ksef_import_service()
+    {
+        return $this->ksef_module()->ksef_import_service();
+    }
+
     public function time_entry_repository()
     {
         return $this->get('time_entry_repository', function () {
@@ -224,7 +261,14 @@ class ERP_OMD_Container
                 $this->time_entry_service(),
                 $this->project_financial_service(),
                 $this->reporting_service(),
-                $this->alert_service()
+                $this->alert_service(),
+                null,
+                $this->supplier_repository(),
+                $this->cost_invoice_repository(),
+                $this->cost_invoice_item_repository(),
+                $this->cost_invoice_audit_repository(),
+                $this->cost_invoice_workflow_service(),
+                $this->ksef_import_service()
             );
         });
     }

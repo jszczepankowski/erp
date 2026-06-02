@@ -30,11 +30,15 @@ if (strpos($autoloaderSource, "'ERP_OMD_Estimate_Module' => 'includes/class-esti
     throw new RuntimeException('ERP_OMD_Estimate_Module must be registered in the autoloader.');
 }
 
+if (strpos($autoloaderSource, "'ERP_OMD_KSeF_Module' => 'includes/class-ksef-module.php'") === false) {
+    throw new RuntimeException('ERP_OMD_KSeF_Module must be registered in the autoloader.');
+}
+
 if (strpos($pluginSource, 'new ERP_OMD_Role_Repository') !== false || strpos($pluginSource, 'new ERP_OMD_Admin') !== false || strpos($pluginSource, 'new ERP_OMD_REST_API') !== false) {
     throw new RuntimeException('ERP_OMD_Plugin should delegate dependency construction to ERP_OMD_Container.');
 }
 
-foreach (['hr_module', 'client_project_module', 'finance_module', 'estimate_module', 'admin', 'frontend', 'rest_api', 'google_calendar_sync_service'] as $methodName) {
+foreach (['hr_module', 'client_project_module', 'finance_module', 'estimate_module', 'ksef_module', 'admin', 'frontend', 'rest_api', 'google_calendar_sync_service'] as $methodName) {
     if (! preg_match('/function\s+' . preg_quote($methodName, '/') . '\s*\(/', $containerSource)) {
         throw new RuntimeException('ERP_OMD_Container is missing method: ' . $methodName);
     }
@@ -44,5 +48,5 @@ if (strpos($pluginSource, '$this->container->admin()->register_hooks()') === fal
     throw new RuntimeException('ERP_OMD_Plugin should register hooks through container-managed entry points.');
 }
 
-echo "Assertions: 15\n";
+echo "Assertions: 17\n";
 echo "Plugin container wiring test passed.\n";

@@ -68,7 +68,10 @@ Zakres techniczny: wydzielenie `ERP_OMD_Estimate_Module`, który zarządza repoz
 - [ ] Jako klient zaakceptuj lub odrzuć kosztorys z komentarzem.
 - [ ] Sprawdź, czy status kosztorysu i dane akceptacji są widoczne w adminie.
 
-### KSeF / faktury kosztowe
+### Etap 2E — KSeF / faktury kosztowe
+
+Zakres techniczny: wydzielenie `ERP_OMD_KSeF_Module`, który zarządza dostawcami, repozytoriami faktur kosztowych, workflow faktur kosztowych oraz `ERP_OMD_KSeF_Import_Service`.
+
 - [ ] Zaimportuj testowy XML sprzedażowy lub kosztowy.
 - [ ] Sprawdź kolejkę moderacji KSeF.
 - [ ] Podepnij fakturę kosztową do projektu.

@@ -58,7 +58,13 @@ class ERP_OMD_REST_API
         ERP_OMD_Project_Financial_Service $project_financial_service,
         ERP_OMD_Reporting_Service $reporting_service,
         ERP_OMD_Alert_Service $alert_service,
-        $adjustment_audit_repository = null
+        $adjustment_audit_repository = null,
+        $supplier_repository = null,
+        $cost_invoice_repository = null,
+        $cost_invoice_item_repository = null,
+        $cost_invoice_audit_repository = null,
+        $cost_invoice_workflow_service = null,
+        $ksef_import_service = null
 
     ) {
         $this->roles = $roles;
@@ -85,12 +91,12 @@ class ERP_OMD_REST_API
         $this->reporting_service = $reporting_service;
         $this->alert_service = $alert_service;
         $this->adjustment_audit = $adjustment_audit_repository ?: new ERP_OMD_Adjustment_Audit_Repository();
-        $this->suppliers = class_exists('ERP_OMD_Supplier_Repository') ? new ERP_OMD_Supplier_Repository() : null;
-        $this->cost_invoices = class_exists('ERP_OMD_Cost_Invoice_Repository') ? new ERP_OMD_Cost_Invoice_Repository() : null;
-        $this->cost_invoice_items = class_exists('ERP_OMD_Cost_Invoice_Item_Repository') ? new ERP_OMD_Cost_Invoice_Item_Repository() : null;
-        $this->cost_invoice_audit = class_exists('ERP_OMD_Cost_Invoice_Audit_Repository') ? new ERP_OMD_Cost_Invoice_Audit_Repository() : null;
-        $this->cost_invoice_workflow = class_exists('ERP_OMD_Cost_Invoice_Workflow_Service') ? new ERP_OMD_Cost_Invoice_Workflow_Service($this->cost_invoices, $this->cost_invoice_audit, $this->suppliers, $this->projects, $this->cost_invoice_items) : null;
-        $this->ksef_import_service = class_exists('ERP_OMD_KSeF_Import_Service') ? new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow, $this->cost_invoices, $this->cost_invoice_audit, null, null, $this->suppliers, $this->clients) : null;
+        $this->suppliers = $supplier_repository ?: (class_exists('ERP_OMD_Supplier_Repository') ? new ERP_OMD_Supplier_Repository() : null);
+        $this->cost_invoices = $cost_invoice_repository ?: (class_exists('ERP_OMD_Cost_Invoice_Repository') ? new ERP_OMD_Cost_Invoice_Repository() : null);
+        $this->cost_invoice_items = $cost_invoice_item_repository ?: (class_exists('ERP_OMD_Cost_Invoice_Item_Repository') ? new ERP_OMD_Cost_Invoice_Item_Repository() : null);
+        $this->cost_invoice_audit = $cost_invoice_audit_repository ?: (class_exists('ERP_OMD_Cost_Invoice_Audit_Repository') ? new ERP_OMD_Cost_Invoice_Audit_Repository() : null);
+        $this->cost_invoice_workflow = $cost_invoice_workflow_service ?: (class_exists('ERP_OMD_Cost_Invoice_Workflow_Service') ? new ERP_OMD_Cost_Invoice_Workflow_Service($this->cost_invoices, $this->cost_invoice_audit, $this->suppliers, $this->projects, $this->cost_invoice_items) : null);
+        $this->ksef_import_service = $ksef_import_service ?: (class_exists('ERP_OMD_KSeF_Import_Service') ? new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow, $this->cost_invoices, $this->cost_invoice_audit, null, null, $this->suppliers, $this->clients) : null);
         $this->client_portal_service = class_exists('ERP_OMD_Client_Portal_Service') && class_exists('ERP_OMD_Project_Revenue_Repository')
             ? new ERP_OMD_Client_Portal_Service($this->projects, new ERP_OMD_Project_Revenue_Repository(), $this->project_costs)
             : null;
