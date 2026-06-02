@@ -4,25 +4,26 @@ class ERP_OMD_Container
 {
     private $instances = [];
 
+    public function hr_module()
+    {
+        return $this->get('hr_module', function () {
+            return new ERP_OMD_HR_Module();
+        });
+    }
+
     public function role_repository()
     {
-        return $this->get('role_repository', function () {
-            return new ERP_OMD_Role_Repository();
-        });
+        return $this->hr_module()->role_repository();
     }
 
     public function employee_repository()
     {
-        return $this->get('employee_repository', function () {
-            return new ERP_OMD_Employee_Repository();
-        });
+        return $this->hr_module()->employee_repository();
     }
 
     public function salary_repository()
     {
-        return $this->get('salary_repository', function () {
-            return new ERP_OMD_Salary_History_Repository();
-        });
+        return $this->hr_module()->salary_repository();
     }
 
     public function client_repository()
@@ -149,20 +150,12 @@ class ERP_OMD_Container
 
     public function monthly_hours_service()
     {
-        return $this->get('monthly_hours_service', function () {
-            return new ERP_OMD_Monthly_Hours_Service();
-        });
+        return $this->hr_module()->monthly_hours_service();
     }
 
     public function employee_service()
     {
-        return $this->get('employee_service', function () {
-            return new ERP_OMD_Employee_Service(
-                $this->employee_repository(),
-                $this->salary_repository(),
-                $this->monthly_hours_service()
-            );
-        });
+        return $this->hr_module()->employee_service();
     }
 
     public function estimate_service()

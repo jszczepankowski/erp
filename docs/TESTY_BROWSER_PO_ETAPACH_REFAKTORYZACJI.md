@@ -32,7 +32,10 @@ Zakres techniczny: przeniesienie tworzenia repozytoriów, serwisów oraz punktó
 
 Planowany zakres: wydzielenie modułów np. HR, Klienci/Projekty, Finanse, Kosztorysy, KSeF, Calendar. Po każdym wydzielonym module wykonaj tylko testy obszaru, który został ruszony, plus smoke z Etapu 1.
 
-### HR / pracownicy / role / wynagrodzenia
+### Etap 2A — HR / pracownicy / role / wynagrodzenia
+
+Zakres techniczny: wydzielenie `ERP_OMD_HR_Module`, który zarządza repozytoriami ról, pracowników, historii wynagrodzeń oraz serwisami pracowników i miesięcznych godzin.
+
 - [ ] Dodaj lub edytuj pracownika testowego.
 - [ ] Zmień role/uprawnienia pracownika i zapisz.
 - [ ] Dodaj historię wynagrodzenia lub miesięczne godziny, jeśli moduł był modyfikowany.
