@@ -549,9 +549,38 @@ class ERP_OMD_KSeF_Import_Service
     }
 
     /**
-     * @param int $project_id
-     * @return bool
+     * @param int $sales_id
+     * @param int $user_id
+     * @return array{ok:bool,row?:array<string,mixed>,errors:array<int,string>}
      */
+    public function delete_sales_document($sales_id, $user_id)
+    {
+        $sales_id = (int) $sales_id;
+        if ($sales_id <= 0) {
+            return ['ok' => false, 'errors' => [__('Wymagane sales_id.', 'erp-omd')]];
+        }
+
+        $rows = $this->load_sales_inbox();
+        foreach ($rows as $index => $row) {
+            if ((int) ($row['id'] ?? 0) !== $sales_id) {
+                continue;
+            }
+
+            $before = (array) $row;
+            unset($rows[$index]);
+            $this->save_sales_inbox($rows);
+            $this->append_sales_audit((int) $sales_id, (int) $user_id, $before, [
+                'deleted' => 1,
+                'deleted_at' => $this->now(),
+                'deleted_by_user_id' => (int) $user_id,
+            ]);
+
+            return ['ok' => true, 'row' => $before, 'errors' => []];
+        }
+
+        return ['ok' => false, 'errors' => [__('Nie znaleziono dokumentu sprzedażowego KSeF.', 'erp-omd')]];
+    }
+
     public function has_final_sales_invoice_for_project($project_id)
     {
         $project_id = (int) $project_id;

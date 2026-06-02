@@ -124,6 +124,20 @@ class ERP_OMD_Employee_Repository
         );
     }
 
+    public function delete($id)
+    {
+        global $wpdb;
+
+        $id = (int) $id;
+        if ($id <= 0) {
+            return false;
+        }
+
+        $wpdb->delete($this->pivot_table_name(), ['employee_id' => $id], ['%d']);
+
+        return $wpdb->delete($this->table_name(), ['id' => $id], ['%d']);
+    }
+
     public function user_exists($user_id, $exclude_id = null)
     {
         global $wpdb;

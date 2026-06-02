@@ -319,6 +319,24 @@ if ($service->has_final_sales_invoice_for_project(77)) {
     throw new RuntimeException('Expected detached final sales invoice to no longer count as project final invoice.');
 }
 
+$deleteSales = $service->delete_sales_document(2, 91);
+$remainingSalesIds = array_map(
+    static function ($row) {
+        return (int) ($row['id'] ?? 0);
+    },
+    $service->list_sales_inbox()
+);
+$assertions++;
+if (! (bool) ($deleteSales['ok'] ?? false) || in_array(2, $remainingSalesIds, true)) {
+    throw new RuntimeException('Expected deleting a sales invoice to remove it from the sales inbox.');
+}
+
+$missingDeleteSales = $service->delete_sales_document(999, 91);
+$assertions++;
+if ((bool) ($missingDeleteSales['ok'] ?? false)) {
+    throw new RuntimeException('Expected deleting a missing sales invoice to return an error.');
+}
+
 $costXmlImport = $service->import_cost_xml('<?xml version="1.0"?><Fa><Naglowek><P_1>2026-04-15</P_1><P_2>XML/COST/1</P_2></Naglowek><Podmiot1><DaneIdentyfikacyjne><NIP>2222222222</NIP></DaneIdentyfikacyjne></Podmiot1><Podmiot2><DaneIdentyfikacyjne><NIP>1111111111</NIP></DaneIdentyfikacyjne></Podmiot2><NumerKSeF>XML-COST-REF</NumerKSeF><FaCtrl><B>200</B><V>46</V><WartoscFaktury>246</WartoscFaktury></FaCtrl></Fa>', 91);
 $assertions++;
 if ((int) ($costXmlImport['imported'] ?? 0) !== 1) {

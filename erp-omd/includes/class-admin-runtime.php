@@ -536,6 +536,7 @@ class ERP_OMD_Admin
             case 'inline_update_employee': $this->handle_inline_employee_update_action(); break;
             case 'change_employee_password': $this->handle_employee_password_change(); break;
             case 'toggle_employee_active': $this->handle_employee_active_toggle(); break;
+            case 'delete_employee': $this->handle_employee_delete(); break;
             case 'save_salary': $this->handle_salary_save(); break;
             case 'delete_salary': $this->handle_salary_delete(); break;
             case 'save_client': $this->handle_client_save(); break;
@@ -628,6 +629,7 @@ class ERP_OMD_Admin
             case 'import_ksef_sales_xml': $this->handle_import_ksef_sales_xml_action(); break;
             case 'import_ksef_cost_xml': $this->handle_import_ksef_cost_xml_action(); break;
             case 'attach_ksef_sales_invoice': $this->handle_attach_ksef_sales_invoice_action(); break;
+            case 'delete_ksef_sales_invoice': $this->handle_delete_ksef_sales_invoice_action(); break;
             case 'inline_update_project': $this->handle_inline_project_update_action(); break;
             case 'merge_projects_preview': $this->handle_project_merge_preview_action(); break;
             case 'merge_projects_execute': $this->handle_project_merge_execute_action(); break;
@@ -2305,6 +2307,53 @@ class ERP_OMD_Admin
         $this->redirect_with_notice('erp-omd-employees', 'error', __('Nie znaleziono pracownika.', 'erp-omd'));
     }
 
+    private function handle_employee_delete()
+    {
+        check_admin_referer('erp_omd_delete_employee');
+        $this->require_capability('erp_omd_manage_employees');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $employee = $id > 0 ? $this->employees->find($id) : null;
+        if (! is_array($employee)) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', __('Nie znaleziono pracownika.', 'erp-omd'));
+        }
+
+        $user_id = (int) ($employee['user_id'] ?? 0);
+        if ($user_id > 0 && $user_id === (int) get_current_user_id()) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', __('Nie możesz usunąć własnego profilu pracownika.', 'erp-omd'), ['id' => $id]);
+        }
+
+        $deleted = $this->employees->delete($id);
+        if ($deleted === false || (int) $deleted <= 0) {
+            $this->redirect_with_notice('erp-omd-employees', 'error', __('Nie udało się usunąć pracownika.', 'erp-omd'), ['id' => $id]);
+        }
+
+        $this->clear_employee_front_access($user_id);
+        $this->redirect_with_notice('erp-omd-employees', 'success', __('Pracownik został usunięty z systemu ERP.', 'erp-omd'));
+    }
+
+    private function clear_employee_front_access($user_id)
+    {
+        $user_id = (int) $user_id;
+        if ($user_id <= 0) {
+            return;
+        }
+
+        $user = get_user_by('id', $user_id);
+        if ($user instanceof WP_User) {
+            foreach (['erp_omd_worker', 'erp_omd_manager'] as $role) {
+                if (in_array($role, (array) $user->roles, true)) {
+                    $user->remove_role($role);
+                }
+            }
+        }
+
+        if (class_exists('ERP_OMD_Acl_Service')) {
+            delete_user_meta($user_id, ERP_OMD_Acl_Service::USER_CAP_OVERRIDES_META_KEY);
+            delete_user_meta($user_id, ERP_OMD_Acl_Service::USER_MENU_OVERRIDES_META_KEY);
+        }
+    }
+
     private function handle_employee_password_change()
     {
         check_admin_referer('erp_omd_change_employee_password');
@@ -3109,7 +3158,43 @@ class ERP_OMD_Admin
             $is_final = false;
         }
 
-        $service = new ERP_OMD_KSeF_Import_Service(
+        $service = $this->ksef_sales_import_service();
+
+        $result = $service->attach_sales_document_to_project($sales_id, $project_id, $is_final, (int) get_current_user_id());
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_attached']);
+    }
+
+    private function handle_delete_ksef_sales_invoice_action()
+    {
+        check_admin_referer('erp_omd_delete_ksef_sales_invoice');
+        $this->require_capability('erp_omd_manage_projects');
+
+        $sales_id = (int) ($_POST['sales_id'] ?? 0);
+        if ($sales_id <= 0) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wskaż dokument sprzedażowy KSeF.', 'erp-omd'))]);
+        }
+
+        $service = $this->ksef_sales_import_service();
+        $result = $service->delete_sales_document($sales_id, (int) get_current_user_id());
+        if (! (bool) ($result['ok'] ?? false)) {
+            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
+        }
+
+        $project_id = (int) ($result['row']['project_id'] ?? 0);
+        if ($project_id > 0) {
+            $this->project_financial_service->rebuild_for_project($project_id);
+        }
+
+        $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_deleted']);
+    }
+
+    private function ksef_sales_import_service()
+    {
+        return new ERP_OMD_KSeF_Import_Service(
             new ERP_OMD_Cost_Invoice_Workflow_Service(new ERP_OMD_Cost_Invoice_Repository(), new ERP_OMD_Cost_Invoice_Audit_Repository(), new ERP_OMD_Supplier_Repository(), $this->projects),
             new ERP_OMD_Cost_Invoice_Repository(),
             new ERP_OMD_Cost_Invoice_Audit_Repository(),
@@ -3118,13 +3203,6 @@ class ERP_OMD_Admin
             new ERP_OMD_Supplier_Repository(),
             $this->clients
         );
-
-        $result = $service->attach_sales_document_to_project($sales_id, $project_id, $is_final, (int) get_current_user_id());
-        if (! (bool) ($result['ok'] ?? false)) {
-            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' ', (array) ($result['errors'] ?? [])))]);
-        }
-
-        $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_attached']);
     }
 
     /**
