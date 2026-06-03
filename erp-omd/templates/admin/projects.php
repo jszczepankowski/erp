@@ -12,6 +12,8 @@
     $merge_preview_target_client_id = (int) ($merge_preview['target_client_id'] ?? 0);
     $show_merge_panel = $merge_source_project_ids !== '' || (is_array($merge_preview) && ! empty($merge_preview));
     ?>
+    <?php $show_project_editor = (bool) ($show_project_editor ?? (bool) $project); ?>
+    <?php $show_project_list = (bool) ($show_project_list ?? ! $show_project_editor); ?>
     <?php if ($show_merge_panel) : ?>
     <div class="erp-omd-card">
         <h2><?php esc_html_e('Scal projekty (preview + potwierdzenie)', 'erp-omd'); ?></h2>
@@ -64,8 +66,12 @@
         <?php endif; ?>
     </div>
     <?php endif; ?>
+    <?php if ($show_project_editor) : ?>
     <div class="erp-omd-card">
-        <h2><?php echo $project ? esc_html__('Edytuj projekt', 'erp-omd') : esc_html__('Nowy projekt', 'erp-omd'); ?></h2>
+        <div class="erp-omd-section-header">
+            <h2><?php echo $project ? esc_html__('Edytuj projekt', 'erp-omd') : esc_html__('Nowy projekt', 'erp-omd'); ?></h2>
+            <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-projects')); ?>"><?php esc_html_e('Wróć do listy projektów', 'erp-omd'); ?></a>
+        </div>
         <form method="post">
             <?php wp_nonce_field('erp_omd_save_project'); ?>
             <input type="hidden" name="erp_omd_action" value="save_project" />
@@ -746,6 +752,8 @@
             </div>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
+    <?php if ($show_project_list) : ?>
     <div class="erp-omd-card">
         <?php
         $projects_list_view = in_array((string) ($projects_list_view ?? 'active'), ['active', 'archive'], true)
@@ -774,7 +782,10 @@
         ?>
 
         <div class="erp-omd-section-header">
-            <h2><?php esc_html_e('Lista projektów', 'erp-omd'); ?></h2>
+            <div>
+                <h2><?php esc_html_e('Lista projektów', 'erp-omd'); ?></h2>
+                <a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-projects-new')); ?>"><?php esc_html_e('Dodaj projekt', 'erp-omd'); ?></a>
+            </div>
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-projects" />
                 <input type="hidden" name="list_view" value="<?php echo esc_attr($projects_list_view); ?>" />
@@ -963,6 +974,7 @@
             </div>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 </div>
 
 <style>

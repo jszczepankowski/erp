@@ -2,10 +2,15 @@
 <div class="wrap erp-omd-admin">
     <h1><?php esc_html_e('Kosztorysy', 'erp-omd'); ?></h1>
 
-    <?php $show_estimate_editor = ! $selected_estimate || $estimate; ?>
+    <?php $show_estimate_editor = (bool) ($show_estimate_editor ?? (! $selected_estimate || $estimate)); ?>
+    <?php $show_estimate_details = (bool) ($show_estimate_details ?? (bool) $selected_estimate); ?>
+    <?php $show_estimate_list = (bool) ($show_estimate_list ?? (! $show_estimate_editor && ! $show_estimate_details)); ?>
     <?php if ($show_estimate_editor) : ?>
     <section class="erp-omd-card">
-            <h2><?php echo $estimate ? esc_html__('Edytuj kosztorys', 'erp-omd') : esc_html__('Nowy kosztorys', 'erp-omd'); ?></h2>
+            <div class="erp-omd-section-header">
+                <h2><?php echo $estimate ? esc_html__('Edytuj kosztorys', 'erp-omd') : esc_html__('Nowy kosztorys', 'erp-omd'); ?></h2>
+                <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-estimates')); ?>"><?php esc_html_e('Wróć do listy kosztorysów', 'erp-omd'); ?></a>
+            </div>
             <form method="post">
                 <?php wp_nonce_field('erp_omd_save_estimate'); ?>
                 <input type="hidden" name="erp_omd_action" value="save_estimate">
@@ -377,6 +382,7 @@
         }());
     </script>
 
+    <?php if ($show_estimate_details || $show_estimate_list) : ?>
     <section class="erp-omd-card">
             <?php if ($selected_estimate) : ?>
                 <?php $selected_estimate_label = trim((string) ($selected_estimate['name'] ?? '')) !== '' ? (string) $selected_estimate['name'] : sprintf(__('Kosztorys #%d', 'erp-omd'), (int) $selected_estimate['id']); ?>
@@ -596,8 +602,12 @@
                 </div>
             <?php endif; ?>
 
+            <?php if ($show_estimate_list) : ?>
             <div class="erp-omd-section-header">
-                <h2><?php esc_html_e('Lista kosztorysów', 'erp-omd'); ?></h2>
+                <div>
+                    <h2><?php esc_html_e('Lista kosztorysów', 'erp-omd'); ?></h2>
+                    <a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-estimates-new')); ?>"><?php esc_html_e('Dodaj kosztorys', 'erp-omd'); ?></a>
+                </div>
                 <form method="get" class="erp-omd-filter-form">
                     <input type="hidden" name="page" value="erp-omd-estimates" />
                     <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($estimate_filters['per_page'] ?? 100)); ?>">
@@ -732,5 +742,7 @@
                     </div>
                 </div>
             <?php endif; ?>
+            <?php endif; ?>
     </section>
+    <?php endif; ?>
 </div>
