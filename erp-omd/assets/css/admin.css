@@ -1807,3 +1807,38 @@
 .erp-omd-toast-error { background: #b91c1c; }
 .erp-omd-toast-warning { background: #b45309; }
 .erp-omd-toast-info { background: #1d4ed8; }
+
+#toplevel_page_erp-omd .wp-submenu li.erp-omd-menu-has-children {
+    position: relative;
+}
+
+#toplevel_page_erp-omd .wp-submenu .erp-omd-nested-submenu {
+    background: #2c3338;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.25);
+    display: none;
+    left: 100%;
+    list-style: none;
+    margin: 0;
+    min-width: 180px;
+    padding: 6px 0;
+    position: absolute;
+    top: 0;
+    z-index: 10000;
+}
+
+#toplevel_page_erp-omd .wp-submenu li.erp-omd-menu-has-children:hover > .erp-omd-nested-submenu,
+#toplevel_page_erp-omd .wp-submenu li.erp-omd-menu-has-children:focus-within > .erp-omd-nested-submenu {
+    display: block;
+}
+
+#toplevel_page_erp-omd .wp-submenu li.erp-omd-menu-has-children > a::after {
+    content: "›";
+    float: right;
+    opacity: 0.75;
+}
+
+#toplevel_page_erp-omd .wp-submenu .erp-omd-nested-submenu li,
+#toplevel_page_erp-omd .wp-submenu .erp-omd-nested-submenu a {
+    width: 100%;
+}

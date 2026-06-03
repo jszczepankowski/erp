@@ -784,13 +784,13 @@
         <div class="erp-omd-section-header">
             <div>
                 <h2><?php esc_html_e('Lista projektów', 'erp-omd'); ?></h2>
-                <a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-projects-new')); ?>"><?php esc_html_e('Dodaj projekt', 'erp-omd'); ?></a>
             </div>
             <form method="get" class="erp-omd-filter-form">
                 <input type="hidden" name="page" value="erp-omd-projects" />
                 <input type="hidden" name="list_view" value="<?php echo esc_attr($projects_list_view); ?>" />
                 <input type="month" name="month" value="<?php echo esc_attr($project_filters['month'] ?? ''); ?>" />
                 <button class="button" type="submit"><?php esc_html_e('Ustaw miesiąc', 'erp-omd'); ?></button>
+                <a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-projects-new')); ?>"><?php esc_html_e('Dodaj projekt', 'erp-omd'); ?></a>
             </form>
         </div>
         <div class="erp-omd-section-header">

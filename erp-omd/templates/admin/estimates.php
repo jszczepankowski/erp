@@ -606,7 +606,6 @@
             <div class="erp-omd-section-header">
                 <div>
                     <h2><?php esc_html_e('Lista kosztorysów', 'erp-omd'); ?></h2>
-                    <a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-estimates-new')); ?>"><?php esc_html_e('Dodaj kosztorys', 'erp-omd'); ?></a>
                 </div>
                 <form method="get" class="erp-omd-filter-form">
                     <input type="hidden" name="page" value="erp-omd-estimates" />
@@ -614,6 +613,7 @@
                     <input type="hidden" name="page_num" value="1">
                     <input type="month" name="month" value="<?php echo esc_attr($estimate_filters['month'] ?? ''); ?>">
                     <button class="button" type="submit"><?php esc_html_e('Ustaw miesiąc', 'erp-omd'); ?></button>
+                    <a class="button button-primary" href="<?php echo esc_url(admin_url('admin.php?page=erp-omd-estimates-new')); ?>"><?php esc_html_e('Dodaj kosztorys', 'erp-omd'); ?></a>
                 </form>
             </div>
             <form method="get" class="erp-omd-filter-form">

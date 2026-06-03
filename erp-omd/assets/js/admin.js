@@ -1,3 +1,48 @@
+const initNestedAdminMenu = () => {
+  const menu = document.querySelector('#toplevel_page_erp-omd .wp-submenu');
+  if (!(menu instanceof HTMLElement) || menu.dataset.erpOmdNestedMenuReady === '1') {
+    return;
+  }
+
+  const pairs = [
+    { parent: 'erp-omd-estimates', child: 'erp-omd-estimates-new' },
+    { parent: 'erp-omd-projects', child: 'erp-omd-projects-new' },
+  ];
+
+  const findMenuItem = (page) => {
+    const link = menu.querySelector(`a[href*="page=${page}"]`);
+    const item = link ? link.closest('li') : null;
+    return item instanceof HTMLElement ? { item, link } : null;
+  };
+
+  pairs.forEach(({ parent, child }) => {
+    const parentNode = findMenuItem(parent);
+    const childNode = findMenuItem(child);
+    if (!parentNode || !childNode || parentNode.item === childNode.item) {
+      return;
+    }
+
+    let nestedList = parentNode.item.querySelector(':scope > .erp-omd-nested-submenu');
+    if (!(nestedList instanceof HTMLUListElement)) {
+      nestedList = document.createElement('ul');
+      nestedList.className = 'erp-omd-nested-submenu';
+      parentNode.item.appendChild(nestedList);
+    }
+
+    parentNode.item.classList.add('erp-omd-menu-has-children');
+    parentNode.link.setAttribute('aria-haspopup', 'true');
+    childNode.item.classList.add('erp-omd-menu-child-item');
+    nestedList.appendChild(childNode.item);
+
+    if (childNode.item.classList.contains('current')) {
+      parentNode.item.classList.add('current', 'wp-has-current-submenu');
+      parentNode.link.classList.add('current');
+    }
+  });
+
+  menu.dataset.erpOmdNestedMenuReady = '1';
+};
+
 const initTableTools = () => {
   const currentPage = new URLSearchParams(window.location.search).get('page') || '';
   const paginatedPages = new Set([
@@ -1494,6 +1539,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const currentPage = new URLSearchParams(window.location.search).get('page') || '';
+  initNestedAdminMenu();
   initTableTools();
   initFixedCosts();
   initInlineAutoSave();
