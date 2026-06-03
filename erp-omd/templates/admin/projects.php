@@ -904,6 +904,64 @@
                 <?php endif; ?>
             </tbody>
         </table>
+        <?php if (! empty($projects)) : ?>
+            <?php
+            $projects_summary_count = count((array) $projects);
+            $projects_summary_cost = 0.0;
+            $projects_summary_revenue = 0.0;
+            $projects_summary_profit = 0.0;
+            $projects_summary_fvat_count = 0;
+            $projects_summary_status_counts = [];
+            foreach ((array) $projects as $project_summary_row) {
+                $project_summary_id = (int) ($project_summary_row['id'] ?? 0);
+                $project_summary_financial = (array) ($project_financials_by_project[$project_summary_id] ?? []);
+                $projects_summary_cost += (float) ($project_summary_financial['cost'] ?? 0);
+                $projects_summary_revenue += (float) ($project_summary_financial['revenue'] ?? 0);
+                $projects_summary_profit += (float) ($project_summary_financial['profit'] ?? 0);
+                if (! empty($project_final_sales_invoices_by_project[$project_summary_id])) {
+                    $projects_summary_fvat_count++;
+                }
+                $project_summary_status = (string) ($project_summary_row['status'] ?? 'do_rozpoczecia');
+                $projects_summary_status_counts[$project_summary_status] = (int) ($projects_summary_status_counts[$project_summary_status] ?? 0) + 1;
+            }
+            $projects_summary_margin = $projects_summary_revenue > 0 ? ($projects_summary_profit / $projects_summary_revenue) * 100 : 0;
+            ?>
+            <div class="erp-omd-projects-summary" style="margin-top: 16px;">
+                <h3><?php esc_html_e('Podsumowanie', 'erp-omd'); ?></h3>
+                <table class="widefat striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('Projekty', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Koszt', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Przychód', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Zysk', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Marża %', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('FVAT', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Statusy', 'erp-omd'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong><?php echo esc_html((string) $projects_summary_count); ?></strong></td>
+                            <td><strong><?php echo esc_html(number_format_i18n($projects_summary_cost, 2)); ?></strong></td>
+                            <td><strong><?php echo esc_html(number_format_i18n($projects_summary_revenue, 2)); ?></strong></td>
+                            <td><strong><?php echo esc_html(number_format_i18n($projects_summary_profit, 2)); ?></strong></td>
+                            <td><strong><?php echo esc_html(number_format_i18n($projects_summary_margin, 2)); ?></strong></td>
+                            <td><?php echo esc_html(sprintf(__('Tak: %1$d / Nie: %2$d', 'erp-omd'), (int) $projects_summary_fvat_count, max(0, $projects_summary_count - $projects_summary_fvat_count))); ?></td>
+                            <td>
+                                <?php
+                                $projects_summary_status_labels = [];
+                                foreach ($projects_summary_status_counts as $status_key => $status_count) {
+                                    $projects_summary_status_labels[] = sprintf('%1$s: %2$d', $this->project_status_label((string) $status_key), (int) $status_count);
+                                }
+                                echo esc_html(implode(' | ', $projects_summary_status_labels));
+                                ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
