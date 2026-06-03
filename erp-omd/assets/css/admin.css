@@ -983,6 +983,19 @@
     grid-template-columns: minmax(220px, 1.4fr) minmax(110px, 0.65fr) minmax(160px, 1fr) minmax(130px, 0.8fr) minmax(100px, 0.6fr);
 }
 
+
+.erp-omd-admin .erp-omd-form-grid-client-contact-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.erp-omd-admin .erp-omd-form-grid-client-lifecycle-row {
+    grid-template-columns: minmax(180px, 1fr) minmax(210px, 1.15fr) minmax(130px, 0.7fr) minmax(150px, 0.8fr);
+}
+
+.erp-omd-admin .erp-omd-form-grid-project-links-row {
+    grid-template-columns: minmax(120px, 0.5fr) minmax(240px, 1fr) minmax(280px, 1.15fr);
+}
+
 .erp-omd-admin .erp-omd-form-grid-cost-supplier-basics-row {
     grid-template-columns: minmax(210px, 1.3fr) minmax(180px, 1fr) minmax(130px, 0.8fr) minmax(170px, 1fr);
 }
@@ -1363,6 +1376,9 @@
     .erp-omd-admin .erp-omd-form-grid-role-definition,
     .erp-omd-admin .erp-omd-form-grid-client-basics,
     .erp-omd-admin .erp-omd-form-grid-client-address-row,
+    .erp-omd-admin .erp-omd-form-grid-client-contact-row,
+    .erp-omd-admin .erp-omd-form-grid-client-lifecycle-row,
+    .erp-omd-admin .erp-omd-form-grid-project-links-row,
     .erp-omd-admin .erp-omd-form-grid-cost-supplier-basics-row,
     .erp-omd-admin .erp-omd-form-grid-cost-supplier-contact-row,
     .erp-omd-admin .erp-omd-form-grid-cost-invoice-document-row,
@@ -1572,6 +1588,19 @@
     min-height: 44px;
     padding: 8px 14px;
 }
+
+.erp-omd-admin select {
+    height: 44px;
+    line-height: 27px;
+}
+
+.erp-omd-admin .erp-omd-field-error input,
+.erp-omd-admin .erp-omd-field-error select,
+.erp-omd-admin .erp-omd-field-error textarea {
+    border-color: #d63638;
+    box-shadow: 0 0 0 1px #d63638;
+}
+
 
 .erp-omd-admin textarea {
     min-height: 120px;

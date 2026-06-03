@@ -77,15 +77,15 @@
                         <p><?php esc_html_e('Klient, nazwa i model rozliczenia.', 'erp-omd'); ?></p>
                     </div>
                     <div class="erp-omd-form-grid erp-omd-form-grid-project-basics">
-                        <div class="erp-omd-form-field">
+                        <div class="erp-omd-form-field <?php echo in_array('client_id', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
                             <select id="project-client" name="client_id" required><option value=""><?php esc_html_e('Wybierz klienta', 'erp-omd'); ?></option><?php foreach ($clients as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) ($project['client_id'] ?? 0), (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select>
                         </div>
-                        <div class="erp-omd-form-field">
+                        <div class="erp-omd-form-field <?php echo in_array('name', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-name"><?php esc_html_e('Nazwa', 'erp-omd'); ?></label>
                             <input id="project-name" class="regular-text" type="text" name="name" value="<?php echo esc_attr($project['name'] ?? ''); ?>" required />
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                        <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('billing_type', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-billing-type"><?php esc_html_e('Typ rozliczenia', 'erp-omd'); ?></label>
                             <select id="project-billing-type" name="billing_type">
                                 <option value="time_material" <?php selected($project['billing_type'] ?? 'time_material', 'time_material'); ?>><?php esc_html_e('Godzinowy', 'erp-omd'); ?></option>
@@ -102,16 +102,16 @@
                         <h3><?php esc_html_e('Finanse i lifecycle', 'erp-omd'); ?></h3>
                     </div>
                     <div class="erp-omd-form-grid erp-omd-form-grid-project-lifecycle">
-                        <div id="erp-omd-project-budget-row" class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-span-2">
+                        <div id="erp-omd-project-budget-row" class="erp-omd-form-field erp-omd-form-field-compact erp-omd-form-field-span-2 <?php echo in_array('budget', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-budget"><?php esc_html_e('Budżet', 'erp-omd'); ?></label>
                             <input id="project-budget" type="number" step="0.01" min="0" name="budget" value="<?php echo esc_attr($project['budget'] ?? '0'); ?>" />
                         </div>
-                        <div id="erp-omd-project-retainer-row" class="erp-omd-form-field erp-omd-form-field-span-2">
+                        <div id="erp-omd-project-retainer-row" class="erp-omd-form-field erp-omd-form-field-span-2 <?php echo in_array('retainer_monthly_fee', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-retainer-fee"><?php esc_html_e('Abonament — opłata miesięczna', 'erp-omd'); ?></label>
                             <input id="project-retainer-fee" type="number" step="0.01" min="0" name="retainer_monthly_fee" value="<?php echo esc_attr($project['retainer_monthly_fee'] ?? '0'); ?>" />
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-project-lifecycle-row erp-omd-form-field erp-omd-form-field-span-2">
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('status', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="project-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
                                 <select id="project-status" name="status">
                                     <?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'] as $project_status) : ?>
@@ -179,16 +179,16 @@
                         <h3><?php esc_html_e('Powiązania i opis', 'erp-omd'); ?></h3>
                         <p><?php esc_html_e('Link do estymacji i szerszy opis projektu.', 'erp-omd'); ?></p>
                     </div>
-                    <div class="erp-omd-form-grid">
-                        <div class="erp-omd-form-field erp-omd-form-field-compact">
+                    <div class="erp-omd-form-grid erp-omd-form-grid-project-links-row">
+                        <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('estimate_id', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-estimate-id"><?php esc_html_e('ID estymacji', 'erp-omd'); ?></label>
                             <input id="project-estimate-id" type="number" min="0" name="estimate_id" value="<?php echo esc_attr($project['estimate_id'] ?? ''); ?>" />
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                        <div class="erp-omd-form-field <?php echo in_array('brief', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-brief"><?php esc_html_e('Opis projektu', 'erp-omd'); ?></label>
                             <textarea id="project-brief" class="large-text" rows="5" name="brief"><?php echo esc_textarea($project['brief'] ?? ''); ?></textarea>
                         </div>
-                        <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                        <div class="erp-omd-form-field <?php echo in_array('project_links', $project_form_errors, true) ? 'erp-omd-field-error' : ''; ?>">
                             <label for="project-links"><?php esc_html_e('Linki i materiały (1 link na linię: etykieta | URL)', 'erp-omd'); ?></label>
                             <textarea id="project-links" class="large-text" rows="4" name="project_links"><?php echo esc_textarea($project['project_links'] ?? ''); ?></textarea>
                         </div>
@@ -432,15 +432,15 @@
                                     <input type="hidden" name="project_cost_id" value="<?php echo esc_attr((string) ($project_cost_edit_row['id'] ?? 0)); ?>" />
                                 <?php endif; ?>
                                 <div class="erp-omd-form-grid">
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('amount', (array) ($project_cost_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                         <label for="project-cost-amount"><?php esc_html_e('Kwota', 'erp-omd'); ?></label>
                                         <input id="project-cost-amount" type="number" step="0.01" min="0" name="amount" value="<?php echo esc_attr((string) ($project_cost_edit_row['amount'] ?? '')); ?>" required />
                                     </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-compact">
+                                    <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('cost_date', (array) ($project_cost_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                         <label for="project-cost-date"><?php esc_html_e('Data kosztu', 'erp-omd'); ?></label>
                                         <input id="project-cost-date" type="date" name="cost_date" value="<?php echo esc_attr((string) ($project_cost_edit_row['cost_date'] ?? gmdate('Y-m-d'))); ?>" required />
                                     </div>
-                                    <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                                    <div class="erp-omd-form-field erp-omd-form-field-span-2 <?php echo in_array('description', (array) ($project_cost_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                         <label for="project-cost-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
                                         <textarea id="project-cost-description" class="large-text" rows="3" name="description"><?php echo esc_textarea((string) ($project_cost_edit_row['description'] ?? '')); ?></textarea>
                                     </div>
@@ -804,7 +804,7 @@
             <div class="tablenav top"><div class="alignleft actions"><select name="bulk_action"><option value=""><?php esc_html_e('Akcje masowe', 'erp-omd'); ?></option><option value="merge"><?php esc_html_e('Scal (min. 2)', 'erp-omd'); ?></option><option value="activate"><?php esc_html_e('Aktywuj', 'erp-omd'); ?></option><option value="deactivate"><?php esc_html_e('Przenieś do archiwum', 'erp-omd'); ?></option><option value="delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></option><option value="duplicate"><?php esc_html_e('Duplikuj', 'erp-omd'); ?></option><option value="set_status_do_rozpoczecia"><?php esc_html_e('Status: Do rozpoczęcia', 'erp-omd'); ?></option><option value="set_status_w_realizacji"><?php esc_html_e('Status: W realizacji', 'erp-omd'); ?></option><option value="set_status_w_akceptacji"><?php esc_html_e('Status: W akceptacji', 'erp-omd'); ?></option><option value="set_status_do_faktury"><?php esc_html_e('Status: Do faktury', 'erp-omd'); ?></option><option value="set_status_zakonczony"><?php esc_html_e('Status: Zakończony', 'erp-omd'); ?></option><option value="set_status_archiwum"><?php esc_html_e('Status: Archiwum', 'erp-omd'); ?></option></select><button class="button action" type="submit"><?php esc_html_e('Zastosuj', 'erp-omd'); ?></button></div></div>
         </form>
         <table class="widefat striped">
-            <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-project-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Typ', 'erp-omd'); ?></th><th><?php esc_html_e('Managerowie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('Deadline', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
+            <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.erp-omd-project-checkbox').forEach(function(checkbox){ checkbox.checked = this.checked; }.bind(this));" /></th><th>ID</th><th><?php esc_html_e('Klient', 'erp-omd'); ?></th><th><?php esc_html_e('Nazwa', 'erp-omd'); ?></th><th><?php esc_html_e('Data', 'erp-omd'); ?></th><th><?php esc_html_e('Typ', 'erp-omd'); ?></th><th><?php esc_html_e('Managerowie', 'erp-omd'); ?></th><th><?php esc_html_e('Koszt', 'erp-omd'); ?></th><th><?php esc_html_e('Przychód', 'erp-omd'); ?></th><th><?php esc_html_e('Zysk', 'erp-omd'); ?></th><th><?php esc_html_e('Marża %', 'erp-omd'); ?></th><th><?php esc_html_e('FVAT', 'erp-omd'); ?></th><th><?php esc_html_e('Status', 'erp-omd'); ?></th><th><?php esc_html_e('Akcje', 'erp-omd'); ?></th></tr></thead>
             <tbody>
                 <?php if (empty($projects)) : ?>
                     <tr><td colspan="14"><?php echo esc_html($projects_is_archive_view ? __('Brak projektów w archiwum dla wybranych filtrów.', 'erp-omd') : __('Brak projektów dla wybranych filtrów. Zmień kryteria albo dodaj nowy projekt.', 'erp-omd')); ?></td></tr>
@@ -813,8 +813,11 @@
                         <?php $list_financial = $project_financials_by_project[(int) $project_row['id']] ?? []; ?>
                         <?php $inline_project_form_id = 'erp-omd-inline-project-' . (int) $project_row['id']; ?>
                         <?php
-                        $deadline_status = (string) ($project_row['deadline_status'] ?? '');
-                        $deadline_is_attention = in_array($deadline_status, ['risk', 'overdue'], true);
+                        $project_final_sales_invoice = (array) ($project_final_sales_invoices_by_project[(int) ($project_row['id'] ?? 0)] ?? []);
+                        $project_final_sales_invoice_label = (string) ($project_final_sales_invoice['invoice_number'] ?? '');
+                        if ($project_final_sales_invoice_label === '' && ! empty($project_final_sales_invoice['id'])) {
+                            $project_final_sales_invoice_label = '#' . (int) $project_final_sales_invoice['id'];
+                        }
                         $project_row_class = ! empty($project_row['kolko_unhandled']) ? 'erp-omd-project-kolko-row' : '';
                         ?>
                         <tr class="<?php echo esc_attr($project_row_class); ?>">
@@ -836,8 +839,15 @@
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['revenue'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['profit'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($list_financial['margin'] ?? 0), 2)); ?></td>
-                            <td class="<?php echo esc_attr($deadline_is_attention ? 'erp-omd-project-deadline-alert' : ''); ?>">
-                                <?php echo esc_html((string) ($project_row['deadline_date'] ?? '') !== '' ? (string) $project_row['deadline_date'] : '—'); ?>
+                            <td>
+                                <?php if ($project_final_sales_invoice !== []) : ?>
+                                    <span class="erp-omd-badge erp-omd-badge-success"><?php esc_html_e('Tak', 'erp-omd'); ?></span>
+                                    <?php if ($project_final_sales_invoice_label !== '') : ?>
+                                        <br /><small><?php echo esc_html($project_final_sales_invoice_label); ?></small>
+                                    <?php endif; ?>
+                                <?php else : ?>
+                                    <span class="erp-omd-badge"><?php esc_html_e('Nie', 'erp-omd'); ?></span>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <select name="status" form="<?php echo esc_attr($inline_project_form_id); ?>">
@@ -894,6 +904,64 @@
                 <?php endif; ?>
             </tbody>
         </table>
+        <?php if (! empty($projects)) : ?>
+            <?php
+            $projects_summary_count = count((array) $projects);
+            $projects_summary_cost = 0.0;
+            $projects_summary_revenue = 0.0;
+            $projects_summary_profit = 0.0;
+            $projects_summary_fvat_count = 0;
+            $projects_summary_status_counts = [];
+            foreach ((array) $projects as $project_summary_row) {
+                $project_summary_id = (int) ($project_summary_row['id'] ?? 0);
+                $project_summary_financial = (array) ($project_financials_by_project[$project_summary_id] ?? []);
+                $projects_summary_cost += (float) ($project_summary_financial['cost'] ?? 0);
+                $projects_summary_revenue += (float) ($project_summary_financial['revenue'] ?? 0);
+                $projects_summary_profit += (float) ($project_summary_financial['profit'] ?? 0);
+                if (! empty($project_final_sales_invoices_by_project[$project_summary_id])) {
+                    $projects_summary_fvat_count++;
+                }
+                $project_summary_status = (string) ($project_summary_row['status'] ?? 'do_rozpoczecia');
+                $projects_summary_status_counts[$project_summary_status] = (int) ($projects_summary_status_counts[$project_summary_status] ?? 0) + 1;
+            }
+            $projects_summary_margin = $projects_summary_revenue > 0 ? ($projects_summary_profit / $projects_summary_revenue) * 100 : 0;
+            ?>
+            <div class="erp-omd-projects-summary" style="margin-top: 16px;">
+                <h3><?php esc_html_e('Podsumowanie', 'erp-omd'); ?></h3>
+                <table class="widefat striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('Projekty', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Koszt', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Przychód', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Zysk', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Marża %', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('FVAT', 'erp-omd'); ?></th>
+                            <th><?php esc_html_e('Statusy', 'erp-omd'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong><?php echo esc_html((string) $projects_summary_count); ?></strong></td>
+                            <td><strong><?php echo esc_html(number_format_i18n($projects_summary_cost, 2)); ?></strong></td>
+                            <td><strong><?php echo esc_html(number_format_i18n($projects_summary_revenue, 2)); ?></strong></td>
+                            <td><strong><?php echo esc_html(number_format_i18n($projects_summary_profit, 2)); ?></strong></td>
+                            <td><strong><?php echo esc_html(number_format_i18n($projects_summary_margin, 2)); ?></strong></td>
+                            <td><?php echo esc_html(sprintf(__('Tak: %1$d / Nie: %2$d', 'erp-omd'), (int) $projects_summary_fvat_count, max(0, $projects_summary_count - $projects_summary_fvat_count))); ?></td>
+                            <td>
+                                <?php
+                                $projects_summary_status_labels = [];
+                                foreach ($projects_summary_status_counts as $status_key => $status_count) {
+                                    $projects_summary_status_labels[] = sprintf('%1$s: %2$d', $this->project_status_label((string) $status_key), (int) $status_count);
+                                }
+                                echo esc_html(implode(' | ', $projects_summary_status_labels));
+                                ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 

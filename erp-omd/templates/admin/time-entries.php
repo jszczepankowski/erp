@@ -14,7 +14,7 @@
                             <h3><?php esc_html_e('Kontekst wpisu + czas i status', 'erp-omd'); ?></h3>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-time-context">
-                            <div class="erp-omd-form-field">
+                            <div class="erp-omd-form-field <?php echo in_array('employee_id', (array) ($time_entry_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="time-employee"><?php esc_html_e('Pracownik', 'erp-omd'); ?></label>
                                 <select id="time-employee" name="employee_id" <?php disabled(! $can_select_any_employee); ?>>
                                     <?php if ($can_select_any_employee) : ?><option value=""><?php esc_html_e('Wybierz', 'erp-omd'); ?></option><?php endif; ?>
@@ -28,7 +28,7 @@
                                     <input type="hidden" name="employee_id" value="<?php echo esc_attr($selected_employee_id); ?>" />
                                 <?php endif; ?>
                             </div>
-                            <div class="erp-omd-form-field">
+                            <div class="erp-omd-form-field <?php echo in_array('client_id', (array) ($time_entry_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="time-client"><?php esc_html_e('Klient', 'erp-omd'); ?></label>
                                 <select id="time-client" name="client_id" data-project-target="#time-project" data-project-requires-client="1">
                                     <option value="0"><?php esc_html_e('Wybierz', 'erp-omd'); ?></option>
@@ -37,7 +37,7 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="erp-omd-form-field">
+                            <div class="erp-omd-form-field <?php echo in_array('project_id', (array) ($time_entry_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="time-project"><?php esc_html_e('Projekt', 'erp-omd'); ?></label>
                                 <select id="time-project" name="project_id" data-role-target="#time-role" <?php disabled((int) ($selected_time_client_id ?? 0) <= 0); ?> required>
                                     <option value=""><?php esc_html_e('Wybierz', 'erp-omd'); ?></option>
@@ -47,7 +47,7 @@
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="erp-omd-form-field">
+                            <div class="erp-omd-form-field <?php echo in_array('role_id', (array) ($time_entry_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="time-role"><?php esc_html_e('Rola', 'erp-omd'); ?></label>
                                 <select id="time-role" name="role_id" <?php disabled((int) ($entry['project_id'] ?? 0) <= 0); ?> required>
                                     <option value=""><?php esc_html_e('Wybierz', 'erp-omd'); ?></option>
@@ -58,7 +58,7 @@
                             </div>
                         </div>
                         <div class="erp-omd-form-grid erp-omd-form-grid-time-status">
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('hours', (array) ($time_entry_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="time-hours"><?php esc_html_e('Godziny', 'erp-omd'); ?></label>
                                 <input id="time-hours" type="number" step="0.01" min="0.01" name="hours" value="<?php echo esc_attr($entry['hours'] ?? ''); ?>" required />
                                 <div class="erp-omd-quick-hours" aria-label="<?php esc_attr_e('Szybkie ustawianie godzin', 'erp-omd'); ?>">
@@ -67,11 +67,11 @@
                                     <button type="button" class="button button-secondary erp-omd-quick-hours-button" data-target="#time-hours" data-hours="0.75"><?php esc_html_e('45 min', 'erp-omd'); ?></button>
                                 </div>
                             </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('entry_date', (array) ($time_entry_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="time-entry-date"><?php esc_html_e('Data', 'erp-omd'); ?></label>
                                 <input id="time-entry-date" type="date" name="entry_date" value="<?php echo esc_attr($entry['entry_date'] ?? gmdate('Y-m-d')); ?>" required />
                             </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-compact">
+                            <div class="erp-omd-form-field erp-omd-form-field-compact <?php echo in_array('status', (array) ($time_entry_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="time-status"><?php esc_html_e('Status', 'erp-omd'); ?></label>
                                 <select id="time-status" name="status" <?php disabled(! $can_set_status); ?>>
                                     <?php foreach (['submitted', 'approved', 'rejected'] as $time_status) : ?>
@@ -80,7 +80,7 @@
                                 </select>
                                 <?php if (! $can_set_status) : ?><input type="hidden" name="status" value="<?php echo esc_attr($entry['status'] ?? 'submitted'); ?>" /><?php endif; ?>
                             </div>
-                            <div class="erp-omd-form-field erp-omd-form-field-span-2">
+                            <div class="erp-omd-form-field erp-omd-form-field-span-2 <?php echo in_array('description', (array) ($time_entry_form_errors ?? []), true) ? 'erp-omd-field-error' : ''; ?>">
                                 <label for="time-description"><?php esc_html_e('Opis', 'erp-omd'); ?></label>
                                 <textarea id="time-description" class="large-text" rows="4" name="description"><?php echo esc_textarea($entry['description'] ?? ''); ?></textarea>
                             </div>
