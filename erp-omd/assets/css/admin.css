@@ -13,6 +13,10 @@
 }
 
 
+#erp-omd-bulk-private-tasks-form {
+  margin-top: 14px;
+}
+
 #time-project {
   background: none;
 }
@@ -21,11 +25,17 @@
   background: none;
 }
 
+.widefat th input {
+	margin: 0px
+}
 
 .widefat.striped.erp-omd-fixed-cost-table {
   margin-top: 24px;
 }
 
+.widefat tbody th.check-column {
+padding: 24px 0 0 15px;
+}
 
 .wp-core-ui select:disable {
 	background: none !important;
@@ -1545,6 +1555,7 @@
     background: #fff;
     border-color: var(--erp-omd-border);
     color: var(--erp-omd-text);
+	padding: 6px 14px !important;
 }
 
 .erp-omd-admin .button:hover,
@@ -1560,7 +1571,7 @@
     background: var(--erp-omd-text);
     border-color: var(--erp-omd-text);
     color: #fff;
-	padding: 8px 20px;
+	padding: 3px 20px;
 }
 
 .erp-omd-admin .button-primary:hover,
