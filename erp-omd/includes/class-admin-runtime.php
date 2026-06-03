@@ -138,6 +138,7 @@ class ERP_OMD_Admin
             'erp-omd-estimates',
             [$this, 'render_estimates']
         );
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Dodaj kosztorys', 'erp-omd'), __('Dodaj kosztorys', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-estimates-new', [$this, 'render_estimate_create']);
         $this->register_acl_submenu_page(
             $user_id,
             'erp-omd',
@@ -147,6 +148,7 @@ class ERP_OMD_Admin
             'erp-omd-projects',
             [$this, 'render_projects']
         );
+        $this->register_acl_submenu_page($user_id, 'erp-omd', __('Dodaj projekt', 'erp-omd'), __('Dodaj projekt', 'erp-omd'), 'erp_omd_manage_projects', 'erp-omd-projects-new', [$this, 'render_project_create']);
         $this->register_acl_submenu_page(
             $user_id,
             'erp-omd',
@@ -209,7 +211,9 @@ class ERP_OMD_Admin
             'erp-omd-clients' => 'erp_omd_manage_clients',
             'erp-omd-time' => 'erp_omd_manage_time',
             'erp-omd-estimates' => 'erp_omd_manage_projects',
+            'erp-omd-estimates-new' => 'erp_omd_manage_projects',
             'erp-omd-projects' => 'erp_omd_manage_projects',
+            'erp-omd-projects-new' => 'erp_omd_manage_projects',
             'erp-omd-requests' => 'erp_omd_manage_projects',
             'erp-omd-calendar' => 'erp_omd_access',
             'erp-omd-cost-invoices' => 'erp_omd_manage_projects',
@@ -240,7 +244,9 @@ class ERP_OMD_Admin
             'erp-omd-clients' => 'erp_omd_manage_clients',
             'erp-omd-time' => 'erp_omd_manage_time',
             'erp-omd-estimates' => 'erp_omd_manage_projects',
+            'erp-omd-estimates-new' => 'erp_omd_manage_projects',
             'erp-omd-projects' => 'erp_omd_manage_projects',
+            'erp-omd-projects-new' => 'erp_omd_manage_projects',
             'erp-omd-requests' => 'erp_omd_manage_projects',
             'erp-omd-calendar' => 'erp_omd_access',
             'erp-omd-cost-invoices' => 'erp_omd_manage_projects',
@@ -870,9 +876,9 @@ class ERP_OMD_Admin
         $dashboard_recent_alerts = array_slice($alerts, 0, 5);
         $dashboard_shortcuts = [
             ['label' => __('Dodaj klienta', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-clients', 'edit' => 1], admin_url('admin.php'))],
-            ['label' => __('Dodaj projekt', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-projects'], admin_url('admin.php'))],
+            ['label' => __('Dodaj projekt', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-projects-new'], admin_url('admin.php'))],
             ['label' => __('Dodaj wpis czasu', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-time'], admin_url('admin.php'))],
-            ['label' => __('Dodaj nowy kosztorys', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-estimates'], admin_url('admin.php'))],
+            ['label' => __('Dodaj nowy kosztorys', 'erp-omd'), 'url' => add_query_arg(['page' => 'erp-omd-estimates-new'], admin_url('admin.php'))],
         ];
         include ERP_OMD_PATH . 'templates/admin/dashboard.php';
     }
@@ -1313,8 +1319,15 @@ class ERP_OMD_Admin
         include ERP_OMD_PATH . 'templates/admin/clients.php';
     }
 
+    public function render_estimate_create()
+    {
+        $this->render_estimates();
+    }
+
     public function render_estimates()
     {
+        $estimate_admin_page = sanitize_key(wp_unslash($_GET['page'] ?? 'erp-omd-estimates'));
+        $is_estimate_create_screen = $estimate_admin_page === 'erp-omd-estimates-new';
         $selected_estimate = null;
         $estimate = null;
         $estimate_items = [];
@@ -1405,11 +1418,21 @@ class ERP_OMD_Admin
         }
         unset($estimate_row);
         $clients = $this->clients->all();
+        $show_estimate_editor = $is_estimate_create_screen || (bool) $estimate;
+        $show_estimate_details = (bool) $selected_estimate;
+        $show_estimate_list = ! $show_estimate_editor && ! $show_estimate_details;
         include ERP_OMD_PATH . 'templates/admin/estimates.php';
+    }
+
+    public function render_project_create()
+    {
+        $this->render_projects();
     }
 
     public function render_projects()
     {
+        $project_admin_page = sanitize_key(wp_unslash($_GET['page'] ?? 'erp-omd-projects'));
+        $is_project_create_screen = $project_admin_page === 'erp-omd-projects-new';
         $project = null;
         $project_form_state = $this->pop_admin_form_payload('project');
         $project_form_errors = (array) ($project_form_state['error_fields'] ?? []);
@@ -1590,6 +1613,8 @@ class ERP_OMD_Admin
         if ($project) {
             $project_final_sales_invoice_info = $project_final_sales_invoices_by_project[(int) ($project['id'] ?? 0)] ?? null;
         }
+        $show_project_editor = $is_project_create_screen || (bool) $project;
+        $show_project_list = ! $show_project_editor;
         include ERP_OMD_PATH . 'templates/admin/projects.php';
     }
 
@@ -3359,7 +3384,7 @@ class ERP_OMD_Admin
                     'marża' => 'initial_item_margin_percent',
                 ])
             );
-            $this->redirect_with_notice('erp-omd-estimates', 'error', implode(' ', $errors), $id ? ['id' => $id, 'edit' => 1] : []);
+            $this->redirect_with_notice($id ? 'erp-omd-estimates' : 'erp-omd-estimates-new', 'error', implode(' ', $errors), $id ? ['id' => $id, 'edit' => 1] : []);
         }
         if ($id) {
             $should_accept_via_status = ($existing['status'] ?? '') !== 'zaakceptowany' && $payload['status'] === 'zaakceptowany';
@@ -3786,7 +3811,7 @@ class ERP_OMD_Admin
                 'linki' => 'project_links',
                 'marży' => 'alert_margin_threshold',
             ]));
-            $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors), $id ? ['id' => $id] : []);
+            $this->redirect_with_notice($id ? 'erp-omd-projects' : 'erp-omd-projects-new', 'error', implode(' ', $errors), $id ? ['id' => $id] : []);
         }
         $was_update = $id > 0;
         if ($id) { $this->projects->update($id, $payload); $message = __('Projekt został zaktualizowany.', 'erp-omd'); } else { $id = $this->projects->create($payload); $message = __('Projekt został utworzony.', 'erp-omd'); }
