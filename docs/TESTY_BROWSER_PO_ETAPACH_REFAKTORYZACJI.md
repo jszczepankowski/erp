@@ -7,83 +7,85 @@ Ten dokument służy jako ręczna checklista smoke/regression po każdym etapie 
 Zakres techniczny: przeniesienie tworzenia repozytoriów, serwisów oraz punktów wejścia admin/front/REST z `ERP_OMD_Plugin` do `ERP_OMD_Container`.
 
 ### Admin WordPress
-- [ ] Zaloguj się jako administrator WordPress.
-- [ ] Wejdź w główne menu ERP OMD i sprawdź, czy dashboard admina ładuje się bez błędów PHP/white screen.
-- [ ] Otwórz kolejno zakładki: Pracownicy, Klienci, Projekty, Czas pracy, Kosztorysy, Raporty, Ustawienia.
-- [ ] Na stronie Ustawienia zapisz dowolną neutralną zmianę, np. bez zmiany wartości kliknij „Zapisz” na bieżącej zakładce i sprawdź komunikat sukcesu.
+- [x] Zaloguj się jako administrator WordPress.
+- [x] Wejdź w główne menu ERP OMD i sprawdź, czy dashboard admina ładuje się bez błędów PHP/white screen.
+- [x] Otwórz kolejno zakładki: Pracownicy, Klienci, Projekty, Czas pracy, Kosztorysy, Raporty, Ustawienia.
+- [x] Na stronie Ustawienia zapisz dowolną neutralną zmianę, np. bez zmiany wartości kliknij „Zapisz” na bieżącej zakładce i sprawdź komunikat sukcesu.
 
 ### FRONT
-- [ ] Otwórz `/erp-front/login/` i zaloguj się kontem pracownika.
-- [ ] Sprawdź, czy `/erp-front/worker/` pokazuje formularz wpisu czasu i listę wpisów.
-- [ ] Zaloguj się kontem managera i sprawdź `/erp-front/manager/` — lista projektów oraz kolejka akceptacji powinny się ładować.
-- [ ] Zaloguj się kontem klienta i sprawdź `/erp-front/client/` — widok projektów/wniosków klienta powinien być dostępny.
+- [x] Otwórz `/erp-front/login/` i zaloguj się kontem pracownika.
+- [x] Sprawdź, czy `/erp-front/worker/` pokazuje formularz wpisu czasu i listę wpisów.
+- [x] Zaloguj się kontem managera i sprawdź `/erp-front/manager/` — lista projektów oraz kolejka akceptacji powinny się ładować.
+- [x] Zaloguj się kontem klienta i sprawdź `/erp-front/client/` — widok projektów/wniosków klienta powinien być dostępny.
 
 ### REST API
-- [ ] W panelu admina otwórz narzędzia deweloperskie przeglądarki i przejdź do zakładki Network.
-- [ ] Odśwież stronę ERP OMD, która korzysta z REST API, i sprawdź, czy requesty `erp-omd/v1/*` nie zwracają 500.
-- [ ] Jako niezalogowany użytkownik spróbuj otworzyć endpoint REST ERP OMD w nowej karcie — powinien być zablokowany przez uprawnienia, nie przez błąd serwera.
+- [x] W panelu admina otwórz narzędzia deweloperskie przeglądarki i przejdź do zakładki Network.
+- [x] Odśwież stronę ERP OMD, która korzysta z REST API, i sprawdź, czy requesty `erp-omd/v1/*` nie zwracają 500.
+- [x] Jako niezalogowany użytkownik spróbuj otworzyć endpoint REST ERP OMD w nowej karcie — powinien być zablokowany przez uprawnienia, nie przez błąd serwera.
 
 ### Integracje hooków
-- [ ] Utwórz lub zapisz projekt i sprawdź, czy zapis kończy się sukcesem.
-- [ ] Jeżeli Google Calendar jest skonfigurowany: sprawdź, czy zapis projektu nie powoduje błędu synchronizacji w UI/logach.
-- [ ] Wyloguj i zaloguj użytkownika ponownie; profil użytkownika powinien nadal działać, a logowanie nie powinno zwracać błędów.
+- [x] Utwórz lub zapisz projekt i sprawdź, czy zapis kończy się sukcesem.
+- [x] Jeżeli Google Calendar jest skonfigurowany: sprawdź, czy zapis projektu nie powoduje błędu synchronizacji w UI/logach.
+- [x] Wyloguj i zaloguj użytkownika ponownie; profil użytkownika powinien nadal działać, a logowanie nie powinno zwracać błędów.
 
 ## Etap 2 — moduły domenowe
 
 Planowany zakres: wydzielenie modułów np. HR, Klienci/Projekty, Finanse, Kosztorysy, KSeF, Calendar. Po każdym wydzielonym module wykonaj tylko testy obszaru, który został ruszony, plus smoke z Etapu 1.
 
-### Etap 2A — HR / pracownicy / role / wynagrodzenia
+**Status:** ✅ etapy 2A–2F wdrożone i przetestowane w przeglądarce.
+
+### Etap 2A — HR / pracownicy / role / wynagrodzenia ✅ gotowe i przetestowane
 
 Zakres techniczny: wydzielenie `ERP_OMD_HR_Module`, który zarządza repozytoriami ról, pracowników, historii wynagrodzeń oraz serwisami pracowników i miesięcznych godzin.
 
-- [ ] Dodaj lub edytuj pracownika testowego.
-- [ ] Zmień role/uprawnienia pracownika i zapisz.
-- [ ] Dodaj historię wynagrodzenia lub miesięczne godziny, jeśli moduł był modyfikowany.
-- [ ] Sprawdź, czy pracownik może zalogować się do FRONT zgodnie z przypisanymi uprawnieniami.
+- [x] Dodaj lub edytuj pracownika testowego.
+- [x] Zmień role/uprawnienia pracownika i zapisz.
+- [x] Dodaj historię wynagrodzenia lub miesięczne godziny, jeśli moduł był modyfikowany.
+- [x] Sprawdź, czy pracownik może zalogować się do FRONT zgodnie z przypisanymi uprawnieniami.
 
-### Etap 2B — Klienci / projekty / wnioski projektowe
+### Etap 2B — Klienci / projekty / wnioski projektowe ✅ gotowe i przetestowane
 
 Zakres techniczny: wydzielenie `ERP_OMD_Client_Project_Module`, który zarządza repozytoriami klientów, stawek klientów, projektów, wniosków projektowych, notatek projektu, stawek projektowych, załączników oraz serwisami klient/projekt i wniosków projektowych.
 
-- [ ] Dodaj klienta testowego i zapisz dane kontaktowe.
-- [ ] Dodaj projekt dla klienta oraz zmień jego status.
-- [ ] Utwórz wniosek projektowy z FRONT jako klient/pracownik.
-- [ ] Jako manager/admin zaakceptuj lub skonwertuj wniosek do projektu.
+- [x] Dodaj klienta testowego i zapisz dane kontaktowe.
+- [x] Dodaj projekt dla klienta oraz zmień jego status.
+- [x] Utwórz wniosek projektowy z FRONT jako klient/pracownik.
+- [x] Jako manager/admin zaakceptuj lub skonwertuj wniosek do projektu.
 
-### Etap 2C — Finanse / raporty / alerty
+### Etap 2C — Finanse / raporty / alerty ✅ gotowe i przetestowane
 
 Zakres techniczny: wydzielenie `ERP_OMD_Finance_Module`, który zarządza repozytoriami kosztów, przychodów i finansów projektu oraz serwisami finansów projektu, raportów i alertów.
 
-- [ ] Dodaj koszt projektu i przychód projektu.
-- [ ] Sprawdź, czy podsumowanie finansowe projektu przelicza marżę/budżet.
-- [ ] Otwórz raporty i sprawdź, czy filtry miesiąca/klienta/projektu działają.
-- [ ] Sprawdź, czy alerty niskiej marży lub braków danych nadal pojawiają się w oczekiwanych miejscach.
+- [x] Dodaj koszt projektu i przychód projektu.
+- [x] Sprawdź, czy podsumowanie finansowe projektu przelicza marżę/budżet.
+- [x] Otwórz raporty i sprawdź, czy filtry miesiąca/klienta/projektu działają.
+- [x] Sprawdź, czy alerty niskiej marży lub braków danych nadal pojawiają się w oczekiwanych miejscach.
 
-### Etap 2D — Kosztorysy
+### Etap 2D — Kosztorysy ✅ gotowe i przetestowane
 
 Zakres techniczny: wydzielenie `ERP_OMD_Estimate_Module`, który zarządza repozytoriami kosztorysów, pozycjami, audytem kosztorysów oraz `ERP_OMD_Estimate_Service`.
 
-- [ ] Utwórz kosztorys z pozycjami.
-- [ ] Wyślij/udostępnij kosztorys klientowi, jeśli środowisko na to pozwala.
-- [ ] Jako klient zaakceptuj lub odrzuć kosztorys z komentarzem.
-- [ ] Sprawdź, czy status kosztorysu i dane akceptacji są widoczne w adminie.
+- [x] Utwórz kosztorys z pozycjami.
+- [x] Wyślij/udostępnij kosztorys klientowi, jeśli środowisko na to pozwala.
+- [x] Jako klient zaakceptuj lub odrzuć kosztorys z komentarzem.
+- [x] Sprawdź, czy status kosztorysu i dane akceptacji są widoczne w adminie.
 
-### Etap 2E — KSeF / faktury kosztowe
+### Etap 2E — KSeF / faktury kosztowe ✅ gotowe i przetestowane
 
 Zakres techniczny: wydzielenie `ERP_OMD_KSeF_Module`, który zarządza dostawcami, repozytoriami faktur kosztowych, workflow faktur kosztowych oraz `ERP_OMD_KSeF_Import_Service`.
 
-- [ ] Zaimportuj testowy XML sprzedażowy lub kosztowy.
-- [ ] Sprawdź kolejkę moderacji KSeF.
-- [ ] Podepnij fakturę kosztową do projektu.
-- [ ] Sprawdź, czy koszt projektu i relacja faktury są widoczne po odświeżeniu strony.
+- [x] Zaimportuj testowy XML sprzedażowy lub kosztowy.
+- [x] Sprawdź kolejkę moderacji KSeF.
+- [x] Podepnij fakturę kosztową do projektu.
+- [x] Sprawdź, czy koszt projektu i relacja faktury są widoczne po odświeżeniu strony.
 
-### Etap 2F — Calendar / Google Calendar
+### Etap 2F — Calendar / Google Calendar ✅ gotowe i przetestowane
 
 Zakres techniczny: wydzielenie `ERP_OMD_Calendar_Module`, który zarządza repozytorium synchronizacji projektów z kalendarzem oraz `ERP_OMD_Google_Calendar_Sync_Service`.
 
-- [ ] Zapisz projekt z datą startu/końca/deadline.
-- [ ] Jeżeli integracja jest skonfigurowana: sprawdź, czy event pojawia się lub aktualizuje w Google Calendar.
-- [ ] Zmień projekt na archiwalny i sprawdź, czy synchronizacja usuwa/oznacza eventy zgodnie z dotychczasowym zachowaniem.
+- [x] Zapisz projekt z datą startu/końca/deadline.
+- [x] Jeżeli integracja jest skonfigurowana: sprawdź, czy event pojawia się lub aktualizuje w Google Calendar.
+- [x] Zmień projekt na archiwalny i sprawdź, czy synchronizacja usuwa/oznacza eventy zgodnie z dotychczasowym zachowaniem.
 
 ## Etap 3 — kontrolery REST per domena
 
