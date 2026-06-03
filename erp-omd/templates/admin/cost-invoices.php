@@ -75,6 +75,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             'ksef_sales_xml_imported' => __('Dokumenty sprzedażowe KSeF zostały zaimportowane.', 'erp-omd'),
             'ksef_cost_xml_imported' => __('Dokumenty kosztowe KSeF zostały zaimportowane.', 'erp-omd'),
             'ksef_sales_attached' => __('Dokument sprzedażowy KSeF został przypisany do projektu.', 'erp-omd'),
+            'ksef_sales_deleted' => __('Dokument sprzedażowy KSeF został usunięty z systemu.', 'erp-omd'),
         ];
         $notice_message = $message_map[$message_key] ?? (string) wp_unslash($_GET['message']);
         ?>
@@ -651,6 +652,12 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
                                     <span><?php esc_html_e('końcowa', 'erp-omd'); ?></span>
                                 </label>
                                 <button type="submit" class="button button-small"><?php esc_html_e('Zapisz', 'erp-omd'); ?></button>
+                            </form>
+                            <form method="post" style="margin-top:6px;" onsubmit="return confirm('<?php echo esc_js(__('Usunąć fakturę sprzedażową KSeF z systemu?', 'erp-omd')); ?>');">
+                                <?php wp_nonce_field('erp_omd_delete_ksef_sales_invoice'); ?>
+                                <input type="hidden" name="erp_omd_action" value="delete_ksef_sales_invoice" />
+                                <input type="hidden" name="sales_id" value="<?php echo esc_attr((string) ((int) ($sales_row['id'] ?? 0))); ?>" />
+                                <button type="submit" class="button button-small button-link-delete"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
                             </form>
                         </td>
                     </tr>
