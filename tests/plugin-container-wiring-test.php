@@ -38,6 +38,14 @@ if (strpos($autoloaderSource, "'ERP_OMD_Calendar_Module' => 'includes/class-cale
     throw new RuntimeException('ERP_OMD_Calendar_Module must be registered in the autoloader.');
 }
 
+if (strpos($autoloaderSource, "'ERP_OMD_REST_Controller' => 'includes/rest/class-rest-controller.php'") === false) {
+    throw new RuntimeException('ERP_OMD_REST_Controller must be registered in the autoloader.');
+}
+
+if (strpos($autoloaderSource, "'ERP_OMD_REST_HR_Controller' => 'includes/rest/class-rest-hr-controller.php'") === false) {
+    throw new RuntimeException('ERP_OMD_REST_HR_Controller must be registered in the autoloader.');
+}
+
 if (strpos($pluginSource, 'new ERP_OMD_Role_Repository') !== false || strpos($pluginSource, 'new ERP_OMD_Admin') !== false || strpos($pluginSource, 'new ERP_OMD_REST_API') !== false) {
     throw new RuntimeException('ERP_OMD_Plugin should delegate dependency construction to ERP_OMD_Container.');
 }
@@ -52,5 +60,5 @@ if (strpos($pluginSource, '$this->container->admin()->register_hooks()') === fal
     throw new RuntimeException('ERP_OMD_Plugin should register hooks through container-managed entry points.');
 }
 
-echo "Assertions: 19\n";
+echo "Assertions: 21\n";
 echo "Plugin container wiring test passed.\n";

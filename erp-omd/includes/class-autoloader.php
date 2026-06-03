@@ -19,6 +19,8 @@ class ERP_OMD_Autoloader
         'ERP_OMD_Admin' => 'includes/class-admin-runtime.php',
         'ERP_OMD_Frontend' => 'includes/class-frontend-runtime.php',
         'ERP_OMD_REST_API' => 'includes/class-rest-api.php',
+        'ERP_OMD_REST_Controller' => 'includes/rest/class-rest-controller.php',
+        'ERP_OMD_REST_HR_Controller' => 'includes/rest/class-rest-hr-controller.php',
         'ERP_OMD_Backup_Manager' => 'includes/class-backup-manager.php',
         'ERP_OMD_Secret_Store' => 'includes/class-secret-store.php',
         'ERP_OMD_Cron_Manager' => 'includes/class-cron-manager.php',

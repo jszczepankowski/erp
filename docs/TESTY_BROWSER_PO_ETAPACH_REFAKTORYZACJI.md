@@ -91,6 +91,10 @@ Zakres techniczny: wydzielenie `ERP_OMD_Calendar_Module`, który zarządza repoz
 
 Zakres techniczny: rozbicie dużego REST API na kontrolery domenowe.
 
+### Etap 3A — fundament kontrolerów REST / HR
+
+Zakres techniczny: dodanie bazowego `ERP_OMD_REST_Controller` oraz pierwszego kontrolera domenowego `ERP_OMD_REST_HR_Controller`, który rejestruje endpointy pracowników, wynagrodzeń, miesięcznych godzin i ACL bez zmiany publicznych URL-i.
+
 - [ ] W adminie wykonaj operacje CRUD dla roli, pracownika, klienta, projektu i wpisu czasu.
 - [ ] W Network sprawdź, czy endpointy `erp-omd/v1/*` zwracają statusy 200/201/204 dla poprawnych akcji.
 - [ ] Spróbuj wykonać akcję użytkownikiem bez uprawnień — UI powinien pokazać odmowę, a REST powinien zwrócić 401/403.

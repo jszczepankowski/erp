@@ -180,41 +180,15 @@ class ERP_OMD_REST_API
 
     private function register_employee_routes()
     {
-        register_rest_route('erp-omd/v1', '/employees', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_employees'], 'permission_callback' => [$this, 'can_manage_employees']],
-            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
-        ]);
-        register_rest_route('erp-omd/v1', '/employees/(?P<id>\d+)', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
-            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
-            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
-        ]);
-        register_rest_route('erp-omd/v1', '/employees/(?P<id>\d+)/acl', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
-            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
-            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'reset_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
-        ]);
-        register_rest_route('erp-omd/v1', '/acl-audit', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_acl_audit'], 'permission_callback' => [$this, 'can_access_acl_audit']],
-        ]);
-        register_rest_route('erp-omd/v1', '/acl-audit/export', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'export_acl_audit_csv'], 'permission_callback' => [$this, 'can_access_acl_audit']],
-        ]);
-        register_rest_route('erp-omd/v1', '/acl-config', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_acl_config'], 'permission_callback' => [$this, 'can_manage_employees']],
-        ]);
-        register_rest_route('erp-omd/v1', '/employees/(?P<id>\d+)/salary', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
-            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
-        ]);
-        register_rest_route('erp-omd/v1', '/salary/(?P<id>\d+)', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
-            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
-            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
-        ]);
-        register_rest_route('erp-omd/v1', '/monthly-hours/(?P<year_month>\d{4}-\d{2})', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_monthly_hours_suggestion'], 'permission_callback' => [$this, 'can_manage_salary']],
-        ]);
+        if (! class_exists('ERP_OMD_REST_Controller')) {
+            require_once __DIR__ . '/rest/class-rest-controller.php';
+        }
+        if (! class_exists('ERP_OMD_REST_HR_Controller')) {
+            require_once __DIR__ . '/rest/class-rest-hr-controller.php';
+        }
+
+        $controller = new ERP_OMD_REST_HR_Controller($this);
+        $controller->register_routes();
     }
 
     private function register_client_routes()

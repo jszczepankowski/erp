@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 $serviceSource = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/services/class-acl-service.php');
 $adminSource = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-admin-runtime.php');
-$restSource = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-rest-api.php');
+$restSource = (string) file_get_contents(__DIR__ . '/../erp-omd/includes/class-rest-api.php')
+    . (string) file_get_contents(__DIR__ . '/../erp-omd/includes/rest/class-rest-hr-controller.php');
 
 if ($serviceSource === '' || $adminSource === '' || $restSource === '') {
     throw new RuntimeException('Unable to load ACL-related sources.');
