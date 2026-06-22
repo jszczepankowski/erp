@@ -1412,6 +1412,7 @@ class ERP_OMD_Admin
             $estimate_row['total_net'] = $estimate_row_totals['net'];
             $estimate_row['total_gross'] = $estimate_row_totals['gross'];
             $estimate_row['total_internal_cost'] = $estimate_row_totals['internal_cost'];
+            $estimate_row['total_profit'] = round((float) $estimate_row_totals['net'] - (float) $estimate_row_totals['internal_cost'], 2);
             $estimate_row['alerts'] = ! empty($estimate_row['project_id'])
                 ? ($estimate_project_alerts[(int) $estimate_row['project_id']] ?? [])
                 : [];
