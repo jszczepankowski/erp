@@ -73,6 +73,7 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
             'ksef_moderation_saved' => __('Moderacja KSeF została zapisana.', 'erp-omd'),
             'ksef_bulk_moderation_saved' => __('Moderacja zbiorcza KSeF została zapisana.', 'erp-omd'),
             'ksef_sales_xml_imported' => __('Dokumenty sprzedażowe KSeF zostały zaimportowane.', 'erp-omd'),
+            'ksef_sales_client_created' => __('Klient z faktury sprzedażowej został utworzony. Ponów import faktury sprzedażowej.', 'erp-omd'),
             'ksef_cost_xml_imported' => __('Dokumenty kosztowe KSeF zostały zaimportowane.', 'erp-omd'),
             'ksef_sales_attached' => __('Dokument sprzedażowy KSeF został przypisany do projektu.', 'erp-omd'),
         ];
@@ -84,11 +85,33 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
         <div class="notice notice-error"><p><?php echo esc_html(rawurldecode((string) wp_unslash($_GET['error']))); ?></p></div>
     <?php endif; ?>
     <?php if (! empty($_GET['suggest_client_url'])) : ?>
+        <?php
+        $suggested_client_fields = ['name', 'company', 'nip', 'email', 'phone', 'contact_person_name', 'contact_person_email', 'contact_person_phone', 'city', 'street', 'apartment_number', 'postal_code', 'country', 'status'];
+        $suggested_client_payload = [];
+        foreach ($suggested_client_fields as $suggested_client_field) {
+            $suggested_client_payload[$suggested_client_field] = sanitize_text_field((string) wp_unslash($_GET['suggest_client_' . $suggested_client_field] ?? ''));
+        }
+        ?>
         <div class="notice notice-warning">
-            <p>
-                <?php esc_html_e('Nie znaleziono klienta o NIP-ie z faktury sprzedażowej. Możesz utworzyć klienta na bazie danych z faktury i ponowić import.', 'erp-omd'); ?>
-                <a class="button button-small" href="<?php echo esc_url(rawurldecode((string) wp_unslash($_GET['suggest_client_url']))); ?>"><?php esc_html_e('Utwórz klienta z faktury', 'erp-omd'); ?></a>
-            </p>
+            <p><?php esc_html_e('Nie znaleziono klienta o NIP-ie z faktury sprzedażowej. Możesz utworzyć klienta na bazie danych z faktury i ponowić import.', 'erp-omd'); ?></p>
+            <?php if (($suggested_client_payload['name'] ?? '') !== '' || ($suggested_client_payload['nip'] ?? '') !== '') : ?>
+                <p>
+                    <strong><?php esc_html_e('Proponowany klient:', 'erp-omd'); ?></strong>
+                    <?php echo esc_html(trim((string) ($suggested_client_payload['name'] ?? '')) ?: '—'); ?>
+                    <?php if (trim((string) ($suggested_client_payload['nip'] ?? '')) !== '') : ?>
+                        (<?php echo esc_html(sprintf(__('NIP: %s', 'erp-omd'), (string) $suggested_client_payload['nip'])); ?>)
+                    <?php endif; ?>
+                </p>
+            <?php endif; ?>
+            <form method="post" class="erp-omd-inline-form" style="display:inline-flex;gap:8px;align-items:center;margin-right:8px;">
+                <?php wp_nonce_field('erp_omd_create_client_from_ksef_sales_invoice'); ?>
+                <input type="hidden" name="erp_omd_action" value="create_client_from_ksef_sales_invoice" />
+                <?php foreach ($suggested_client_payload as $suggested_client_field => $suggested_client_value) : ?>
+                    <input type="hidden" name="<?php echo esc_attr($suggested_client_field); ?>" value="<?php echo esc_attr((string) $suggested_client_value); ?>" />
+                <?php endforeach; ?>
+                <button type="submit" class="button button-primary"><?php esc_html_e('Utwórz klienta z faktury', 'erp-omd'); ?></button>
+            </form>
+            <a class="button button-small" href="<?php echo esc_url(rawurldecode((string) wp_unslash($_GET['suggest_client_url']))); ?>"><?php esc_html_e('Otwórz formularz i edytuj dane', 'erp-omd'); ?></a>
         </div>
     <?php endif; ?>
 
