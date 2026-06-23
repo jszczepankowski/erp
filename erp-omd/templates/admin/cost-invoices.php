@@ -83,6 +83,14 @@ if (! in_array($active_tab, ['suppliers', 'invoices', 'relations', 'ksef-moderat
     <?php if (! empty($_GET['error'])) : ?>
         <div class="notice notice-error"><p><?php echo esc_html(rawurldecode((string) wp_unslash($_GET['error']))); ?></p></div>
     <?php endif; ?>
+    <?php if (! empty($_GET['suggest_client_url'])) : ?>
+        <div class="notice notice-warning">
+            <p>
+                <?php esc_html_e('Nie znaleziono klienta o NIP-ie z faktury sprzedażowej. Możesz utworzyć klienta na bazie danych z faktury i ponowić import.', 'erp-omd'); ?>
+                <a class="button button-small" href="<?php echo esc_url(rawurldecode((string) wp_unslash($_GET['suggest_client_url']))); ?>"><?php esc_html_e('Utwórz klienta z faktury', 'erp-omd'); ?></a>
+            </p>
+        </div>
+    <?php endif; ?>
 
     <nav class="nav-tab-wrapper erp-omd-nav-tabs">
         <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-cost-invoices', 'tab' => 'suppliers'], admin_url('admin.php'))); ?>" class="nav-tab <?php echo $active_tab === 'suppliers' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Dostawcy', 'erp-omd'); ?></a>

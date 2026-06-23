@@ -1,6 +1,10 @@
 <div class="wrap erp-omd-admin">
     <h1><?php esc_html_e('ERP OMD — Klienci', 'erp-omd'); ?></h1>
 
+    <?php if (! empty($_GET['erp_omd_prefill_client'])) : ?>
+        <div class="notice notice-info"><p><?php esc_html_e('Formularz klienta został uzupełniony danymi z faktury sprzedażowej. Sprawdź dane i zapisz klienta.', 'erp-omd'); ?></p></div>
+    <?php endif; ?>
+
     <section class="erp-omd-card">
             <h2><?php echo $client ? esc_html__('Edytuj klienta', 'erp-omd') : esc_html__('Nowy klient', 'erp-omd'); ?></h2>
             <form method="post">

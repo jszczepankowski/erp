@@ -442,6 +442,7 @@
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('VAT 23%', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) $estimate_totals['tax'], 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Brutto', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) $estimate_totals['gross'], 2)); ?></span></div>
                                     <div class="erp-omd-detail-item"><strong><?php esc_html_e('Koszt wewnętrzny', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) $estimate_totals['internal_cost'], 2)); ?></span></div>
+                                    <div class="erp-omd-detail-item"><strong><?php esc_html_e('Zysk', 'erp-omd'); ?></strong><span><?php echo esc_html(number_format_i18n((float) $estimate_totals['net'] - (float) $estimate_totals['internal_cost'], 2)); ?></span></div>
                                 </div>
                             </div>
                         </div>
@@ -641,13 +642,14 @@
                         <th><?php esc_html_e('Status', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Netto', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Brutto', 'erp-omd'); ?></th>
+                        <th><?php esc_html_e('Zysk', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Projekt', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Wysłano do klienta', 'erp-omd'); ?></th>
                         <th><?php esc_html_e('Akcje', 'erp-omd'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($estimates)) : ?><tr><td colspan="10"><?php esc_html_e('Brak kosztorysów dla wybranych filtrów. Zmień kryteria albo dodaj nowy kosztorys.', 'erp-omd'); ?></td></tr><?php endif; ?>
+                    <?php if (empty($estimates)) : ?><tr><td colspan="11"><?php esc_html_e('Brak kosztorysów dla wybranych filtrów. Zmień kryteria albo dodaj nowy kosztorys.', 'erp-omd'); ?></td></tr><?php endif; ?>
                     <?php foreach ($estimates as $estimate_row) : ?>
                         <?php $estimate_label = trim((string) ($estimate_row['name'] ?? '')) !== '' ? (string) $estimate_row['name'] : sprintf(__('Kosztorys #%d', 'erp-omd'), (int) $estimate_row['id']); ?>
                         <tr>
@@ -661,6 +663,7 @@
                             <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($estimate_row['status'], 'estimate')); ?>"><?php echo esc_html($estimate_status_labels[(string) ($estimate_row['status'] ?? '')] ?? (string) ($estimate_row['status'] ?? '—')); ?></span></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($estimate_row['total_net'] ?? 0), 2)); ?></td>
                             <td><?php echo esc_html(number_format_i18n((float) ($estimate_row['total_gross'] ?? 0), 2)); ?></td>
+                            <td><?php echo esc_html(number_format_i18n((float) ($estimate_row['total_profit'] ?? 0), 2)); ?></td>
                             <td>
                                 <?php if (! empty($estimate_row['project_id'])) : ?>
                                     <a href="<?php echo esc_url(add_query_arg(['page' => 'erp-omd-projects', 'id' => (int) $estimate_row['project_id']], admin_url('admin.php'))); ?>"><?php echo esc_html($estimate_row['project_name'] ?: ('#' . $estimate_row['project_id'])); ?></a>

@@ -1215,6 +1215,26 @@ class ERP_OMD_Admin
         $selected_client_estimates = [];
         $editing_client_rate = null;
         $is_editing_client = ! empty($_GET['edit']) || ! empty($_GET['rate_id']);
+        if (! empty($_GET['erp_omd_prefill_client'])) {
+            $client = $this->client_project_service->prepare_client([
+                'name' => sanitize_text_field(wp_unslash($_GET['name'] ?? '')),
+                'company' => sanitize_text_field(wp_unslash($_GET['company'] ?? '')),
+                'nip' => sanitize_text_field(wp_unslash($_GET['nip'] ?? '')),
+                'email' => sanitize_text_field(wp_unslash($_GET['email'] ?? '')),
+                'phone' => sanitize_text_field(wp_unslash($_GET['phone'] ?? '')),
+                'contact_person_name' => sanitize_text_field(wp_unslash($_GET['contact_person_name'] ?? '')),
+                'contact_person_email' => sanitize_email(wp_unslash($_GET['contact_person_email'] ?? '')),
+                'contact_person_phone' => sanitize_text_field(wp_unslash($_GET['contact_person_phone'] ?? '')),
+                'city' => sanitize_text_field(wp_unslash($_GET['city'] ?? '')),
+                'street' => sanitize_text_field(wp_unslash($_GET['street'] ?? '')),
+                'apartment_number' => sanitize_text_field(wp_unslash($_GET['apartment_number'] ?? '')),
+                'postal_code' => sanitize_text_field(wp_unslash($_GET['postal_code'] ?? '')),
+                'country' => sanitize_text_field(wp_unslash($_GET['country'] ?? 'PL')),
+                'status' => sanitize_text_field(wp_unslash($_GET['status'] ?? 'active')),
+                'account_manager_id' => 0,
+                'alert_margin_threshold' => '',
+            ]);
+        }
         if (! empty($_GET['id'])) {
             $selected_client = $this->clients->find((int) $_GET['id']);
             if ($selected_client) {
@@ -1412,6 +1432,7 @@ class ERP_OMD_Admin
             $estimate_row['total_net'] = $estimate_row_totals['net'];
             $estimate_row['total_gross'] = $estimate_row_totals['gross'];
             $estimate_row['total_internal_cost'] = $estimate_row_totals['internal_cost'];
+            $estimate_row['total_profit'] = round((float) $estimate_row_totals['net'] - (float) $estimate_row_totals['internal_cost'], 2);
             $estimate_row['alerts'] = ! empty($estimate_row['project_id'])
                 ? ($estimate_project_alerts[(int) $estimate_row['project_id']] ?? [])
                 : [];
@@ -3032,7 +3053,7 @@ class ERP_OMD_Admin
         check_admin_referer('erp_omd_import_ksef_sales_xml');
         $this->require_capability('erp_omd_manage_projects');
 
-        $xml_documents = $this->read_ksef_xml_batch_from_request('', 'ksef_sales_xml_files');
+        $xml_documents = $this->read_ksef_xml_batch_from_request('ksef_sales_xml_content', 'ksef_sales_xml_files');
         if ($xml_documents === []) {
             $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(__('Wybierz co najmniej jeden plik XML.', 'erp-omd'))]);
         }
@@ -3050,6 +3071,7 @@ class ERP_OMD_Admin
 
         $total_imported = 0;
         $all_errors = [];
+        $suggested_client_url = '';
         foreach ($xml_documents as $xml_content) {
             $result = $service->import_sales_xml($xml_content, (int) get_current_user_id(), $description);
             $total_imported += (int) ($result['imported'] ?? 0);
@@ -3064,23 +3086,53 @@ class ERP_OMD_Admin
                     if ($buyer_nip !== '' && stripos($error_message, 'klient') !== false) {
                         $error_message .= ' ' . sprintf(__('NIP z faktury: %s. Utwórz klienta i ponów przypięcie.', 'erp-omd'), $buyer_nip);
                     }
+                    $suggested_client = (array) ($result['errors'][0]['suggested_client'] ?? []);
+                    if ($suggested_client !== []) {
+                        $suggested_client_url = $this->build_ksef_sales_suggested_client_url($suggested_client);
+                    }
                     $all_errors[] = $error_message;
                 }
             }
         }
 
         if ($total_imported < 1) {
-            $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' | ', $all_errors))]);
+            $redirect_args = ['tab' => 'ksef-sales', 'error' => rawurlencode(implode(' | ', $all_errors))];
+            if ($suggested_client_url !== '') {
+                $redirect_args['suggest_client_url'] = rawurlencode($suggested_client_url);
+            }
+            $this->redirect_cost_invoice_page($redirect_args);
         }
 
         if ($all_errors !== []) {
-            $this->redirect_cost_invoice_page([
+            $redirect_args = [
                 'tab' => 'ksef-sales',
                 'error' => rawurlencode(sprintf(__('Zaimportowano %1$d dokument(y), część odrzucona: %2$s', 'erp-omd'), $total_imported, implode(' | ', $all_errors))),
-            ]);
+            ];
+            if ($suggested_client_url !== '') {
+                $redirect_args['suggest_client_url'] = rawurlencode($suggested_client_url);
+            }
+            $this->redirect_cost_invoice_page($redirect_args);
         }
 
         $this->redirect_cost_invoice_page(['tab' => 'ksef-sales', 'message' => 'ksef_sales_xml_imported']);
+    }
+
+    /**
+     * @param array<string,mixed> $suggested_client
+     * @return string
+     */
+    private function build_ksef_sales_suggested_client_url(array $suggested_client)
+    {
+        $allowed_fields = ['name', 'company', 'nip', 'email', 'phone', 'contact_person_name', 'contact_person_email', 'contact_person_phone', 'city', 'street', 'apartment_number', 'postal_code', 'country', 'status'];
+        $query_args = ['page' => 'erp-omd-clients', 'erp_omd_prefill_client' => 1];
+        foreach ($allowed_fields as $field_name) {
+            if (! array_key_exists($field_name, $suggested_client)) {
+                continue;
+            }
+            $query_args[$field_name] = sanitize_text_field((string) $suggested_client[$field_name]);
+        }
+
+        return add_query_arg($query_args, admin_url('admin.php'));
     }
 
     /**

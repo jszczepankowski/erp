@@ -96,6 +96,7 @@ class ERP_OMD_KSeF_Import_Service
                 'status' => $status,
                 'kind' => (string) ($attempt['kind'] ?? ''),
                 'errors' => (array) ($attempt['errors'] ?? []),
+                'suggested_client' => (array) ($attempt['suggested_client'] ?? []),
             ];
         }
 
@@ -158,6 +159,7 @@ class ERP_OMD_KSeF_Import_Service
                 'kind' => $kind,
                 'invoice_number' => (string) ($document['invoice_number'] ?? ''),
                 'errors' => (array) ($sales_result['errors'] ?? []),
+                'suggested_client' => (array) ($sales_result['suggested_client'] ?? []),
             ];
         }
 
@@ -410,6 +412,7 @@ class ERP_OMD_KSeF_Import_Service
             return [
                 'status' => (string) ($client_match['status'] ?? self::IMPORT_STATUS_MANUAL_REQUIRED),
                 'errors' => (array) ($client_match['errors'] ?? []),
+                'suggested_client' => (array) ($client_match['suggested_client'] ?? []),
             ];
         }
 
@@ -478,7 +481,44 @@ class ERP_OMD_KSeF_Import_Service
             return ['ok' => false, 'status' => self::IMPORT_STATUS_CONFLICT, 'errors' => [__('Wiele dopasowań klienta po NIP. Wymagana moderacja manualna.', 'erp-omd')]];
         }
 
-        return ['ok' => false, 'status' => self::IMPORT_STATUS_MANUAL_REQUIRED, 'errors' => [__('Brak dopasowania klienta po NIP. Wymagana moderacja manualna.', 'erp-omd')]];
+        return [
+            'ok' => false,
+            'status' => self::IMPORT_STATUS_MANUAL_REQUIRED,
+            'errors' => [__('Brak dopasowania klienta po NIP. Utwórz klienta na bazie danych z faktury i ponów import.', 'erp-omd')],
+            'suggested_client' => $this->build_suggested_client_from_sales_document($document),
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $document
+     * @return array<string,string|int|null>
+     */
+    private function build_suggested_client_from_sales_document(array $document)
+    {
+        $buyer_nip = $this->extract_nip_value($document, ['buyer_nip', 'nabywca_nip', 'buyer', 'podmiot2', 'podmiot2_nip']);
+        $buyer_name = trim((string) ($document['buyer_name'] ?? $document['nabywca_name'] ?? ''));
+        if ($buyer_name === '') {
+            $buyer_name = $buyer_nip !== '' ? sprintf(__('Klient %s', 'erp-omd'), $buyer_nip) : __('Nowy klient z faktury sprzedażowej', 'erp-omd');
+        }
+
+        return [
+            'name' => $buyer_name,
+            'company' => $buyer_name,
+            'nip' => $buyer_nip,
+            'email' => '',
+            'phone' => '',
+            'contact_person_name' => '',
+            'contact_person_email' => '',
+            'contact_person_phone' => '',
+            'city' => trim((string) ($document['buyer_city'] ?? '')),
+            'street' => trim((string) ($document['buyer_street'] ?? '')),
+            'apartment_number' => '',
+            'postal_code' => trim((string) ($document['buyer_postal_code'] ?? '')),
+            'country' => trim((string) ($document['buyer_country'] ?? 'PL')) ?: 'PL',
+            'status' => 'active',
+            'account_manager_id' => 0,
+            'alert_margin_threshold' => null,
+        ];
     }
 
     /**
@@ -631,6 +671,20 @@ class ERP_OMD_KSeF_Import_Service
         ]);
         $issue_date = $this->normalize_issue_date($issue_date);
         $buyer_nip = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="NIP"]']);
+        $buyer_name = $this->xpath_first_text($xml, [
+            '//*[local-name()="Podmiot2"]//*[local-name()="PelnaNazwa"]',
+            '//*[local-name()="Podmiot2"]//*[local-name()="Nazwa"]',
+            '//*[local-name()="Podmiot2"]//*[local-name()="NazwaSkrocona"]',
+        ]);
+        $buyer_country = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="KodKraju"]']);
+        $buyer_address_line1 = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="AdresL1"]']);
+        $buyer_address_line2 = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="AdresL2"]']);
+        $buyer_postal_code = '';
+        $buyer_city = '';
+        if ($buyer_address_line2 !== '' && preg_match('/([0-9]{2}-?[0-9]{3})\s+(.+)/u', $buyer_address_line2, $buyer_address_matches) === 1) {
+            $buyer_postal_code = (string) ($buyer_address_matches[1] ?? '');
+            $buyer_city = trim((string) ($buyer_address_matches[2] ?? ''));
+        }
         $seller_nip = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot1"]//*[local-name()="NIP"]']);
         $seller_name = $this->xpath_first_text($xml, [
             '//*[local-name()="Podmiot1"]//*[local-name()="PelnaNazwa"]',
@@ -730,6 +784,11 @@ class ERP_OMD_KSeF_Import_Service
             'invoice_number' => $invoice_number,
             'issue_date' => $issue_date,
             'buyer_nip' => $buyer_nip,
+            'buyer_name' => $buyer_name,
+            'buyer_country' => $buyer_country ?: 'PL',
+            'buyer_street' => $buyer_address_line1,
+            'buyer_postal_code' => $buyer_postal_code,
+            'buyer_city' => $buyer_city,
             'seller_nip' => $seller_nip,
             'seller_name' => $seller_name,
             'ksef_reference_number' => $ksef_reference,
