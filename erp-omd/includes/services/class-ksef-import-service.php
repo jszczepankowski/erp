@@ -687,12 +687,7 @@ class ERP_OMD_KSeF_Import_Service
         $buyer_country = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="KodKraju"]']);
         $buyer_address_line1 = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="AdresL1"]']);
         $buyer_address_line2 = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot2"]//*[local-name()="AdresL2"]']);
-        $buyer_postal_code = '';
-        $buyer_city = '';
-        if ($buyer_address_line2 !== '' && preg_match('/([0-9]{2}-?[0-9]{3})\s+(.+)/u', $buyer_address_line2, $buyer_address_matches) === 1) {
-            $buyer_postal_code = (string) ($buyer_address_matches[1] ?? '');
-            $buyer_city = trim((string) ($buyer_address_matches[2] ?? ''));
-        }
+        $buyer_address_parts = $this->parse_polish_address_components($buyer_address_line1, $buyer_address_line2);
         $seller_nip = $this->xpath_first_text($xml, ['//*[local-name()="Podmiot1"]//*[local-name()="NIP"]']);
         $seller_name = $this->xpath_first_text($xml, [
             '//*[local-name()="Podmiot1"]//*[local-name()="PelnaNazwa"]',
@@ -794,9 +789,9 @@ class ERP_OMD_KSeF_Import_Service
             'buyer_nip' => $buyer_nip,
             'buyer_name' => $buyer_name,
             'buyer_country' => $buyer_country ?: 'PL',
-            'buyer_street' => $buyer_address_line1,
-            'buyer_postal_code' => $buyer_postal_code,
-            'buyer_city' => $buyer_city,
+            'buyer_street' => (string) ($buyer_address_parts['street'] ?? ''),
+            'buyer_postal_code' => (string) ($buyer_address_parts['postal_code'] ?? ''),
+            'buyer_city' => (string) ($buyer_address_parts['city'] ?? ''),
             'seller_nip' => $seller_nip,
             'seller_name' => $seller_name,
             'ksef_reference_number' => $ksef_reference,
@@ -901,6 +896,44 @@ class ERP_OMD_KSeF_Import_Service
         $totals['gross_amount'] = round($totals['gross_amount'], 2);
 
         return $totals;
+    }
+
+    /**
+     * @param string $address_line1
+     * @param string $address_line2
+     * @return array{street:string,postal_code:string,city:string}
+     */
+    private function parse_polish_address_components($address_line1, $address_line2)
+    {
+        $street = trim((string) preg_replace('/\s+/u', ' ', (string) $address_line1));
+        $postal_code = '';
+        $city = '';
+        $line2 = trim((string) preg_replace('/\s+/u', ' ', (string) $address_line2));
+
+        if ($line2 !== '' && preg_match('/^([0-9]{2}-?[0-9]{3})\s+(.+)$/u', $line2, $matches) === 1) {
+            $postal_code = (string) ($matches[1] ?? '');
+            $city = trim((string) ($matches[2] ?? ''));
+        }
+
+        if ($postal_code === '' && preg_match('/^(.*?)(?:,\s*)?([0-9]{2}-?[0-9]{3})\s+([^,]+)$/u', $street, $matches) === 1) {
+            $street = trim((string) ($matches[1] ?? ''), " \t\n\r\0\x0B,");
+            $postal_code = (string) ($matches[2] ?? '');
+            $city = trim((string) ($matches[3] ?? ''));
+        }
+
+        if ($postal_code === '' && $line2 !== '' && preg_match('/^(.*?)(?:,\s*)?([0-9]{2}-?[0-9]{3})\s+([^,]+)$/u', $line2, $matches) === 1) {
+            if ($street === '') {
+                $street = trim((string) ($matches[1] ?? ''), " \t\n\r\0\x0B,");
+            }
+            $postal_code = (string) ($matches[2] ?? '');
+            $city = trim((string) ($matches[3] ?? ''));
+        }
+
+        return [
+            'street' => $street,
+            'postal_code' => $postal_code,
+            'city' => $city,
+        ];
     }
 
     /**
