@@ -14,6 +14,7 @@ if ($service === '' || $admin === '' || $costTemplate === '' || $clientTemplate 
 $expectedFragments = [
     [$service, 'suggested_client', 'Sales import should return suggested client payload on unmatched buyer NIP.'],
     [$service, 'function build_suggested_client_from_sales_document(', 'Service should build suggested client data from sales invoice document.'],
+    [$service, "\$created_client_id = (int) \$this->client_repository->create(\$suggested_client);", 'Service should automatically create missing clients from sales invoice data when repository supports create.'],
     [$service, "'buyer_name' => \$buyer_name", 'Parser should extract buyer name from invoice XML.'],
     [$service, "'buyer_street' => \$buyer_address_line1", 'Parser should extract buyer address line from invoice XML.'],
     [$admin, 'function build_ksef_sales_suggested_client_url(', 'Admin runtime should build a client creation URL from suggested invoice data.'],

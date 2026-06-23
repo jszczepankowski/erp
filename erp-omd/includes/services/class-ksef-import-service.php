@@ -481,11 +481,19 @@ class ERP_OMD_KSeF_Import_Service
             return ['ok' => false, 'status' => self::IMPORT_STATUS_CONFLICT, 'errors' => [__('Wiele dopasowań klienta po NIP. Wymagana moderacja manualna.', 'erp-omd')]];
         }
 
+        $suggested_client = $this->build_suggested_client_from_sales_document($document);
+        if (method_exists($this->client_repository, 'create')) {
+            $created_client_id = (int) $this->client_repository->create($suggested_client);
+            if ($created_client_id > 0) {
+                return ['ok' => true, 'client_id' => $created_client_id, 'status' => 'ready', 'errors' => [], 'suggested_client' => $suggested_client];
+            }
+        }
+
         return [
             'ok' => false,
             'status' => self::IMPORT_STATUS_MANUAL_REQUIRED,
             'errors' => [__('Brak dopasowania klienta po NIP. Utwórz klienta na bazie danych z faktury i ponów import.', 'erp-omd')],
-            'suggested_client' => $this->build_suggested_client_from_sales_document($document),
+            'suggested_client' => $suggested_client,
         ];
     }
 
