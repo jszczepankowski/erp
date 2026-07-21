@@ -622,7 +622,7 @@
                 <input type="hidden" name="month" value="<?php echo esc_attr($estimate_filters['month'] ?? ''); ?>">
                 <input type="hidden" name="per_page" value="<?php echo esc_attr((string) ($estimate_filters['per_page'] ?? 100)); ?>">
                 <input type="hidden" name="page_num" value="1">
-                <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj kosztorysu, klienta, projektu…', 'erp-omd'); ?>" value="<?php echo esc_attr($estimate_filters['search'] ?? ''); ?>">
+                <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj kosztorysu, klienta, projektu lub pozycji…', 'erp-omd'); ?>" value="<?php echo esc_attr($estimate_filters['search'] ?? ''); ?>">
                 <select name="client_id"><option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option><?php foreach ($clients as $client_row) : ?><option value="<?php echo esc_attr($client_row['id']); ?>" <?php selected((int) ($estimate_filters['client_id'] ?? 0), (int) $client_row['id']); ?>><?php echo esc_html($client_row['name']); ?></option><?php endforeach; ?></select>
                 <select name="status"><option value=""><?php esc_html_e('Wszystkie statusy', 'erp-omd'); ?></option><?php foreach (['wstepny', 'do_akceptacji', 'odrzucony', 'zaakceptowany'] as $status_option) : ?><option value="<?php echo esc_attr($status_option); ?>" <?php selected($estimate_filters['status'] ?? '', $status_option); ?>><?php echo esc_html($estimate_status_labels[$status_option] ?? $status_option); ?></option><?php endforeach; ?></select>
                 <button class="button" type="submit"><?php esc_html_e('Filtruj', 'erp-omd'); ?></button>
@@ -658,6 +658,13 @@
                             <td>
                                 <?php echo esc_html($estimate_label); ?>
                                 <?php $this->render_alert_icons($estimate_row['alerts'] ?? []); ?>
+                                <?php if (! empty($estimate_row['search_item_matches'])) : ?>
+                                    <div class="description">
+                                        <?php foreach ((array) $estimate_row['search_item_matches'] as $matched_item) : ?>
+                                            <span class="tag"><?php echo esc_html(sprintf(__('Pozycja: %1$s (%2$s × %3$s)', 'erp-omd'), (string) ($matched_item['name'] ?? '—'), number_format_i18n((float) ($matched_item['qty'] ?? 0), 2), number_format_i18n((float) ($matched_item['price'] ?? 0), 2))); ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
                             </td>
                             <td><?php echo esc_html($estimate_row['client_name']); ?></td>
                             <td><span class="erp-omd-badge <?php echo esc_attr($this->status_badge_class($estimate_row['status'], 'estimate')); ?>"><?php echo esc_html($estimate_status_labels[(string) ($estimate_row['status'] ?? '')] ?? (string) ($estimate_row['status'] ?? '—')); ?></span></td>

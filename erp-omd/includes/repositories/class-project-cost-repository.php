@@ -81,6 +81,46 @@ class ERP_OMD_Project_Cost_Repository
         return $wpdb->get_results($query, ARRAY_A);
     }
 
+    public function search_grouped_by_project($term, $limit_per_project = 3)
+    {
+        global $wpdb;
+
+        $term = trim((string) $term);
+        if ($term === '') {
+            return [];
+        }
+
+        $limit_per_project = max(1, min(10, (int) $limit_per_project));
+        $like = '%' . $wpdb->esc_like($term) . '%';
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT project_id, id, amount, description, cost_date
+                FROM {$this->table_name()}
+                WHERE description LIKE %s
+                ORDER BY cost_date DESC, id DESC",
+                $like
+            ),
+            ARRAY_A
+        );
+
+        $grouped = [];
+        foreach ((array) $rows as $row) {
+            $project_id = (int) ($row['project_id'] ?? 0);
+            if ($project_id <= 0) {
+                continue;
+            }
+            if (! isset($grouped[$project_id])) {
+                $grouped[$project_id] = [];
+            }
+            if (count($grouped[$project_id]) >= $limit_per_project) {
+                continue;
+            }
+            $grouped[$project_id][] = $row;
+        }
+
+        return $grouped;
+    }
+
     public function find($id)
     {
         global $wpdb;

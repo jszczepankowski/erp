@@ -798,7 +798,7 @@
                 <input type="hidden" name="page" value="erp-omd-projects" />
                 <input type="hidden" name="list_view" value="<?php echo esc_attr($projects_list_view); ?>" />
                 <input type="hidden" name="month" value="<?php echo esc_attr($project_filters['month'] ?? ''); ?>" />
-                <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj projektu, klienta, managera…', 'erp-omd'); ?>" value="<?php echo esc_attr($project_filters['search'] ?? ''); ?>" />
+                <input type="search" name="search" class="regular-text" placeholder="<?php echo esc_attr__('Szukaj projektu, klienta, managera lub kosztu…', 'erp-omd'); ?>" value="<?php echo esc_attr($project_filters['search'] ?? ''); ?>" />
                 <select name="client_id"><option value="0"><?php esc_html_e('Wszyscy klienci', 'erp-omd'); ?></option><?php foreach ($clients as $client_item) : ?><option value="<?php echo esc_attr($client_item['id']); ?>" <?php selected((int) ($project_filters['client_id'] ?? 0), (int) $client_item['id']); ?>><?php echo esc_html($client_item['name']); ?></option><?php endforeach; ?></select>
                 <select name="manager_id"><option value="0"><?php esc_html_e('Wszyscy managerowie', 'erp-omd'); ?></option><?php foreach ($employees_for_select as $employee_item) : ?><option value="<?php echo esc_attr($employee_item['id']); ?>" <?php selected((int) ($project_filters['manager_id'] ?? 0), (int) $employee_item['id']); ?>><?php echo esc_html($employee_item['user_login']); ?></option><?php endforeach; ?></select>
                 <select name="status"><option value=""><?php echo esc_html($projects_is_archive_view ? __('Status: Archiwum', 'erp-omd') : __('Wszystkie statusy', 'erp-omd')); ?></option><?php foreach ($project_filter_statuses as $project_status) : ?><option value="<?php echo esc_attr($project_status); ?>" <?php selected($project_filters['status'] ?? '', $project_status); ?>><?php echo esc_html($this->project_status_label($project_status)); ?></option><?php endforeach; ?></select>
@@ -838,6 +838,13 @@
                             <td>
                                 <input type="text" name="name" value="<?php echo esc_attr((string) ($project_row['name'] ?? '')); ?>" form="<?php echo esc_attr($inline_project_form_id); ?>" />
                                 <?php $this->render_alert_icons($project_row['alerts'] ?? []); ?>
+                                <?php if (! empty($project_row['search_cost_matches'])) : ?>
+                                    <div class="description">
+                                        <?php foreach ((array) $project_row['search_cost_matches'] as $matched_cost) : ?>
+                                            <span class="tag"><?php echo esc_html(sprintf(__('Koszt: %1$s (%2$s)', 'erp-omd'), (string) ($matched_cost['description'] ?? '—'), number_format_i18n((float) ($matched_cost['amount'] ?? 0), 2))); ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
                             </td>
                             <?php
                             $project_start_month = ! empty($project_row['start_date']) ? gmdate('m', strtotime((string) $project_row['start_date'])) : '—';

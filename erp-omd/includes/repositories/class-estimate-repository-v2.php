@@ -20,6 +20,7 @@ class ERP_OMD_Estimate_Repository
 
         $clients_table = $wpdb->prefix . 'erp_omd_clients';
         $projects_table = $wpdb->prefix . 'erp_omd_projects';
+        $items_table = $wpdb->prefix . 'erp_omd_estimate_items';
         $where = ['1=1'];
         $params = [];
 
@@ -33,7 +34,9 @@ class ERP_OMD_Estimate_Repository
         }
         if (! empty($filters['search'])) {
             $like = '%' . $wpdb->esc_like((string) $filters['search']) . '%';
-            $where[] = '(e.name LIKE %s OR c.name LIKE %s OR p.name LIKE %s)';
+            $where[] = '(e.name LIKE %s OR c.name LIKE %s OR p.name LIKE %s OR ei.name LIKE %s OR ei.comment LIKE %s)';
+            $params[] = $like;
+            $params[] = $like;
             $params[] = $like;
             $params[] = $like;
             $params[] = $like;
@@ -54,7 +57,8 @@ class ERP_OMD_Estimate_Repository
             FROM {$this->table_name()} e
             INNER JOIN {$clients_table} c ON c.id = e.client_id
             LEFT JOIN {$projects_table} p ON p.estimate_id = e.id
-            WHERE " . implode(' AND ', $where) . " ORDER BY e.created_at DESC, e.id DESC LIMIT %d OFFSET %d",
+            LEFT JOIN {$items_table} ei ON ei.estimate_id = e.id
+            WHERE " . implode(' AND ', $where) . " GROUP BY e.id ORDER BY e.created_at DESC, e.id DESC LIMIT %d OFFSET %d",
                 ...$params
             ),
             ARRAY_A
@@ -67,6 +71,7 @@ class ERP_OMD_Estimate_Repository
 
         $clients_table = $wpdb->prefix . 'erp_omd_clients';
         $projects_table = $wpdb->prefix . 'erp_omd_projects';
+        $items_table = $wpdb->prefix . 'erp_omd_estimate_items';
         $where = ['1=1'];
         $params = [];
 
@@ -80,7 +85,9 @@ class ERP_OMD_Estimate_Repository
         }
         if (! empty($filters['search'])) {
             $like = '%' . $wpdb->esc_like((string) $filters['search']) . '%';
-            $where[] = '(e.name LIKE %s OR c.name LIKE %s OR p.name LIKE %s)';
+            $where[] = '(e.name LIKE %s OR c.name LIKE %s OR p.name LIKE %s OR ei.name LIKE %s OR ei.comment LIKE %s)';
+            $params[] = $like;
+            $params[] = $like;
             $params[] = $like;
             $params[] = $like;
             $params[] = $like;
@@ -90,7 +97,7 @@ class ERP_OMD_Estimate_Repository
             $params[] = (string) $filters['month'] . '%';
         }
 
-        $sql = "SELECT COUNT(*) FROM {$this->table_name()} e INNER JOIN {$clients_table} c ON c.id = e.client_id LEFT JOIN {$projects_table} p ON p.estimate_id = e.id WHERE " . implode(' AND ', $where);
+        $sql = "SELECT COUNT(DISTINCT e.id) FROM {$this->table_name()} e INNER JOIN {$clients_table} c ON c.id = e.client_id LEFT JOIN {$projects_table} p ON p.estimate_id = e.id LEFT JOIN {$items_table} ei ON ei.estimate_id = e.id WHERE " . implode(' AND ', $where);
 
         if ($params !== []) {
             return (int) $wpdb->get_var($wpdb->prepare($sql, ...$params));
