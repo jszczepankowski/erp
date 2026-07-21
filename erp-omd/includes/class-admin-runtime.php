@@ -1422,6 +1422,9 @@ class ERP_OMD_Admin
         if ($estimate_pagination['page_num'] > $estimate_pagination['total_pages']) {
             $estimate_pagination['page_num'] = $estimate_pagination['total_pages'];
         }
+        $estimate_item_search_matches = $estimate_filters['search'] !== ''
+            ? $this->estimate_items->search_grouped_by_estimate($estimate_filters['search'])
+            : [];
         $estimates = $this->estimates->find_paged(
             $estimate_query_filters,
             $estimate_pagination['per_page'],
@@ -1434,6 +1437,7 @@ class ERP_OMD_Admin
             $estimate_row['total_gross'] = $estimate_row_totals['gross'];
             $estimate_row['total_internal_cost'] = $estimate_row_totals['internal_cost'];
             $estimate_row['total_profit'] = round((float) $estimate_row_totals['net'] - (float) $estimate_row_totals['internal_cost'], 2);
+            $estimate_row['search_item_matches'] = $estimate_item_search_matches[(int) $estimate_row['id']] ?? [];
             $estimate_row['alerts'] = ! empty($estimate_row['project_id'])
                 ? ($estimate_project_alerts[(int) $estimate_row['project_id']] ?? [])
                 : [];
@@ -1579,14 +1583,18 @@ class ERP_OMD_Admin
         if (! in_array($projects_list_view, ['active', 'archive'], true)) {
             $projects_list_view = 'active';
         }
-        $projects = array_values(array_filter($projects, function ($project_row) use ($project_filters) {
+        $project_cost_search_matches = $project_filters['search'] !== ''
+            ? $this->project_costs->search_grouped_by_project($project_filters['search'])
+            : [];
+        $projects = array_values(array_filter($projects, function ($project_row) use ($project_filters, $project_cost_search_matches) {
             if ($project_filters['search'] !== '') {
                 $haystack = strtolower(implode(' ', [
                     (string) ($project_row['name'] ?? ''),
                     (string) ($project_row['client_name'] ?? ''),
                     (string) ($project_row['manager_logins_display'] ?? ($project_row['manager_login'] ?? '')),
                 ]));
-                if (strpos($haystack, strtolower($project_filters['search'])) === false) {
+                $has_cost_match = ! empty($project_cost_search_matches[(int) ($project_row['id'] ?? 0)]);
+                if (! $has_cost_match && strpos($haystack, strtolower($project_filters['search'])) === false) {
                     return false;
                 }
             }
@@ -1620,6 +1628,10 @@ class ERP_OMD_Admin
 
             return true;
         }));
+        foreach ($projects as &$project_row) {
+            $project_row['search_cost_matches'] = $project_cost_search_matches[(int) ($project_row['id'] ?? 0)] ?? [];
+        }
+        unset($project_row);
         $project_attachments = $project ? $this->attachments->for_entity('project', (int) $project['id']) : [];
         $project_final_sales_invoices_by_project = [];
         foreach ((array) get_option('erp_omd_ksef_sales_inbox', []) as $sales_row) {

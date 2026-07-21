@@ -23,6 +23,47 @@ class ERP_OMD_Estimate_Item_Repository
         );
     }
 
+    public function search_grouped_by_estimate($term, $limit_per_estimate = 3)
+    {
+        global $wpdb;
+
+        $term = trim((string) $term);
+        if ($term === '') {
+            return [];
+        }
+
+        $limit_per_estimate = max(1, min(10, (int) $limit_per_estimate));
+        $like = '%' . $wpdb->esc_like($term) . '%';
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT estimate_id, id, name, qty, price, cost_internal, comment
+                FROM {$this->table_name()}
+                WHERE name LIKE %s OR comment LIKE %s
+                ORDER BY updated_at DESC, id DESC",
+                $like,
+                $like
+            ),
+            ARRAY_A
+        );
+
+        $grouped = [];
+        foreach ((array) $rows as $row) {
+            $estimate_id = (int) ($row['estimate_id'] ?? 0);
+            if ($estimate_id <= 0) {
+                continue;
+            }
+            if (! isset($grouped[$estimate_id])) {
+                $grouped[$estimate_id] = [];
+            }
+            if (count($grouped[$estimate_id]) >= $limit_per_estimate) {
+                continue;
+            }
+            $grouped[$estimate_id][] = $row;
+        }
+
+        return $grouped;
+    }
+
     public function find($id)
     {
         global $wpdb;
