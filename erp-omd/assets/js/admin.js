@@ -343,6 +343,7 @@ const initInlineAutoSave = () => {
 
     let debounceTimer = null;
     let ajaxInFlight = false;
+    let ajaxSubmitQueued = false;
 
     const setInlineState = (stateClass) => {
       form.classList.remove(
@@ -359,10 +360,14 @@ const initInlineAutoSave = () => {
       if (
         typeof erpOmdAdminData === 'undefined' ||
         !erpOmdAdminData ||
-        !erpOmdAdminData.ajaxUrl ||
-        ajaxInFlight
+        !erpOmdAdminData.ajaxUrl
       ) {
         return false;
+      }
+
+      if (ajaxInFlight) {
+        ajaxSubmitQueued = true;
+        return true;
       }
 
       const idInput = form.querySelector('input[name="id"]');
@@ -404,6 +409,10 @@ const initInlineAutoSave = () => {
         })
         .finally(() => {
           ajaxInFlight = false;
+          if (ajaxSubmitQueued) {
+            ajaxSubmitQueued = false;
+            submitInlineProjectViaAjax();
+          }
         });
 
       return true;
@@ -447,7 +456,10 @@ const initInlineAutoSave = () => {
         return;
       }
 
-      if (element.matches(inlineAutoSaveConfig.immediateSelectors)) {
+      if (
+        element.dataset.erpOmdAutoSave === 'change' ||
+        element.matches(inlineAutoSaveConfig.immediateSelectors)
+      ) {
         element.addEventListener('change', submitInlineForm);
         return;
       }
