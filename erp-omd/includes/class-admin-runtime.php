@@ -3973,7 +3973,10 @@ class ERP_OMD_Admin
             ],
             $existing
         );
-        $errors = $this->client_project_service->validate_project($payload, $existing);
+        // The list status selector is an explicit administrative override. Keep the
+        // project field validation, but do not block this quick update with workflow
+        // prerequisites that can only be resolved on other screens.
+        $errors = $this->client_project_service->validate_project($payload, $existing, false);
         if ($errors) {
             $this->redirect_with_notice('erp-omd-projects', 'error', implode(' ', $errors));
         }
@@ -4074,7 +4077,9 @@ class ERP_OMD_Admin
             ],
             $existing
         );
-        $errors = $this->client_project_service->validate_project($payload, $existing);
+        // Keep the non-JavaScript and AJAX list updates consistent: every valid
+        // status selected by an administrator must be persisted.
+        $errors = $this->client_project_service->validate_project($payload, $existing, false);
         if ($errors) {
             wp_send_json_error(['message' => implode(' ', $errors)], 422);
         }

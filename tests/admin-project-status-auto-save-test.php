@@ -4,6 +4,12 @@ $root = dirname(__DIR__);
 $template = file_get_contents($root . '/erp-omd/templates/admin/projects.php');
 $admin_js = file_get_contents($root . '/erp-omd/assets/js/admin.js');
 $admin_runtime = file_get_contents($root . '/erp-omd/includes/class-admin-runtime.php');
+$project_service = file_get_contents($root . '/erp-omd/includes/services/class-client-project-service.php');
+$ajax_handler_start = strpos($admin_runtime, 'public function handle_inline_project_update_ajax()');
+$ajax_handler_end = strpos($admin_runtime, 'private function handle_project_duplicate()', $ajax_handler_start ?: 0);
+$ajax_handler = $ajax_handler_start !== false && $ajax_handler_end !== false
+    ? substr($admin_runtime, $ajax_handler_start, $ajax_handler_end - $ajax_handler_start)
+    : '';
 
 $assertions = [
     [
@@ -30,6 +36,16 @@ $assertions = [
         $admin_runtime,
         "add_action('wp_ajax_erp_omd_inline_project_update', [\$this, 'handle_inline_project_update_ajax']);",
         'The project inline AJAX endpoint should be registered.',
+    ],
+    [
+        $ajax_handler,
+        'validate_project($payload, $existing, false)',
+        'AJAX list updates should allow every valid status, including do_faktury.',
+    ],
+    [
+        $project_service,
+        'if ($validate_status_transition)',
+        'Project validation should support an explicit administrative status override.',
     ],
 ];
 
