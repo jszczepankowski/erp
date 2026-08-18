@@ -66,8 +66,13 @@ class ERP_OMD_Cron_Manager
 
     public static function schedule_events()
     {
+        $backup_schedule = wp_get_schedule(self::WEEKLY_BACKUP_HOOK);
+        if ($backup_schedule !== false && $backup_schedule !== 'daily') {
+            wp_clear_scheduled_hook(self::WEEKLY_BACKUP_HOOK);
+        }
+
         if (! wp_next_scheduled(self::WEEKLY_BACKUP_HOOK)) {
-            wp_schedule_event(time() + HOUR_IN_SECONDS, 'erp_omd_weekly', self::WEEKLY_BACKUP_HOOK);
+            wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', self::WEEKLY_BACKUP_HOOK);
         }
 
         if (! wp_next_scheduled(self::MISSING_HOURS_HOOK)) {
