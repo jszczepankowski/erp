@@ -21,11 +21,26 @@ class ERP_OMD_Backup_Manager
             return;
         }
 
+        $htaccess = trailingslashit($backup_dir) . '.htaccess';
+        if (! file_exists($htaccess)) {
+            file_put_contents(
+                $htaccess,
+                "Options -Indexes\n"
+                . "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n"
+                . "<IfModule !mod_authz_core.c>\nOrder allow,deny\nDeny from all\n</IfModule>\n"
+            );
+        }
+        $index_guard = trailingslashit($backup_dir) . 'index.php';
+        if (! file_exists($index_guard)) {
+            file_put_contents($index_guard, "<?php\n// Silence is golden.\n");
+        }
+
         $timestamp = current_time('Ymd-His');
-        $sql_basename = "erp-omd-db-{$timestamp}.sql";
-        $settings_basename = "erp-omd-settings-{$timestamp}.json";
+        $suffix = wp_generate_password(16, false);
+        $sql_basename = "erp-omd-db-{$timestamp}-{$suffix}.sql";
+        $settings_basename = "erp-omd-settings-{$timestamp}-{$suffix}.json";
         $sql_path = trailingslashit($backup_dir) . $sql_basename;
-        $zip_path = trailingslashit($backup_dir) . "erp-omd-db-{$timestamp}.zip";
+        $zip_path = trailingslashit($backup_dir) . "erp-omd-db-{$timestamp}-{$suffix}.zip";
         $dump = self::build_database_dump();
         $settings_payload = self::build_settings_export_payload();
         $settings_json = wp_json_encode($settings_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -58,8 +73,6 @@ class ERP_OMD_Backup_Manager
         $zip->close();
         @unlink($sql_path);
 
-        // Keep a rolling three-day history. The newly created backup replaces
-        // the oldest version once all three retention slots are occupied.
         self::prune_old_backups($backup_dir, self::BACKUP_RETENTION_COUNT);
 
         update_option('erp_omd_last_backup_status', 'success');
