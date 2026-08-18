@@ -8,6 +8,8 @@ Dokument operacyjny dla backupów generowanych przez `ERP_OMD_Cron_Manager`.
 
 ## Format backupu
 - archiwum ZIP: `uploads/erp-omd-backups/erp-omd-db-YYYYMMDD-HHMMSS.zip`,
+- backup jest wykonywany automatycznie codziennie,
+- przechowywane są 3 najnowsze wersje; utworzenie kolejnej usuwa najstarszą,
 - wewnątrz plik SQL z:
   - `DROP TABLE IF EXISTS ...`,
   - `CREATE TABLE ...`,
@@ -27,4 +29,3 @@ Dokument operacyjny dla backupów generowanych przez `ERP_OMD_Cron_Manager`.
 ## Walidacja testowa w repo
 - test referencyjny zakresu tabel backupu:
   - `php tests/cron-backup-table-filter-test.php`
-

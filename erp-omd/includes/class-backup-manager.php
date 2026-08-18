@@ -3,6 +3,7 @@
 class ERP_OMD_Backup_Manager
 {
     const BACKUP_MANIFEST_FILE = 'erp-omd-backup-manifest.json';
+    const BACKUP_RETENTION_COUNT = 3;
 
     public static function run_backup_bundle()
     {
@@ -57,7 +58,9 @@ class ERP_OMD_Backup_Manager
         $zip->close();
         @unlink($sql_path);
 
-        self::prune_old_backups($backup_dir, 12);
+        // Keep a rolling three-day history. The newly created backup replaces
+        // the oldest version once all three retention slots are occupied.
+        self::prune_old_backups($backup_dir, self::BACKUP_RETENTION_COUNT);
 
         update_option('erp_omd_last_backup_status', 'success');
         update_option('erp_omd_last_backup_at', current_time('mysql'));
@@ -454,4 +457,3 @@ class ERP_OMD_Backup_Manager
         return isset($wpdb->prefix) ? (string) $wpdb->prefix : '';
     }
 }
-

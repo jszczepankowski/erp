@@ -115,8 +115,8 @@
                     </div>
                     <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
                         <div style="flex:1 1 320px; min-width:280px;">
-                            <h4 style="margin-top:0;"><?php esc_html_e('Automatyczny backup bazy (co tydzień)', 'erp-omd'); ?></h4>
-                            <p><?php esc_html_e('System zapisuje backup bazy SQL i ustawień wtyczki do pliku ZIP na serwerze (katalog uploads/erp-omd-backups).', 'erp-omd'); ?></p>
+                            <h4 style="margin-top:0;"><?php esc_html_e('Automatyczny backup bazy (codziennie)', 'erp-omd'); ?></h4>
+                            <p><?php esc_html_e('System zapisuje backup bazy SQL i ustawień wtyczki do pliku ZIP na serwerze (katalog uploads/erp-omd-backups). Przechowywane są 3 najnowsze wersje; kolejny backup usuwa najstarszą.', 'erp-omd'); ?></p>
                             <p>
                                 <strong><?php esc_html_e('Ostatni backup:', 'erp-omd'); ?></strong>
                                 <?php echo $last_backup_at !== '' ? esc_html($last_backup_at) : esc_html__('brak', 'erp-omd'); ?>
