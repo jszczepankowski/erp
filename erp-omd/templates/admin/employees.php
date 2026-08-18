@@ -364,6 +364,12 @@
                                                 <input type="hidden" name="id" value="<?php echo esc_attr($item['id']); ?>" />
                                                 <button class="button button-small" type="submit"><?php echo esc_html($employee_is_inactive ? __('Aktywuj', 'erp-omd') : __('Dezaktywuj', 'erp-omd')); ?></button>
                                             </form>
+                                            <form method="post" class="erp-omd-inline-form" onsubmit="return confirm('<?php echo esc_js(__('Usunąć pracownika z systemu ERP? Konto WordPress nie zostanie usunięte.', 'erp-omd')); ?>');">
+                                                <?php wp_nonce_field('erp_omd_delete_employee'); ?>
+                                                <input type="hidden" name="erp_omd_action" value="delete_employee" />
+                                                <input type="hidden" name="id" value="<?php echo esc_attr($item['id']); ?>" />
+                                                <button class="button button-small button-link-delete" type="submit"><?php esc_html_e('Usuń', 'erp-omd'); ?></button>
+                                            </form>
                                         </div>
                                     </details>
                                 </td>

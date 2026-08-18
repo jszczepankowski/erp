@@ -58,7 +58,13 @@ class ERP_OMD_REST_API
         ERP_OMD_Project_Financial_Service $project_financial_service,
         ERP_OMD_Reporting_Service $reporting_service,
         ERP_OMD_Alert_Service $alert_service,
-        $adjustment_audit_repository = null
+        $adjustment_audit_repository = null,
+        $supplier_repository = null,
+        $cost_invoice_repository = null,
+        $cost_invoice_item_repository = null,
+        $cost_invoice_audit_repository = null,
+        $cost_invoice_workflow_service = null,
+        $ksef_import_service = null
 
     ) {
         $this->roles = $roles;
@@ -85,12 +91,12 @@ class ERP_OMD_REST_API
         $this->reporting_service = $reporting_service;
         $this->alert_service = $alert_service;
         $this->adjustment_audit = $adjustment_audit_repository ?: new ERP_OMD_Adjustment_Audit_Repository();
-        $this->suppliers = class_exists('ERP_OMD_Supplier_Repository') ? new ERP_OMD_Supplier_Repository() : null;
-        $this->cost_invoices = class_exists('ERP_OMD_Cost_Invoice_Repository') ? new ERP_OMD_Cost_Invoice_Repository() : null;
-        $this->cost_invoice_items = class_exists('ERP_OMD_Cost_Invoice_Item_Repository') ? new ERP_OMD_Cost_Invoice_Item_Repository() : null;
-        $this->cost_invoice_audit = class_exists('ERP_OMD_Cost_Invoice_Audit_Repository') ? new ERP_OMD_Cost_Invoice_Audit_Repository() : null;
-        $this->cost_invoice_workflow = class_exists('ERP_OMD_Cost_Invoice_Workflow_Service') ? new ERP_OMD_Cost_Invoice_Workflow_Service($this->cost_invoices, $this->cost_invoice_audit, $this->suppliers, $this->projects, $this->cost_invoice_items) : null;
-        $this->ksef_import_service = class_exists('ERP_OMD_KSeF_Import_Service') ? new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow, $this->cost_invoices, $this->cost_invoice_audit, null, null, $this->suppliers, $this->clients) : null;
+        $this->suppliers = $supplier_repository ?: (class_exists('ERP_OMD_Supplier_Repository') ? new ERP_OMD_Supplier_Repository() : null);
+        $this->cost_invoices = $cost_invoice_repository ?: (class_exists('ERP_OMD_Cost_Invoice_Repository') ? new ERP_OMD_Cost_Invoice_Repository() : null);
+        $this->cost_invoice_items = $cost_invoice_item_repository ?: (class_exists('ERP_OMD_Cost_Invoice_Item_Repository') ? new ERP_OMD_Cost_Invoice_Item_Repository() : null);
+        $this->cost_invoice_audit = $cost_invoice_audit_repository ?: (class_exists('ERP_OMD_Cost_Invoice_Audit_Repository') ? new ERP_OMD_Cost_Invoice_Audit_Repository() : null);
+        $this->cost_invoice_workflow = $cost_invoice_workflow_service ?: (class_exists('ERP_OMD_Cost_Invoice_Workflow_Service') ? new ERP_OMD_Cost_Invoice_Workflow_Service($this->cost_invoices, $this->cost_invoice_audit, $this->suppliers, $this->projects, $this->cost_invoice_items) : null);
+        $this->ksef_import_service = $ksef_import_service ?: (class_exists('ERP_OMD_KSeF_Import_Service') ? new ERP_OMD_KSeF_Import_Service($this->cost_invoice_workflow, $this->cost_invoices, $this->cost_invoice_audit, null, null, $this->suppliers, $this->clients) : null);
         $this->client_portal_service = class_exists('ERP_OMD_Client_Portal_Service') && class_exists('ERP_OMD_Project_Revenue_Repository')
             ? new ERP_OMD_Client_Portal_Service($this->projects, new ERP_OMD_Project_Revenue_Repository(), $this->project_costs)
             : null;
@@ -174,41 +180,15 @@ class ERP_OMD_REST_API
 
     private function register_employee_routes()
     {
-        register_rest_route('erp-omd/v1', '/employees', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_employees'], 'permission_callback' => [$this, 'can_manage_employees']],
-            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
-        ]);
-        register_rest_route('erp-omd/v1', '/employees/(?P<id>\d+)', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
-            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
-            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_employee'], 'permission_callback' => [$this, 'can_manage_employees']],
-        ]);
-        register_rest_route('erp-omd/v1', '/employees/(?P<id>\d+)/acl', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
-            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
-            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'reset_employee_acl'], 'permission_callback' => [$this, 'can_manage_employees']],
-        ]);
-        register_rest_route('erp-omd/v1', '/acl-audit', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_acl_audit'], 'permission_callback' => [$this, 'can_access_acl_audit']],
-        ]);
-        register_rest_route('erp-omd/v1', '/acl-audit/export', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'export_acl_audit_csv'], 'permission_callback' => [$this, 'can_access_acl_audit']],
-        ]);
-        register_rest_route('erp-omd/v1', '/acl-config', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_acl_config'], 'permission_callback' => [$this, 'can_manage_employees']],
-        ]);
-        register_rest_route('erp-omd/v1', '/employees/(?P<id>\d+)/salary', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'list_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
-            ['methods' => WP_REST_Server::CREATABLE, 'callback' => [$this, 'create_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
-        ]);
-        register_rest_route('erp-omd/v1', '/salary/(?P<id>\d+)', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
-            ['methods' => WP_REST_Server::EDITABLE, 'callback' => [$this, 'update_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
-            ['methods' => WP_REST_Server::DELETABLE, 'callback' => [$this, 'delete_salary_history'], 'permission_callback' => [$this, 'can_manage_salary']],
-        ]);
-        register_rest_route('erp-omd/v1', '/monthly-hours/(?P<year_month>\d{4}-\d{2})', [
-            ['methods' => WP_REST_Server::READABLE, 'callback' => [$this, 'get_monthly_hours_suggestion'], 'permission_callback' => [$this, 'can_manage_salary']],
-        ]);
+        if (! class_exists('ERP_OMD_REST_Controller')) {
+            require_once __DIR__ . '/rest/class-rest-controller.php';
+        }
+        if (! class_exists('ERP_OMD_REST_HR_Controller')) {
+            require_once __DIR__ . '/rest/class-rest-hr-controller.php';
+        }
+
+        $controller = new ERP_OMD_REST_HR_Controller($this);
+        $controller->register_routes();
     }
 
     private function register_client_routes()
