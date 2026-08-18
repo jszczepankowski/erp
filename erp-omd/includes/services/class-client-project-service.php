@@ -136,7 +136,7 @@ class ERP_OMD_Client_Project_Service
         return $errors;
     }
 
-    public function validate_project(array $data, array $existing_project = null)
+    public function validate_project(array $data, array $existing_project = null, $validate_status_transition = true)
     {
         $data = $this->prepare_project($data, $existing_project);
         $errors = [];
@@ -225,7 +225,9 @@ class ERP_OMD_Client_Project_Service
         }
 
         $errors = array_merge($errors, $this->validate_billing_policy($data));
-        $errors = array_merge($errors, $this->validate_status_transition($data, $existing_project));
+        if ($validate_status_transition) {
+            $errors = array_merge($errors, $this->validate_status_transition($data, $existing_project));
+        }
 
         return array_values(array_unique($errors));
     }

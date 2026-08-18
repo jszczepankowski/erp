@@ -868,7 +868,7 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <select name="status" form="<?php echo esc_attr($inline_project_form_id); ?>">
+                                <select name="status" form="<?php echo esc_attr($inline_project_form_id); ?>" data-erp-omd-auto-save="change" aria-label="<?php echo esc_attr(sprintf(__('Status projektu: %s', 'erp-omd'), (string) ($project_row['name'] ?? ''))); ?>">
                                     <?php foreach (['do_rozpoczecia', 'w_realizacji', 'w_akceptacji', 'do_faktury', 'zakonczony', 'archiwum'] as $project_status_option) : ?>
                                         <option value="<?php echo esc_attr($project_status_option); ?>" <?php selected((string) ($project_row['status'] ?? 'do_rozpoczecia'), $project_status_option); ?>>
                                             <?php echo esc_html($this->project_status_label($project_status_option)); ?>
